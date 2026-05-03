@@ -1,4 +1,57 @@
 {
+  "env": {
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6-20250115",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6-20250311",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001"
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Grep",
+      "Glob",
+      "Bash(npm run *)",
+      "Bash(npx *)",
+      "Bash(mvn compile)",
+      "Bash(mvn test *)",
+      "Bash(mvn package)",
+      "Bash(mvn clean *)",
+      "Bash(gradle build)",
+      "Bash(gradle test *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git branch *)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -r /)",
+      "Bash(sudo *)",
+      "Bash(git push *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean -fd *)",
+      "Bash(chmod 777 *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(~/.ssh/**)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -27,6 +80,21 @@
           {
             "type": "command",
             "command": ".claude/hooks/post-edit-log.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-edit-typecheck.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-subagent-log.sh"
           }
         ]
       }

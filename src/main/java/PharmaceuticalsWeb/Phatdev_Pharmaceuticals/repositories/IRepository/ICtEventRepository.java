@@ -121,4 +121,25 @@ public interface ICtEventRepository extends JpaRepository<CtEvent, Long> {
                         @Param("dauThang") LocalDateTime dauThang,
                         @Param("cuoiThang") LocalDateTime cuoiThang);
 
+        /**
+         * [DÀNH CHO PUBLIC] Đếm tổng số lượng Phiên sự kiện ĐÃ CÔNG BỐ (Có tích hợp Bộ lọc Đa chiều).
+         * Thuật toán: Dùng mệnh đề IS NULL để bỏ qua tham số nếu Frontend không truyền lên.
+         */
+        @Query(value = "WITH LatestStatus AS ( " +
+                       "    SELECT ct_event_id, status_code, " +
+                       "    ROW_NUMBER() OVER(PARTITION BY ct_event_id ORDER BY changed_at DESC) as rn " +
+                       "    FROM ct_event_status_history " +
+                       ") " +
+                       "SELECT COUNT(ce.id) FROM ct_events ce " +
+                       "INNER JOIN events e ON ce.event_id = e.id " +
+                       "INNER JOIN LatestStatus ls ON ce.id = ls.ct_event_id " +
+                       "WHERE ls.rn = 1 AND ls.status_code != 'DRAFT' " +
+                       "AND (:type IS NULL OR e.event_type_id = :type) " +
+                       "AND ce.start_time >= :startDate AND ce.start_time <= :endDate", 
+               nativeQuery = true)
+        long demTongBuoiPublicCoLoc(
+                        @Param("type") Integer type,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
 }

@@ -17,6 +17,12 @@ project-root/
 │   ├── 05_active_workspace.md                Bug, blocker, context hiện tại
 │   └── 06_evolution_log.md                   Nhật ký thay đổi
 │
+├── docs/                                  # ═══ TÀI LIỆU ON-DEMAND ═══
+│   ├── README.md                             Hướng dẫn cách dùng docs/
+│   ├── api-spec.md                           Đặc tả API chi tiết
+│   ├── database-schema.md                    Schema database đầy đủ
+│   └── coding-guidelines.md                  Quy tắc coding mở rộng
+│
 └── .claude/
     ├── settings.json                      # Cấu hình hooks
     │
@@ -38,7 +44,8 @@ project-root/
     ├── hooks/                             # ═══ TẦNG 2: LIFECYCLE HOOKS ═══
     │   ├── pre-bash-firewall.sh              Chặn rm -rf, git reset --hard...
     │   ├── pre-edit-protect.sh               Bảo vệ .env, Dockerfile...
-    │   └── post-edit-log.sh                  Log mọi file đã sửa
+    │   ├── post-edit-log.sh                  Log mọi file đã sửa
+    │   └── post-edit-typecheck.sh            Auto compile/lint sau mỗi edit
     │
     └── agents/                            # ═══ TẦNG 3: MULTI-MODEL AGENTS ═══
         ├── 01-architect.md                   Opus  — thiết kế kiến trúc
@@ -58,7 +65,7 @@ project-root/
         └── 15-planner.md                     Opus  — lập kế hoạch
 ```
  
-Tổng: **36 file** | 3 Opus + 8 Sonnet + 4 Haiku agents | 6 skills | 3 hooks
+Tổng: **50 file** | 3 Opus + 8 Sonnet + 4 Haiku agents | 7 skills | 4 hooks | 4 docs | 7 READMEs
  
 ---
  
@@ -91,29 +98,37 @@ Giao task bình thường trong chat. Hệ thống tự vận hành:
  
 ## Tổng quan 3 tầng
  
-### Tầng 1 — Memory Bank + Rules
+### Tầng 1 — Memory Bank + Rules + Docs
 **Mục đích:** Agent nhớ dự án, tiết kiệm token, tuân thủ convention
 - CLAUDE.md: Claude Code đọc tự động, không tốn token đọc thủ công
 - .claudeignore: Loại bỏ file noise (node_modules, *.jar, lock files...)
-- .ai-memory/: Bộ nhớ bền vững qua các phiên
+- .ai-memory/: Bộ nhớ bền vững qua các phiên (agent tự quản lý)
 - .claude/rules/: Quy tắc coding, chỉ load khi sửa file matching path
-### Tầng 2 — Skills + Hooks
-**Mục đích:** Workflow tái sử dụng + automation không hallucinate
+- docs/: Tài liệu chi tiết on-demand, agent đọc khi cần bằng @docs/file.md
+### Tầng 2 — Skills + Hooks + Permissions
+**Mục đích:** Workflow tái sử dụng + automation không hallucinate + giảm prompt
 - Skills: Load on-demand, KHÔNG tốn token khi không dùng
-- Hooks: Chạy shell script deterministic, chặn lệnh nguy hiểm, log edit
+- Hooks: Chạy shell script deterministic, chặn lệnh nguy hiểm, log edit, auto typecheck
+- Permissions: Allow/deny list giảm "Allow?" prompt, tăng tốc workflow
 ### Tầng 3 — Multi-Model Agents
 **Mục đích:** Đúng model cho đúng việc, bảo tồn context window
-- Opus (3): architect, security-auditor, planner — suy nghĩ sâu
-- Sonnet (8): implementer, reviewer, debugger... — code + phân tích
-- Haiku (4): explorer, doc-writer, config-manager... — nhanh + rẻ
+- Opus 4.6 (3): architect, security-auditor, planner — suy nghĩ sâu
+- Sonnet 4.6 (8): implementer, reviewer, debugger... — code + phân tích
+- Haiku 4.5 (4): explorer, doc-writer, config-manager... — nhanh + rẻ
 - Mỗi agent chạy context window riêng → context chính sạch
 ---
  
 ## Lưu ý quan trọng
  
-1. **settings.json**: Nếu đã có sẵn, MERGE phần hooks vào, KHÔNG ghi đè
+1. **settings.json**: Nếu đã có sẵn, MERGE phần hooks + permissions vào, KHÔNG ghi đè
 2. **Chi phí**: Multi-agent tốn 3-5x token so với single-agent.
    Haiku agents giảm ~40-50% chi phí so với dùng Sonnet cho mọi thứ
 3. **Subagent KHÔNG spawn subagent**: Giới hạn của Claude Code
 4. **Memory luôn cần sync**: Sau task lớn, gõ /sync-memory hoặc agent tự làm
 5. **Code luôn đúng hơn memory**: Khi xung đột, sửa memory chứ không sửa code
+6. **docs/ do developer quản lý**: Agent KHÔNG tự sửa file trong docs/
+7. **Typecheck hook**: Tự detect Java/Node, chạy compile/lint sau mỗi edit.
+   Nếu fail → Claude phải sửa lỗi trước khi tiếp tục
+8. **Permissions**: Tùy chỉnh allow/deny list theo dự án thực tế.
+   Thêm lệnh build/test riêng vào allow, thêm lệnh nguy hiểm vào deny
+9. **chmod**: Sau khi copy, chạy `chmod +x .claude/hooks/*.sh`

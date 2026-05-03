@@ -8,6 +8,21 @@ Dự án này sử dụng hệ thống AI Memory Bank tại `.ai-memory/`.
 - KHÔNG hardcode password, secret key, API key trong code
 - Validate TOÀN BỘ input từ client
 - Trả lời bằng tiếng Việt trừ khi user yêu cầu khác
+## Thứ tự ưu tiên nguồn thông tin
+ 
+Khi có xung đột giữa các nguồn, tuân thủ thứ tự sau:
+1. **Code thực tế** — LUÔN ĐÚNG NHẤT, không bao giờ sai
+2. **docs/ (Status: ACTIVE)** — tài liệu developer viết, tin cậy cao
+3. **.ai-memory/** — agent tự tạo, có thể lỗi thời
+4. **docs/ (Status: TEMPLATE)** — BỎ QUA HOÀN TOÀN, đây chỉ là file mẫu
+Nếu docs/ nói khác .ai-memory/ → kiểm tra code thực tế để xác định ai đúng.
+ 
+## Quy tắc docs/
+ 
+- File có `Status: TEMPLATE` → KHÔNG đọc, KHÔNG dùng, KHÔNG tham chiếu
+- File có `Status: ACTIVE` → được phép đọc khi cần kiến thức chi tiết
+- Agent KHÔNG TỰ SỬA file trong docs/ — chỉ developer sửa
+- Khi cần tài liệu chi tiết: đọc `@docs/file.md` thay vì đoán
 ## Memory Protocol
  
 - Khi nhận task mới: đọc `.ai-memory/04_active_plan.md` và `.ai-memory/05_active_workspace.md` TRƯỚC
@@ -15,6 +30,20 @@ Dự án này sử dụng hệ thống AI Memory Bank tại `.ai-memory/`.
 - Đọc deep knowledge liên quan tại `.ai-memory/03_deep_knowledge/`
 - TUYỆT ĐỐI KHÔNG quét lại toàn bộ dự án bằng list_dir nếu memory đã có
 - Sau khi sửa code: cập nhật memory tương ứng + ghi log `.ai-memory/06_evolution_log.md`
+## Drift Detection — Phát hiện thay đổi ngoài Claude
+ 
+User có thể tự code, dùng AI khác, hoặc chỉnh sửa thủ công giữa các phiên Claude.
+Khi đó memory sẽ LỆCH với code thực tế. BẮT BUỘC kiểm tra trước khi làm task mới:
+ 
+1. **Kiểm tra git diff**: Chạy `git diff --stat HEAD` hoặc `git log --oneline -5` để xem có commit nào Claude không biết
+2. **Nếu có thay đổi ngoài Claude** (commit lạ, file mới, file bị xóa):
+   - Chạy `git diff --name-only` để list file đã thay đổi
+   - Đọc CHỈ các file thay đổi (không quét toàn bộ)
+   - Cập nhật memory tương ứng trong `03_deep_knowledge/`
+   - Đánh dấu task cũ DONE/CANCELLED trong `04_active_plan.md` nếu đã hoàn thành
+   - Báo user: "Phát hiện [N] file thay đổi ngoài Claude, đã đồng bộ memory"
+3. **Nếu không có thay đổi**: tiếp tục bình thường
+4. **Quy tắc vàng**: Git log là nguồn sự thật. Nếu git nói file đã đổi mà memory nói chưa → memory SAI
 ## Bootstrap
  
 Nếu `.ai-memory/01_system_architecture.md` chứa `PENDING_BOOTSTRAP`:
@@ -28,23 +57,23 @@ KHÔNG tự làm nếu có agent chuyên biệt phù hợp.
  
 ### Bảng routing
  
-| Khi user yêu cầu...                           | Delegate cho            | Model               |
-|-----------------------------------------------|-------------------------|---------------------|
-| Thiết kế kiến trúc, chọn pattern, trade-off   | **architect**           | claude-opus-4-6     |
-| Lập kế hoạch, phân rã task lớn, roadmap       | **planner**             | claude-opus-4-6     |
-| Audit bảo mật, tìm vulnerability              | **security-auditor**    | claude-opus-4-6     |
-| Viết code mới, implement feature              | **implementer**         | claude-sonnet-4-6   |
-| Review code, kiểm tra chất lượng              | **reviewer**            | claude-sonnet-4-6   |
-| Debug, fix bug, phân tích stack trace         | **debugger**            | claude-sonnet-4-6   |
-| Viết test, chạy test                          | **tester**              | claude-sonnet-4-6   |
-| Refactor, tách method, giảm duplication       | **refactorer**          | claude-sonnet-4-6   |
-| Thiết kế database, entity, migration          | **db-specialist**       | claude-sonnet-4-6   |
-| Thiết kế REST API, endpoint mới               | **api-designer**        | claude-sonnet-4-6   |
-| Tối ưu performance, tìm bottleneck            | **performance-analyst** | claude-sonnet-4-6   |
-| Tìm file, grep pattern, "file nào chứa X"     | **explorer**            | claude-haiku-4-5    |
-| Viết documentation, README, javadoc           | **doc-writer**          | claude-haiku-4-5    |
-| Sửa config, Docker, CI/CD, pom.xml            | **config-manager**      | claude-haiku-4-5    |
-| Cập nhật memory, sync memory                  | **memory-keeper**       | claude-haiku-4-5    |
+| Khi user yêu cầu...                          | Delegate cho         | Model              |
+|-----------------------------------------------|----------------------|---------------------|
+| Thiết kế kiến trúc, chọn pattern, trade-off   | **architect**        | claude-opus-4-6     |
+| Lập kế hoạch, phân rã task lớn, roadmap       | **planner**          | claude-opus-4-6     |
+| Audit bảo mật, tìm vulnerability              | **security-auditor** | claude-opus-4-6     |
+| Viết code mới, implement feature              | **implementer**      | claude-sonnet-4-6   |
+| Review code, kiểm tra chất lượng              | **reviewer**          | claude-sonnet-4-6   |
+| Debug, fix bug, phân tích stack trace          | **debugger**         | claude-sonnet-4-6   |
+| Viết test, chạy test                           | **tester**           | claude-sonnet-4-6   |
+| Refactor, tách method, giảm duplication        | **refactorer**       | claude-sonnet-4-6   |
+| Thiết kế database, entity, migration           | **db-specialist**    | claude-sonnet-4-6   |
+| Thiết kế REST API, endpoint mới                | **api-designer**     | claude-sonnet-4-6   |
+| Tối ưu performance, tìm bottleneck            | **performance-analyst** | claude-sonnet-4-6 |
+| Tìm file, grep pattern, "file nào chứa X"     | **explorer**         | claude-haiku-4-5    |
+| Viết documentation, README, javadoc            | **doc-writer**       | claude-haiku-4-5    |
+| Sửa config, Docker, CI/CD, pom.xml            | **config-manager**   | claude-haiku-4-5    |
+| Cập nhật memory, sync memory                   | **memory-keeper**    | claude-haiku-4-5    |
  
 ### Quy tắc điều phối
  

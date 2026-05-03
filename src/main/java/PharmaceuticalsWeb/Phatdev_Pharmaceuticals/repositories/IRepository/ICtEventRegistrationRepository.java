@@ -56,13 +56,35 @@ public interface ICtEventRegistrationRepository extends JpaRepository<CtEventReg
         * Chặn việc đếm nhầm các vé thuộc về phiên bị hạ cấp về DRAFT.
         */
        @Query(value = "WITH LatestStatus AS ( " +
-                   "    SELECT ct_event_id, status_code, " +
-                   "    ROW_NUMBER() OVER(PARTITION BY ct_event_id ORDER BY changed_at DESC) as rn " +
-                   "    FROM ct_event_status_history " +
-                   ") " +
-                   "SELECT COUNT(r.id) FROM ct_event_registrations r " +
-                   "INNER JOIN LatestStatus ls ON r.ct_event_id = ls.ct_event_id " +
-                   "WHERE ls.rn = 1 AND ls.status_code != 'DRAFT'", 
-           nativeQuery = true)
-    long demTongDangKyPublic();
+                     "    SELECT ct_event_id, status_code, " +
+                     "    ROW_NUMBER() OVER(PARTITION BY ct_event_id ORDER BY changed_at DESC) as rn " +
+                     "    FROM ct_event_status_history " +
+                     ") " +
+                     "SELECT COUNT(r.id) FROM ct_event_registrations r " +
+                     "INNER JOIN LatestStatus ls ON r.ct_event_id = ls.ct_event_id " +
+                     "WHERE ls.rn = 1 AND ls.status_code != 'DRAFT'", nativeQuery = true)
+       long demTongDangKyPublic();
+
+       /**
+        * [DÀNH CHO PUBLIC] Đếm tổng lượt Đăng ký của các Phiên sự kiện ĐÃ CÔNG BỐ (Có
+        * tích hợp Bộ lọc Đa chiều).
+        * Bảo vệ dữ liệu: Bắt buộc Join sang events để lấy event_type_id phục vụ việc
+        * lọc.
+        */
+       @Query(value = "WITH LatestStatus AS ( " +
+                     "    SELECT ct_event_id, status_code, " +
+                     "    ROW_NUMBER() OVER(PARTITION BY ct_event_id ORDER BY changed_at DESC) as rn " +
+                     "    FROM ct_event_status_history " +
+                     ") " +
+                     "SELECT COUNT(r.id) FROM ct_event_registrations r " +
+                     "INNER JOIN ct_events ce ON r.ct_event_id = ce.id " +
+                     "INNER JOIN events e ON ce.event_id = e.id " +
+                     "INNER JOIN LatestStatus ls ON ce.id = ls.ct_event_id " +
+                     "WHERE ls.rn = 1 AND ls.status_code != 'DRAFT' " +
+                     "AND (:type IS NULL OR e.event_type_id = :type) " +
+                     "AND ce.start_time >= :startDate AND ce.start_time <= :endDate", nativeQuery = true)
+       long demTongDangKyPublicCoLoc(
+                     @Param("type") Integer type,
+                     @Param("startDate") LocalDateTime startDate,
+                     @Param("endDate") LocalDateTime endDate);
 }

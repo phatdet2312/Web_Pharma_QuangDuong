@@ -1,64 +1,43 @@
-# AI Memory Kit v2 — Đại trùng tu
+# .ai-memory/ — Bộ nhớ bền vững cho AI Agent
  
-## Khác biệt so với v1
+## Mục đích
+Thư mục này là "trí nhớ dài hạn" của agent. Agent tự đọc và tự cập nhật
+các file ở đây qua các phiên làm việc, giúp không phải quét lại dự án mỗi lần.
  
-### v1 (cũ): Tự quản lý hoàn toàn
+## Cấu trúc
 ```
 .ai-memory/
-├── .clinerules          ← Agent phải tự nhớ đọc
-├── .clinesignore        ← Không phải format native
-└── 00_core_rules.xml    ← Load toàn bộ mỗi phiên
+├── README.md                    ← File này
+├── 01_system_architecture.md    ← Tech stack, ports, cách chạy dự án
+├── 02_project_map.md            ← Cây thư mục, module map, entry points
+├── 03_deep_knowledge/           ← Tri thức domain chi tiết
+│   └── _TEMPLATE.md             ← Mẫu format (agent tạo file mới theo mẫu này)
+├── 04_active_plan.md            ← Kế hoạch task đang thực hiện
+├── 05_active_workspace.md       ← Bug, blocker, context cho phiên sau
+└── 06_evolution_log.md          ← Nhật ký thay đổi code theo thời gian
 ```
  
-### v2 (mới): Tích hợp hệ sinh thái Claude Code
-```
-project-root/
-├── CLAUDE.md              ← Claude Code TỰ ĐỘNG đọc mỗi phiên
-├── .claudeignore          ← Format native, Claude Code nhận diện
-├── .claude/
-│   └── rules/             ← Modular rules, path-scoped
-│       ├── java-backend.md    (chỉ load khi sửa .java)
-│       ├── frontend.md        (chỉ load khi sửa frontend)
-│       ├── database.md        (chỉ load khi sửa entity/repo)
-│       ├── git.md             (load mọi phiên, ngắn)
-│       └── memory-protocol.md (load mọi phiên, hướng dẫn agent)
-└── .ai-memory/            ← Memory bank giữ nguyên cấu trúc
-    ├── 01_system_architecture.md
-    ├── 02_project_map.md
-    ├── 03_deep_knowledge/
-    │   └── _TEMPLATE.md
-    ├── 04_active_plan.md
-    ├── 05_active_workspace.md
-    └── 06_evolution_log.md
-```
+## Vai trò từng file
  
-## 5 cải tiến chính
+| File | Vai trò | Ai quản lý |
+|------|---------|------------|
+| `01_system_architecture.md` | Tech stack, ports, cách chạy dự án | Agent tự điền khi bootstrap |
+| `02_project_map.md` | Cây thư mục, module map, entry points, entities | Agent tự điền khi bootstrap |
+| `03_deep_knowledge/` | Tri thức domain chi tiết (mỗi module 1 file) | Agent tự tạo + cập nhật |
+| `03_deep_knowledge/_TEMPLATE.md` | Mẫu format cho file deep knowledge | Developer tạo, agent không sửa |
+| `04_active_plan.md` | Kế hoạch task đang thực hiện | Agent cập nhật liên tục |
+| `05_active_workspace.md` | Bug, blocker, context cho phiên sau | Agent cập nhật mỗi phiên |
+| `06_evolution_log.md` | Nhật ký thay đổi code theo thời gian | Agent ghi log mỗi task |
  
-1. CLAUDE.md ở root → Claude Code tự đọc, không cần agent nhớ
-2. .claudeignore native → thay .clinesignore, Claude Code nhận diện
-3. Path-scoped rules → Java rules chỉ load khi sửa .java (tiết kiệm ~40% token)
-4. Tách 00_core_rules.xml → 4 file rules nhỏ theo domain
-5. Giữ nguyên .ai-memory/ → tương thích ngược, không mất data
-## Cách dùng
+## Vòng đời
  
-### Bước 1: Copy vào dự án
-Copy toàn bộ: CLAUDE.md, .claudeignore, .claude/, .ai-memory/
+1. **Bootstrap** (lần đầu): Agent quét dự án → điền 01, 02, tạo file trong 03
+2. **Daily**: Agent đọc memory thay vì quét lại → tiết kiệm 60-75% token
+3. **Self-sync**: Sau mỗi thay đổi code → agent cập nhật memory tương ứng
+4. **Drift detection**: Khi phát hiện code thay đổi ngoài Claude → đồng bộ lại
+## Quy tắc quan trọng
  
-### Bước 2: Tùy chỉnh
-- Sửa CLAUDE.md: thêm build command, quy tắc riêng
-- Sửa .claude/rules/java-backend.md: đổi nếu dùng ngôn ngữ khác
-- Xóa rules không cần (VD: xóa frontend.md nếu chỉ có backend)
-### Bước 3: Bootstrap
-Mở Claude Code, gõ: "Khởi tạo memory bank cho dự án này"
- 
-### Bước 4: Làm việc hàng ngày
-Giao task bình thường. Agent tự đọc CLAUDE.md + memory + rules phù hợp.
- 
-## Ước tính token tiết kiệm thêm so với v1
- 
-| Kịch bản             | v1        | v2        | Tiết kiệm |
-|-----------------------|-----------|-----------|------------|
-| Sửa 1 file Java      | ~12k tok  | ~8k tok   | ~33%       |
-| Sửa 1 file frontend  | ~12k tok  | ~7k tok   | ~42%       |
-| Task liên quan DB     | ~12k tok  | ~7k tok   | ~42%       |
-| So với không dùng gì  | ~45k tok  | ~8k tok   | ~82%       |
+- `Status: PENDING_BOOTSTRAP` trong 01 hoặc 02 → agent chưa quét, cần chạy bootstrap
+- `Confidence: LOW` (>14 ngày không cập nhật) → agent nên verify lại với code thực tế
+- Code thực tế LUÔN ĐÚNG hơn memory → xung đột thì sửa memory, KHÔNG sửa code
+- Agent KHÔNG BAO GIỜ xóa file memory — chỉ cập nhật nội dung

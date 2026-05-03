@@ -51,17 +51,72 @@ public class EventServiceImpl implements IEventService {
      * Báo cáo sơ bộ bức tranh toàn cảnh về sự kiện để phục vụ Hero Stats trên
      * Frontend.
      */
+    /**
+     * Báo cáo sơ bộ bức tranh toàn cảnh về sự kiện để phục vụ Hero Stats trên Frontend.
+     * Tích hợp Engine Phân giải Thời gian để đảm bảo số liệu đồng bộ 100% với danh sách hiển thị.
+     */
     @Override
-    public EventStatsResponse layThongKeTrangSuKien() {
-        YearMonth thangNay = YearMonth.now();
-        LocalDateTime dauThang = thangNay.atDay(1).atStartOfDay();
-        LocalDateTime cuoiThang = thangNay.atEndOfMonth().atTime(23, 59, 59);
+    public EventStatsResponse layThongKeTrangSuKien(Integer type, String time) {
+        
+        // 1. KHỞI TẠO MỐC THỜI GIAN AN TOÀN (Bao phủ toàn bộ Kỷ nguyên)
+        LocalDateTime startDate = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
 
+        // 2. PHÂN GIẢI THAM SỐ THỜI GIAN (Đảm bảo logic y hệt Cỗ máy tìm kiếm)
+        if ("THIS_MONTH".equals(time) == true) {
+            LocalDateTime now = LocalDateTime.now();
+            startDate = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endDate = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).withNano(0);
+        } else if ("UPCOMING".equals(time) == true) {
+            startDate = LocalDateTime.now();
+        } else if ("THIS_WEEK".equals(time) == true) {
+            LocalDateTime now = LocalDateTime.now();
+            int thuTrongTuan = now.getDayOfWeek().getValue();
+            startDate = now.minusDays(thuTrongTuan - 1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endDate = now.plusDays(7 - thuTrongTuan).withHour(23).withMinute(59).withSecond(59).withNano(0);
+        } else if ("NEXT_MONTH".equals(time) == true) {
+            YearMonth thangSau = YearMonth.now().plusMonths(1);
+            startDate = thangSau.atDay(1).atStartOfDay();
+            endDate = thangSau.atEndOfMonth().atTime(23, 59, 59);
+        } 
+        // [QUAN TRỌNG] Nhánh này bắt chuỗi ngày YYYY-MM-DD từ sự kiện Click Lịch Mini của Frontend
+        else if (time != null && time.contains("-") == true) {
+            String[] cacPhan = time.split("-");
+            int nam = Integer.parseInt(cacPhan[0]);
+            int thang = Integer.parseInt(cacPhan[1]);
+            
+            if (cacPhan.length == 3) {
+                // Xử lý Ngày cụ thể
+                int ngay = Integer.parseInt(cacPhan[2]);
+                startDate = LocalDateTime.of(nam, thang, ngay, 0, 0, 0);
+                endDate = LocalDateTime.of(nam, thang, ngay, 23, 59, 59);
+            } else if (cacPhan.length == 2) {
+                // Xử lý nguyên Tháng
+                YearMonth targetMonth = YearMonth.of(nam, thang);
+                startDate = targetMonth.atDay(1).atStartOfDay();
+                endDate = targetMonth.atEndOfMonth().atTime(23, 59, 59);
+            }
+        }
+
+        // 3. TỔNG HỢP DỮ LIỆU
         EventStatsResponse stats = new EventStatsResponse();
-        stats.setEventsThisMonth(ctEventRepository.demBuoiDaCongBoTrongThang(dauThang, cuoiThang));
-        stats.setTotalRegistrations(registrationRepository.demTongDangKyPublic());
+        
+        // Chỉ số 1: Số buổi sự kiện nằm trong Khung thời gian VÀ Loại sự kiện đã chọn
+        long soBuoiCoLoc = ctEventRepository.demTongBuoiPublicCoLoc(type, startDate, endDate);
+        stats.setEventsThisMonth(soBuoiCoLoc);
+
+        // Chỉ số 2: Lượt đăng ký nằm trong Khung thời gian VÀ Loại sự kiện đã chọn
+        long soDangKyCoLoc = registrationRepository.demTongDangKyPublicCoLoc(type, startDate, endDate);
+        stats.setTotalRegistrations(soDangKyCoLoc);
+
+        // Chỉ số 3: Tổng số buổi (Chỉ lọc theo Loại sự kiện, mở rộng thời gian về Vô Cực để thấy quy mô tổng thể của nhánh đó)
+        LocalDateTime thoiGianVoCucStart = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
+        LocalDateTime thoiGianVoCucEnd = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
+        long tongSoBuoiTheoLoai = ctEventRepository.demTongBuoiPublicCoLoc(type, thoiGianVoCucStart, thoiGianVoCucEnd);
+        stats.setTotalSessions(tongSoBuoiTheoLoai);
+
+        // Chỉ số 4: Số Loại Sự Kiện (Luôn là con số Toàn cục để Sidebar giữ được định dạng)
         stats.setTotalEventTypes(eventTypeRepository.count());
-        stats.setTotalSessions(ctEventRepository.demTongBuoiDaCongBo());
 
         return stats;
     }
@@ -171,6 +226,22 @@ public class EventServiceImpl implements IEventService {
             YearMonth thangSau = YearMonth.now().plusMonths(1);
             startDate = thangSau.atDay(1).atStartOfDay();
             endDate = thangSau.atEndOfMonth().atTime(23, 59, 59);
+        }  else if (time != null && time.contains("-") == true) {
+            String[] cacPhan = time.split("-");
+            int nam = Integer.parseInt(cacPhan[0]);
+            int thang = Integer.parseInt(cacPhan[1]);
+            
+            if (cacPhan.length == 3) {
+                // Xử lý Ngày cụ thể
+                int ngay = Integer.parseInt(cacPhan[2]);
+                startDate = LocalDateTime.of(nam, thang, ngay, 0, 0, 0);
+                endDate = LocalDateTime.of(nam, thang, ngay, 23, 59, 59);
+            } else if (cacPhan.length == 2) {
+                // Xử lý nguyên Tháng
+                YearMonth targetMonth = YearMonth.of(nam, thang);
+                startDate = targetMonth.atDay(1).atStartOfDay();
+                endDate = targetMonth.atEndOfMonth().atTime(23, 59, 59);
+            }
         }
 
         // Xử lý từ khóa an toàn

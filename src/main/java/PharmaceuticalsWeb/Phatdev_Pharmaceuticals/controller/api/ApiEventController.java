@@ -51,8 +51,11 @@ public class ApiEventController {
 
     /** Thống kê Hero Stats trang sự kiện */
     @GetMapping("/stats")
-    public ApiResponse<EventStatsResponse> layThongKe() {
-        return ApiResponse.thanhCong(eventService.layThongKeTrangSuKien(), "Lấy thống kê thành công");
+    public ApiResponse<EventStatsResponse> layThongKe(
+            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) String time) {
+        // Truyền type và time xuống Service
+        return ApiResponse.thanhCong(eventService.layThongKeTrangSuKien(type, time), "Lấy thống kê thành công");
     }
 
 

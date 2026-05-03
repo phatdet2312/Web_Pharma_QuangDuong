@@ -1,6 +1,7 @@
 # Memory Protocol
  
 ## Khi nhận task mới (DAILY EXECUTION)
+0. **Drift check**: Chạy `git log --oneline -5` → nếu có commit Claude không biết → chạy /detect-drift TRƯỚC
 1. Đọc `.ai-memory/04_active_plan.md` → có task dang dở không?
 2. Đọc `.ai-memory/05_active_workspace.md` → có bug/blocker không?
 3. Đọc `.ai-memory/02_project_map.md` → xác định tọa độ file cần sửa

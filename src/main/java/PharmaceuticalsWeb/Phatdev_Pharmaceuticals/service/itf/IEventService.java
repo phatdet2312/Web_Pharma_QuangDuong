@@ -29,7 +29,7 @@ public interface IEventService {
 
 
     /** Thống kê tổng quan cho Hero Stats trang public */
-    EventStatsResponse layThongKeTrangSuKien();
+    EventStatsResponse layThongKeTrangSuKien(Integer type, String time);
 
     /** Lấy danh sách loại sự kiện cho filter sidebar */
     List<EventTypeResponse> layTatCaLoaiSuKien();
