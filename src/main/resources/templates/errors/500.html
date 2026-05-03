@@ -1,0 +1,21 @@
+<!-- src/main/resources/templates/errors/500.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>500 - Lỗi máy chủ</title>
+    <th:block th:replace="~{user_layout::user-head}"></th:block>
+</head>
+<body>
+    <div th:replace="~{user_layout::user-nav}"></div>
+    
+    <div class="container mt-5 text-center">
+        <h1 class="display-1 text-danger">500</h1>
+        <h2>Lỗi máy chủ nội bộ</h2>
+        <p class="lead">Đã có lỗi xảy ra. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.</p>
+        <a href="/" class="btn btn-primary btn-lg">Quay về trang chủ</a>
+    </div>
+    
+    <div th:replace="~{user_layout::user-scripts}"></div>
+</body>
+</html>

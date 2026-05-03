@@ -1,0 +1,588 @@
+<!-- src/main/resources/templates/admin/posts.html -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{admin_layout::admin-head('Quản lý Bài viết')}"></head>
+
+<th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
+<div id="admin-content-wrapper">
+
+<style>
+/* === ADMIN POSTS PAGE === */
+.ap-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.ap-stat { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 14px; }
+.ap-stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0; }
+.ap-stat-num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.ap-stat-label { font-size: .72rem; color: #6c757d; font-weight: 500; margin-top: 3px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* Filter Toolbar */
+.ap-toolbar { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.apt-search { flex: 1; min-width: 200px; position: relative; }
+.apt-search i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #adb5bd; font-size: .8rem; }
+.apt-search input { width: 100%; padding: 8px 12px 8px 32px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .84rem; outline: none; font-family: inherit; transition: border-color .15s; }
+.apt-search input:focus { border-color: #0061ff; }
+.apt-filter { padding: 8px 14px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .83rem; outline: none; cursor: pointer; font-family: inherit; color: #495057; background: #fff; }
+.apt-filter:focus { border-color: #0061ff; }
+.apt-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: .84rem; font-weight: 600; cursor: pointer; transition: all .15s; border: none; font-family: inherit; }
+.apt-btn-primary { background: #0061ff; color: #fff; }
+.apt-btn-primary:hover { background: #0048c2; }
+.apt-btn-ghost { background: #fff; border: 1.5px solid #e9ecef; color: #495057; }
+.apt-btn-ghost:hover { border-color: #0061ff; color: #0061ff; }
+.apt-btn-danger { background: #ffebe6; color: #de350b; border: 1.5px solid #ffc9b8; }
+.apt-btn-danger:hover { background: #de350b; color: #fff; }
+
+/* Table */
+.posts-table { width: 100%; border-collapse: collapse; }
+.posts-table th { background: #f8f9ff; padding: 10px 14px; text-align: left; font-size: .72rem; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 2px solid #f0f2fa; }
+.posts-table td { padding: 12px 14px; border-bottom: 1px solid #f0f2fa; vertical-align: middle; }
+.posts-table tr:hover td { background: #f8f9ff; }
+.posts-table tr:last-child td { border-bottom: none; }
+.post-thumb-col { width: 52px; height: 42px; border-radius: 8px; object-fit: cover; background: #eee; flex-shrink: 0; }
+.post-title-cell { max-width: 260px; }
+.post-title-main { font-size: .875rem; font-weight: 700; color: #1a2040; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.post-title-main:hover { color: #0061ff; }
+.post-title-slug { font-size: .72rem; color: #adb5bd; font-family: monospace; margin-top: 2px; }
+.category-pill { display: inline-block; padding: 2px 9px; border-radius: 6px; font-size: .68rem; font-weight: 700; }
+.access-pill { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: .68rem; font-weight: 700; }
+.access-pill.public { background: #e3fcf7; color: #00875a; }
+.access-pill.gated { background: #fff7e6; color: #b87800; border: 1px solid #fde68a; }
+.access-pill.admin { background: #f0f2fa; color: #0061ff; }
+
+.toggle-published { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle-published input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #dee2e6; border-radius: 20px; transition: .2s; }
+.toggle-slider::before { content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s; }
+.toggle-published input:checked + .toggle-slider { background: #00875a; }
+.toggle-published input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+.view-count-cell { display: flex; align-items: center; gap: 4px; font-size: .82rem; color: #6c757d; }
+.view-count-cell i { font-size: .72rem; color: #0061ff; }
+.dl-count-cell { display: flex; align-items: center; gap: 4px; font-size: .82rem; color: #6c757d; }
+.dl-count-cell i { font-size: .72rem; color: #00875a; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+.modal-box { background: #fff; border-radius: 20px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,.2); }
+.modal-head { padding: 20px 24px; border-bottom: 1px solid #f0f2fa; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 1; }
+.modal-title { font-size: 1rem; font-weight: 800; color: #1a2040; }
+.modal-close { background: #f0f2fa; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: .85rem; }
+.modal-body { padding: 24px; }
+.mf-group { margin-bottom: 16px; }
+.mf-label { display: block; font-size: .78rem; font-weight: 600; color: #495057; margin-bottom: 5px; }
+.mf-label .req { color: #de350b; }
+.mf-input { width: 100%; padding: 9px 12px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .87rem; color: #1a2040; outline: none; font-family: inherit; transition: border-color .15s; }
+.mf-input:focus { border-color: #0061ff; }
+.mf-textarea { width: 100%; padding: 9px 12px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .87rem; color: #1a2040; outline: none; font-family: inherit; transition: border-color .15s; resize: vertical; min-height: 80px; }
+.mf-textarea:focus { border-color: #0061ff; }
+.mf-select { width: 100%; padding: 9px 12px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .87rem; color: #1a2040; outline: none; font-family: inherit; cursor: pointer; background: #fff; }
+.mf-select:focus { border-color: #0061ff; }
+.mf-row { display: grid; gap: 14px; }
+.mf-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.modal-foot { padding: 16px 24px; border-top: 1px solid #f0f2fa; display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Tags input */
+.tags-input-wrap { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px 10px; border: 1.5px solid #e9ecef; border-radius: 10px; cursor: text; min-height: 40px; align-items: center; }
+.tag-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; background: #e8f0fe; color: #0061ff; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+.tag-chip button { background: none; border: none; color: #4a5278; cursor: pointer; padding: 0; font-size: .7rem; line-height: 1; }
+.tags-input { border: none; outline: none; font-size: .84rem; font-family: inherit; min-width: 80px; flex: 1; }
+
+/* Bulk Actions */
+.bulk-bar { background: #0061ff; color: #fff; padding: 10px 18px; border-radius: 10px; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: .84rem; font-weight: 600; }
+.bulk-bar-action { padding: 5px 14px; border: 1.5px solid rgba(255,255,255,.3); border-radius: 8px; color: #fff; background: transparent; cursor: pointer; font-size: .8rem; font-weight: 600; font-family: inherit; transition: background .15s; }
+.bulk-bar-action:hover { background: rgba(255,255,255,.15); }
+.bulk-bar-danger { border-color: #fca5a5; color: #fca5a5; }
+.bulk-bar-danger:hover { background: rgba(220,38,38,.3); }
+
+/* SEO Fields (seo_title, seo_description) */
+.seo-preview { background: #f8f9ff; border: 1px solid #e9ecef; border-radius: 10px; padding: 14px; }
+.sp-domain { font-size: .72rem; color: #16a34a; margin-bottom: 2px; }
+.sp-title { font-size: .88rem; font-weight: 600; color: #0061ff; margin-bottom: 3px; }
+.sp-desc { font-size: .78rem; color: #6c757d; line-height: 1.5; }
+.sp-label { font-size: .68rem; font-weight: 700; color: #adb5bd; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+
+/* Pagination */
+.pag-wrap { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #f0f2fa; flex-wrap: wrap; gap: 10px; }
+.pag-info { font-size: .8rem; color: #6c757d; }
+.pag-btns { display: flex; gap: 3px; }
+.pag-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid #e9ecef; border-radius: 8px; background: #fff; font-size: .82rem; color: #495057; cursor: pointer; transition: all .15s; text-decoration: none; }
+.pag-btn:hover, .pag-btn.active { background: #0061ff; border-color: #0061ff; color: #fff; }
+
+@media (max-width: 768px) {
+    .ap-stat-row { grid-template-columns: 1fr 1fr; }
+    .mf-row.cols-2 { grid-template-columns: 1fr; }
+}
+</style>
+
+<!-- Page Header -->
+<div class="admin-page-header">
+    <div>
+        <h4>Quản lý Bài viết</h4>
+        <p>Thư viện Y khoa — POSTS, CATEGORIES, TAGS, POST_VIEW_LOGS, POST_FILES</p>
+    </div>
+    <button class="apt-btn apt-btn-primary" onclick="document.getElementById('modalCreatePost').style.display='flex'">
+        <i class="fas fa-plus fa-xs"></i> Tạo bài viết mới
+    </button>
+</div>
+
+<!-- Stats -->
+<div class="ap-stat-row">
+    <div class="ap-stat">
+        <div class="ap-stat-icon" style="background:rgba(0,97,255,.1);color:#0061ff;"><i class="fas fa-file-alt"></i></div>
+        <div><div class="ap-stat-num" style="color:#0061ff;">486</div><div class="ap-stat-label">Tổng bài viết</div></div>
+    </div>
+    <div class="ap-stat">
+        <div class="ap-stat-icon" style="background:rgba(0,135,90,.1);color:#00875a;"><i class="fas fa-check-circle"></i></div>
+        <div><div class="ap-stat-num" style="color:#00875a;">420</div><div class="ap-stat-label">Đã xuất bản</div></div>
+    </div>
+    <div class="ap-stat">
+        <div class="ap-stat-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><i class="fas fa-lock"></i></div>
+        <div><div class="ap-stat-num" style="color:#f59e0b;">174</div><div class="ap-stat-label">Nội dung Gated</div></div>
+    </div>
+    <div class="ap-stat">
+        <div class="ap-stat-icon" style="background:rgba(124,58,237,.1);color:#7c3aed;"><i class="fas fa-pencil-alt"></i></div>
+        <div><div class="ap-stat-num" style="color:#7c3aed;">66</div><div class="ap-stat-label">Bản nháp</div></div>
+    </div>
+</div>
+
+<!-- Filter Toolbar -->
+<div class="ap-toolbar">
+    <div class="apt-search">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Tìm theo tiêu đề, slug, tác giả...">
+    </div>
+    <select class="apt-filter">
+        <option value="">Tất cả danh mục</option>
+        <option>Nghiên cứu Lâm sàng</option>
+        <option>Tim mạch & Huyết áp</option>
+        <option>Kháng sinh & Kháng nấm</option>
+        <option>Nội tiết & ĐTĐ</option>
+        <option>Cảnh giác Dược</option>
+        <option>TPCN & Dược mỹ phẩm</option>
+        <option>Tin tức Dược phẩm</option>
+    </select>
+    <select class="apt-filter">
+        <option value="">Trạng thái xuất bản</option>
+        <option>Đã xuất bản</option>
+        <option>Bản nháp</option>
+    </select>
+    <select class="apt-filter">
+        <option value="">Tất cả quyền truy cập</option>
+        <option>Công khai (PUBLIC)</option>
+        <option>Bác sĩ (ROLE_DOCTOR)</option>
+        <option>Dược sĩ</option>
+        <option>Đối tác B2B</option>
+    </select>
+    <select class="apt-filter">
+        <option>Mới nhất trước</option>
+        <option>Xem nhiều nhất</option>
+        <option>Tải nhiều nhất</option>
+    </select>
+    <button class="apt-btn apt-btn-ghost"><i class="fas fa-times fa-xs"></i> Reset</button>
+</div>
+
+<!-- Bulk Action Bar (shown when rows selected) -->
+<div class="bulk-bar">
+    <i class="fas fa-check-square fa-xs"></i>
+    <span>Đã chọn <strong>3</strong> bài viết</span>
+    <button class="bulk-bar-action"><i class="fas fa-eye fa-xs me-1"></i>Xuất bản tất cả</button>
+    <button class="bulk-bar-action"><i class="fas fa-eye-slash fa-xs me-1"></i>Ẩn tất cả</button>
+    <button class="bulk-bar-action bulk-bar-danger"><i class="fas fa-trash fa-xs me-1"></i>Xóa đã chọn</button>
+    <button class="bulk-bar-action" style="margin-left:auto;border:none;opacity:.7;" onclick="this.closest('.bulk-bar').style.display='none'"><i class="fas fa-times fa-xs"></i></button>
+</div>
+
+<!-- Table -->
+<div class="table-card">
+    <div class="table-card-header">
+        <span class="table-card-title">Danh sách bài viết <span style="font-weight:400;color:#6c757d;">(1 – 12 / 486)</span></span>
+        <div style="display:flex;gap:6px;">
+            <button class="apt-btn apt-btn-ghost" style="font-size:.78rem;padding:6px 12px;">
+                <i class="fas fa-download fa-xs"></i> Xuất Excel
+            </button>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="posts-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;"><input type="checkbox" style="width:15px;height:15px;cursor:pointer;accent-color:#0061ff;"></th>
+                    <th style="width:52px;">Ảnh</th>
+                    <th>Tiêu đề / Slug</th>
+                    <th>Chuyên mục</th>
+                    <th>Tags</th>
+                    <th>Tác giả</th>
+                    <th>Quyền truy cập</th>
+                    <th>Lượt xem</th>
+                    <th>Lượt tải</th>
+                    <th>Xuất bản</th>
+                    <th>Ngày tạo</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Row 1 -->
+                <tr>
+                    <td><input type="checkbox" style="width:15px;height:15px;cursor:pointer;accent-color:#0061ff;"></td>
+                    <td>
+                        <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=80&q=60" class="post-thumb-col" alt="">
+                    </td>
+                    <td class="post-title-cell">
+                        <a href="#" class="post-title-main">Đánh giá hiệu quả lâm sàng của kháng sinh thế hệ mới trong điều trị viêm phổi</a>
+                        <div class="post-title-slug">danh-gia-hieu-qua-lam-sang-khang-sinh-2026</div>
+                    </td>
+                    <td><span class="category-pill" style="background:rgba(0,97,255,.08);color:#0061ff;">Nghiên cứu Lâm sàng</span></td>
+                    <td>
+                        <div style="display:flex;gap:3px;flex-wrap:wrap;max-width:120px;">
+                            <span class="tag-chip">#KhangSinh</span>
+                            <span class="tag-chip">#ESBL</span>
+                        </div>
+                    </td>
+                    <td style="font-size:.82rem;color:#495057;white-space:nowrap;">PGS.TS. Nguyễn V.H</td>
+                    <td><span class="access-pill gated"><i class="fas fa-lock fa-xs"></i> Chuyên gia</span></td>
+                    <td><div class="view-count-cell"><i class="fas fa-eye"></i> 4.820</div></td>
+                    <td><div class="dl-count-cell"><i class="fas fa-download"></i> 312</div></td>
+                    <td>
+                        <label class="toggle-published">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td style="font-size:.78rem;color:#6c757d;white-space:nowrap;">16/04/2026</td>
+                    <td>
+                        <div class="hc-card-actions">
+                            <a href="#" class="btn-tbl btn-tbl-view"><i class="fas fa-eye"></i></a>
+                            <button class="btn-tbl btn-tbl-edit" onclick="document.getElementById('modalEditPost').style.display='flex'"><i class="fas fa-pen"></i></button>
+                            <button class="btn-tbl btn-tbl-delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Row 2 -->
+                <tr>
+                    <td><input type="checkbox" style="width:15px;height:15px;cursor:pointer;accent-color:#0061ff;" checked></td>
+                    <td>
+                        <img src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=80&q=60" class="post-thumb-col" alt="">
+                    </td>
+                    <td class="post-title-cell">
+                        <a href="#" class="post-title-main">Cập nhật phác đồ điều trị đái tháo đường thai kỳ theo khuyến cáo ADA 2026</a>
+                        <div class="post-title-slug">cap-nhat-phac-do-dai-thao-duong-thai-ky-2026</div>
+                    </td>
+                    <td><span class="category-pill" style="background:rgba(222,53,11,.08);color:#de350b;">Nội tiết & ĐTĐ</span></td>
+                    <td>
+                        <div style="display:flex;gap:3px;flex-wrap:wrap;max-width:120px;">
+                            <span class="tag-chip" style="background:#fef3c7;color:#d97706;">#GDM</span>
+                            <span class="tag-chip" style="background:#fef3c7;color:#d97706;">#ADA2026</span>
+                        </div>
+                    </td>
+                    <td style="font-size:.82rem;color:#495057;">BS. Nguyễn T.L</td>
+                    <td><span class="access-pill gated"><i class="fas fa-lock fa-xs"></i> Bác sĩ</span></td>
+                    <td><div class="view-count-cell"><i class="fas fa-eye"></i> 2.341</div></td>
+                    <td><div class="dl-count-cell"><i class="fas fa-download"></i> 87</div></td>
+                    <td>
+                        <label class="toggle-published">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td style="font-size:.78rem;color:#6c757d;white-space:nowrap;">14/04/2026</td>
+                    <td>
+                        <div class="hc-card-actions">
+                            <a href="#" class="btn-tbl btn-tbl-view"><i class="fas fa-eye"></i></a>
+                            <button class="btn-tbl btn-tbl-edit"><i class="fas fa-pen"></i></button>
+                            <button class="btn-tbl btn-tbl-delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Row 3: Draft -->
+                <tr style="opacity:.7;">
+                    <td><input type="checkbox" style="width:15px;height:15px;cursor:pointer;accent-color:#0061ff;"></td>
+                    <td>
+                        <div style="width:52px;height:42px;border-radius:8px;background:#f0f2fa;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:.8rem;"><i class="fas fa-image"></i></div>
+                    </td>
+                    <td class="post-title-cell">
+                        <a href="#" class="post-title-main" style="color:#6c757d;">Hướng dẫn sử dụng thuốc chống đông máu mới trong rung nhĩ — BẢN NHÁP</a>
+                        <div class="post-title-slug" style="color:#dee2e6;">[chưa có slug]</div>
+                    </td>
+                    <td><span class="category-pill" style="background:rgba(0,97,255,.08);color:#0061ff;">Tim mạch</span></td>
+                    <td><span style="font-size:.72rem;color:#adb5bd;">— chưa gán —</span></td>
+                    <td style="font-size:.82rem;color:#495057;">DS. Vũ T.H</td>
+                    <td><span class="access-pill public"><i class="fas fa-globe fa-xs"></i> Công khai</span></td>
+                    <td><div class="view-count-cell"><i class="fas fa-eye"></i> 0</div></td>
+                    <td><div class="dl-count-cell"><i class="fas fa-download"></i> 0</div></td>
+                    <td>
+                        <label class="toggle-published">
+                            <input type="checkbox">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td style="font-size:.78rem;color:#6c757d;white-space:nowrap;">21/04/2026</td>
+                    <td>
+                        <div class="hc-card-actions">
+                            <button class="btn-tbl btn-tbl-edit"><i class="fas fa-pen"></i></button>
+                            <button class="btn-tbl btn-tbl-delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Row 4 -->
+                <tr>
+                    <td><input type="checkbox" style="width:15px;height:15px;cursor:pointer;accent-color:#0061ff;" checked></td>
+                    <td><img src="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=80&q=60" class="post-thumb-col" alt=""></td>
+                    <td class="post-title-cell">
+                        <a href="#" class="post-title-main">Mục tiêu huyết áp mới theo ACC/AHA 2025</a>
+                        <div class="post-title-slug">muc-tieu-huyet-ap-acc-aha-2025</div>
+                    </td>
+                    <td><span class="category-pill" style="background:rgba(222,53,11,.08);color:#de350b;">Tim mạch</span></td>
+                    <td><span class="tag-chip" style="background:#fef3c7;color:#d97706;">#HuyetAp</span></td>
+                    <td style="font-size:.82rem;color:#495057;">PGS. Hà M.T</td>
+                    <td><span class="access-pill public"><i class="fas fa-globe fa-xs"></i> Công khai</span></td>
+                    <td><div class="view-count-cell"><i class="fas fa-eye"></i> 987</div></td>
+                    <td><div class="dl-count-cell"><i class="fas fa-download"></i> 12</div></td>
+                    <td>
+                        <label class="toggle-published">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td style="font-size:.78rem;color:#6c757d;white-space:nowrap;">09/04/2026</td>
+                    <td>
+                        <div class="hc-card-actions">
+                            <a href="#" class="btn-tbl btn-tbl-view"><i class="fas fa-eye"></i></a>
+                            <button class="btn-tbl btn-tbl-edit"><i class="fas fa-pen"></i></button>
+                            <button class="btn-tbl btn-tbl-delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Row 5 -->
+                <tr>
+                    <td><input type="checkbox" style="width:15px;height:15px;cursor:pointer;accent-color:#0061ff;"></td>
+                    <td><div style="width:52px;height:42px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;color:#d97706;font-size:1rem;"><i class="fas fa-exclamation-triangle"></i></div></td>
+                    <td class="post-title-cell">
+                        <a href="#" class="post-title-main">Báo cáo ADR Tổng hợp Q4/2025 — 12 cảnh báo tương tác mới</a>
+                        <div class="post-title-slug">bao-cao-adr-q4-2025</div>
+                    </td>
+                    <td><span class="category-pill" style="background:rgba(245,158,11,.1);color:#d97706;">Cảnh giác Dược</span></td>
+                    <td><span class="tag-chip" style="background:#fef3c7;color:#d97706;">#ADR</span></td>
+                    <td style="font-size:.82rem;color:#495057;">Cục Quản lý Dược</td>
+                    <td><span class="access-pill public"><i class="fas fa-globe fa-xs"></i> Công khai</span></td>
+                    <td><div class="view-count-cell"><i class="fas fa-eye"></i> 634</div></td>
+                    <td><div class="dl-count-cell"><i class="fas fa-download"></i> 0</div></td>
+                    <td>
+                        <label class="toggle-published">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td style="font-size:.78rem;color:#6c757d;white-space:nowrap;">05/04/2026</td>
+                    <td>
+                        <div class="hc-card-actions">
+                            <a href="#" class="btn-tbl btn-tbl-view"><i class="fas fa-eye"></i></a>
+                            <button class="btn-tbl btn-tbl-edit"><i class="fas fa-pen"></i></button>
+                            <button class="btn-tbl btn-tbl-delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- Pagination -->
+    <div class="pag-wrap">
+        <div class="pag-info">Hiển thị 1–12 trong tổng 486 bài viết</div>
+        <div class="pag-btns">
+            <a href="#" class="pag-btn" style="opacity:.4;pointer-events:none;"><i class="fas fa-chevron-left fa-xs"></i></a>
+            <a href="#" class="pag-btn active">1</a>
+            <a href="#" class="pag-btn">2</a>
+            <a href="#" class="pag-btn">3</a>
+            <span style="padding:0 4px;color:#adb5bd;line-height:34px;">…</span>
+            <a href="#" class="pag-btn">41</a>
+            <a href="#" class="pag-btn"><i class="fas fa-chevron-right fa-xs"></i></a>
+        </div>
+    </div>
+</div>
+
+
+<!-- ===== MODAL: CREATE POST ===== -->
+<div id="modalCreatePost" style="display:none;" class="modal-overlay" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-box">
+        <div class="modal-head">
+            <div class="modal-title"><i class="fas fa-plus-circle me-2" style="color:#0061ff;"></i>Tạo bài viết mới</div>
+            <button class="modal-close" onclick="document.getElementById('modalCreatePost').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <!-- Basic Info -->
+            <div style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#adb5bd;margin-bottom:14px;">Thông tin cơ bản</div>
+            <div class="mf-group">
+                <label class="mf-label">Tiêu đề bài viết <span class="req">*</span></label>
+                <input type="text" class="mf-input" placeholder="Tiêu đề đầy đủ, rõ ràng về chủ đề y khoa...">
+            </div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Slug (URL) <span class="req">*</span></label>
+                    <input type="text" class="mf-input" placeholder="ten-bai-viet-theo-dau-gach-ngang">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Danh mục (CATEGORIES) <span class="req">*</span></label>
+                    <select class="mf-select">
+                        <option>— Chọn chuyên mục —</option>
+                        <option>Nghiên cứu Lâm sàng</option>
+                        <option>Tim mạch & Huyết áp</option>
+                        <option>Kháng sinh & Kháng nấm</option>
+                        <option>Nội tiết & ĐTĐ</option>
+                        <option>Cảnh giác Dược (ADR)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Tóm tắt (SUMMARY)</label>
+                <textarea class="mf-textarea" placeholder="Đoạn mô tả ngắn 1-2 câu giới thiệu nội dung bài viết..." style="min-height:60px;"></textarea>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Nội dung (CONTENT) <span class="req">*</span></label>
+                <textarea class="mf-textarea" style="min-height:140px;" placeholder="Nội dung HTML/Rich Text đầy đủ của bài viết..."></textarea>
+            </div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Ảnh thumbnail (THUMBNAIL_URL)</label>
+                    <input type="text" class="mf-input" placeholder="https://...hoặc /uploads/...">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Quyền truy cập (ACCESS_LEVEL) <span class="req">*</span></label>
+                    <select class="mf-select">
+                        <option value="PUBLIC">Công khai — tất cả</option>
+                        <option value="ROLE_DOCTOR">Bác sĩ / Dược sĩ</option>
+                        <option value="ROLE_PARTNER">Đối tác B2B</option>
+                        <option value="ROLE_ADMIN">Nội bộ Admin</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="mf-group">
+                <label class="mf-label">Thẻ chủ đề (CT_POST_TAGS)</label>
+                <div class="tags-input-wrap">
+                    <span class="tag-chip">#KhangSinh <button>×</button></span>
+                    <span class="tag-chip">#LamSang2026 <button>×</button></span>
+                    <input type="text" class="tags-input" placeholder="Nhập tag và nhấn Enter...">
+                </div>
+                <div style="font-size:.72rem;color:#adb5bd;margin-top:4px;">Nhấn Enter để thêm tag mới</div>
+            </div>
+
+            <!-- SEO Fields -->
+            <div style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#adb5bd;margin-top:20px;margin-bottom:14px;">Cài đặt SEO</div>
+            <div class="mf-group">
+                <label class="mf-label">SEO Title (SEO_TITLE)</label>
+                <input type="text" class="mf-input" placeholder="Tiêu đề tối ưu Google — tối đa 60 ký tự">
+                <div style="font-size:.72rem;color:#adb5bd;margin-top:3px;">Nếu để trống, Google sẽ dùng Tiêu đề bài viết</div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">SEO Description (SEO_DESCRIPTION)</label>
+                <textarea class="mf-textarea" style="min-height:60px;" placeholder="Meta Description — tối đa 160 ký tự, mô tả nội dung cho Google..."></textarea>
+            </div>
+            <!-- SEO Preview -->
+            <div class="seo-preview">
+                <div class="sp-label">Xem trước kết quả Google</div>
+                <div class="sp-domain">pharmacorp.com.vn › tin-tuc-y-khoa › ten-bai-viet</div>
+                <div class="sp-title">Tiêu đề SEO của bài viết — PharmaCorp B2B</div>
+                <div class="sp-desc">Mô tả meta sẽ hiển thị ở đây khi người dùng tìm kiếm trên Google. Tối đa 160 ký tự...</div>
+            </div>
+
+            <!-- Publish Settings -->
+            <div style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#adb5bd;margin-top:20px;margin-bottom:14px;">Cài đặt Xuất bản</div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Trạng thái (IS_PUBLISHED)</label>
+                    <select class="mf-select">
+                        <option value="0">Bản nháp (Lưu chưa đăng)</option>
+                        <option value="1">Xuất bản ngay</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Tác giả (AUTHOR_ID)</label>
+                    <select class="mf-select">
+                        <option>PGS.TS. Nguyễn Văn Hùng</option>
+                        <option>TS. Trần Văn Tùng</option>
+                        <option>DS. Vũ Thu Hằng</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="apt-btn apt-btn-ghost" onclick="document.getElementById('modalCreatePost').style.display='none'">Hủy</button>
+            <button class="apt-btn apt-btn-primary"><i class="fas fa-save fa-xs"></i> Lưu bản nháp</button>
+            <button class="apt-btn apt-btn-primary" style="background:#00875a;"><i class="fas fa-globe fa-xs"></i> Xuất bản ngay</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: EDIT POST (same structure, prefilled) ===== -->
+<div id="modalEditPost" style="display:none;" class="modal-overlay" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-box">
+        <div class="modal-head">
+            <div class="modal-title"><i class="fas fa-pen me-2" style="color:#ff8b00;"></i>Chỉnh sửa bài viết</div>
+            <button class="modal-close" onclick="document.getElementById('modalEditPost').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="mf-group">
+                <label class="mf-label">Tiêu đề <span class="req">*</span></label>
+                <input type="text" class="mf-input" value="Đánh giá hiệu quả lâm sàng của kháng sinh thế hệ mới trong điều trị viêm phổi mắc phải cộng đồng">
+            </div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Slug <span class="req">*</span></label>
+                    <input type="text" class="mf-input" value="danh-gia-hieu-qua-lam-sang-khang-sinh-2026">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Danh mục <span class="req">*</span></label>
+                    <select class="mf-select">
+                        <option>Nghiên cứu Lâm sàng</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Tóm tắt</label>
+                <textarea class="mf-textarea" style="min-height:60px;">Nghiên cứu phân tích 47 thử nghiệm lâm sàng ngẫu nhiên có đối chứng từ 14 quốc gia...</textarea>
+            </div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Quyền truy cập</label>
+                    <select class="mf-select">
+                        <option value="ROLE_DOCTOR" selected>Bác sĩ / Dược sĩ</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Trạng thái</label>
+                    <select class="mf-select">
+                        <option value="1" selected>Đang xuất bản</option>
+                        <option value="0">Ẩn xuống nháp</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Files Management (POST_FILES) -->
+            <div style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#adb5bd;margin-top:16px;margin-bottom:10px;">Tài liệu đính kèm (POST_FILES)</div>
+            <div style="background:#f8f9ff;border:1px solid #e9ecef;border-radius:10px;padding:12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e9ecef;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-file-pdf" style="color:#b91c1c;"></i>
+                        <span style="font-size:.83rem;color:#1a2040;font-weight:600;">CAP_Carbapenem_Metaanalysis_2026.pdf</span>
+                        <span style="font-size:.7rem;color:#adb5bd;">4.2 MB</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:.72rem;color:#00875a;font-weight:700;"><i class="fas fa-download fa-xs me-1"></i>312 lượt</span>
+                        <button class="btn-tbl btn-tbl-delete" style="padding:3px 8px;"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <button style="display:flex;align-items:center;gap:6px;margin-top:8px;padding:6px 12px;border:1.5px dashed #dee2e6;border-radius:8px;color:#0061ff;background:none;font-size:.8rem;cursor:pointer;font-weight:600;width:100%;justify-content:center;">
+                    <i class="fas fa-plus fa-xs"></i> Thêm file đính kèm
+                </button>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="apt-btn apt-btn-ghost" onclick="document.getElementById('modalEditPost').style.display='none'">Hủy</button>
+            <button class="apt-btn apt-btn-primary" style="background:#ff8b00;"><i class="fas fa-save fa-xs"></i> Lưu thay đổi</button>
+        </div>
+    </div>
+</div>
+
+</div><!-- /admin-content-wrapper -->
+</th:block>

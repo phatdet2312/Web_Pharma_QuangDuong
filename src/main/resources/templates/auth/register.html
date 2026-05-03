@@ -1,0 +1,250 @@
+<!--src/main/resources/templates/auth/register.html-->
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký Tài Khoản</title>
+    <th:block th:replace="~{auth_layout::link-css}"></th:block>
+    <style>
+        body { background: #f6f7fc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .container { max-width: 500px; margin: 50px auto; }
+        .card { border-radius: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .card-body { padding: 3rem; }
+        .logo { max-width: 120px; margin: 0 auto 20px; display: block; }
+        .sub-text { color: #6c757d; text-align: center; margin-bottom: 2rem; }
+        .error-message { color: #dc3545; font-size: 0.875em; margin-top: 0.25rem; display: block; }
+        .form-control.is-invalid { border-color: #dc3545; }
+        .modal { display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 15% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 500px; text-align: center; }
+        .modal-btn { padding: 10px 30px; margin: 0 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .modal-btn.yes { background: #28a745; color: white; }
+        .modal-btn.no { background: #dc3545; color: white; }
+        .loading-wrapper { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; text-align: center; }
+        .spinner { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .alert { margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <th:block th:replace="~{auth_layout::header}"></th:block>
+
+    <div class="container">
+        <div id="loading" class="loading-wrapper d-none">
+            <div class="spinner"></div>
+        </div>
+
+        <form id="registerForm" method="post">
+           <h3>Đăng Ký</h3>
+            <p class="sub-text">Xin chào! Hãy đăng ký để tham gia hệ thống!</p>
+
+            <div id="alertBox" class="alert d-none"></div>
+
+            <div class="mb-3">
+                <label>Họ và tên <span class="text-danger">*</span></label>
+                <input type="text" name="fullName" id="fullName" class="form-control" placeholder="Nhập họ và tên" />
+                <div id="fullName-error" class="error-message"></div>
+            </div>
+
+            <div class="mb-3">
+                <label>Tên đăng nhập <span class="text-danger">*</span></label>
+                <input type="text" name="username" id="username" class="form-control" placeholder="Nhập tên đăng nhập" />
+                <div id="username-error" class="error-message"></div>
+            </div>
+
+            <div class="mb-3">
+                <label>Email <span class="text-danger">*</span></label>
+                <input type="email" name="email" id="email" class="form-control" placeholder="Nhập email" />
+                <div id="email-error" class="error-message"></div>
+            </div>
+
+            <div class="mb-3">
+                <label>Mật khẩu <span class="text-danger">*</span></label>
+                <input type="password" name="password" id="password" class="form-control" placeholder="Tạo mật khẩu" />
+                <div id="password-error" class="error-message"></div>
+            </div>
+
+            <div class="mb-3">
+                <label>Xác nhận mật khẩu <span class="text-danger">*</span></label>
+                <input type="password" name="confirmPassword" id="confirmPassword" class="form-control" placeholder="Nhập lại mật khẩu" />
+                <div id="confirm-error" class="error-message"></div>
+            </div>
+
+            <div class="mb-3">
+                <label>Số điện thoại</label>
+                <input type="text" name="phone" id="phone" class="form-control" placeholder="Nhập số điện thoại" />
+                <div id="phone-error" class="error-message"></div>
+            </div>
+
+            <button type="button" id="registerSubmit" class="btn btn-primary w-100">
+                <span>Đăng ký</span>
+                <span class="spinner-border spinner-border-sm d-none"></span>
+            </button>
+
+            <p class="text-center mt-3">
+                Đã có tài khoản? <a href="/login" class="text-primary">Đăng nhập</a>
+            </p>
+        </form>
+
+        <div class="modal" id="confirmModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Xác nhận</h5>
+                </div>
+                <div class="modal-body">
+                    Bạn có chắc chắn muốn đăng ký không?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn yes" id="confirmYes">Có</button>
+                    <button type="button" class="modal-btn no" id="confirmNo">Không</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:replace="~{auth_layout::footer}"></th:block>
+
+    <script>
+        $(document).ready(function () {
+            
+            function checkErrors() {
+                let hasError = false;
+
+                let fullName = $("#fullName").val().trim();
+                let username = $("#username").val().trim();
+                let email = $("#email").val().trim();
+                let password = $("#password").val();
+                let confirmPassword = $("#confirmPassword").val();
+
+                if (fullName === "") {
+                    $("#fullName-error").text("Họ tên không được trống");
+                    hasError = true;
+                } else if (fullName.length < 6) {
+                    $("#fullName-error").text("Họ tên phải ít nhất 6 ký tự");
+                    hasError = true;
+                } else {
+                    $("#fullName-error").text("");
+                }
+
+                if (username === "") {
+                    $("#username-error").text("Username không được trống");
+                    hasError = true;
+                } else {
+                    $("#username-error").text("");
+                }
+
+                if (email === "") {
+                    $("#email-error").text("Email không được trống");
+                    hasError = true;
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    $("#email-error").text("Email không hợp lệ");
+                    hasError = true;
+                } else {
+                    $("#email-error").text("");
+                }
+
+                if (password === "") {
+                    $("#password-error").text("Mật khẩu không được trống");
+                    hasError = true;
+                } else if (password.length < 6) {
+                    $("#password-error").text("Mật khẩu phải ít nhất 6 ký tự");
+                    hasError = true;
+                } else {
+                    $("#password-error").text("");
+                }
+
+                if (confirmPassword === "") {
+                    $("#confirm-error").text("Xác nhận mật khẩu không được trống");
+                    hasError = true;
+                } else if (password !== confirmPassword) {
+                    $("#confirm-error").text("Mật khẩu không khớp");
+                    hasError = true;
+                } else {
+                    $("#confirm-error").text("");
+                }
+
+                return hasError;
+            }
+
+            $('input').on('input', function () {
+                checkErrors();
+            });
+
+            $("#registerSubmit").on("click", function () {
+                if (checkErrors() === true) {
+                    $("#alertBox").removeClass("d-none alert-success").addClass("alert-danger").text("Vui lòng sửa lỗi trước khi tiếp tục");
+                    return;
+                }
+                $("#confirmModal").show();
+            });
+
+            $("#confirmYes").on("click", function () {
+                $("#confirmModal").hide();
+
+                let data = {};
+                let formData = $("#registerForm").serializeArray();
+                for (let i = 0; i < formData.length; i++) {
+                    let item = formData[i];
+                    data[item.name] = item.value;
+                }
+
+                callApi("/api/auth/register/send-otp", "POST", data, "#registerSubmit", function (response) {
+                    let msg = "Mã OTP đã gửi đến email!";
+                    if (response.message !== undefined && response.message !== null) {
+                        msg = response.message;
+                    }
+                    $("#alertBox").removeClass("d-none alert-danger").addClass("alert-success").text(msg);
+                    setTimeout(function() {
+                        window.location.href = "/register/verify-otp";
+                    }, 2000);
+                });
+            });
+
+            $("#confirmNo").on("click", function () {
+                $("#confirmModal").hide();
+            });
+
+            checkErrors();
+        });
+
+        function callApi(url, method, data, btnSelector, onSuccess) {
+            const $btn = $(btnSelector);
+            const $text = $btn.find("span").first();
+            const $spinner = $btn.find(".spinner-border");
+            const $alert = $("#alertBox");
+            const originalText = $text.text();
+
+            $.ajax({
+                url: url,
+                type: method,
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                beforeSend: function () {
+                    $btn.prop("disabled", true);
+                    $spinner.removeClass("d-none");
+                    $text.text("Đang xử lý...");
+                    $alert.addClass("d-none").removeClass("alert-danger alert-success");
+                },
+                success: function(response) {
+                    onSuccess(response);
+                },
+                error: function (xhr) {
+                    let msg = "Lỗi hệ thống";
+                    if (xhr.responseJSON !== undefined && xhr.responseJSON !== null) {
+                        if (xhr.responseJSON.message !== undefined && xhr.responseJSON.message !== null) {
+                            msg = xhr.responseJSON.message;
+                        }
+                    }
+                    $alert.addClass("alert-danger").text(msg).removeClass("d-none");
+                },
+                complete: function () {
+                    $btn.prop("disabled", false);
+                    $spinner.addClass("d-none");
+                    $text.text(originalText);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

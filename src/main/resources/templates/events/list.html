@@ -1,0 +1,1409 @@
+<!-- src/main/resources/templates/events/list.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{user_layout::user-head}"></head>
+
+<body>
+<div th:replace="~{user_layout::user-nav}"></div>
+
+<div th:replace="~{user_layout::layout(~{::#main-content})}">
+<div id="main-content">
+
+<style>
+/* ============================================================
+   EVENTS LIST — Sự kiện & Đào tạo
+============================================================ */
+
+/* Hero */
+.events-hero {
+    background: var(--ink-900); position: relative; overflow: hidden;
+    padding: 64px 0 48px;
+}
+.events-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+        radial-gradient(circle at 15% 60%, rgba(0,152,152,.14) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(244,169,0,.08) 0%, transparent 45%);
+}
+.events-hero .container { position: relative; z-index: 1; }
+.eh-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: .73rem; color: rgba(255,255,255,.4); margin-bottom: 16px; }
+.eh-breadcrumb a { color: var(--teal-400); text-decoration: none; }
+.eh-title { font-size: clamp(1.7rem, 3.2vw, 2.5rem); font-weight: 800; color: white; letter-spacing: -.8px; margin-bottom: 10px; }
+.eh-title span { color: var(--gold-400); }
+.eh-desc { font-size: .98rem; color: rgba(255,255,255,.55); max-width: 560px; line-height: 1.7; margin-bottom: 28px; }
+.events-hero-kpis { display: flex; gap: 28px; flex-wrap: wrap; }
+.ekpi { text-align: center; }
+.ekpi-num { font-size: 1.6rem; font-weight: 800; color: var(--teal-300); line-height: 1; }
+.ekpi-label { font-size: .72rem; color: rgba(255,255,255,.45); margin-top: 3px; font-weight: 500; }
+
+/* Filter Bar */
+.events-filterbar {
+    background: var(--ink-800); border-top: 1px solid rgba(255,255,255,.06);
+    padding: 16px 0;
+}
+.efb-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.efb-label { font-size: .75rem; font-weight: 700; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+.efb-btn {
+    padding: 5px 14px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 50px; font-size: .78rem; font-weight: 600; color: rgba(255,255,255,.6);
+    cursor: pointer; transition: var(--t-fast);
+}
+.efb-btn:hover, .efb-btn.active { background: var(--teal-600); border-color: var(--teal-600); color: white; }
+.efb-divider { width: 1px; height: 20px; background: rgba(255,255,255,.1); }
+.efb-type-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 14px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 50px; font-size: .78rem; font-weight: 600; color: rgba(255,255,255,.6);
+    cursor: pointer; transition: var(--t-fast);
+}
+.efb-type-btn:hover { border-color: var(--gold-500); color: var(--gold-400); }
+.efb-type-btn.active { background: var(--gold-500); border-color: var(--gold-500); color: var(--ink-800); }
+.efb-type-btn i { font-size: .7rem; }
+
+/* Main Layout */
+.events-layout { padding: 48px 0 80px; background: var(--gray-50); }
+
+/* Toolbar */
+.events-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 10px;
+}
+.et-count { font-size: .88rem; color: var(--gray-500); }
+.et-count strong { color: var(--ink-800); }
+
+/* Event Campaign Card (EVENTS + CT_EVENTS grouped) */
+.event-campaign-card {
+    background: white; border: 1px solid var(--gray-200); border-radius: var(--r-xl);
+    overflow: hidden; margin-bottom: 24px; transition: var(--t-base);
+    box-shadow: var(--shadow-xs);
+}
+.event-campaign-card:hover { border-color: var(--teal-300); box-shadow: var(--shadow-md); }
+
+.ecc-header {
+    display: flex; align-items: flex-start; gap: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+.ecc-poster {
+    width: 280px; flex-shrink: 0; position: relative; overflow: hidden;
+    min-height: 200px;
+}
+.ecc-poster img { width: 100%; height: 100%; object-fit: cover; }
+.ecc-poster-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to right, rgba(0,29,61,.7) 0%, rgba(0,29,61,.2) 80%, transparent 100%);
+}
+.ecc-type-badge {
+    position: absolute; top: 14px; left: 14px;
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 12px; background: var(--gold-500); color: var(--ink-800);
+    border-radius: var(--r-xs); font-size: .68rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .8px;
+}
+.ecc-info { flex: 1; padding: 24px 28px; }
+.ecc-campaign-title {
+    font-size: 1.15rem; font-weight: 800; color: var(--ink-800);
+    line-height: 1.3; margin-bottom: 8px; text-decoration: none; display: block;
+}
+.event-campaign-card:hover .ecc-campaign-title { color: var(--teal-700); }
+.ecc-desc { font-size: .86rem; color: var(--gray-500); line-height: 1.65; margin-bottom: 14px; }
+.ecc-meta-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.ecc-meta { display: flex; align-items: center; gap: 5px; font-size: .79rem; color: var(--gray-500); }
+.ecc-meta i { color: var(--teal-500); font-size: .72rem; }
+.ecc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.ecc-tag {
+    display: inline-block; padding: 2px 9px; background: var(--gray-100);
+    border-radius: 50px; font-size: .72rem; font-weight: 600; color: var(--gray-600);
+}
+
+/* Sessions (CT_EVENTS) */
+.ecc-sessions { border-top: 1px solid var(--gray-100); }
+.ecs-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; background: var(--gray-50);
+    font-size: .75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--gray-500);
+}
+.session-item {
+    display: flex; align-items: stretch; border-bottom: 1px solid var(--gray-100);
+    padding: 0;
+}
+.session-item:last-child { border-bottom: none; }
+.si-date-col {
+    flex: 0 0 90px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 16px 8px;
+    background: var(--ink-900); color: white;
+    text-align: center;
+}
+.sid-day { font-size: 1.8rem; font-weight: 900; line-height: 1; color: var(--teal-300); }
+.sid-month { font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.5); }
+.sid-year { font-size: .62rem; color: rgba(255,255,255,.3); }
+.si-body { flex: 1; padding: 14px 20px; display: flex; gap: 16px; align-items: flex-start; }
+.si-main { flex: 1; min-width: 0; }
+.si-location-name { font-size: .9rem; font-weight: 700; color: var(--ink-800); margin-bottom: 4px; }
+.si-time-row { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.si-time { display: flex; align-items: center; gap: 4px; font-size: .79rem; color: var(--gray-500); }
+.si-time i { color: var(--teal-400); font-size: .7rem; }
+.si-address { font-size: .77rem; color: var(--gray-400); display: flex; align-items: center; gap: 4px; }
+.si-address i { font-size: .65rem; color: var(--gray-300); }
+.si-right { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.si-status { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 50px; font-size: .72rem; font-weight: 700; }
+.si-status.upcoming { background: rgba(0,152,152,.1); color: var(--teal-700); border: 1px solid rgba(0,152,152,.2); }
+.si-status.full { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.si-status.cancelled { background: var(--gray-100); color: var(--gray-500); border: 1px solid var(--gray-200); text-decoration: line-through; }
+.si-status.finished { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+.si-slots {
+    font-size: .78rem; color: var(--gray-500); text-align: right;
+}
+.si-slots strong { color: var(--success); font-size: .88rem; }
+.si-slots.critical strong { color: var(--danger); }
+.si-register-btn {
+    padding: 7px 16px; background: var(--ink-800); color: white;
+    border-radius: var(--r-md); font-size: .8rem; font-weight: 700;
+    text-decoration: none; transition: var(--t-fast); white-space: nowrap;
+    display: flex; align-items: center; gap: 5px;
+}
+.si-register-btn:hover { background: var(--teal-600); color: white; }
+.si-register-btn.disabled { background: var(--gray-300); cursor: not-allowed; }
+
+/* Search box in toolbar */
+.et-search {
+    flex: 1; min-width: 180px; max-width: 320px;
+    display: flex; align-items: center; gap: 8px;
+    background: white; border: 1.5px solid var(--gray-200); border-radius: var(--r-md);
+    padding: 5px 10px; transition: var(--t-fast);
+}
+.et-search:focus-within { border-color: var(--teal-400); box-shadow: 0 0 0 3px rgba(0,152,152,.08); }
+.et-search i { color: var(--gray-400); font-size: .82rem; flex-shrink: 0; }
+.et-search input {
+    flex: 1; border: none; outline: none; font-size: .82rem;
+    color: var(--gray-700); background: transparent;
+}
+.et-search input::placeholder { color: var(--gray-400); }
+.et-search-clear {
+    background: none; border: none; color: var(--gray-400); cursor: pointer;
+    padding: 0; font-size: .75rem; line-height: 1; transition: var(--t-fast);
+}
+.et-search-clear:hover { color: var(--danger); }
+
+/* Compact Event Card (for list quick view) */
+.event-mini-card {
+    background: white; border: 1px solid var(--gray-200); border-radius: var(--r-lg);
+    overflow: hidden; display: flex; gap: 0; margin-bottom: 10px; transition: var(--t-fast);
+    text-decoration: none; color: inherit;
+}
+.event-mini-card:hover { border-color: var(--teal-300); box-shadow: var(--shadow-sm); }
+.emc-date-badge {
+    flex: 0 0 56px; background: var(--ink-900); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 10px 6px; text-align: center;
+}
+.emc-day { font-size: 1.3rem; font-weight: 900; color: var(--teal-300); line-height: 1; }
+.emc-month { font-size: .6rem; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,.4); }
+.emc-body { flex: 1; padding: 12px 14px; }
+.emc-title { font-size: .85rem; font-weight: 700; color: var(--ink-800); line-height: 1.3; margin-bottom: 5px; }
+.emc-meta { display: flex; align-items: center; gap: 10px; }
+.emc-badge { font-size: .65rem; font-weight: 700; padding: 1px 7px; border-radius: var(--r-xs); }
+.emc-badge.online { background: rgba(0,152,152,.1); color: var(--teal-700); }
+.emc-badge.offline { background: rgba(0,29,61,.08); color: var(--ink-700); }
+.emc-slots { font-size: .72rem; color: var(--gray-400); display: flex; align-items: center; gap: 3px; }
+
+/* Sidebar for Events */
+.events-sidebar-card {
+    background: white; border: 1px solid var(--gray-200); border-radius: var(--r-lg);
+    overflow: hidden; margin-bottom: 20px;
+}
+.esc-head {
+    padding: 12px 16px; background: var(--gray-50); border-bottom: 1px solid var(--gray-100);
+    font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--gray-500);
+    display: flex; align-items: center; gap: 6px;
+}
+.esc-head i { color: var(--teal-500); }
+.esc-body { padding: 14px 16px; }
+
+/* Calendar mini */
+.mini-calendar {
+    width: 100%; border-collapse: collapse;
+}
+.mini-calendar th { font-size: .68rem; font-weight: 700; color: var(--gray-400); text-align: center; padding: 4px; text-transform: uppercase; }
+.mini-calendar td { font-size: .8rem; text-align: center; padding: 5px 3px; }
+.mc-day { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 auto; border-radius: 50%; cursor: pointer; transition: var(--t-fast); font-size: .79rem; }
+.mc-day:hover { background: var(--teal-100); color: var(--teal-700); }
+.mc-day.has-event { background: var(--teal-100); color: var(--teal-700); font-weight: 700; position: relative; }
+.mc-day.has-event::after { content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--teal-500); border-radius: 50%; }
+.mc-day.today { background: var(--ink-800); color: white; font-weight: 800; }
+.mc-day.today::after { background: var(--teal-400); }
+.mc-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.mc-month-nav button { background: none; border: none; color: var(--gray-400); cursor: pointer; padding: 4px 8px; border-radius: var(--r-sm); transition: var(--t-fast); }
+.mc-month-nav button:hover { background: var(--gray-100); color: var(--gray-700); }
+.mc-month-name { font-size: .84rem; font-weight: 700; color: var(--ink-800); }
+
+/* CME Credit badge */
+.cme-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; background: rgba(124,58,237,.1); color: #7c3aed;
+    border: 1px solid rgba(124,58,237,.2); border-radius: var(--r-xs);
+    font-size: .7rem; font-weight: 700;
+}
+
+/* Status history link in session item */
+.status-history-btn {
+    font-size: .71rem; color: var(--gray-400); display: flex; align-items: center; gap: 4px;
+    cursor: pointer; padding: 2px 6px; border-radius: var(--r-xs);
+    text-decoration: none; transition: var(--t-fast);
+}
+.status-history-btn:hover { color: var(--teal-600); background: var(--teal-100); }
+
+/* My Registrations (for logged in user) */
+.my-reg-item {
+    padding: 10px 0; border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; gap: 8px;
+}
+.my-reg-item:last-child { border-bottom: none; }
+.mri-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.mri-title { font-size: .81rem; font-weight: 600; color: var(--gray-700); line-height: 1.3; flex: 1; }
+.mri-status { font-size: .68rem; font-weight: 700; padding: 1px 7px; border-radius: 50px; white-space: nowrap; }
+.mri-status.approved { background: rgba(22,163,74,.1); color: var(--success); }
+.mri-status.pending { background: rgba(245,158,11,.1); color: var(--warning); }
+.mri-status.attended { background: rgba(0,152,152,.1); color: var(--teal-600); }
+
+@media (max-width: 991px) {
+    .ecc-poster { width: 100%; height: 200px; flex-shrink: 0; }
+    .ecc-header { flex-direction: column; }
+    .si-date-col { flex: 0 0 70px; }
+    .events-filterbar .efb-inner { gap: 6px; }
+}
+@media (max-width: 576px) {
+    .ecc-poster { height: 160px; }
+    .si-body { flex-direction: column; gap: 8px; }
+    .si-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+}
+</style>
+
+<!-- Hero -->
+<section class="events-hero">
+    <div class="container">
+        <div class="eh-breadcrumb">
+            <a href="/"><i class="fas fa-home"></i> Trang chủ</a>
+            <i class="fas fa-chevron-right fa-xs"></i>
+            <span>Sự kiện &amp; Đào tạo</span>
+        </div>
+        <div class="row align-items-end">
+            <div class="col-lg-7">
+                <h1 class="eh-title">Sự kiện &amp; <span>Đào tạo CME</span><br>Dược Y B2B 2026</h1>
+                <p class="eh-desc">Hội thảo chuyên đề, đào tạo sản phẩm trực tuyến và hội nghị khoa học quốc gia dành cho Bác sĩ, Dược sĩ và Chuyên viên Kinh doanh Y tế.</p>
+                <div class="events-hero-kpis">
+                    <div class="ekpi"><div class="ekpi-num" id="kpi-events-month">—</div><div class="ekpi-label" id="kpi-events-month-label">Sự kiện tháng này</div></div>
+                    <div class="ekpi"><div class="ekpi-num" id="kpi-total-reg">—</div><div class="ekpi-label">Đã đăng ký</div></div>
+                    <div class="ekpi"><div class="ekpi-num" id="kpi-sessions">—</div><div class="ekpi-label">Tổng buổi học thuật</div></div>
+                    <div class="ekpi"><div class="ekpi-num" id="kpi-types">—</div><div class="ekpi-label">Loại sự kiện</div></div>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block">
+                <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-xl);padding:18px;min-height:100px;">
+                    <div id="hero-upcoming-card" style="color:rgba(255,255,255,.4);font-size:.85rem;text-align:center;padding:20px 0;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter Bar -->
+<div class="events-filterbar">
+    <div class="container">
+        <div class="efb-inner">
+            <span class="efb-label">Thời gian:</span>
+            <button class="efb-btn active" data-time="">Tất cả</button>
+            <button class="efb-btn" data-time="THIS_MONTH">Tháng này</button>
+            <button class="efb-btn" data-time="THIS_WEEK">Tuần này</button>
+            <button class="efb-btn" data-time="NEXT_MONTH">Tháng sau</button>
+            <div class="efb-divider"></div>
+            <span class="efb-label">Loại:</span>
+            <!-- display:contents biến span thành "transparent wrapper" — buttons là flex children trực tiếp -->
+            <span id="efb-types-container" style="display:contents;">
+                <button class="efb-type-btn active" data-type-id="" onclick="chonLoaiSuKien(this,null)"><i class="fas fa-globe"></i> Tất cả</button>
+            </span>
+            <!-- Divider + location buttons được JS thêm vào khi có dữ liệu -->
+            <span id="efb-locations-container" style="display:contents;"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="events-layout">
+    <div class="container">
+        <div class="row g-4">
+
+            <!-- Main Column -->
+            <div class="col-lg-8">
+
+                <!-- Toolbar -->
+                <div class="events-toolbar reveal">
+                    <div class="et-count">Tìm thấy <strong id="total-count">—</strong> sự kiện phù hợp</div>
+                    <div class="et-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Tìm kiếm tên sự kiện..." autocomplete="off">
+                        <button class="et-search-clear" id="search-clear" style="display:none;" title="Xóa tìm kiếm"><i class="fas fa-times"></i></button>
+                    </div>
+                    <select id="sort-select" style="padding:6px 12px;border:1px solid var(--gray-200);border-radius:var(--r-md);font-size:.8rem;color:var(--gray-700);outline:none;background:white;">
+                        <option value="newest">Sắp diễn ra trước</option>
+                        <option value="popular">Đăng ký nhiều nhất</option>
+                        <option value="cme">Nhiều điểm CME nhất</option>
+                    </select>
+                </div>
+
+                <!-- Campaigns Container (JS rendered) -->
+                <div id="campaigns-container">
+                    <div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--teal-400);"></i></div>
+                </div>
+
+                <!-- Pagination Container (JS rendered) -->
+                <div id="pagination-container"></div>
+
+            </div><!-- /col main -->
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+
+                <!-- My Registrations (only when authenticated) -->
+                <div class="events-sidebar-card reveal" sec:authorize="isAuthenticated()">
+                    <div class="esc-head"><i class="fas fa-ticket-alt"></i> Vé đăng ký của tôi</div>
+                    <div class="esc-body">
+                        <div id="my-registrations-container">
+                            <div style="text-align:center;padding:16px 0;"><i class="fas fa-spinner fa-spin" style="color:var(--teal-400);"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA for guest -->
+                <div class="events-sidebar-card reveal" sec:authorize="!isAuthenticated()" style="background:var(--ink-900);border-color:rgba(255,255,255,.08);">
+                    <div class="esc-body" style="padding:20px;text-align:center;">
+                        <div style="width:44px;height:44px;background:var(--gold-500);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--ink-800);font-size:1.1rem;">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div style="font-size:.9rem;font-weight:700;color:white;margin-bottom:6px;">Đăng ký để theo dõi vé</div>
+                        <p style="font-size:.78rem;color:rgba(255,255,255,.5);margin-bottom:14px;">Nhận nhắc lịch, quản lý vé tham dự và tích lũy điểm CME.</p>
+                        <a href="/login" class="btn-gold-pharma" style="padding:8px 16px;font-size:.82rem;display:flex;justify-content:center;">
+                            <i class="fas fa-sign-in-alt fa-xs"></i> Đăng nhập ngay
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mini Calendar -->
+                <div class="events-sidebar-card reveal reveal-d1">
+                    <div class="esc-head"><i class="fas fa-calendar-alt"></i> Lịch sự kiện</div>
+                    <div class="esc-body">
+                        <div class="mc-month-nav">
+                            <button onclick="lichMiniTruoc()"><i class="fas fa-chevron-left fa-xs"></i></button>
+                            <span class="mc-month-name" id="lich-mini-title">...</span>
+                            <button onclick="lichMiniSau()"><i class="fas fa-chevron-right fa-xs"></i></button>
+                        </div>
+                        <table class="mini-calendar">
+                            <thead><tr><th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th></tr></thead>
+                            <tbody id="lich-mini-tbody"></tbody>
+                        </table>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--gray-100);">
+                            <span style="display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--gray-500);">
+                                <span style="width:8px;height:8px;background:var(--teal-100);border-radius:2px;border:1px solid var(--teal-400);"></span>Có sự kiện
+                            </span>
+                            <span style="display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--gray-500);">
+                                <span style="width:8px;height:8px;background:var(--ink-800);border-radius:2px;"></span>Hôm nay
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Types -->
+                <div class="events-sidebar-card reveal reveal-d2">
+                    <div class="esc-head"><i class="fas fa-layer-group"></i> Loại sự kiện</div>
+                    <div class="esc-body">
+                        <div id="event-types-sidebar-container">
+                            <div style="text-align:center;padding:12px 0;"><i class="fas fa-spinner fa-spin fa-xs" style="color:var(--teal-400);"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Quick List -->
+                <div class="events-sidebar-card reveal reveal-d3">
+                    <div class="esc-head"><i class="fas fa-bolt"></i> Sắp diễn ra gần nhất</div>
+                    <div class="esc-body" style="padding-top:8px;">
+                        <div id="upcoming-sidebar-container">
+                            <div style="text-align:center;padding:12px 0;"><i class="fas fa-spinner fa-spin fa-xs" style="color:var(--teal-400);"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /sidebar -->
+        </div>
+    </div>
+</div>
+
+</div>
+</div>
+
+<div th:replace="~{user_layout::user-footer}"></div>
+<div th:replace="~{user_layout::user-scripts}"></div>
+
+<script>
+/* =========================================================================
+   LÕI JAVASCRIPT NGUYÊN THỦY — SỰ KIỆN PUBLIC (EVENTS LIST)
+   =========================================================================
+   TUÂN THỦ QUY TẮC TỐI CAO:
+   1. Bọc trong IIFE (Closure) để bảo vệ không gian biến toàn cục (Global Scope).
+   2. Không dùng Stream, không dùng Lambda, không dùng jQuery để boot.
+   3. Khử hoàn toàn Toán tử 3 ngôi (Ternary), dùng IF/ELSE tường minh.
+   4. TUYỆT ĐỐI TUÂN THỦ CHUẨN MÙ: Frontend không tính toán logic nghiệp vụ 
+      (Sắp hết vé, Báo động đỏ), chỉ đóng vai trò "Hiển thị" dựa trên Cờ (Flag) của Backend.
+========================================================================= */
+(function () {
+    'use strict';
+
+    // 1. QUẢN TRỊ TRẠNG THÁI (LOCAL STATE)
+    var boLocHienTai = { 
+        keyword: null, 
+        type: null, 
+        time: null, 
+        locationId: null, 
+        sort: 'newest', 
+        page: 0 
+    };
+    
+    var tongSoTrang = 0;
+    var ngayHienTai = new Date();
+    var lichMiniNam = ngayHienTai.getFullYear();
+    var lichMiniThang = ngayHienTai.getMonth() + 1;
+    var searchDebounceTimer = null;
+
+    // =========================================================================
+    // 2. CÁC HÀM TIỆN ÍCH ĐỊNH DẠNG (UTILITIES)
+    // =========================================================================
+    
+    /**
+     * Nhiệm vụ: Chuyển đổi chuỗi ISO thời gian thành định dạng ngày/tháng/năm.
+     */
+    function dinhDangNgay(iso) {
+        if (iso === null || iso === undefined || iso === '') {
+            return '';
+        }
+        var n = new Date(iso);
+        if (isNaN(n.getTime()) === true) {
+            return iso;
+        }
+        return n.getDate() + '/' + (n.getMonth() + 1) + '/' + n.getFullYear();
+    }
+
+    /**
+     * Nhiệm vụ: Phân cách hàng nghìn cho con số để dễ đọc.
+     */
+    function dinhDangSo(so) {
+        if (so === null || so === undefined) {
+            return '0';
+        }
+        return Number(so).toLocaleString('vi-VN');
+    }
+
+    /**
+     * Nhiệm vụ: Thêm số 0 vào trước các số nhỏ hơn 10 (Ví dụ: 9 -> 09).
+     */
+    function themSo0PhiaTruoc(n) {
+        var chuoi = String(n);
+        if (chuoi.length < 2) {
+            return '0' + chuoi;
+        }
+        return chuoi;
+    }
+
+    /**
+     * Nhiệm vụ: Rào chắn XSS (Cross-Site Scripting) - Mã hóa các ký tự đặc biệt của HTML.
+     */
+    function lamSachChuoiHTML(s) {
+        if (s === null || s === undefined) {
+            return '';
+        }
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    // =========================================================================
+    // 3. CÁC HÀM GIAO TIẾP API & RENDER GIAO DIỆN
+    // =========================================================================
+    
+    /**
+     * Nhiệm vụ: Truy xuất chỉ số tổng hợp của các Chiến dịch và Sự kiện (Khu vực Hero).
+     */
+    function taiThongKe() {
+        callApi('/api/events/stats', 'GET', null, null, function(res) {
+            if (res.status !== 200) {
+                return;
+            }
+            var thongKe = res.data;
+            if (thongKe === null || thongKe === undefined) {
+                return;
+            }
+            
+            var thang = new Date().getMonth() + 1;
+            var theThangHienTai = document.getElementById('kpi-events-month');
+            var theNhanThangHienTai = document.getElementById('kpi-events-month-label');
+            var theDaDangKy = document.getElementById('kpi-total-reg');
+            var theTongBuoi = document.getElementById('kpi-sessions');
+            var theLoaiSuKien = document.getElementById('kpi-types');
+
+            if (theThangHienTai !== null) {
+                theThangHienTai.textContent = dinhDangSo(thongKe.eventsThisMonth);
+            }
+            if (theNhanThangHienTai !== null) {
+                theNhanThangHienTai.textContent = 'Sự kiện tháng ' + thang;
+            }
+            if (theDaDangKy !== null) {
+                theDaDangKy.textContent = dinhDangSo(thongKe.totalRegistrations);
+            }
+            if (theTongBuoi !== null) {
+                theTongBuoi.textContent = dinhDangSo(thongKe.totalSessions);
+            }
+            if (theLoaiSuKien !== null) {
+                theLoaiSuKien.textContent = dinhDangSo(thongKe.totalEventTypes);
+            }
+        });
+    }
+
+    /**
+     * Nhiệm vụ: Lấy danh mục Loại Sự Kiện để vẽ lên Thanh Lọc ngang và Cột Sidebar.
+     */
+    function taiLoaiSuKienChoFilter() {
+        callApi('/api/events/types', 'GET', null, null, function(res) {
+            if (res.status !== 200) {
+                return;
+            }
+            var danhSach = res.data;
+            if (danhSach === null || danhSach === undefined) {
+                return;
+            }
+            
+            var htmlBoLoc = '<button class="efb-type-btn active" data-type-id="" id="btn-type-all"><i class="fas fa-globe"></i> Tất cả</button>';
+            for (var i = 0; i < danhSach.length; i = i + 1) {
+                htmlBoLoc += '<button class="efb-type-btn" data-type-id="' + danhSach[i].id + '"><i class="fas fa-tag fa-xs"></i> ' + lamSachChuoiHTML(danhSach[i].name) + '</button>';
+            }
+            
+            var vungBoLoc = document.getElementById('efb-types-container');
+            if (vungBoLoc !== null) {
+                vungBoLoc.innerHTML = htmlBoLoc;
+                
+                // Gắn sự kiện click cho các nút lọc vừa tạo
+                var cacNutLoc = vungBoLoc.querySelectorAll('.efb-type-btn');
+                for (var btnIndex = 0; btnIndex < cacNutLoc.length; btnIndex = btnIndex + 1) {
+                    cacNutLoc[btnIndex].addEventListener('click', function() {
+                        var idLoai = this.getAttribute('data-type-id');
+                        
+                        // Xóa class active của tất cả các nút
+                        var tatCaNut = vungBoLoc.querySelectorAll('.efb-type-btn');
+                        for (var a = 0; a < tatCaNut.length; a = a + 1) {
+                            tatCaNut[a].classList.remove('active');
+                        }
+                        
+                        this.classList.add('active');
+                        
+                        if (idLoai === '') {
+                            boLocHienTai.type = null;
+                        } else {
+                            boLocHienTai.type = parseInt(idLoai);
+                        }
+                        boLocHienTai.page = 0;
+                        taiDanhSachChienDich(0);
+                    });
+                }
+            }
+            
+            // Vẽ giao diện Sidebar
+            var htmlSidebar = '<div style="display:flex;flex-direction:column;gap:6px;">';
+            for (var j = 0; j < danhSach.length; j = j + 1) {
+                htmlSidebar += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;">' +
+                               '<span style="display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--gray-700);">' +
+                               '<span style="width:28px;height:28px;background:rgba(0,152,152,.1);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--teal-600);font-size:.78rem;"><i class="fas fa-calendar-alt"></i></span>' +
+                               lamSachChuoiHTML(danhSach[j].name) + '</span>' +
+                               '<span style="font-size:.75rem;font-weight:700;background:var(--teal-100);color:var(--teal-700);padding:2px 8px;border-radius:50px;">' + danhSach[j].eventCount + '</span>' +
+                               '</div>';
+            }
+            htmlSidebar += '</div>';
+            
+            var vungSidebar = document.getElementById('event-types-sidebar-container');
+            if (vungSidebar !== null) {
+                vungSidebar.innerHTML = htmlSidebar;
+            }
+        });
+    }
+
+    /**
+     * Nhiệm vụ: Tải Tọa độ (Locations) vào thanh điều hướng.
+     */
+    function taiDiaDiemChoFilter() {
+        callApi('/api/events/locations', 'GET', null, null, function(res) {
+            if (res.status !== 200) {
+                return;
+            }
+            var danhSach = res.data;
+            if (danhSach === null || danhSach === undefined || danhSach.length === 0) {
+                return;
+            }
+            
+            var htmlDiaDiem = '<div class="efb-divider"></div>';
+            for (var i = 0; i < danhSach.length; i = i + 1) {
+                var diaDiem = danhSach[i];
+                var icon = 'fa-map-marker-alt';
+                if (diaDiem.online === true) {
+                    icon = 'fa-video';
+                }
+                htmlDiaDiem += '<button class="efb-type-btn btn-location" data-location-id="' + diaDiem.id + '"><i class="fas ' + icon + '"></i> ' + lamSachChuoiHTML(diaDiem.name) + '</button>';
+            }
+            
+            var vungDiaDiem = document.getElementById('efb-locations-container');
+            if (vungDiaDiem !== null) {
+                vungDiaDiem.innerHTML = htmlDiaDiem;
+                
+                // Gắn sự kiện click
+                var cacNutDiaDiem = vungDiaDiem.querySelectorAll('.btn-location');
+                for (var k = 0; k < cacNutDiaDiem.length; k = k + 1) {
+                    cacNutDiaDiem[k].addEventListener('click', function() {
+                        var idDiaDiem = parseInt(this.getAttribute('data-location-id'));
+                        var dangActive = false;
+                        if (this.classList.contains('active') === true) {
+                            dangActive = true;
+                        }
+                        
+                        var tatCaNut = vungDiaDiem.querySelectorAll('.btn-location');
+                        for (var n = 0; n < tatCaNut.length; n = n + 1) {
+                            tatCaNut[n].classList.remove('active');
+                        }
+                        
+                        if (dangActive === true) {
+                            // Hủy chọn
+                            boLocHienTai.locationId = null;
+                        } else {
+                            // Chọn mới
+                            this.classList.add('active');
+                            boLocHienTai.locationId = idDiaDiem;
+                        }
+                        
+                        boLocHienTai.page = 0;
+                        taiDanhSachChienDich(0);
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Nhiệm vụ: Gắn thiết bị lắng nghe (Event Listener) vào bộ lọc Thời gian, Mốc tìm kiếm.
+     */
+    function ganSuKienBoLocThoiGianVaTimKiem() {
+        var cacNutThoiGian = document.querySelectorAll('[data-time]');
+        for (var i = 0; i < cacNutThoiGian.length; i = i + 1) {
+            cacNutThoiGian[i].addEventListener('click', function() {
+                // Xóa active
+                for (var j = 0; j < cacNutThoiGian.length; j = j + 1) {
+                    cacNutThoiGian[j].classList.remove('active');
+                }
+                this.classList.add('active');
+                
+                var giaTri = this.getAttribute('data-time');
+                if (giaTri === '') {
+                    boLocHienTai.time = null;
+                } else {
+                    boLocHienTai.time = giaTri;
+                }
+                
+                boLocHienTai.page = 0;
+                taiDanhSachChienDich(0);
+            });
+        }
+
+        var theSapXep = document.getElementById('sort-select');
+        if (theSapXep !== null) {
+            theSapXep.addEventListener('change', function() {
+                boLocHienTai.sort = this.value;
+                boLocHienTai.page = 0;
+                taiDanhSachChienDich(0);
+            });
+        }
+
+        var oTimKiem = document.getElementById('search-input');
+        var nutXoaTimKiem = document.getElementById('search-clear');
+        
+        if (oTimKiem !== null) {
+            oTimKiem.addEventListener('input', function() {
+                var giaTri = this.value.trim();
+                
+                if (nutXoaTimKiem !== null) {
+                    if (giaTri !== '') {
+                        nutXoaTimKiem.style.display = 'block';
+                    } else {
+                        nutXoaTimKiem.style.display = 'none';
+                    }
+                }
+                
+                if (searchDebounceTimer !== null) {
+                    clearTimeout(searchDebounceTimer);
+                }
+                
+                searchDebounceTimer = setTimeout(function() {
+                    if (giaTri !== '') {
+                        boLocHienTai.keyword = giaTri;
+                    } else {
+                        boLocHienTai.keyword = null;
+                    }
+                    boLocHienTai.page = 0;
+                    taiDanhSachChienDich(0);
+                }, 500);
+            });
+            
+            oTimKiem.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    if (searchDebounceTimer !== null) {
+                        clearTimeout(searchDebounceTimer);
+                    }
+                    var giaTri = this.value.trim();
+                    if (giaTri !== '') {
+                        boLocHienTai.keyword = giaTri;
+                    } else {
+                        boLocHienTai.keyword = null;
+                    }
+                    boLocHienTai.page = 0;
+                    taiDanhSachChienDich(0);
+                }
+            });
+        }
+
+        if (nutXoaTimKiem !== null) {
+            nutXoaTimKiem.addEventListener('click', function() {
+                if (oTimKiem !== null) {
+                    oTimKiem.value = '';
+                }
+                this.style.display = 'none';
+                boLocHienTai.keyword = null;
+                boLocHienTai.page = 0;
+                taiDanhSachChienDich(0);
+            });
+        }
+    }
+
+    /**
+     * Nhiệm vụ: Đẩy tham số bộ lọc lên Server, tải danh sách Chiến dịch.
+     */
+    function taiDanhSachChienDich(trang) {
+        var vungChua = document.getElementById('campaigns-container');
+        if (vungChua === null) {
+            return;
+        }
+        vungChua.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--teal-400);"></i></div>';
+        
+        var urlApi = '/api/events?page=' + trang + '&size=6&sort=' + boLocHienTai.sort;
+        if (boLocHienTai.keyword !== null) { 
+            urlApi += '&keyword=' + encodeURIComponent(boLocHienTai.keyword); 
+        }
+        if (boLocHienTai.type !== null) { 
+            urlApi += '&type=' + boLocHienTai.type; 
+        }
+        if (boLocHienTai.time !== null) { 
+            urlApi += '&time=' + boLocHienTai.time; 
+        }
+        if (boLocHienTai.locationId !== null) { 
+            urlApi += '&locationId=' + boLocHienTai.locationId; 
+        }
+        
+        callApi(urlApi, 'GET', null, null, function(res) {
+            if (res.status !== 200) {
+                vungChua.innerHTML = '<div class="text-center py-5 text-muted">Hệ thống đang bận. Không thể tải danh sách sự kiện.</div>';
+                return;
+            }
+            
+            var duLieuTrang = res.data;
+            if (duLieuTrang === null || duLieuTrang === undefined) {
+                return;
+            }
+            
+            var danhSach = duLieuTrang.content;
+            tongSoTrang = duLieuTrang.totalPages;
+            boLocHienTai.page = duLieuTrang.number;
+            
+            var theHienTongSo = document.getElementById('total-count');
+            if (theHienTongSo !== null) {
+                theHienTongSo.textContent = dinhDangSo(duLieuTrang.totalElements);
+            }
+            
+            if (danhSach === null || danhSach === undefined || danhSach.length === 0) {
+                vungChua.innerHTML = '<div class="text-center py-5" style="background:white;border-radius:var(--r-xl);border:1px solid var(--gray-200);padding:48px;"><i class="fas fa-calendar-times fa-3x" style="color:var(--gray-300);margin-bottom:16px;"></i><div style="font-weight:700;color:var(--gray-500);">Không tìm thấy sự kiện phù hợp</div><div style="font-size:.84rem;color:var(--gray-400);margin-top:6px;">Vui lòng điều chỉnh lại điều kiện lọc</div></div>';
+                veThanhPhanTrang(0, 0);
+                return;
+            }
+            
+            var theHTML = '';
+            for (var i = 0; i < danhSach.length; i = i + 1) {
+                theHTML += xayDungHTMLChienDich(danhSach[i]);
+            }
+            vungChua.innerHTML = theHTML;
+            
+            veThanhPhanTrang(boLocHienTai.page, tongSoTrang);
+            setTimeout(kichHoatHieuUngXuatHien, 50);
+        }, function(msg) {
+            vungChua.innerHTML = '<div class="text-center py-5" style="color:var(--danger);">' + lamSachChuoiHTML(msg) + '</div>';
+        });
+    }
+
+    /**
+     * Nhiệm vụ: Đóng gói thẻ Component Card (Chiến dịch + Các phiên bên trong).
+     * Giải pháp: Sử dụng hoàn toàn cấu trúc Public. Không có Checkbox hay Action của Admin.
+     */
+    function xayDungHTMLChienDich(chienDich) {
+        var hinhAnh = chienDich.thumbnailUrl;
+        if (hinhAnh === null || hinhAnh === undefined || hinhAnh === '') {
+            hinhAnh = 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=80';
+        }
+        
+        var cacPhien = chienDich.sessions;
+        var laBiHuyToanBo = false;
+        
+        if (cacPhien !== null && cacPhien !== undefined && cacPhien.length > 0) {
+            laBiHuyToanBo = true;
+            for (var k = 0; k < cacPhien.length; k = k + 1) {
+                if (cacPhien[k].currentStatus !== 'CANCELLED') {
+                    laBiHuyToanBo = false;
+                    break;
+                }
+            }
+        }
+        
+        var html = '';
+        if (laBiHuyToanBo === true) {
+            html += '<div class="event-campaign-card reveal" style="opacity:.75;">';
+            html += '<div class="ecc-header">';
+            html += '<div class="ecc-poster" style="filter:grayscale(.6);"><img src="' + lamSachChuoiHTML(hinhAnh) + '" alt=""><div class="ecc-poster-overlay"></div>';
+            html += '<div class="ecc-type-badge" style="background:var(--gray-400);"><i class="fas fa-ban fa-xs me-1"></i> Đã hủy</div></div>';
+        } else {
+            html += '<div class="event-campaign-card reveal">';
+            html += '<div class="ecc-header">';
+            html += '<div class="ecc-poster"><img src="' + lamSachChuoiHTML(hinhAnh) + '" alt=""><div class="ecc-poster-overlay"></div>';
+            if (chienDich.eventTypeName !== null && chienDich.eventTypeName !== undefined && chienDich.eventTypeName !== '') {
+                html += '<div class="ecc-type-badge"><i class="fas fa-tag fa-xs me-1"></i>' + lamSachChuoiHTML(chienDich.eventTypeName) + '</div>';
+            }
+            html += '</div>';
+        }
+        
+        html += '<div class="ecc-info">';
+        
+        if (laBiHuyToanBo === true) {
+            html += '<a href="/hoi-thao/' + lamSachChuoiHTML(chienDich.slug) + '" class="ecc-campaign-title" style="color:var(--gray-500);">' + lamSachChuoiHTML(chienDich.title) + '</a>';
+        } else {
+            html += '<a href="/hoi-thao/' + lamSachChuoiHTML(chienDich.slug) + '" class="ecc-campaign-title">' + lamSachChuoiHTML(chienDich.title) + '</a>';
+        }
+
+        if (chienDich.description !== null && chienDich.description !== undefined && chienDich.description !== '') {
+            if (laBiHuyToanBo === true) {
+                html += '<div class="ecc-desc" style="text-decoration:line-through;">' + lamSachChuoiHTML(chienDich.description) + '</div>';
+            } else {
+                html += '<div class="ecc-desc">' + lamSachChuoiHTML(chienDich.description) + '</div>';
+            }
+        }
+        
+        if (laBiHuyToanBo === true) {
+            html += '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--r-md);padding:8px 12px;display:flex;align-items:center;gap:8px;margin-top:8px;">' +
+                    '<i class="fas fa-exclamation-circle" style="color:var(--danger);"></i>' +
+                    '<span style="font-size:.8rem;color:#b91c1c;font-weight:600;">Sự kiện đã bị hủy. Vui lòng liên hệ ban tổ chức để biết thêm chi tiết.</span></div>';
+        }
+        
+        html += '<div class="ecc-meta-row">';
+        if (cacPhien !== null && cacPhien !== undefined && cacPhien.length > 0) {
+            html += '<span class="ecc-meta"><i class="fas fa-calendar-alt"></i> ' + dinhDangNgay(cacPhien[0].startTime);
+            if (cacPhien.length > 1) {
+                html += ' – ' + dinhDangNgay(cacPhien[cacPhien.length - 1].startTime);
+            }
+            html += '</span><span class="ecc-meta"><i class="fas fa-layer-group"></i> ' + cacPhien.length + ' buổi</span>';
+        }
+        html += '</div></div></div>'; // Đóng ecc-info và ecc-header
+        
+        // Vẽ danh sách các buổi
+        if (cacPhien !== null && cacPhien !== undefined && cacPhien.length > 0) {
+            html += '<div class="ecc-sessions"><div class="ecs-header"><span><i class="fas fa-calendar-check me-2" style="color:var(--teal-500);"></i>' + cacPhien.length + ' Buổi — Lịch diễn ra</span></div>';
+            for (var j = 0; j < cacPhien.length; j = j + 1) {
+                html += xayDungHTMLPhienSuKien(cacPhien[j]);
+            }
+            html += '</div>';
+        }
+        html += '</div>'; // Đóng event-campaign-card
+        
+        return html;
+    }
+
+    /**
+     * =========================================================================
+     * THUẬT TOÁN XÂY DỰNG GIAO DIỆN PHIÊN SỰ KIỆN (SESSION RENDERER)
+     * =========================================================================
+     * Nhiệm vụ: Xây dựng các hàng dữ liệu Phiên trực thuộc (Sessions) theo form UI Public.
+     * Giải pháp: Tuân thủ tuyệt đối "Chuẩn Mù". Frontend không tự ý dùng phép toán 
+     * hay logic để phán đoán trạng thái vé. Chỉ đọc và hiển thị dựa trên cờ (Flag) 
+     * và Chuỗi hiển thị (Display Status) do API Backend cung cấp.
+     */
+    function xayDungHTMLPhienSuKien(phien) {
+        var ngayBatDau = new Date(phien.startTime);
+        var ngayKetThuc = new Date(phien.endTime);
+        var gioBatDau = themSo0PhiaTruoc(ngayBatDau.getHours()) + ':' + themSo0PhiaTruoc(ngayBatDau.getMinutes());
+        var gioKetThuc = themSo0PhiaTruoc(ngayKetThuc.getHours()) + ':' + themSo0PhiaTruoc(ngayKetThuc.getMinutes());
+        
+        var htmlTrangThai = '';
+        var lopCSSBadge = 'ssb-ended'; // Gán mặc định
+        
+        // 1. CHUẨN MÙ: TRÍCH XUẤT TRỰC TIẾP CHUỖI HIỂN THỊ TỪ BACKEND
+        var chuoiHienThi = phien.displayStatus;
+        if (chuoiHienThi === null || chuoiHienThi === undefined) {
+            chuoiHienThi = 'Chưa xác định';
+        }
+
+        // Chọn CSS tương ứng với trạng thái
+        if (chuoiHienThi === 'Sắp diễn ra') {
+            htmlTrangThai = '<span class="si-status upcoming"><span style="width:6px;height:6px;background:var(--teal-500);border-radius:50%;display:inline-block;"></span> Sắp diễn ra</span>';
+        } else if (chuoiHienThi === 'Hết chỗ') {
+            htmlTrangThai = '<span class="si-status full"><i class="fas fa-ban fa-xs"></i> Hết slot</span>';
+        } else if (chuoiHienThi === 'Đã hủy') {
+            htmlTrangThai = '<span class="si-status cancelled"><i class="fas fa-ban fa-xs"></i> Đã hủy</span>';
+        } else if (chuoiHienThi === 'Đã kết thúc') {
+            htmlTrangThai = '<span class="si-status finished"><i class="fas fa-check fa-xs"></i> Đã kết thúc</span>';
+        } else if (chuoiHienThi === 'Đang diễn ra') {
+            htmlTrangThai = '<span class="si-status upcoming"><span style="width:6px;height:6px;background:var(--teal-500);border-radius:50%;animation:pulseDot 1.8s infinite;display:inline-block;"></span> Đang diễn ra</span>';
+        } else {
+            htmlTrangThai = '<span class="si-status finished">' + lamSachChuoiHTML(chuoiHienThi) + '</span>';
+        }
+        
+        // 2. CHUẨN MÙ: VẼ LƯỢNG SLOT DỰA VÀO CỜ BÁO ĐỘNG (isCritical)
+        var htmlSlot = '';
+        if (phien.totalSlots > 0) {
+            var lopMauSac = '';
+            // Backend truyền về cờ isCritical
+            if (phien.critical === true || phien.isCritical === true) {
+                lopMauSac = ' critical'; // Lớp CSS chữ màu đỏ
+            }
+            htmlSlot = '<div class="si-slots' + lopMauSac + '"><strong>' + dinhDangSo(phien.availableSlots) + '</strong> / ' + dinhDangSo(phien.totalSlots) + ' slot còn lại</div>';
+        }
+        
+        // 3. XỬ LÝ NÚT ĐĂNG KÝ
+        var choPhepDangKy = false;
+        if (chuoiHienThi === 'Sắp diễn ra') {
+            choPhepDangKy = true;
+        }
+
+        var linkSuKien = '';
+        if (phien.eventSlug !== null && phien.eventSlug !== undefined && phien.eventSlug !== '') {
+            linkSuKien = '/hoi-thao/' + phien.eventSlug + '?session=' + phien.id;
+        } else {
+            linkSuKien = '/hoi-thao/buoi?session=' + phien.id;
+        }
+
+        var htmlNutDangKy = '';
+        if (choPhepDangKy === true) {
+            htmlNutDangKy = '<a href="' + linkSuKien + '" class="si-register-btn"><i class="fas fa-ticket-alt fa-xs"></i> Đăng ký ngay</a>';
+        } else if (chuoiHienThi === 'Hết chỗ') {
+            htmlNutDangKy = '<a href="' + linkSuKien + '" class="si-register-btn disabled"><i class="fas fa-times fa-xs"></i> Đã đầy</a>';
+        }
+        
+        // 4. KHỬ TOÁN TỬ 3 NGÔI (TERNARY) CHO TRƯỜNG ĐỊA ĐIỂM
+        var iconDiaDiem = 'fa-map-marker-alt';
+        if (phien.online === true) {
+            iconDiaDiem = 'fa-video';
+        }
+        
+        var tenDiaDiem = phien.locationName;
+        if (tenDiaDiem === null || tenDiaDiem === undefined || tenDiaDiem === '') {
+            if (phien.online === true) {
+                tenDiaDiem = 'Trực tuyến';
+            } else {
+                tenDiaDiem = '';
+            }
+        }
+        
+        var htmlDiaChi = '';
+        if (phien.online === true) {
+            htmlDiaChi = '<div class="si-address"><i class="fas fa-link"></i> Link tham gia gửi qua email sau đăng ký</div>';
+        } else if (phien.locationAddress !== null && phien.locationAddress !== undefined && phien.locationAddress !== '') {
+            htmlDiaChi = '<div class="si-address"><i class="fas fa-location-arrow"></i> ' + lamSachChuoiHTML(phien.locationAddress) + '</div>';
+        }
+
+        var tenPhien = phien.title;
+        if (tenPhien === null || tenPhien === undefined || tenPhien === '') {
+            tenPhien = tenDiaDiem;
+        }
+
+        var theLichSu = '<a href="' + linkSuKien + '#lich-su-trang-thai" class="status-history-btn"><i class="fas fa-history fa-xs"></i> Lịch sử trạng thái</a>';
+
+        // 5. LẮP RÁP CHUỖI HTML THEO ĐÚNG LAYOUT CỦA TRANG PUBLIC
+        var html = '<div class="session-item">';
+        html += '<div class="si-date-col"><div class="sid-day">' + themSo0PhiaTruoc(ngayBatDau.getDate()) + '</div><div class="sid-month">Tháng ' + (ngayBatDau.getMonth() + 1) + '</div><div class="sid-year">' + ngayBatDau.getFullYear() + '</div></div>';
+        html += '<div class="si-body"><div class="si-main"><div class="si-location-name">' + lamSachChuoiHTML(tenPhien) + '</div>';
+        html += '<div class="si-time-row"><span class="si-time"><i class="fas fa-clock"></i> ' + gioBatDau + ' – ' + gioKetThuc + '</span>';
+        
+        if (tenDiaDiem !== '') {
+            html += '<span class="si-time"><i class="fas ' + iconDiaDiem + '"></i> ' + lamSachChuoiHTML(tenDiaDiem) + '</span>';
+        }
+        
+        html += '</div>' + htmlDiaChi + '</div>';
+        html += '<div class="si-right">' + htmlTrangThai + htmlSlot + htmlNutDangKy + theLichSu + '</div></div></div>';
+        
+        return html;
+    }
+
+    // ── VẼ THANH PHÂN TRANG ──
+    function veThanhPhanTrang(trangHienTai, tongSo) {
+        var vungPhanTrang = document.getElementById('pagination-container');
+        if (vungPhanTrang === null) {
+            return;
+        }
+        
+        // Nếu tổng số trang <= 1 thì không cần hiển thị thanh phân trang
+        if (tongSo <= 1) {
+            vungPhanTrang.innerHTML = '';
+            return;
+        }
+        
+        // Khởi tạo các chuỗi CSS Nội tuyến (Inline CSS) nguyên bản để giữ đúng thiết kế
+        var cssBaoBoc = 'display:flex;align-items:center;justify-content:center;gap:4px;margin-top:16px;';
+        var cssChuaChon = 'width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--gray-200);border-radius:var(--r-md);background:white;color:var(--gray-600);text-decoration:none;font-size:.84rem;cursor:pointer;';
+        var cssDaChon = 'width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--ink-800);color:white;border-radius:var(--r-md);font-weight:700;font-size:.84rem;';
+        var cssVoHieuHoa = 'width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--gray-200);border-radius:var(--r-md);background:white;color:var(--gray-600);text-decoration:none;font-size:.84rem;opacity:0.5;cursor:not-allowed;';
+
+        var html = '<div style="' + cssBaoBoc + '">';
+        
+        // 1. VẼ NÚT LÙI (PREVIOUS)
+        if (trangHienTai > 0) {
+            html += '<button type="button" style="' + cssChuaChon + '" onclick="chuyenTrangChienDich(' + (trangHienTai - 1) + ')"><i class="fas fa-chevron-left fa-xs"></i></button>';
+        } else {
+            // Vô hiệu hóa nút lùi nếu đang ở trang đầu tiên
+            html += '<button type="button" style="' + cssVoHieuHoa + '" disabled><i class="fas fa-chevron-left fa-xs"></i></button>';
+        }
+        
+        // 2. TÍNH TOÁN KHOẢNG TRANG HIỂN THỊ (Cửa sổ trượt 5 trang)
+        var batDau = trangHienTai - 2;
+        if (batDau < 0) { 
+            batDau = 0; 
+        }
+        var ketThuc = batDau + 5;
+        if (ketThuc > tongSo) { 
+            ketThuc = tongSo; 
+        }
+        
+        // 3. VẼ CÁC NÚT SỐ TRANG
+        for (var i = batDau; i < ketThuc; i = i + 1) {
+            if (i === trangHienTai) {
+                // Trang đang chọn: Dùng CSS tô đen
+                html += '<span style="' + cssDaChon + '">' + (i + 1) + '</span>';
+            } else {
+                // Các trang khác: Dùng CSS nền trắng
+                html += '<button type="button" style="' + cssChuaChon + '" onclick="chuyenTrangChienDich(' + i + ')">' + (i + 1) + '</button>';
+            }
+        }
+        
+        // 4. VẼ NÚT TIẾN (NEXT)
+        if (trangHienTai < tongSo - 1) {
+            html += '<button type="button" style="' + cssChuaChon + '" onclick="chuyenTrangChienDich(' + (trangHienTai + 1) + ')"><i class="fas fa-chevron-right fa-xs"></i></button>';
+        } else {
+            // Vô hiệu hóa nút tiến nếu đang ở trang cuối cùng
+            html += '<button type="button" style="' + cssVoHieuHoa + '" disabled><i class="fas fa-chevron-right fa-xs"></i></button>';
+        }
+        
+        html += '</div>';
+        
+        // Cấy khối HTML vào giao diện
+        vungPhanTrang.innerHTML = html;
+    }
+
+    // Đẩy hàm ra Window để giao diện HTML gọi được
+    window.chuyenTrangChienDich = function(trang) {
+        taiDanhSachChienDich(trang);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // ── XỬ LÝ LỊCH MINI (MINI CALENDAR) ──
+    function taiLichMini(nam, thang) {
+        var danhSachTenThang = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+        var theTieuDeLich = document.getElementById('lich-mini-title');
+        
+        if (theTieuDeLich !== null) {
+            theTieuDeLich.textContent = danhSachTenThang[thang - 1] + ', ' + nam;
+        }
+        
+        callApi('/api/events/calendar?year=' + nam + '&month=' + thang, 'GET', null, null, function(res) {
+            var danhDauNgay = {};
+            if (res.status === 200 && res.data !== null && res.data !== undefined) {
+                for (var i = 0; i < res.data.length; i = i + 1) {
+                    var mienNgay = new Date(res.data[i].startTime);
+                    danhDauNgay[mienNgay.getDate()] = true;
+                }
+            }
+            veHinhLichMini(nam, thang, danhDauNgay);
+        });
+    }
+
+    function veHinhLichMini(nam, thang, danhDauNgay) {
+        var thanLich = document.getElementById('lich-mini-tbody');
+        if (thanLich === null) {
+            return;
+        }
+        
+        var mienHomNay = new Date();
+        var ngayDauCuaThang = new Date(nam, thang - 1, 1);
+        var thuCuaNgayDau = ngayDauCuaThang.getDay();
+        
+        var soOTrongLuiLai = 0;
+        if (thuCuaNgayDau === 0) {
+            soOTrongLuiLai = 6;
+        } else {
+            soOTrongLuiLai = thuCuaNgayDau - 1;
+        }
+        
+        var tongSoNgay = new Date(nam, thang, 0).getDate();
+        
+        var chuoiHTMLCuaLich = '';
+        var chuoiHTMLCuaHang = '<tr>';
+        var demCot = 0;
+        
+        for (var i = 0; i < soOTrongLuiLai; i = i + 1) {
+            chuoiHTMLCuaHang += '<td></td>';
+            demCot = demCot + 1;
+        }
+        
+        for (var ngay = 1; ngay <= tongSoNgay; ngay = ngay + 1) {
+            if (demCot > 0 && demCot % 7 === 0) {
+                chuoiHTMLCuaLich += chuoiHTMLCuaHang + '</tr>';
+                chuoiHTMLCuaHang = '<tr>';
+            }
+            
+            var dungLaHomNay = false;
+            if (ngay === mienHomNay.getDate() && thang === (mienHomNay.getMonth() + 1) && nam === mienHomNay.getFullYear()) {
+                dungLaHomNay = true;
+            }
+            
+            var lopCSS = 'mc-day';
+            if (dungLaHomNay === true) {
+                lopCSS += ' today';
+            } else if (danhDauNgay[ngay] === true) {
+                lopCSS += ' has-event';
+            }
+            
+            chuoiHTMLCuaHang += '<td><div class="' + lopCSS + '">' + ngay + '</div></td>';
+            demCot = demCot + 1;
+        }
+        
+        while (demCot % 7 !== 0) {
+            chuoiHTMLCuaHang += '<td></td>';
+            demCot = demCot + 1;
+        }
+        
+        if (chuoiHTMLCuaHang !== '<tr>') {
+            chuoiHTMLCuaLich += chuoiHTMLCuaHang + '</tr>';
+        }
+        
+        thanLich.innerHTML = chuoiHTMLCuaLich;
+    }
+
+    window.lichMiniTruoc = function() {
+        lichMiniThang = lichMiniThang - 1;
+        if (lichMiniThang === 0) {
+            lichMiniThang = 12;
+            lichMiniNam = lichMiniNam - 1;
+        }
+        taiLichMini(lichMiniNam, lichMiniThang);
+    };
+
+    window.lichMiniSau = function() {
+        lichMiniThang = lichMiniThang + 1;
+        if (lichMiniThang === 13) {
+            lichMiniThang = 1;
+            lichMiniNam = lichMiniNam + 1;
+        }
+        taiLichMini(lichMiniNam, lichMiniThang);
+    };
+
+    // ── GỌI API SIDEBAR KHÁC ──
+    function taiSuKienSapToi() {
+        callApi('/api/events/upcoming?limit=5', 'GET', null, null, function(res) {
+            var vungChua = document.getElementById('upcoming-sidebar-container');
+            if (vungChua === null) return;
+            
+            if (res.status !== 200 || res.data === null || res.data === undefined || res.data.length === 0) {
+                vungChua.innerHTML = '<div style="font-size:.82rem;color:var(--gray-400);padding:8px 0;">Không có sự kiện sắp tới.</div>';
+                return;
+            }
+            
+            var html = '';
+            for (var i = 0; i < res.data.length; i = i + 1) {
+                var suKien = res.data[i];
+                var thoiGian = new Date(suKien.startTime);
+                var mangTenThang = ['Th1','Th2','Th3','Th4','Th5','Th6','Th7','Th8','Th9','Th10','Th11','Th12'];
+                
+                var tenHienThi = 'Sự kiện y khoa';
+                if (suKien.title !== null && suKien.title !== undefined && suKien.title !== '') {
+                    tenHienThi = suKien.title;
+                } else if (suKien.eventTitle !== null && suKien.eventTitle !== undefined && suKien.eventTitle !== '') {
+                    tenHienThi = suKien.eventTitle;
+                }
+                
+                var theBeNho = '';
+                if (suKien.online === true) {
+                    theBeNho = '<span class="emc-badge online"><i class="fas fa-video fa-xs me-1"></i>Online</span>';
+                } else {
+                    var diaDiem = 'Thực địa';
+                    if (suKien.locationName !== null && suKien.locationName !== undefined) {
+                        diaDiem = suKien.locationName;
+                    }
+                    theBeNho = '<span class="emc-badge offline"><i class="fas fa-map-marker-alt fa-xs me-1"></i>' + lamSachChuoiHTML(diaDiem) + '</span>';
+                }
+                
+                var theSlot = '';
+                if (suKien.totalSlots > 0) {
+                    theSlot = '<span class="emc-slots"><i class="fas fa-users fa-xs"></i> ' + dinhDangSo(suKien.availableSlots) + ' slot còn</span>';
+                }
+                
+                var linkDi = '/hoi-thao/buoi?session=' + suKien.id;
+                if (suKien.eventSlug !== null && suKien.eventSlug !== undefined && suKien.eventSlug !== '') {
+                    linkDi = '/hoi-thao/' + suKien.eventSlug + '?session=' + suKien.id;
+                }
+                
+                html += '<a href="' + linkDi + '" class="event-mini-card">' +
+                        '<div class="emc-date-badge"><div class="emc-day">' + themSo0PhiaTruoc(thoiGian.getDate()) + '</div><div class="emc-month">' + mangTenThang[thoiGian.getMonth()] + '</div></div>' +
+                        '<div class="emc-body"><div class="emc-title">' + lamSachChuoiHTML(tenHienThi) + '</div><div class="emc-meta">' + theBeNho + theSlot + '</div></div></a>';
+            }
+            vungChua.innerHTML = html;
+        });
+    }
+
+    function taiDangKyCuaToi() {
+        var vungChua = document.getElementById('my-registrations-container');
+        if (vungChua === null) return;
+        
+        callApi('/api/events/my-registrations', 'GET', null, null, function(res) {
+            if (res.status !== 200 || res.data === null || res.data === undefined || res.data.length === 0) {
+                vungChua.innerHTML = '<div style="font-size:.82rem;color:var(--gray-400);padding:8px 0;">Bạn chưa đăng ký sự kiện nào.</div>';
+                return;
+            }
+            
+            var html = '';
+            var soLuongHienThi = 3;
+            if (res.data.length < 3) {
+                soLuongHienThi = res.data.length;
+            }
+            
+            for (var i = 0; i < soLuongHienThi; i = i + 1) {
+                var ve = res.data[i];
+                var mauCham = 'var(--gray-300)';
+                var lopCSS = 'pending';
+                var chuHienThi = lamSachChuoiHTML(ve.status);
+                
+                if (ve.status === 'CONFIRMED' || ve.status === 'APPROVED') {
+                    mauCham = 'var(--teal-500)'; lopCSS = 'approved'; chuHienThi = 'Đã duyệt';
+                } else if (ve.status === 'PENDING') {
+                    mauCham = 'var(--warning)'; lopCSS = 'pending'; chuHienThi = 'Chờ xác nhận';
+                } else if (ve.status === 'ATTENDED') {
+                    mauCham = 'var(--teal-400)'; lopCSS = 'attended'; chuHienThi = 'Đã tham dự';
+                }
+                
+                var tenChienDich = 'Sự kiện y khoa';
+                if (ve.campaignTitle !== null && ve.campaignTitle !== undefined) {
+                    tenChienDich = ve.campaignTitle;
+                }
+                
+                html += '<div class="my-reg-item"><div class="mri-dot" style="background:' + mauCham + ';"></div><div class="mri-title">' + lamSachChuoiHTML(tenChienDich) + '</div><span class="mri-status ' + lopCSS + '">' + chuHienThi + '</span></div>';
+            }
+            html += '<a href="/su-kien-cua-toi" style="display:block;text-align:center;font-size:.8rem;color:var(--teal-600);font-weight:600;padding:8px;border:1px dashed var(--teal-300);border-radius:var(--r-md);margin-top:10px;text-decoration:none;">Xem tất cả lịch sử đăng ký →</a>';
+            vungChua.innerHTML = html;
+        }, function() {
+            vungChua.innerHTML = '<div style="font-size:.82rem;color:var(--gray-400);">Hệ thống từ chối tải danh sách vé do thiếu định danh hợp lệ.</div>';
+        });
+    }
+
+    function taiHeroUpcoming() {
+        callApi('/api/events/upcoming?limit=1', 'GET', null, null, function(res) {
+            var vungChua = document.getElementById('hero-upcoming-card');
+            if (vungChua === null) return;
+            
+            if (res.status !== 200 || res.data === null || res.data === undefined || res.data.length === 0) {
+                vungChua.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:.85rem;text-align:center;">Không có sự kiện nào sắp tới.</div>';
+                return;
+            }
+            
+            var phien = res.data[0];
+            var thoiGian = new Date(phien.startTime);
+            var ngayThang = themSo0PhiaTruoc(thoiGian.getDate()) + '/' + themSo0PhiaTruoc(thoiGian.getMonth() + 1);
+            var gioPhut = themSo0PhiaTruoc(thoiGian.getHours()) + ':' + themSo0PhiaTruoc(thoiGian.getMinutes());
+            
+            var tenHienThi = 'Sự kiện y khoa';
+            if (phien.title !== null && phien.title !== undefined && phien.title !== '') {
+                tenHienThi = phien.title;
+            } else if (phien.eventTitle !== null && phien.eventTitle !== undefined && phien.eventTitle !== '') {
+                tenHienThi = phien.eventTitle;
+            }
+            
+            var bieuTuongDiaDiem = 'fa-map-marker-alt';
+            var chuDiaDiem = 'Tại hội trường';
+            if (phien.online === true) {
+                bieuTuongDiaDiem = 'fa-video';
+                chuDiaDiem = 'Trực tuyến';
+            } else if (phien.locationName !== null && phien.locationName !== undefined && phien.locationName !== '') {
+                chuDiaDiem = phien.locationName;
+            }
+            
+            var thongTinVe = 'Không giới hạn chỗ';
+            if (phien.totalSlots > 0) {
+                thongTinVe = dinhDangSo(phien.availableSlots) + ' slot còn lại';
+            }
+            
+            var linkDi = '/hoi-thao/buoi?session=' + phien.id;
+            if (phien.eventSlug !== null && phien.eventSlug !== undefined && phien.eventSlug !== '') {
+                linkDi = '/hoi-thao/' + phien.eventSlug + '?session=' + phien.id;
+            }
+            
+            vungChua.innerHTML = '<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal-400);margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span style="width:5px;height:5px;background:var(--teal-400);border-radius:50%;animation:pulseDot 1.8s infinite;"></span>SẮP DIỄN RA — ' + ngayThang + ' ' + gioPhut + '</div>' +
+                '<div style="font-size:.95rem;font-weight:700;color:white;margin-bottom:8px;line-height:1.3;">' + lamSachChuoiHTML(tenHienThi) + '</div>' +
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">' +
+                '<span style="font-size:.75rem;color:rgba(255,255,255,.5);"><i class="fas ' + bieuTuongDiaDiem + '" style="color:var(--teal-400);margin-right:4px;"></i>' + lamSachChuoiHTML(chuDiaDiem) + '</span>' +
+                '<span style="font-size:.75rem;color:rgba(255,255,255,.5);"><i class="fas fa-users" style="color:var(--teal-400);margin-right:4px;"></i>' + lamSachChuoiHTML(thongTinVe) + '</span></div>' +
+                '<a href="' + linkDi + '" class="btn-gold-pharma" style="padding:8px 16px;font-size:.82rem;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-ticket-alt fa-xs"></i> Đăng ký tham gia</a>';
+        });
+    }
+
+
+    /**
+     * TÁI KÍCH HOẠT HIỆU ỨNG THỊ GIÁC (REVEAL ANIMATION)
+     * Quét các element .reveal vừa được API đẻ ra để cho phép chúng hiển thị
+     */
+    function kichHoatHieuUngXuatHien() {
+        var els = document.querySelectorAll('.reveal:not(.is-visible)');
+        if (els.length === 0) { return; }
+
+        var observer = new IntersectionObserver(function (entries) {
+            for (var i = 0; i < entries.length; i = i + 1) {
+                var e = entries[i];
+                if (e.isIntersecting === true) {
+                    e.target.classList.add('is-visible');
+                    observer.unobserve(e.target);
+                }
+            }
+        }, { threshold: 0.12 });
+
+        for (var j = 0; j < els.length; j = j + 1) {
+            observer.observe(els[j]);
+        }
+    }
+
+    // ── KÍCH HOẠT HỆ THỐNG CHUẨN ──
+    document.addEventListener('DOMContentLoaded', function() {
+        taiThongKe();
+        taiLoaiSuKienChoFilter();
+        taiDiaDiemChoFilter();
+        ganSuKienBoLocThoiGianVaTimKiem();
+        taiDanhSachChienDich(0);
+        taiSuKienSapToi();
+        taiLichMini(lichMiniNam, lichMiniThang);
+        taiDangKyCuaToi();
+        taiHeroUpcoming();
+    });
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+/* src/main/resources/static/css/checkout-result.css */
+body {
+    background-color: #f8fafc;
+}
+.result-container {
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+.status-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+.status-icon.success { color: #10b981; }
+.status-icon.failed { color: #ef4444; }
+
+.card-header-result {
+    background-color: #fff;
+    border-bottom: 0;
+    text-align: center;
+    padding-top: 40px;
+    border-radius: 15px 15px 0 0 !important;
+}
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    padding: 20px;
+}
+.info-item {
+    background: #fff;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+.info-item strong {
+    color: #64748b;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 5px;
+}
+.confetti {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}

@@ -1,0 +1,982 @@
+<!-- src/main/resources/templates/posts/list.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{user_layout::user-head}"></head>
+
+<body>
+<div th:replace="~{user_layout::user-nav}"></div>
+
+<div th:replace="~{user_layout::layout(~{::#main-content})}">
+<div id="main-content">
+
+<style>
+/* ============================================================
+   POSTS / LIST — Thư viện Y khoa
+============================================================ */
+
+/* Page Hero */
+.posts-hero {
+    background: var(--ink-900);
+    position: relative;
+    overflow: hidden;
+    padding: 72px 0 56px;
+}
+.posts-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 20% 50%, rgba(0,152,152,.12) 0%, transparent 55%),
+                      radial-gradient(circle at 80% 20%, rgba(0,53,102,.3) 0%, transparent 50%);
+}
+.posts-hero .container { position: relative; z-index: 1; }
+.hero-breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: .75rem; color: rgba(255,255,255,.45); margin-bottom: 16px;
+}
+.hero-breadcrumb a { color: var(--teal-400); text-decoration: none; }
+.hero-breadcrumb a:hover { color: var(--teal-300); }
+.hero-breadcrumb i { font-size: .55rem; }
+.posts-hero-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    font-weight: 800; color: white;
+    letter-spacing: -1px; line-height: 1.15; margin-bottom: 12px;
+}
+.posts-hero-title span { color: var(--teal-400); }
+.posts-hero-desc {
+    font-size: 1rem; color: rgba(255,255,255,.55);
+    max-width: 520px; line-height: 1.7; margin-bottom: 28px;
+}
+.posts-hero-stats {
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+}
+.phs-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .82rem; color: rgba(255,255,255,.6);
+}
+.phs-item i { color: var(--teal-400); font-size: .75rem; }
+.phs-item strong { color: white; }
+
+/* Search Bar (attached to bottom of hero) */
+.posts-search-bar {
+    background: var(--ink-800);
+    border-top: 1px solid rgba(255,255,255,.06);
+    padding: 20px 0;
+}
+.psb-inner {
+    display: flex; align-items: center; gap: 12px;
+}
+.psb-input-wrap {
+    flex: 1; position: relative;
+}
+.psb-input-wrap i {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--gray-400); font-size: .85rem;
+}
+.psb-input {
+    width: 100%; background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1); border-radius: var(--r-md);
+    padding: 10px 14px 10px 38px;
+    color: white; font-size: .88rem; outline: none;
+    font-family: inherit; transition: var(--t-fast);
+}
+.psb-input::placeholder { color: rgba(255,255,255,.35); }
+.psb-input:focus { border-color: var(--teal-500); background: rgba(255,255,255,.08); }
+.psb-select {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--r-md); padding: 10px 14px;
+    color: rgba(255,255,255,.7); font-size: .83rem; outline: none;
+    font-family: inherit; cursor: pointer;
+    transition: var(--t-fast);
+}
+.psb-select:focus { border-color: var(--teal-500); }
+.psb-btn {
+    padding: 10px 22px; background: var(--teal-600); border: none;
+    border-radius: var(--r-md); color: white; font-size: .875rem;
+    font-weight: 600; cursor: pointer; transition: var(--t-fast); font-family: inherit;
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.psb-btn:hover { background: var(--teal-500); }
+
+/* Main Layout */
+.posts-layout {
+    padding: 48px 0 80px;
+    background: var(--gray-50);
+}
+.posts-sidebar { /* col-lg-3 */ }
+.posts-main    { /* col-lg-9 */ }
+
+/* Sidebar */
+.sb-card {
+    background: white; border: 1px solid var(--gray-200);
+    border-radius: var(--r-lg); overflow: hidden; margin-bottom: 20px;
+}
+.sb-card-head {
+    padding: 14px 18px; border-bottom: 1px solid var(--gray-100);
+    font-size: .8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.2px; color: var(--gray-600);
+    display: flex; align-items: center; gap: 7px;
+}
+.sb-card-head i { color: var(--teal-500); }
+.sb-card-body { padding: 14px 16px; }
+
+/* Category filter list */
+.cat-list { list-style: none; }
+.cat-list li { }
+.cat-link {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px; border-radius: var(--r-md); font-size: .855rem;
+    color: var(--gray-600); text-decoration: none; transition: var(--t-fast);
+    font-weight: 500;
+}
+.cat-link:hover { background: var(--gray-50); color: var(--teal-700); }
+.cat-link.active { background: var(--teal-100); color: var(--teal-700); font-weight: 600; }
+.cat-count {
+    font-size: .7rem; font-weight: 700; background: var(--gray-100);
+    color: var(--gray-500); padding: 2px 7px; border-radius: 50px;
+    min-width: 24px; text-align: center;
+}
+.cat-link.active .cat-count { background: var(--teal-500); color: white; }
+
+/* Tag cloud */
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-pill {
+    display: inline-block; padding: 4px 12px;
+    background: var(--gray-100); color: var(--gray-600);
+    border-radius: 50px; font-size: .75rem; font-weight: 600;
+    text-decoration: none; transition: var(--t-fast); border: 1px solid transparent;
+}
+.tag-pill:hover { background: var(--teal-100); color: var(--teal-700); border-color: var(--teal-300); }
+.tag-pill.active { background: var(--teal-600); color: white; border-color: var(--teal-600); }
+
+/* Access level filter */
+.access-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+.af-btn {
+    padding: 5px 14px; border-radius: 50px; font-size: .78rem;
+    font-weight: 600; cursor: pointer; transition: var(--t-fast);
+    border: 1.5px solid var(--gray-200); background: white;
+    color: var(--gray-600);
+}
+.af-btn:hover { border-color: var(--teal-400); color: var(--teal-600); }
+.af-btn.active { background: var(--gold-500); border-color: var(--gold-500); color: var(--ink-800); }
+
+/* Popular posts */
+.pop-post {
+    display: flex; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid var(--gray-100); text-decoration: none;
+}
+.pop-post:last-child { border-bottom: none; }
+.pop-img {
+    width: 56px; height: 46px; border-radius: var(--r-sm);
+    object-fit: cover; flex-shrink: 0; background: var(--gray-200);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; color: var(--gray-400);
+}
+.pop-info { flex: 1; min-width: 0; }
+.pop-title {
+    font-size: .8rem; font-weight: 600; color: var(--gray-800);
+    line-height: 1.35; margin-bottom: 3px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pop-post:hover .pop-title { color: var(--teal-600); }
+.pop-meta { font-size: .7rem; color: var(--gray-400); }
+
+/* Toolbar */
+.posts-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+}
+.pt-left { font-size: .85rem; color: var(--gray-500); }
+.pt-left strong { color: var(--ink-800); }
+.pt-right { display: flex; gap: 8px; }
+.sort-select {
+    padding: 6px 12px; border: 1px solid var(--gray-200); border-radius: var(--r-md);
+    font-size: .8rem; color: var(--gray-700); background: white; cursor: pointer;
+    font-family: inherit; outline: none; transition: var(--t-fast);
+}
+.sort-select:focus { border-color: var(--teal-400); }
+.view-toggle {
+    display: flex; border: 1px solid var(--gray-200); border-radius: var(--r-md); overflow: hidden;
+}
+.vt-btn {
+    padding: 6px 10px; background: white; border: none; cursor: pointer;
+    color: var(--gray-400); transition: var(--t-fast); font-size: .85rem;
+}
+.vt-btn:hover { background: var(--gray-50); color: var(--gray-700); }
+.vt-btn.active { background: var(--ink-800); color: white; }
+
+/* Article Card (Grid view) */
+.article-card {
+    background: white; border: 1px solid var(--gray-200);
+    border-radius: var(--r-lg); overflow: hidden; transition: var(--t-base);
+    display: flex; flex-direction: column;
+    text-decoration: none; color: inherit;
+}
+.article-card:hover {
+    border-color: var(--teal-300);
+    transform: translateY(-3px); box-shadow: var(--shadow-md);
+}
+.ac-img-wrap {
+    position: relative; overflow: hidden;
+    height: 180px; background: var(--gray-100);
+}
+.ac-img-wrap img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform .4s var(--ease-spring);
+}
+.article-card:hover .ac-img-wrap img { transform: scale(1.04); }
+.ac-img-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(10,22,40,.5) 0%, transparent 50%);
+}
+.ac-top-badges {
+    position: absolute; top: 10px; left: 10px;
+    display: flex; gap: 5px; flex-wrap: wrap;
+}
+.ac-bottom-info {
+    position: absolute; bottom: 10px; left: 10px; right: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.ac-views { font-size: .7rem; color: rgba(255,255,255,.8); display: flex; align-items: center; gap: 4px; }
+.ac-views i { font-size: .65rem; }
+.ac-lock {
+    width: 24px; height: 24px; background: var(--gold-500);
+    border-radius: var(--r-xs); display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; color: var(--ink-800);
+}
+
+.ac-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+.ac-category {
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--teal-600); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 5px;
+}
+.ac-category::before {
+    content: ''; width: 12px; height: 2px;
+    background: var(--teal-500); border-radius: 1px;
+}
+.ac-title {
+    font-size: .93rem; font-weight: 700; color: var(--ink-800);
+    line-height: 1.4; margin-bottom: 8px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.article-card:hover .ac-title { color: var(--teal-700); }
+.ac-summary {
+    font-size: .8rem; color: var(--gray-500); line-height: 1.6;
+    margin-bottom: 12px; flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ac-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px; border-top: 1px solid var(--gray-100);
+}
+.ac-author { display: flex; align-items: center; gap: 7px; }
+.ac-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+    display: flex; align-items: center; justify-content: center;
+    font-size: .65rem; color: white; font-weight: 700;
+}
+.ac-author-name { font-size: .75rem; font-weight: 600; color: var(--gray-700); }
+.ac-date { font-size: .72rem; color: var(--gray-400); }
+.ac-read-more {
+    font-size: .75rem; font-weight: 600; color: var(--teal-600);
+    display: flex; align-items: center; gap: 3px; transition: var(--t-fast);
+}
+.article-card:hover .ac-read-more { gap: 6px; }
+
+/* Featured Article (large card) */
+.article-featured {
+    background: white; border: 1px solid var(--gray-200);
+    border-radius: var(--r-xl); overflow: hidden; margin-bottom: 24px;
+    display: flex; transition: var(--t-base); text-decoration: none; color: inherit;
+}
+.article-featured:hover {
+    border-color: var(--teal-300); box-shadow: var(--shadow-lg);
+}
+.af-img-col { flex: 0 0 45%; position: relative; min-height: 260px; }
+.af-img-col img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform .4s var(--ease-spring);
+}
+.article-featured:hover .af-img-col img { transform: scale(1.03); }
+.af-img-col .ac-img-overlay { background: linear-gradient(to right, rgba(10,22,40,.6) 0%, transparent 70%); }
+.af-featured-badge {
+    position: absolute; top: 14px; left: 14px;
+    background: var(--gold-500); color: var(--ink-800);
+    font-size: .65rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1px; padding: 3px 10px; border-radius: var(--r-xs);
+}
+.af-body {
+    flex: 1; padding: 28px 28px 24px; display: flex; flex-direction: column;
+}
+.af-title {
+    font-size: 1.15rem; font-weight: 800; color: var(--ink-800);
+    line-height: 1.35; margin-bottom: 10px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.article-featured:hover .af-title { color: var(--teal-700); }
+.af-summary {
+    font-size: .855rem; color: var(--gray-500); line-height: 1.7;
+    margin-bottom: 16px; flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.af-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 16px; }
+.af-tag {
+    padding: 3px 9px; background: var(--gray-100); border-radius: 50px;
+    font-size: .7rem; font-weight: 600; color: var(--gray-600);
+}
+.af-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 16px; border-top: 1px solid var(--gray-100);
+}
+.af-meta { display: flex; align-items: center; gap: 14px; }
+.af-meta-item { display: flex; align-items: center; gap: 5px; font-size: .77rem; color: var(--gray-500); }
+.af-meta-item i { color: var(--teal-500); font-size: .7rem; }
+
+/* List view card */
+.article-list-card {
+    background: white; border: 1px solid var(--gray-200); border-radius: var(--r-lg);
+    overflow: hidden; display: flex; margin-bottom: 12px; transition: var(--t-base);
+    text-decoration: none; color: inherit;
+}
+.article-list-card:hover { border-color: var(--teal-300); box-shadow: var(--shadow-sm); }
+.alc-img { width: 140px; height: 100%; min-height: 90px; flex-shrink: 0; position: relative; }
+.alc-img img { width: 100%; height: 100%; object-fit: cover; }
+.alc-body { flex: 1; padding: 14px 18px; display: flex; flex-direction: column; justify-content: space-between; }
+.alc-title {
+    font-size: .9rem; font-weight: 700; color: var(--ink-800); line-height: 1.4; margin-bottom: 5px;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+}
+.article-list-card:hover .alc-title { color: var(--teal-700); }
+.alc-summary {
+    font-size: .78rem; color: var(--gray-500); line-height: 1.55;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin-bottom: 8px; flex: 1;
+}
+.alc-footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.alc-meta { display: flex; align-items: center; gap: 4px; font-size: .72rem; color: var(--gray-400); }
+.alc-meta i { font-size: .65rem; color: var(--teal-400); }
+
+/* Pagination */
+.pharma-pagination {
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px; margin-top: 40px; flex-wrap: wrap;
+}
+.pp-btn {
+    width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--r-md); border: 1px solid var(--gray-200); background: white;
+    font-size: .84rem; font-weight: 600; color: var(--gray-600);
+    cursor: pointer; transition: var(--t-fast); text-decoration: none;
+}
+.pp-btn:hover { border-color: var(--teal-400); color: var(--teal-600); background: var(--teal-100); }
+.pp-btn.active { background: var(--ink-800); border-color: var(--ink-800); color: white; }
+.pp-btn.disabled { opacity: .4; pointer-events: none; }
+.pp-ellipsis {
+    width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+    color: var(--gray-400); font-size: .85rem;
+}
+
+/* Gated content notice */
+.gated-notice {
+    background: linear-gradient(135deg, var(--gold-100), rgba(244,169,0,.05));
+    border: 1px solid rgba(244,169,0,.3); border-radius: var(--r-lg);
+    padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px;
+    margin-bottom: 24px;
+}
+.gated-notice i { color: var(--gold-600); font-size: 1rem; margin-top: 2px; flex-shrink: 0; }
+.gated-notice p { margin: 0; font-size: .84rem; color: var(--gray-700); line-height: 1.55; }
+.gated-notice strong { color: var(--gold-700); }
+
+@media (max-width: 991px) {
+    .posts-sidebar { margin-top: 32px; order: 2; }
+    .posts-main { order: 1; }
+    .article-featured { flex-direction: column; }
+    .af-img-col { flex: 0 0 220px; }
+    .psb-inner { flex-wrap: wrap; }
+    .psb-input-wrap { flex: 1 1 100%; }
+}
+@media (max-width: 576px) {
+    .alc-img { width: 90px; min-height: 70px; }
+    .psb-select { display: none; }
+}
+</style>
+
+<!-- Page Hero -->
+<section class="posts-hero">
+    <div class="container">
+        <div class="hero-breadcrumb">
+            <a href="/"><i class="fas fa-home"></i> Trang chủ</a>
+            <i class="fas fa-chevron-right"></i>
+            <span>Thư viện Y khoa</span>
+        </div>
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="posts-hero-title">
+                    Trung tâm <span>Tri thức Y khoa</span><br>& Dược lâm sàng
+                </h1>
+                <p class="posts-hero-desc">
+                    Kho tàng bài viết chuyên sâu, nghiên cứu lâm sàng và tài liệu phác đồ điều trị
+                    được biên soạn bởi đội ngũ chuyên gia y tế hàng đầu Việt Nam.
+                </p>
+                <div class="posts-hero-stats">
+                    <div class="phs-item"><i class="fas fa-file-medical-alt"></i> <strong>486</strong> bài viết</div>
+                    <div class="phs-item"><i class="fas fa-th-large"></i> <strong>12</strong> chuyên mục</div>
+                    <div class="phs-item"><i class="fas fa-tags"></i> <strong>84</strong> thẻ chủ đề</div>
+                    <div class="phs-item"><i class="fas fa-download"></i> <strong>2.4K</strong> lượt tải tài liệu</div>
+                </div>
+            </div>
+            <div class="col-lg-4 d-none d-lg-flex justify-content-end">
+                <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-xl);padding:20px;width:240px;">
+                    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal-400);margin-bottom:14px;">Phân loại nội dung</div>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:.8rem;color:rgba(255,255,255,.7);">Công khai</span>
+                            <span style="background:rgba(22,163,74,.2);color:#4ade80;padding:2px 8px;border-radius:50px;font-size:.72rem;font-weight:700;">312 bài</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:.8rem;color:rgba(255,255,255,.7);">Chuyên gia (Gated)</span>
+                            <span style="background:rgba(244,169,0,.2);color:var(--gold-400);padding:2px 8px;border-radius:50px;font-size:.72rem;font-weight:700;">174 bài</span>
+                        </div>
+                        <div style="height:1px;background:rgba(255,255,255,.07);margin:4px 0;"></div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:.8rem;color:rgba(255,255,255,.7);">Đã xuất bản</span>
+                            <span style="font-size:.78rem;font-weight:600;color:rgba(255,255,255,.5);">420 bài</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:.8rem;color:rgba(255,255,255,.7);">Bản nháp (Admin)</span>
+                            <span style="font-size:.78rem;font-weight:600;color:rgba(255,255,255,.5);">66 bài</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Search Bar -->
+<div class="posts-search-bar">
+    <div class="container">
+        <div class="psb-inner">
+            <div class="psb-input-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="psb-input" placeholder="Tìm kiếm theo tiêu đề, từ khoá, tác giả...">
+            </div>
+            <select class="psb-select">
+                <option value="">Tất cả danh mục</option>
+                <option>Nghiên cứu Lâm sàng</option>
+                <option>Tim mạch & Huyết áp</option>
+                <option>Kháng sinh & Kháng nấm</option>
+                <option>Nội tiết & Đái tháo đường</option>
+                <option>Thần kinh & Tâm thần</option>
+                <option>Hô hấp & Phổi</option>
+                <option>Dược lý lâm sàng</option>
+                <option>Phác đồ Điều trị</option>
+                <option>Tin tức Dược phẩm</option>
+                <option>Hướng dẫn ADR</option>
+                <option>Dinh dưỡng Y học</option>
+                <option>Nhãn khoa & TMH</option>
+            </select>
+            <select class="psb-select">
+                <option value="">Tất cả quyền truy cập</option>
+                <option>Công khai</option>
+                <option>Bác sĩ / Dược sĩ</option>
+                <option>Đối tác B2B</option>
+            </select>
+            <button class="psb-btn"><i class="fas fa-search"></i> Tìm kiếm</button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="posts-layout">
+    <div class="container">
+        <div class="row g-4">
+
+            <!-- Main Column -->
+            <div class="col-lg-9 posts-main">
+
+                <!-- Gated Notice for non-logged-in users -->
+                <div class="gated-notice reveal" sec:authorize="!isAuthenticated()">
+                    <i class="fas fa-lock"></i>
+                    <p><strong>174 bài nghiên cứu chuyên sâu</strong> dành riêng cho Bác sĩ, Dược sĩ và Đối tác B2B đã xác thực.
+                        <a href="/login" style="color:var(--teal-600);font-weight:700;"> Đăng nhập</a> hoặc
+                        <a href="/register" style="color:var(--gold-600);font-weight:700;"> Đăng ký tài khoản</a> để mở khóa toàn bộ nội dung.</p>
+                </div>
+
+                <!-- Active filters -->
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+                    <span style="font-size:.78rem;color:var(--gray-500);font-weight:600;">Đang lọc:</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:var(--teal-100);color:var(--teal-700);border-radius:50px;font-size:.75rem;font-weight:600;">
+                        Nghiên cứu Lâm sàng <i class="fas fa-times" style="font-size:.6rem;cursor:pointer;"></i>
+                    </span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:var(--gray-100);color:var(--gray-600);border-radius:50px;font-size:.75rem;font-weight:600;">
+                        #TimMach2026 <i class="fas fa-times" style="font-size:.6rem;cursor:pointer;"></i>
+                    </span>
+                    <a href="#" style="font-size:.75rem;color:var(--gray-400);text-decoration:none;">Xóa tất cả</a>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="posts-toolbar reveal">
+                    <div class="pt-left">Hiển thị <strong>1–12</strong> trong tổng <strong>486</strong> bài viết</div>
+                    <div class="pt-right">
+                        <select class="sort-select">
+                            <option>Mới nhất</option>
+                            <option>Cũ nhất</option>
+                            <option>Xem nhiều nhất</option>
+                            <option>Tải nhiều nhất</option>
+                        </select>
+                        <div class="view-toggle">
+                            <button class="vt-btn active"><i class="fas fa-th-large"></i></button>
+                            <button class="vt-btn"><i class="fas fa-list"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Featured Article -->
+                <a href="/tin-tuc/danh-gia-hieu-qua-lam-sang-khang-sinh-the-he-moi" class="article-featured reveal">
+                    <div class="af-img-col">
+                        <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80" alt="">
+                        <div class="ac-img-overlay"></div>
+                        <div class="af-featured-badge"><i class="fas fa-star" style="margin-right:4px;"></i> Nổi bật</div>
+                    </div>
+                    <div class="af-body">
+                        <div class="ac-category"><i class="fas fa-microscope" style="color:var(--teal-500);"></i> Nghiên cứu Lâm sàng</div>
+                        <div class="af-title">Đánh giá hiệu quả lâm sàng của kháng sinh thế hệ mới trong điều trị viêm phổi mắc phải cộng đồng: Tổng quan hệ thống và phân tích gộp 2025–2026</div>
+                        <div class="af-summary">
+                            Nghiên cứu phân tích 47 thử nghiệm lâm sàng ngẫu nhiên có đối chứng (RCT) từ 14 quốc gia, so sánh hiệu quả và độ an toàn của kháng sinh carbapenem thế hệ mới so với phác đồ chuẩn WHO trong bối cảnh kháng kháng sinh ngày càng gia tăng tại khu vực châu Á — Thái Bình Dương.
+                        </div>
+                        <div class="af-tags">
+                            <span class="af-tag">#KhangSinh</span>
+                            <span class="af-tag">#ViemPhoi</span>
+                            <span class="af-tag">#LamSang2026</span>
+                            <div class="badge-gated ms-auto"><i class="fas fa-lock fa-xs me-1"></i> Đăng nhập để đọc PDF</div>
+                        </div>
+                        <div class="af-footer">
+                            <div class="af-meta">
+                                <div class="af-meta-item"><i class="fas fa-user-md"></i> PGS.TS. Nguyễn Văn Hùng</div>
+                                <div class="af-meta-item"><i class="fas fa-calendar-alt"></i> 16/04/2026</div>
+                                <div class="af-meta-item"><i class="fas fa-eye"></i> 4.820 lượt xem</div>
+                                <div class="af-meta-item"><i class="fas fa-download"></i> 312 lượt tải</div>
+                            </div>
+                            <div class="ac-read-more">Đọc thêm <i class="fas fa-arrow-right fa-xs"></i></div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Article Grid -->
+                <div class="row g-3 mb-4">
+                    <!-- Card 1 -->
+                    <div class="col-sm-6 col-xl-4 reveal reveal-d1">
+                        <a href="/tin-tuc/tieu-duong-thai-ky-dieu-tri-moi" class="article-card h-100">
+                            <div class="ac-img-wrap">
+                                <img src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=400&q=80" alt="">
+                                <div class="ac-img-overlay"></div>
+                                <div class="ac-top-badges">
+                                    <span class="badge-etc">ETC</span>
+                                    <span class="badge-gated"><i class="fas fa-lock fa-xs"></i></span>
+                                </div>
+                                <div class="ac-bottom-info">
+                                    <span class="ac-views"><i class="fas fa-eye"></i> 2.341</span>
+                                </div>
+                            </div>
+                            <div class="ac-body">
+                                <div class="ac-category">Nội tiết & Đái tháo đường</div>
+                                <div class="ac-title">Cập nhật phác đồ điều trị đái tháo đường thai kỳ theo khuyến cáo ADA 2026</div>
+                                <div class="ac-summary">Hướng dẫn toàn diện về quản lý GDM dựa trên bằng chứng mới nhất, bao gồm ngưỡng chẩn đoán và chiến lược insulin...</div>
+                                <div class="ac-footer">
+                                    <div class="ac-author">
+                                        <div class="ac-avatar">N</div>
+                                        <div>
+                                            <div class="ac-author-name">BS. Nguyễn Thị Lan</div>
+                                            <div class="ac-date">14/04/2026</div>
+                                        </div>
+                                    </div>
+                                    <div class="ac-read-more">Đọc <i class="fas fa-arrow-right fa-xs"></i></div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="col-sm-6 col-xl-4 reveal reveal-d2">
+                        <a href="/tin-tuc/khang-sinh-do-beta-lactam-cap-nhat" class="article-card h-100">
+                            <div class="ac-img-wrap">
+                                <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&q=80" alt="">
+                                <div class="ac-img-overlay"></div>
+                                <div class="ac-top-badges">
+                                    <span class="badge-etc">ETC</span>
+                                </div>
+                                <div class="ac-bottom-info">
+                                    <span class="ac-views"><i class="fas fa-eye"></i> 1.879</span>
+                                    <div class="ac-lock"><i class="fas fa-lock"></i></div>
+                                </div>
+                            </div>
+                            <div class="ac-body">
+                                <div class="ac-category">Kháng sinh & Kháng nấm</div>
+                                <div class="ac-title">Cơ chế đề kháng beta-lactam và chiến lược phối hợp kháng sinh thế hệ 5</div>
+                                <div class="ac-summary">Phân tích cơ chế ESBL và KPC, đề xuất phác đồ phối hợp ceftolozane–tazobactam trong bối cảnh đa kháng...</div>
+                                <div class="ac-footer">
+                                    <div class="ac-author">
+                                        <div class="ac-avatar">T</div>
+                                        <div>
+                                            <div class="ac-author-name">TS. Trần Văn Tùng</div>
+                                            <div class="ac-date">12/04/2026</div>
+                                        </div>
+                                    </div>
+                                    <div class="ac-read-more">Đọc <i class="fas fa-arrow-right fa-xs"></i></div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="col-sm-6 col-xl-4 reveal reveal-d3">
+                        <a href="/tin-tuc/huyet-ap-muc-tieu-moi" class="article-card h-100">
+                            <div class="ac-img-wrap">
+                                <img src="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&q=80" alt="">
+                                <div class="ac-img-overlay"></div>
+                                <div class="ac-top-badges">
+                                    <span class="badge-otc">OTC</span>
+                                </div>
+                                <div class="ac-bottom-info">
+                                    <span class="ac-views"><i class="fas fa-eye"></i> 987</span>
+                                </div>
+                            </div>
+                            <div class="ac-body">
+                                <div class="ac-category">Tim mạch & Huyết áp</div>
+                                <div class="ac-title">Mục tiêu huyết áp mới nhất theo ACC/AHA 2025: Thay đổi thực hành lâm sàng</div>
+                                <div class="ac-summary">Hướng dẫn cập nhật ngưỡng can thiệp và mục tiêu điều trị huyết áp dựa trên tầng nguy cơ tim mạch toàn phần...</div>
+                                <div class="ac-footer">
+                                    <div class="ac-author">
+                                        <div class="ac-avatar">H</div>
+                                        <div>
+                                            <div class="ac-author-name">PGS. Hà Minh Tuấn</div>
+                                            <div class="ac-date">09/04/2026</div>
+                                        </div>
+                                    </div>
+                                    <div class="ac-read-more">Đọc <i class="fas fa-arrow-right fa-xs"></i></div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Card 4 -->
+                    <div class="col-sm-6 col-xl-4 reveal reveal-d1">
+                        <a href="/tin-tuc/bao-cao-adr-vietams-2025" class="article-card h-100">
+                            <div class="ac-img-wrap" style="background:linear-gradient(135deg,#fef3c7,#fde68a);">
+                                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                    <i class="fas fa-exclamation-triangle" style="font-size:2.5rem;color:#d97706;opacity:.6;"></i>
+                                </div>
+                                <div class="ac-top-badges">
+                                    <span style="background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700;">ADR REPORT</span>
+                                </div>
+                                <div class="ac-bottom-info">
+                                    <span class="ac-views" style="color:rgba(0,0,0,.5);"><i class="fas fa-eye"></i> 634</span>
+                                </div>
+                            </div>
+                            <div class="ac-body">
+                                <div class="ac-category" style="color:var(--warning);">Cảnh giác Dược</div>
+                                <div class="ac-title">Báo cáo tổng hợp ADR Việt Nam Q4/2025: 12 cảnh báo tương tác thuốc mới</div>
+                                <div class="ac-summary">Tổng hợp các trường hợp ADR nghiêm trọng và khuyến cáo theo dõi bệnh nhân từ hệ thống VigiBase Việt Nam...</div>
+                                <div class="ac-footer">
+                                    <div class="ac-author">
+                                        <div class="ac-avatar" style="background:linear-gradient(135deg,#d97706,#b45309);">C</div>
+                                        <div>
+                                            <div class="ac-author-name">Cục Quản lý Dược</div>
+                                            <div class="ac-date">05/04/2026</div>
+                                        </div>
+                                    </div>
+                                    <div class="ac-read-more">Đọc <i class="fas fa-arrow-right fa-xs"></i></div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Card 5 -->
+                    <div class="col-sm-6 col-xl-4 reveal reveal-d2">
+                        <a href="/tin-tuc/thuoc-tre-em-lieu-luong-an-toan" class="article-card h-100">
+                            <div class="ac-img-wrap">
+                                <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&q=80" alt="">
+                                <div class="ac-img-overlay"></div>
+                                <div class="ac-top-badges">
+                                    <span class="badge-otc">OTC</span>
+                                </div>
+                                <div class="ac-bottom-info">
+                                    <span class="ac-views"><i class="fas fa-eye"></i> 1.203</span>
+                                </div>
+                            </div>
+                            <div class="ac-body">
+                                <div class="ac-category">Nhi khoa</div>
+                                <div class="ac-title">Điều chỉnh liều lượng thuốc an toàn cho trẻ em theo cân nặng và chức năng thận</div>
+                                <div class="ac-summary">Bảng tra cứu liều nhanh cho 48 hoạt chất OTC phổ biến, chia theo nhóm tuổi và mức độ suy thận...</div>
+                                <div class="ac-footer">
+                                    <div class="ac-author">
+                                        <div class="ac-avatar">V</div>
+                                        <div>
+                                            <div class="ac-author-name">DS. Vũ Thu Hằng</div>
+                                            <div class="ac-date">02/04/2026</div>
+                                        </div>
+                                    </div>
+                                    <div class="ac-read-more">Đọc <i class="fas fa-arrow-right fa-xs"></i></div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Card 6 -->
+                    <div class="col-sm-6 col-xl-4 reveal reveal-d3">
+                        <a href="/tin-tuc/tpcn-chon-chat-luong" class="article-card h-100">
+                            <div class="ac-img-wrap">
+                                <img src="https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=400&q=80" alt="">
+                                <div class="ac-img-overlay"></div>
+                                <div class="ac-top-badges">
+                                    <span style="background:#f5f3ff;color:#7c3aed;padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700;">TPCN</span>
+                                </div>
+                                <div class="ac-bottom-info">
+                                    <span class="ac-views"><i class="fas fa-eye"></i> 445</span>
+                                </div>
+                            </div>
+                            <div class="ac-body">
+                                <div class="ac-category" style="color:#7c3aed;">TPCN & Dược mỹ phẩm</div>
+                                <div class="ac-title">Tiêu chí chọn TPCN chất lượng: Góc nhìn từ Dược sĩ lâm sàng</div>
+                                <div class="ac-summary">Hướng dẫn thực hành cho Dược sĩ nhà thuốc trong việc tư vấn chọn TPCN có bằng chứng khoa học và an toàn cho người dùng...</div>
+                                <div class="ac-footer">
+                                    <div class="ac-author">
+                                        <div class="ac-avatar" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">P</div>
+                                        <div>
+                                            <div class="ac-author-name">DS. Phạm Quỳnh Anh</div>
+                                            <div class="ac-date">28/03/2026</div>
+                                        </div>
+                                    </div>
+                                    <div class="ac-read-more">Đọc <i class="fas fa-arrow-right fa-xs"></i></div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Divider with label -->
+                <div style="display:flex;align-items:center;gap:12px;margin:28px 0 20px;" class="reveal">
+                    <div style="flex:1;height:1px;background:var(--gray-200);"></div>
+                    <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gray-400);">Xem thêm bài viết</span>
+                    <div style="flex:1;height:1px;background:var(--gray-200);"></div>
+                </div>
+
+                <!-- List View Cards -->
+                <a href="/tin-tuc/giao-thuc-xu-tri-phan-ve-thuoc-moi" class="article-list-card reveal">
+                    <div class="alc-img">
+                        <img src="https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=200&q=80" alt="">
+                        <div style="position:absolute;top:8px;left:8px;">
+                            <span class="badge-etc">ETC</span>
+                        </div>
+                    </div>
+                    <div class="alc-body">
+                        <div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap;">
+                            <span style="font-size:.68rem;font-weight:700;color:var(--danger);">Dị ứng & Phản vệ</span>
+                            <span class="badge-gated" style="font-size:.65rem;"><i class="fas fa-lock fa-xs"></i> Gated</span>
+                        </div>
+                        <div class="alc-title">Giao thức xử trí phản vệ thuốc cấp độ IV: Cập nhật phác đồ Bộ Y tế 2026</div>
+                        <div class="alc-summary">Quy trình chuẩn hoá xử lý cấp cứu phản vệ nghiêm trọng, bao gồm sử dụng epinephrine, corticosteroid và theo dõi sau sự cố...</div>
+                        <div class="alc-footer">
+                            <span class="alc-meta"><i class="fas fa-user-md"></i> GS. Lê Quốc Hùng</span>
+                            <span class="alc-meta"><i class="fas fa-calendar"></i> 25/03/2026</span>
+                            <span class="alc-meta"><i class="fas fa-eye"></i> 3.412</span>
+                            <span class="alc-meta"><i class="fas fa-download"></i> 189 tải</span>
+                            <span class="alc-meta"><i class="fas fa-clock"></i> 12 phút đọc</span>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="/tin-tuc/suy-than-man-tinh-chinh-lieu" class="article-list-card reveal">
+                    <div class="alc-img">
+                        <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=200&q=80" alt="">
+                        <div style="position:absolute;top:8px;left:8px;">
+                            <span class="badge-etc">ETC</span>
+                        </div>
+                    </div>
+                    <div class="alc-body">
+                        <div style="font-size:.68rem;font-weight:700;color:var(--teal-600);margin-bottom:5px;">Thận – Tiết niệu</div>
+                        <div class="alc-title">Hiệu chỉnh liều thuốc trên bệnh nhân suy thận mạn tính (eGFR &lt; 30 mL/min)</div>
+                        <div class="alc-summary">Bảng tra cứu nhanh 32 nhóm thuốc cần điều chỉnh liều, ngưỡng eGFR chống chỉ định và các cặp tương tác thận nguy hiểm...</div>
+                        <div class="alc-footer">
+                            <span class="alc-meta"><i class="fas fa-user-md"></i> DS.CK2. Bùi Minh Hòa</span>
+                            <span class="alc-meta"><i class="fas fa-calendar"></i> 20/03/2026</span>
+                            <span class="alc-meta"><i class="fas fa-eye"></i> 2.187</span>
+                            <span class="alc-meta"><i class="fas fa-download"></i> 94 tải</span>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="/tin-tuc/pharmacorp-doi-tac-chien-luoc" class="article-list-card reveal">
+                    <div class="alc-img" style="background:linear-gradient(135deg,var(--teal-100),var(--teal-50,#f0fafa));display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-handshake" style="font-size:2rem;color:var(--teal-500);opacity:.6;"></i>
+                        <div style="position:absolute;top:8px;left:8px;">
+                            <span style="background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:4px;font-size:.65rem;font-weight:700;">TIN TỨC</span>
+                        </div>
+                    </div>
+                    <div class="alc-body">
+                        <div style="font-size:.68rem;font-weight:700;color:#0369a1;margin-bottom:5px;">Tin tức Công ty</div>
+                        <div class="alc-title">PharmaCorp ký kết hợp tác chiến lược với 3 tập đoàn dược phẩm hàng đầu châu Âu 2026</div>
+                        <div class="alc-summary">Thỏa thuận phân phối độc quyền với AstraZeneca, Roche và Pfizer mở ra kỷ nguyên mới cho hệ sinh thái dược phẩm B2B Việt Nam...</div>
+                        <div class="alc-footer">
+                            <span class="alc-meta"><i class="fas fa-building"></i> Ban Truyền thông PharmaCorp</span>
+                            <span class="alc-meta"><i class="fas fa-calendar"></i> 15/03/2026</span>
+                            <span class="alc-meta"><i class="fas fa-eye"></i> 5.630</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Pagination -->
+                <div class="pharma-pagination reveal">
+                    <a href="#" class="pp-btn disabled"><i class="fas fa-chevron-left fa-xs"></i></a>
+                    <a href="#" class="pp-btn active">1</a>
+                    <a href="#" class="pp-btn">2</a>
+                    <a href="#" class="pp-btn">3</a>
+                    <span class="pp-ellipsis">…</span>
+                    <a href="#" class="pp-btn">40</a>
+                    <a href="#" class="pp-btn">41</a>
+                    <a href="#" class="pp-btn"><i class="fas fa-chevron-right fa-xs"></i></a>
+                </div>
+
+            </div><!-- /col main -->
+
+            <!-- Sidebar -->
+            <div class="col-lg-3 posts-sidebar">
+
+                <!-- Categories -->
+                <div class="sb-card reveal">
+                    <div class="sb-card-head"><i class="fas fa-th-large"></i> Danh mục</div>
+                    <div class="sb-card-body">
+                        <ul class="cat-list">
+                            <li>
+                                <a href="#" class="cat-link active">
+                                    Tất cả
+                                    <span class="cat-count">486</span>
+                                </a>
+                            </li>
+                            <li><a href="#" class="cat-link">Nghiên cứu Lâm sàng <span class="cat-count">74</span></a></li>
+                            <li><a href="#" class="cat-link">Tim mạch & Huyết áp <span class="cat-count">62</span></a></li>
+                            <li><a href="#" class="cat-link">Kháng sinh & Kháng nấm <span class="cat-count">58</span></a></li>
+                            <li><a href="#" class="cat-link">Nội tiết & ĐTĐ <span class="cat-count">51</span></a></li>
+                            <li><a href="#" class="cat-link">Thần kinh & Tâm thần <span class="cat-count">43</span></a></li>
+                            <li><a href="#" class="cat-link">Hô hấp & Phổi <span class="cat-count">39</span></a></li>
+                            <li><a href="#" class="cat-link">Dược lý lâm sàng <span class="cat-count">36</span></a></li>
+                            <li><a href="#" class="cat-link">Phác đồ Điều trị <span class="cat-count">34</span></a></li>
+                            <li><a href="#" class="cat-link">Cảnh giác Dược (ADR) <span class="cat-count">29</span></a></li>
+                            <li><a href="#" class="cat-link">TPCN & Dược mỹ phẩm <span class="cat-count">22</span></a></li>
+                            <li><a href="#" class="cat-link">Tin tức Dược phẩm <span class="cat-count">18</span></a></li>
+                            <li><a href="#" class="cat-link">Nhi khoa <span class="cat-count">16</span></a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Access Level Filter -->
+                <div class="sb-card reveal reveal-d1">
+                    <div class="sb-card-head"><i class="fas fa-shield-alt"></i> Phân quyền truy cập</div>
+                    <div class="sb-card-body">
+                        <div class="access-filter">
+                            <button class="af-btn active">Tất cả</button>
+                            <button class="af-btn"><i class="fas fa-globe-asia fa-xs"></i> Công khai</button>
+                            <button class="af-btn"><i class="fas fa-user-md fa-xs"></i> Bác sĩ</button>
+                            <button class="af-btn"><i class="fas fa-prescription-bottle fa-xs"></i> Dược sĩ</button>
+                            <button class="af-btn"><i class="fas fa-building fa-xs"></i> Đối tác B2B</button>
+                        </div>
+                        <div style="margin-top:12px;padding:10px;background:var(--gold-100);border-radius:var(--r-md);border:1px solid rgba(244,169,0,.2);">
+                            <p style="font-size:.75rem;color:var(--gray-600);margin:0;line-height:1.5;">
+                                <i class="fas fa-info-circle" style="color:var(--gold-600);margin-right:4px;"></i>
+                                Nội dung chuyên gia yêu cầu tài khoản đã xác thực chứng chỉ hành nghề.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="sb-card reveal reveal-d2">
+                    <div class="sb-card-head"><i class="fas fa-tags"></i> Thẻ chủ đề</div>
+                    <div class="sb-card-body">
+                        <div class="tag-cloud">
+                            <a href="#" class="tag-pill active">#TimMach2026</a>
+                            <a href="#" class="tag-pill">#KhangSinh</a>
+                            <a href="#" class="tag-pill">#LamSang</a>
+                            <a href="#" class="tag-pill">#ADR</a>
+                            <a href="#" class="tag-pill">#PhuNuMangThai</a>
+                            <a href="#" class="tag-pill">#DaiThaoduong</a>
+                            <a href="#" class="tag-pill">#NhiKhoa</a>
+                            <a href="#" class="tag-pill">#PhacdoDieuTri</a>
+                            <a href="#" class="tag-pill">#GDPchuanHoa</a>
+                            <a href="#" class="tag-pill">#UngBuou</a>
+                            <a href="#" class="tag-pill">#SuyTim</a>
+                            <a href="#" class="tag-pill">#DoAnguyenPhat</a>
+                            <a href="#" class="tag-pill">#ThankinhtW</a>
+                            <a href="#" class="tag-pill">#TPCN</a>
+                            <a href="#" class="tag-pill">#CarbapenemKhang</a>
+                            <a href="#" class="tag-pill">#GDM2026</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Posts -->
+                <div class="sb-card reveal reveal-d3">
+                    <div class="sb-card-head"><i class="fas fa-fire"></i> Đọc nhiều nhất</div>
+                    <div class="sb-card-body" style="padding-top:10px;">
+                        <a href="#" class="pop-post">
+                            <div class="pop-img"><img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=100&q=60" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm);"></div>
+                            <div class="pop-info">
+                                <div class="pop-title">Đánh giá hiệu quả lâm sàng carbapenem thế hệ mới điều trị viêm phổi</div>
+                                <div class="pop-meta"><i class="fas fa-eye fa-xs" style="color:var(--teal-400);"></i> 4.820 lượt xem</div>
+                            </div>
+                        </a>
+                        <a href="#" class="pop-post">
+                            <div class="pop-img"><img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=100&q=60" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm);"></div>
+                            <div class="pop-info">
+                                <div class="pop-title">PharmaCorp ký kết hợp tác chiến lược với tập đoàn dược châu Âu</div>
+                                <div class="pop-meta"><i class="fas fa-eye fa-xs" style="color:var(--teal-400);"></i> 5.630 lượt xem</div>
+                            </div>
+                        </a>
+                        <a href="#" class="pop-post">
+                            <div class="pop-img"><img src="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=100&q=60" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm);"></div>
+                            <div class="pop-info">
+                                <div class="pop-title">Phác đồ xử trí phản vệ thuốc cấp độ IV – Bộ Y tế 2026</div>
+                                <div class="pop-meta"><i class="fas fa-eye fa-xs" style="color:var(--teal-400);"></i> 3.412 lượt xem</div>
+                            </div>
+                        </a>
+                        <a href="#" class="pop-post">
+                            <div class="pop-img"><img src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=100&q=60" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm);"></div>
+                            <div class="pop-info">
+                                <div class="pop-title">Phác đồ điều trị đái tháo đường thai kỳ ADA 2026</div>
+                                <div class="pop-meta"><i class="fas fa-eye fa-xs" style="color:var(--teal-400);"></i> 2.341 lượt xem</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Newsletter -->
+                <div class="sb-card reveal" style="background:var(--ink-900);border-color:rgba(255,255,255,.08);">
+                    <div class="sb-card-body" style="padding:20px;">
+                        <div style="width:36px;height:36px;background:var(--teal-600);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:white;margin-bottom:12px;font-size:.9rem;">
+                            <i class="fas fa-envelope-open-text"></i>
+                        </div>
+                        <div style="font-size:.9rem;font-weight:700;color:white;margin-bottom:6px;">Bản tin Lâm sàng</div>
+                        <p style="font-size:.78rem;color:rgba(255,255,255,.5);margin-bottom:14px;line-height:1.55;">
+                            Tổng hợp nghiên cứu y khoa mới nhất, gửi mỗi thứ Hai.
+                        </p>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <input type="email" placeholder="Email công tác..." style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-md);padding:8px 12px;color:white;font-size:.82rem;outline:none;font-family:inherit;">
+                            <button style="padding:8px;background:var(--teal-600);border:none;border-radius:var(--r-md);color:white;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;">Đăng ký nhận bản tin</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /sidebar -->
+
+        </div><!-- /row -->
+    </div><!-- /container -->
+</div><!-- /posts-layout -->
+
+</div><!-- /main-content -->
+</div>
+
+<div th:replace="~{user_layout::user-footer}"></div>
+<div th:replace="~{user_layout::user-scripts}"></div>
+</body>
+</html>

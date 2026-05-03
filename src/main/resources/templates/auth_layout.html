@@ -1,0 +1,93 @@
+<!-- src/main/resources/templates/auth_layout.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Layout</title>
+    
+    <th:block th:fragment="link-css">
+        <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+    </th:block>
+</head>
+
+<body class="d-flex flex-column h-100">
+    <header th:fragment="header">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">HUTECH</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item" sec:authorize="!isAuthenticated()">
+                            <a class="nav-link" href="/login">Đăng nhập</a>
+                        </li>
+                        <li class="nav-item" sec:authorize="!isAuthenticated()">
+                            <a class="nav-link" href="/register">Đăng ký</a>
+                        </li>
+                        <li class="nav-item" sec:authorize="hasAnyRole('ADMIN', 'SUPERADMIN')">
+                            <a class="nav-link" href="/admin/dashboard">Quản trị</a>
+                            <a class="nav-link" href="/admin/users">Quản lý phân quyền</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <footer th:fragment="footer" class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            Copyright © <span th:text="${#dates.year(#dates.createNow())}"></span>
+            <a href="https://www.hutech.edu.vn/">HUTECH Education</a>
+        </div>
+
+        <script th:src="@{/js/bootstrap.min.js}"></script>
+        <script th:src="@{/js/jquery-3.7.0.min.js}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+        <script th:src="@{/js/auth-sync.js}"></script>
+        <script th:src="@{/js/security-core.js}"></script>
+
+        <script>
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+
+            function showToast(icon, message) {
+                Toast.fire({ icon: icon, title: message });
+            }
+
+            function redirectWithMessage(url, icon, message) {
+                sessionStorage.setItem('toastIcon', icon);
+                sessionStorage.setItem('toastMessage', message);
+                window.location.href = url;
+            }
+
+            $(document).ready(function () {
+                const toastIcon = sessionStorage.getItem('toastIcon');
+                const toastMessage = sessionStorage.getItem('toastMessage');
+                if (toastIcon && toastMessage) {
+                    showToast(toastIcon, toastMessage);
+                    sessionStorage.removeItem('toastIcon');
+                    sessionStorage.removeItem('toastMessage');
+                }
+            });
+        </script>
+    </footer>
+</body>
+</html>

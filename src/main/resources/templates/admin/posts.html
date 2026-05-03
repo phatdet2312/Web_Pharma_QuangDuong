@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{admin_layout::admin-head('Quản lý Bài viết')}"></head>
+
+<th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
+<div id="admin-content-wrapper">
+
+<style>
+/* === ADMIN POSTS PAGE === */
+.ap-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.ap-stat { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 14px; }
+.ap-stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0; }
+.ap-stat-num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.ap-stat-label { font-size: .72rem; color: #6c757d; font-weight: 500; margin-top: 3px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* Filter Toolbar */
+.ap-toolbar { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.apt-search { flex: 1; min-width: 200px; position: relative; }
+.apt-search i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #adb5bd; font-size: .8rem; }
+.apt-search input { width: 100%; padding: 8px 12px 8px 32px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .84rem; outline: none; font-family: inherit; transition: border-color .15s; }
+.apt-search input:focus { border-color: #0061ff; }
+.apt-filter { padding: 8px 14px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .83rem; outline: none; cursor: pointer; font-family: inherit; color: #495057; background: #fff; }
+.apt-filter:focus { border-color: #0061ff; }
+.apt-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: .84rem; font-weight: 600; cursor: pointer; transition: all .15s; border: none; font-family: inherit; }
+.apt-btn-primary { background: #0061ff; color: #fff; }
+.apt-btn-primary:hover { background: #0048c2; }
+.apt-btn-ghost { background: #fff; border: 1.5px solid #e9ecef; color: #495057; }
+.apt-btn-ghost:hover { border-color: #0061ff; color: #0061ff; }
+.apt-btn-danger { background: #ffebe6; color: #de350b; border: 1.5px solid #ffc9b8; }
+.apt-btn-danger:hover { background: #de350b; color: #fff; }
+
+/* Table */
+.posts-table { width: 100%; border-collapse: collapse; }
+.posts-table th { background: #f8f9ff; padding: 10px 14px; text-align: left; font-size: .72rem; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 2px solid #f0f2fa; }
+.posts-table td { padding: 12px 14px; border-bottom: 1px solid #f0f2fa; vertical-align: middle; }
+.posts-table tr:hover td { background: #f8f9ff; }
+.posts-table tr:last-child td { border-bottom: none; }
+.post-thumb-col { width: 52px; height: 42px; border-radius: 8px; object-fit: cover; background: #eee; flex-shrink: 0; }
+.post-title-cell { max-width: 260px; }
+.post-title-main { font-size: .875rem; font-weight: 700; color: #1a2040; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-decoration: none; }
+.post-title-main:hover { color: #0061ff; }
+.post-title-slug { font-size: .72rem; color: #adb5bd; font-family: monospace; margin-top: 2px; }
+.category-pill { display: inline-block; padding: 2px 9px; border-radius: 6px; font-size: .68rem; font-weight: 700; }
+.access-pill { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: .68rem; font-weight: 700; }
+.access-pill.public { background: #e3fcf7; color: #00875a; }
+.access-pill.gated { background: #fff7e6; color: #b87800; border: 1px solid #fde68a; }
+.access-pill.admin { background: #f0f2fa; color: #0061ff; }
+
+.toggle-published { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle-published input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #dee2e6; border-radius: 20px; transition: .2s; }
+.toggle-slider::before { content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s; }
+.toggle-published input:checked + .toggle-slider { background: #00875a; }
+.toggle-published input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+.view-count-cell { display: flex; align-items: center; gap: 4px; font-size: .82rem; color: #6c757d; }
+.view-count-cell i { font-size: .72rem; color: #0061ff; }
+.dl-count-cell { display: flex; align-items: center; gap: 4px; font-size: .82rem; color: #6c757d; }
+.dl-count-cell i { font-size: .72rem; color: #00875a; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+.modal-box { background: #fff; border-radius: 20px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,.2); }
+.modal-head { padding: 20px 24px; border-bottom: 1px solid #f0f2fa; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 1; }
+.modal-title { font-size: 1rem; font-weight: 800; color: #1a2040; }
+.modal-close { background: #f0f2fa; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: .85rem; }
+.modal-body { padding: 24px; }
+.mf-group { margin-bottom: 16px; }
+.mf-label { display: block; font-size: .78rem; font-weight: 600; color: #495057; margin-bottom: 5px; }
+.mf-label .req { color: #de350b; }
+.mf-input { width: 100%; padding: 9px 12px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .87rem; color: #1a2040; outline: none; font-family: inherit; transition: border-color .15s; }
+.mf-input:focus { border-color: #0061ff; }
+.mf-textarea { width: 100%; padding: 9px 12px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .87rem; color: #1a2040; outline: none; font-family: inherit; transition: border-color .15s; resize: vertical; min-height: 80px; }
+.mf-textarea:focus { border-color: #0061ff; }
+.mf-select { width: 100%; padding: 9px 12px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .87rem; color: #1a2040; outline: none; font-family: inherit; cursor: pointer; background: #fff; }
+.mf-select:focus { border-color: #0061ff; }
+.mf-row { display: grid; gap: 14px; }
+.mf-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.modal-foot { padding: 16px 24px; border-top: 1px solid #f0f2fa; display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Tags input */
+.tags-input-wrap { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px 10px; border: 1.5px solid #e9ecef; border-radius: 10px; cursor: text; min-height: 40px; align-items: center; }
+.tag-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; background: #e8f0fe; color: #0061ff; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+.tag-chip button { background: none; border: none; color: #4a5278; cursor: pointer; padding: 0; font-size: .7rem; line-height: 1; }
+.tags-input { border: none; outline: none; font-size: .84rem; font-family: inherit; min-width: 80px; flex: 1; }
+
+/* Bulk Actions */
+.bulk-bar { background: #0061ff; color: #fff; padding: 10px 18px; border-radius: 10px; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: .84rem; font-weight: 600; }
+.bulk-bar-action { padding: 5px 14px; border: 1.5px solid rgba(255,255,255,.3); border-radius: 8px; color: #fff; background: transparent; cursor: pointer; font-size: .8rem; font-weight: 600; font-family: inherit; transition: background .15s; }
+.bulk-bar-action:hover { background: rgba(255,255,255,.15); }
+.bulk-bar-danger { border-color: #fca5a5; color: #fca5a5; }
+.bulk-bar-danger:hover { background: rgba(220,38,38,.3); }
+
+/* Pagination */
+.pag-wrap { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #f0f2fa; flex-wrap: wrap; gap: 10px; }
+.pag-info { font-size: .8rem; color: #6c757d; }
+.pag-btns { display: flex; gap: 3px; }
+.pag-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid #e9ecef; border-radius: 8px; background: #fff; font-size: .82rem; color: #495057; cursor: pointer; transition: all .15s; text-decoration: none; }
+.pag-btn:hover:not(:disabled) { background: #0061ff; border-color: #0061ff; color: #fff; }
+.pag-btn.active { background: #0061ff; border-color: #0061ff; color: #fff; pointer-events: none;}
+.pag-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+    .ap-stat-row { grid-template-columns: 1fr 1fr; }
+    .mf-row.cols-2 { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="admin-page-header">
+    <div>
+        <h4>Quản lý Bài viết</h4>
+        <p>Thư viện Y khoa — POSTS, CATEGORIES, TAGS, POST_VIEW_LOGS, POST_FILES</p>
+    </div>
+    <button class="apt-btn apt-btn-primary" onclick="openModalCreate()">
+        <i class="fas fa-plus fa-xs"></i> Tạo bài viết mới
+    </button>
+</div>
+
+<div class="ap-stat-row">
+    <div class="ap-stat">
+        <div class="ap-stat-icon" style="background:rgba(0,97,255,.1);color:#0061ff;"><i class="fas fa-file-alt"></i></div>
+        <div><div class="ap-stat-num" id="statTotal" style="color:#0061ff;">...</div><div class="ap-stat-label">Tổng bài viết</div></div>
+    </div>
+    <div class="ap-stat">
+        <div class="ap-stat-icon" style="background:rgba(0,135,90,.1);color:#00875a;"><i class="fas fa-check-circle"></i></div>
+        <div><div class="ap-stat-num" id="statPublished" style="color:#00875a;">...</div><div class="ap-stat-label">Đã xuất bản</div></div>
+    </div>
+    <div class="ap-stat">
+        <div class="ap-stat-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><i class="fas fa-lock"></i></div>
+        <div><div class="ap-stat-num" id="statGated" style="color:#f59e0b;">...</div><div class="ap-stat-label">Nội dung Gated</div></div>
+    </div>
+    <div class="ap-stat">
+        <div class="ap-stat-icon" style="background:rgba(124,58,237,.1);color:#7c3aed;"><i class="fas fa-pencil-alt"></i></div>
+        <div><div class="ap-stat-num" id="statDraft" style="color:#7c3aed;">...</div><div class="ap-stat-label">Bản nháp</div></div>
+    </div>
+</div>
+
+<div class="ap-toolbar">
+    <div class="apt-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="filterKeyword" placeholder="Tìm theo tiêu đề, tóm tắt...">
+    </div>
+    <select class="apt-filter" id="filterCategory">
+        <option value="">Tất cả danh mục</option>
+        </select>
+    <select class="apt-filter" id="filterStatus">
+        <option value="">Trạng thái xuất bản</option>
+        <option value="true">Đã xuất bản</option>
+        <option value="false">Bản nháp</option>
+    </select>
+    <select class="apt-filter" id="filterAccess">
+        <option value="">Tất cả quyền truy cập</option>
+        <option value="PUBLIC">Công khai (PUBLIC)</option>
+        <option value="ROLE_DOCTOR">Bác sĩ / Dược sĩ</option>
+        <option value="ROLE_PARTNER">Đối tác B2B</option>
+        <option value="ROLE_ADMIN">Nội bộ Admin</option>
+    </select>
+    <button class="apt-btn apt-btn-primary" onclick="loadPosts(0)"><i class="fas fa-search fa-xs"></i> Lọc</button>
+    <button class="apt-btn apt-btn-ghost" onclick="resetFilters()"><i class="fas fa-times fa-xs"></i> Reset</button>
+</div>
+
+<div class="bulk-bar" id="bulkBar" style="display:none;">
+    <i class="fas fa-check-square fa-xs"></i>
+    <span>Đã chọn <strong id="bulkCountText">0</strong> bài viết</span>
+    <div class="bulk-actions" style="margin-left: auto; display: flex; gap: 8px;">
+        <button class="bulk-bar-action" onclick="executeBulkAction('publish', true)"><i class="fas fa-eye fa-xs me-1"></i>Xuất bản tất cả</button>
+        <button class="bulk-bar-action" onclick="executeBulkAction('publish', false)"><i class="fas fa-eye-slash fa-xs me-1"></i>Ẩn xuống nháp</button>
+        <button class="bulk-bar-action bulk-bar-danger" onclick="executeBulkAction('delete', null)"><i class="fas fa-trash fa-xs me-1"></i>Xóa đã chọn</button>
+        <button class="bulk-bar-action" style="border:none;opacity:.7;" onclick="clearBulk()"><i class="fas fa-times fa-xs"></i></button>
+    </div>
+</div>
+
+<div class="table-card">
+    <div class="table-card-header">
+        <span class="table-card-title">Danh sách bài viết</span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="posts-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;"><input type="checkbox" id="checkAllPosts" style="width:15px;height:15px;cursor:pointer;accent-color:#0061ff;"></th>
+                    <th style="width:52px;">Ảnh</th>
+                    <th>Tiêu đề / Slug</th>
+                    <th>Chuyên mục</th>
+                    <th>Tags</th>
+                    <th>Tác giả</th>
+                    <th>Truy cập</th>
+                    <th>Xem</th>
+                    <th>Tải</th>
+                    <th>Xuất bản</th>
+                    <th>Ngày tạo</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="postsTableBody">
+                <tr><td colspan="12" style="text-align:center; padding:30px; color:#6c757d;"><i class="fas fa-circle-notch fa-spin"></i> Đang tải dữ liệu...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="pag-wrap" id="paginationArea">
+        <div class="pag-info" id="pagInfoText">Hiển thị 0 bài viết</div>
+        <div class="pag-btns" id="pagBtnsArea"></div>
+    </div>
+</div>
+
+<div id="modalPost" style="display:none;" class="modal-overlay" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-box">
+        <div class="modal-head">
+            <div class="modal-title" id="modalPostTitle"><i class="fas fa-plus-circle me-2" style="color:#0061ff;"></i>Biểu mẫu Bài viết</div>
+            <button type="button" class="modal-close" onclick="document.getElementById('modalPost').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="postId">
+            
+            <div style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#adb5bd;margin-bottom:14px;">Thông tin cơ bản</div>
+            <div class="mf-group">
+                <label class="mf-label">Tiêu đề bài viết <span class="req">*</span></label>
+                <input type="text" id="postTitle" class="mf-input" placeholder="Tiêu đề đầy đủ, rõ ràng về chủ đề y khoa...">
+            </div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Slug (URL) <span class="req">*</span></label>
+                    <input type="text" id="postSlug" class="mf-input" placeholder="ten-bai-viet-theo-dau-gach-ngang">
+                    <div style="font-size:.65rem; color:#adb5bd; margin-top:4px;">Nếu để trống, hệ thống sẽ tự sinh từ Tiêu đề</div>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Danh mục (CATEGORIES) <span class="req">*</span></label>
+                    <select id="postCategory" class="mf-select">
+                        <option value="">— Chọn chuyên mục —</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Tóm tắt (SUMMARY)</label>
+                <textarea id="postSummary" class="mf-textarea" placeholder="Đoạn mô tả ngắn 1-2 câu giới thiệu nội dung bài viết..." style="min-height:60px;"></textarea>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Nội dung (CONTENT) <span class="req">*</span></label>
+                <textarea id="postContent" class="mf-textarea" style="min-height:140px;" placeholder="Nội dung HTML/Rich Text đầy đủ của bài viết..."></textarea>
+            </div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Ảnh thumbnail (URL)</label>
+                    <input type="text" id="postThumb" class="mf-input" placeholder="https://...hoặc /uploads/...">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Quyền truy cập (ACCESS_LEVEL) <span class="req">*</span></label>
+                    <select id="postAccess" class="mf-select">
+                        <option value="PUBLIC">Công khai — tất cả</option>
+                        <option value="ROLE_DOCTOR">Bác sĩ / Dược sĩ</option>
+                        <option value="ROLE_PARTNER">Đối tác B2B</option>
+                        <option value="ROLE_ADMIN">Nội bộ Admin</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mf-group">
+                <label class="mf-label">Thẻ chủ đề (CT_POST_TAGS)</label>
+                <div style="margin-bottom: 8px;" id="availableTagsContainer">
+                    <div style="font-size:.7rem; color:#6c757d; margin-bottom: 4px;">Chọn Tag có sẵn:</div>
+                    </div>
+                <input type="hidden" id="selectedTagIds">
+            </div>
+
+            <div style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#adb5bd;margin-top:20px;margin-bottom:14px;">Cài đặt SEO</div>
+            <div class="mf-group">
+                <label class="mf-label">SEO Title</label>
+                <input type="text" id="postSeoTitle" class="mf-input" placeholder="Tiêu đề tối ưu Google — tối đa 60 ký tự">
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">SEO Description</label>
+                <textarea id="postSeoDesc" class="mf-textarea" style="min-height:60px;" placeholder="Meta Description — tối đa 160 ký tự..."></textarea>
+            </div>
+
+            <div style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#adb5bd;margin-top:20px;margin-bottom:14px;">Trạng thái Xuất bản</div>
+            <div class="mf-group">
+                <select id="postPublished" class="mf-select">
+                    <option value="0">Bản nháp (Lưu chưa đăng)</option>
+                    <option value="1">Xuất bản ngay</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="apt-btn apt-btn-ghost" onclick="document.getElementById('modalPost').style.display='none'">Hủy</button>
+            <button type="button" id="btnSavePost" class="apt-btn apt-btn-primary" onclick="savePost()"><i class="fas fa-save fa-xs"></i> Lưu Bài viết</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =========================================================================
+    // LÕI JAVASCRIPT NGUYÊN THỦY (KHÔNG DÙNG ARROW FUNCTION, FOREACH, MAP)
+    // =========================================================================
+    
+    var currentPage = 0;
+    var pageSize = 10;
+    var selectedPostIds = [];
+    var allCategories = [];
+    var allTags = [];
+
+    // Format Date: YYYY-MM-DDTHH:mm:ss -> DD/MM/YYYY
+    function formatDateString(dateStr) {
+        if (dateStr === undefined || dateStr === null || dateStr === '') {
+            return '';
+        }
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        
+        var day = String(d.getDate()).padStart(2, '0');
+        var month = String(d.getMonth() + 1).padStart(2, '0');
+        var year = d.getFullYear();
+        return day + '/' + month + '/' + year;
+    }
+
+    // =========================================================================
+    // 1. TẢI THỐNG KÊ VÀ DANH MỤC
+    // =========================================================================
+    function loadPostStats() {
+        callApi('/api/admin/posts/stats', 'GET', null, null, function(res) {
+            var s = res.data;
+            if (s !== undefined && s !== null) {
+                document.getElementById('statTotal').innerText = s.totalAll || 0;
+                document.getElementById('statPublished').innerText = s.totalPublished || 0;
+                document.getElementById('statGated').innerText = s.totalGated || 0;
+                document.getElementById('statDraft').innerText = s.totalDraft || 0;
+            }
+        });
+    }
+
+    function loadCategoriesAndTags() {
+        // Tải Danh mục
+        callApi('/api/admin/posts/categories', 'GET', null, null, function(res) {
+            allCategories = res.data || [];
+            var filterSel = document.getElementById('filterCategory');
+            var formSel = document.getElementById('postCategory');
+            
+            var optionsHtml = '<option value="">— Chọn chuyên mục —</option>';
+            for (var i = 0; i < allCategories.length; i = i + 1) {
+                var c = allCategories[i];
+                optionsHtml += '<option value="' + c.id + '">' + c.name + '</option>';
+            }
+            
+            if (filterSel !== null) filterSel.innerHTML = '<option value="">Tất cả danh mục</option>' + optionsHtml;
+            if (formSel !== null) formSel.innerHTML = optionsHtml;
+        });
+
+        // Tải Thẻ Tag (Cho Form Modal)
+        callApi('/api/admin/posts/tags', 'GET', null, null, function(res) {
+            allTags = res.data || [];
+            var tagContainer = document.getElementById('availableTagsContainer');
+            if (tagContainer !== null) {
+                var html = '<div style="display:flex; flex-wrap:wrap; gap:5px;">';
+                for (var j = 0; j < allTags.length; j = j + 1) {
+                    var t = allTags[j];
+                    html += '<button type="button" class="tag-select-btn" data-id="' + t.id + '" style="padding: 3px 10px; border: 1px solid #dee2e6; background: #fff; border-radius: 20px; font-size: .75rem; color: #495057; cursor: pointer;" onclick="toggleTagSelection(this)">#' + t.name + '</button>';
+                }
+                html += '</div>';
+                tagContainer.innerHTML += html;
+            }
+        });
+    }
+
+    // =========================================================================
+    // 2. LOAD DANH SÁCH BÀI VIẾT
+    // =========================================================================
+    window.loadPosts = function(pageIndex) {
+        if (pageIndex !== undefined && pageIndex !== null) {
+            currentPage = pageIndex;
+        }
+
+        var keyword = document.getElementById('filterKeyword').value.trim();
+        var categoryId = document.getElementById('filterCategory').value;
+        var status = document.getElementById('filterStatus').value;
+        var accessLevel = document.getElementById('filterAccess').value;
+
+        var url = '/api/admin/posts?page=' + currentPage + '&size=' + pageSize;
+        if (keyword !== '') url += '&keyword=' + encodeURIComponent(keyword);
+        if (categoryId !== '') url += '&category=' + encodeURIComponent(categoryId);
+        if (status !== '') url += '&published=' + encodeURIComponent(status);
+        if (accessLevel !== '') url += '&access=' + encodeURIComponent(accessLevel);
+
+        document.getElementById('postsTableBody').innerHTML = '<tr><td colspan="12" style="text-align:center; padding:30px;"><i class="fas fa-circle-notch fa-spin"></i> Đang tải...</td></tr>';
+        
+        // Hủy chọn Bulk
+        cancelBulkSelection();
+
+        callApi(url, 'GET', null, null, function(res) {
+            var pageData = res.data;
+            var posts = pageData.content || [];
+            var totalElements = pageData.totalElements || 0;
+            var totalPages = pageData.totalPages || 0;
+
+            renderPostsTable(posts);
+            renderPagination(totalPages, totalElements);
+        });
+    };
+
+    function renderPostsTable(posts) {
+        var tbody = document.getElementById('postsTableBody');
+        if (posts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:40px; color:#6c757d;">Không tìm thấy bài viết nào phù hợp.</td></tr>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < posts.length; i = i + 1) {
+            var p = posts[i];
+            
+            // Xử lý Hình ảnh
+            var imgHtml = '<div style="width:52px;height:42px;border-radius:8px;background:#f0f2fa;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:.8rem;"><i class="fas fa-image"></i></div>';
+            if (p.thumbnailUrl !== null && p.thumbnailUrl !== '') {
+                imgHtml = '<img src="' + p.thumbnailUrl + '" class="post-thumb-col" alt="">';
+            }
+
+            // Xử lý Category
+            var catHtml = '<span style="color:#adb5bd;font-size:.75rem;">—</span>';
+            if (p.categoryName !== null) {
+                catHtml = '<span class="category-pill" style="background:rgba(0,97,255,.08);color:#0061ff;">' + p.categoryName + '</span>';
+            }
+
+            // Xử lý Tags
+            var tagsHtml = '<div style="display:flex;gap:3px;flex-wrap:wrap;max-width:120px;">';
+            if (p.tags !== null && p.tags.length > 0) {
+                for (var j = 0; j < p.tags.length; j = j + 1) {
+                    tagsHtml += '<span class="tag-chip">#' + p.tags[j].name + '</span>';
+                }
+            } else {
+                tagsHtml += '<span style="font-size:.72rem;color:#adb5bd;">—</span>';
+            }
+            tagsHtml += '</div>';
+
+            // Xử lý Access Level
+            var accessHtml = '';
+            if (p.accessLevel === 'PUBLIC') {
+                accessHtml = '<span class="access-pill public"><i class="fas fa-globe fa-xs"></i> Công khai</span>';
+            } else if (p.accessLevel === 'ROLE_ADMIN') {
+                accessHtml = '<span class="access-pill admin"><i class="fas fa-shield-alt fa-xs"></i> Admin</span>';
+            } else {
+                accessHtml = '<span class="access-pill gated"><i class="fas fa-lock fa-xs"></i> ' + p.accessLevel + '</span>';
+            }
+
+            // Dòng dữ liệu mờ đi nếu là bản nháp
+            var rowStyle = p.published === true ? '' : ' style="opacity: 0.7;"';
+            
+            // Escaping JSON for Edit button
+            var safeTitle = (p.title || '').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+            var safeSlug = (p.slug || '').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+            var safeSummary = (p.summary || '').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+            var safeThumb = (p.thumbnailUrl || '').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+            var safeAccess = (p.accessLevel || 'PUBLIC');
+            
+            // Lấy ID Tags để nhét vào hàm Edit
+            var tagIds = [];
+            if (p.tags !== null) {
+                for(var t=0; t < p.tags.length; t=t+1) { tagIds.push(p.tags[t].id); }
+            }
+            var tagIdsStr = JSON.stringify(tagIds);
+
+            html += '<tr' + rowStyle + '>';
+            html += '  <td><input type="checkbox" class="post-cb" value="' + p.id + '" onchange="handleCheckboxChange()"></td>';
+            html += '  <td>' + imgHtml + '</td>';
+            html += '  <td class="post-title-cell">';
+            html += '    <a href="/tin-tuc/' + p.slug + '" target="_blank" class="post-title-main">' + p.title + '</a>';
+            html += '    <div class="post-title-slug">' + p.slug + '</div>';
+            html += '  </td>';
+            html += '  <td>' + catHtml + '</td>';
+            html += '  <td>' + tagsHtml + '</td>';
+            html += '  <td style="font-size:.82rem;color:#495057;white-space:nowrap;">' + (p.authorName || 'Ẩn danh') + '</td>';
+            html += '  <td>' + accessHtml + '</td>';
+            html += '  <td><div class="view-count-cell"><i class="fas fa-eye"></i> ' + (p.viewCount || 0) + '</div></td>';
+            html += '  <td><div class="dl-count-cell"><i class="fas fa-download"></i> ' + (p.downloadCount || 0) + '</div></td>';
+            
+            // Toggle Published
+            var checkedStr = p.published === true ? 'checked' : '';
+            html += '  <td>';
+            html += '    <label class="toggle-published">';
+            html += '      <input type="checkbox" ' + checkedStr + ' onchange="togglePublish(' + p.id + ', this.checked)">';
+            html += '      <span class="toggle-slider"></span>';
+            html += '    </label>';
+            html += '  </td>';
+            
+            html += '  <td style="font-size:.78rem;color:#6c757d;white-space:nowrap;">' + formatDateString(p.createdAt) + '</td>';
+            
+            // Actions
+            html += '  <td>';
+            html += '    <div class="hc-card-actions">';
+            html += '      <button class="btn-tbl btn-tbl-edit" onclick="openModalEdit(' + p.id + ', \'' + safeTitle + '\', \'' + safeSlug + '\', ' + (p.categoryId || 'null') + ', \'' + safeSummary + '\', \'' + safeThumb + '\', \'' + safeAccess + '\', ' + p.published + ', ' + tagIdsStr + ')"><i class="fas fa-pen"></i></button>';
+            html += '      <button class="btn-tbl btn-tbl-delete" onclick="deletePost(' + p.id + ')"><i class="fas fa-trash"></i></button>';
+            html += '    </div>';
+            html += '  </td>';
+            html += '</tr>';
+        }
+        
+        tbody.innerHTML = html;
+    }
+
+    function renderPagination(totalPages, totalElements) {
+        var infoArea = document.getElementById('pagInfoText');
+        var btnsArea = document.getElementById('pagBtnsArea');
+        
+        if (totalElements === 0) {
+            infoArea.innerHTML = 'Hiển thị 0 bài viết';
+            btnsArea.innerHTML = '';
+            return;
+        }
+
+        var start = (currentPage * pageSize) + 1;
+        var end = Math.min((currentPage + 1) * pageSize, totalElements);
+        infoArea.innerHTML = 'Hiển thị ' + start + ' – ' + end + ' / ' + totalElements + ' bài viết';
+
+        if (totalPages <= 1) {
+            btnsArea.innerHTML = '';
+            return;
+        }
+
+        var html = '';
+        var prevDisabled = (currentPage === 0) ? 'disabled' : '';
+        html += '<button class="pag-btn" ' + prevDisabled + ' onclick="if(!this.disabled) loadPosts(' + (currentPage - 1) + ')"><i class="fas fa-chevron-left fa-xs"></i></button>';
+
+        for (var i = 0; i < totalPages; i = i + 1) {
+            var activeClass = (currentPage === i) ? 'active' : '';
+            html += '<button class="pag-btn ' + activeClass + '" onclick="loadPosts(' + i + ')">' + (i + 1) + '</button>';
+        }
+
+        var nextDisabled = (currentPage === totalPages - 1) ? 'disabled' : '';
+        html += '<button class="pag-btn" ' + nextDisabled + ' onclick="if(!this.disabled) loadPosts(' + (currentPage + 1) + ')"><i class="fas fa-chevron-right fa-xs"></i></button>';
+
+        btnsArea.innerHTML = html;
+    }
+
+    window.resetFilters = function() {
+        document.getElementById('filterKeyword').value = '';
+        document.getElementById('filterCategory').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterAccess').value = '';
+        loadPosts(0);
+    };
+
+    // =========================================================================
+    // 3. THAO TÁC ĐƠN LẺ: XUẤT BẢN / XÓA
+    // =========================================================================
+    window.togglePublish = function(id, isChecked) {
+        callApi('/api/admin/posts/' + id + '/publish?value=' + isChecked, 'PATCH', null, null, function(res) {
+            showToast('success', isChecked ? 'Đã xuất bản bài viết' : 'Đã ẩn bài viết xuống bản nháp');
+            loadPostStats(); 
+            // KHÔNG loadPosts() lại toàn bộ để tránh giật giao diện, vì checkbox đã tự đổi UI
+        }, function(err) {
+            showToast('error', err || 'Lỗi hệ thống');
+            loadPosts(currentPage); // Rollback UI nếu lỗi
+        });
+    };
+
+    window.deletePost = function(id) {
+        if (confirm('Bạn có chắc chắn muốn xóa vĩnh viễn bài viết này? Dữ liệu không thể khôi phục.') === false) {
+            return;
+        }
+        callApi('/api/admin/posts/' + id, 'DELETE', null, null, function(res) {
+            showToast('success', 'Xóa bài viết thành công');
+            loadPostStats();
+            loadPosts(currentPage);
+        });
+    };
+
+    // =========================================================================
+    // 4. BULK ACTIONS (HÀNG LOẠT)
+    // =========================================================================
+    document.getElementById('checkAllPosts').addEventListener('change', function (e) {
+        var isChecked = e.target.checked;
+        var checkboxes = document.getElementsByClassName('post-cb');
+
+        selectedPostIds = [];
+        for (var i = 0; i < checkboxes.length; i = i + 1) {
+            checkboxes[i].checked = isChecked;
+            if (isChecked === true) {
+                selectedPostIds.push(parseInt(checkboxes[i].value));
+            }
+        }
+        toggleBulkBar();
+    });
+
+    window.handleCheckboxChange = function () {
+        var checkboxes = document.getElementsByClassName('post-cb');
+        var allChecked = true;
+
+        selectedPostIds = [];
+        for (var i = 0; i < checkboxes.length; i = i + 1) {
+            if (checkboxes[i].checked === true) {
+                selectedPostIds.push(parseInt(checkboxes[i].value));
+            } else {
+                allChecked = false;
+            }
+        }
+
+        var checkAllEl = document.getElementById('checkAllPosts');
+        if (checkAllEl !== null) {
+            checkAllEl.checked = (checkboxes.length > 0 && allChecked === true);
+        }
+        toggleBulkBar();
+    };
+
+    function toggleBulkBar() {
+        var bar = document.getElementById('bulkBar');
+        document.getElementById('bulkCountText').innerText = selectedPostIds.length;
+
+        if (selectedPostIds.length > 0) {
+            bar.style.display = 'flex';
+        } else {
+            bar.style.display = 'none';
+        }
+    }
+
+    window.cancelBulkSelection = function() {
+        window.clearBulk();
+    };
+
+    window.clearBulk = function() {
+        selectedPostIds = [];
+        var checkAllEl = document.getElementById('checkAllPosts');
+        if (checkAllEl !== null) checkAllEl.checked = false;
+        
+        var checkboxes = document.getElementsByClassName('post-cb');
+        for (var i = 0; i < checkboxes.length; i = i + 1) {
+            checkboxes[i].checked = false;
+        }
+        toggleBulkBar();
+    };
+
+    window.executeBulkAction = function(actionType, publishValue) {
+        if (selectedPostIds.length === 0) return;
+
+        if (actionType === 'delete') {
+            if (confirm('Xóa vĩnh viễn ' + selectedPostIds.length + ' bài viết đã chọn?') === false) return;
+            var reqDelete = { ids: selectedPostIds };
+            callApi('/api/admin/posts/bulk', 'DELETE', reqDelete, null, function(res) {
+                showToast('success', 'Xóa hàng loạt thành công');
+                loadPostStats();
+                loadPosts(0);
+            });
+        } else if (actionType === 'publish') {
+            var reqPublish = { ids: selectedPostIds, published: publishValue };
+            callApi('/api/admin/posts/bulk/publish', 'PATCH', reqPublish, null, function(res) {
+                showToast('success', 'Cập nhật trạng thái hàng loạt thành công');
+                loadPostStats();
+                loadPosts(currentPage);
+            });
+        }
+    };
+
+    // =========================================================================
+    // 5. MODAL: CREATE / EDIT
+    // =========================================================================
+    
+    // Xử lý Tag selection trong form
+    var currentSelectedTagsInForm = [];
+    
+    window.toggleTagSelection = function(btnEl) {
+        var tagId = parseInt(btnEl.getAttribute('data-id'));
+        var isSelected = false;
+        var newArray = [];
+        
+        // Kiểm tra xem đã chọn chưa
+        for(var i=0; i < currentSelectedTagsInForm.length; i=i+1) {
+            if (currentSelectedTagsInForm[i] === tagId) {
+                isSelected = true;
+            } else {
+                newArray.push(currentSelectedTagsInForm[i]);
+            }
+        }
+        
+        if (isSelected === true) {
+            // Bỏ chọn
+            currentSelectedTagsInForm = newArray;
+            btnEl.style.background = '#fff';
+            btnEl.style.color = '#495057';
+            btnEl.style.borderColor = '#dee2e6';
+        } else {
+            // Chọn
+            currentSelectedTagsInForm.push(tagId);
+            btnEl.style.background = '#e8f0fe';
+            btnEl.style.color = '#0061ff';
+            btnEl.style.borderColor = '#0061ff';
+        }
+    };
+
+    function resetTagSelectionUI() {
+        var btns = document.querySelectorAll('.tag-select-btn');
+        for(var i=0; i < btns.length; i=i+1) {
+            var btn = btns[i];
+            var tId = parseInt(btn.getAttribute('data-id'));
+            var isSel = false;
+            for(var j=0; j < currentSelectedTagsInForm.length; j=j+1) {
+                if (currentSelectedTagsInForm[j] === tId) { isSel = true; break; }
+            }
+            
+            if (isSel) {
+                btn.style.background = '#e8f0fe';
+                btn.style.color = '#0061ff';
+                btn.style.borderColor = '#0061ff';
+            } else {
+                btn.style.background = '#fff';
+                btn.style.color = '#495057';
+                btn.style.borderColor = '#dee2e6';
+            }
+        }
+    }
+
+    window.openModalCreate = function() {
+        document.getElementById('modalPostTitle').innerHTML = '<i class="fas fa-plus-circle me-2" style="color:#0061ff;"></i>Tạo bài viết mới';
+        document.getElementById('postId').value = '';
+        document.getElementById('postTitle').value = '';
+        document.getElementById('postSlug').value = '';
+        document.getElementById('postCategory').value = '';
+        document.getElementById('postSummary').value = '';
+        document.getElementById('postContent').value = '';
+        document.getElementById('postThumb').value = '';
+        document.getElementById('postAccess').value = 'PUBLIC';
+        document.getElementById('postSeoTitle').value = '';
+        document.getElementById('postSeoDesc').value = '';
+        document.getElementById('postPublished').value = '0';
+        
+        currentSelectedTagsInForm = [];
+        resetTagSelectionUI();
+
+        document.getElementById('modalPost').style.display = 'flex';
+    };
+
+    window.openModalEdit = function(id, title, slug, catId, summary, thumb, access, isPub, tagIdsArray) {
+        document.getElementById('modalPostTitle').innerHTML = '<i class="fas fa-pen me-2" style="color:#ff8b00;"></i>Chỉnh sửa Bài viết';
+        document.getElementById('postId').value = id;
+        document.getElementById('postTitle').value = title;
+        document.getElementById('postSlug').value = slug;
+        document.getElementById('postCategory').value = (catId === null) ? '' : catId;
+        document.getElementById('postSummary').value = summary;
+        document.getElementById('postThumb').value = thumb;
+        document.getElementById('postAccess').value = access;
+        document.getElementById('postPublished').value = isPub === true ? '1' : '0';
+        
+        // Vì content không có trong list DTO, phải gọi API chi tiết để lấy Content + SEO
+        document.getElementById('postContent').value = 'Đang tải nội dung...';
+        
+        currentSelectedTagsInForm = tagIdsArray || [];
+        resetTagSelectionUI();
+        
+        document.getElementById('modalPost').style.display = 'flex';
+
+        callApi('/api/posts/' + slug, 'GET', null, null, function(res) {
+            if (res.data !== undefined && res.data !== null) {
+                document.getElementById('postContent').value = res.data.content || '';
+                document.getElementById('postSeoTitle').value = res.data.seoTitle || '';
+                document.getElementById('postSeoDesc').value = res.data.seoDescription || '';
+            }
+        });
+    };
+
+    window.savePost = function() {
+        var id = document.getElementById('postId').value;
+        var title = document.getElementById('postTitle').value.trim();
+        var content = document.getElementById('postContent').value.trim();
+
+        if (title === '' || content === '') {
+            showToast('warning', 'Vui lòng nhập Tiêu đề và Nội dung bài viết.');
+            return;
+        }
+
+        var catVal = document.getElementById('postCategory').value;
+
+        var payload = {
+            title: title,
+            slug: document.getElementById('postSlug').value.trim(),
+            summary: document.getElementById('postSummary').value.trim(),
+            content: content,
+            thumbnailUrl: document.getElementById('postThumb').value.trim(),
+            accessLevel: document.getElementById('postAccess').value,
+            isPublished: (document.getElementById('postPublished').value === '1'),
+            seoTitle: document.getElementById('postSeoTitle').value.trim(),
+            seoDescription: document.getElementById('postSeoDesc').value.trim(),
+            categoryId: catVal !== '' ? parseInt(catVal) : null,
+            tagIds: currentSelectedTagsInForm
+        };
+
+        var url = '/api/admin/posts';
+        var method = 'POST';
+        if (id !== '') {
+            url = url + '/' + id;
+            method = 'PUT';
+        }
+
+        callApi(url, method, payload, '#btnSavePost', function(res) {
+            document.getElementById('modalPost').style.display = 'none';
+            showToast('success', id === '' ? 'Tạo bài viết thành công' : 'Cập nhật thành công');
+            loadPostStats();
+            loadPosts(currentPage);
+        });
+    };
+
+    // =========================================================================
+    // BOOTSTRAP KHI TRANG TẢI XONG
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        loadPostStats();
+        loadCategoriesAndTags();
+        loadPosts(0);
+
+        // Bắt sự kiện Enter ở ô tìm kiếm
+        var kwInput = document.getElementById('filterKeyword');
+        if (kwInput !== null) {
+            kwInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    loadPosts(0);
+                }
+            });
+        }
+    });
+
+</script>
+
+</div></th:block>
+</html>

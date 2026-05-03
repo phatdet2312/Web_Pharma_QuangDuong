@@ -1,0 +1,2417 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{user_layout::user-head}"></head>
+
+<body>
+    <div th:replace="~{user_layout::user-nav}"></div>
+
+    <div th:replace="~{user_layout::layout(~{::#main-content})}">
+        <div id="main-content">
+
+            <style>
+                /* ============================================================
+   POST DETAIL — Chi tiết bài viết y khoa
+============================================================ */
+
+                /* Article Header */
+                .post-header {
+                    background: var(--ink-900);
+                    position: relative;
+                    overflow: hidden;
+                    padding: 56px 0 0;
+                }
+
+                .post-header::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    background-image: radial-gradient(circle at 70% 40%, rgba(0, 152, 152, .1) 0%, transparent 55%);
+                }
+
+                .post-header .container {
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .ph-breadcrumb {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: .73rem;
+                    color: rgba(255, 255, 255, .4);
+                    margin-bottom: 16px;
+                }
+
+                .ph-breadcrumb a {
+                    color: var(--teal-400);
+                    text-decoration: none;
+                }
+
+                .ph-breadcrumb a:hover {
+                    color: var(--teal-300);
+                }
+
+                .ph-breadcrumb i {
+                    font-size: .5rem;
+                }
+
+                .ph-badges {
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                    flex-wrap: wrap;
+                    margin-bottom: 16px;
+                }
+
+                .ph-category-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 3px 12px;
+                    background: rgba(0, 152, 152, .15);
+                    border: 1px solid rgba(0, 184, 184, .25);
+                    border-radius: var(--r-xs);
+                    font-size: .68rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    color: var(--teal-300);
+                }
+
+                .ph-title {
+                    font-size: clamp(1.5rem, 3vw, 2.2rem);
+                    font-weight: 800;
+                    color: white;
+                    letter-spacing: -.8px;
+                    line-height: 1.2;
+                    margin-bottom: 16px;
+                }
+
+                .ph-summary {
+                    font-size: 1.05rem;
+                    color: rgba(255, 255, 255, .65);
+                    line-height: 1.7;
+                    max-width: 700px;
+                    margin-bottom: 24px;
+                    border-left: 3px solid var(--teal-500);
+                    padding-left: 16px;
+                }
+
+                .ph-meta-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
+                    flex-wrap: wrap;
+                    padding: 20px 0;
+                    border-top: 1px solid rgba(255, 255, 255, .07);
+                }
+
+                .ph-meta-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: .82rem;
+                    color: rgba(255, 255, 255, .55);
+                }
+
+                .ph-meta-item i {
+                    color: var(--teal-400);
+                    font-size: .75rem;
+                }
+
+                .ph-author-pill {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 6px 14px 6px 6px;
+                    background: rgba(255, 255, 255, .06);
+                    border-radius: 50px;
+                    border: 1px solid rgba(255, 255, 255, .1);
+                    text-decoration: none;
+                }
+
+                .ph-author-avatar {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .7rem;
+                    color: white;
+                    font-weight: 700;
+                    flex-shrink: 0;
+                }
+
+                .ph-author-name {
+                    font-size: .8rem;
+                    font-weight: 600;
+                    color: white;
+                }
+
+                .ph-author-role {
+                    font-size: .68rem;
+                    color: rgba(255, 255, 255, .45);
+                }
+
+                /* Thumbnail strip */
+                .post-thumb-strip {
+                    background: var(--ink-800);
+                    border-top: 1px solid rgba(255, 255, 255, .06);
+                }
+
+                .pts-inner {
+                    padding: 28px 0;
+                    text-align: center;
+                }
+
+                .post-thumbnail {
+                    width: 100%;
+                    height: 400px;
+                    object-fit: cover;
+                    border-radius: var(--r-xl);
+                    border: 3px solid rgba(255, 255, 255, .06);
+                    box-shadow: var(--shadow-xl);
+                }
+
+                .post-thumbnail-caption {
+                    text-align: center;
+                    font-size: .76rem;
+                    color: rgba(255, 255, 255, .4);
+                    margin-top: 8px;
+                    font-style: italic;
+                }
+
+                /* Main Content Layout */
+                .post-content-area {
+                    padding: 56px 0 80px;
+                    background: var(--gray-50);
+                }
+
+                /* Sticky sidebar for Table of Contents + Related */
+                .post-sidebar {
+                    position: sticky;
+                    top: 110px;
+                    max-height: calc(100vh - 130px);
+                    overflow-y: auto;
+                }
+
+                .post-sidebar::-webkit-scrollbar {
+                    width: 4px;
+                }
+
+                .post-sidebar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+
+                .post-sidebar::-webkit-scrollbar-thumb {
+                    background: var(--gray-200);
+                    border-radius: 2px;
+                }
+
+                /* Article Body */
+                .article-body {
+                    background: white;
+                    border-radius: var(--r-xl);
+                    border: 1px solid var(--gray-200);
+                    overflow: hidden;
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .article-body-inner {
+                    padding: 40px 44px;
+                }
+
+                /* Gated Paywall */
+                .post-paywall {
+                    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, white 30%);
+                    position: relative;
+                    margin-top: -80px;
+                    padding-top: 80px;
+                    text-align: center;
+                    padding-bottom: 40px;
+                    padding-left: 44px;
+                    padding-right: 44px;
+                }
+
+                .paywall-card {
+                    background: linear-gradient(135deg, var(--ink-900), var(--ink-800));
+                    border: 1px solid rgba(255, 255, 255, .1);
+                    border-radius: var(--r-xl);
+                    padding: 36px 32px;
+                }
+
+                .paywall-lock {
+                    width: 56px;
+                    height: 56px;
+                    background: var(--gold-500);
+                    border-radius: var(--r-lg);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.3rem;
+                    color: var(--ink-800);
+                    margin: 0 auto 16px;
+                }
+
+                .paywall-title {
+                    font-size: 1.2rem;
+                    font-weight: 800;
+                    color: white;
+                    margin-bottom: 8px;
+                }
+
+                .paywall-desc {
+                    font-size: .88rem;
+                    color: rgba(255, 255, 255, .6);
+                    line-height: 1.6;
+                    margin-bottom: 24px;
+                }
+
+                .paywall-roles {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    margin-bottom: 24px;
+                }
+
+                .pr-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 4px 12px;
+                    border-radius: 50px;
+                    font-size: .75rem;
+                    font-weight: 600;
+                    background: rgba(0, 152, 152, .15);
+                    color: var(--teal-300);
+                    border: 1px solid rgba(0, 184, 184, .2);
+                }
+
+                /* Post content typography */
+                .prose {
+                    font-size: .96rem;
+                    line-height: 1.85;
+                    color: var(--gray-700);
+                }
+
+                .prose h2 {
+                    font-size: 1.3rem;
+                    font-weight: 800;
+                    color: var(--ink-800);
+                    margin: 32px 0 12px;
+                    padding-bottom: 8px;
+                    border-bottom: 2px solid var(--gray-100);
+                    scroll-margin-top: 100px;
+                }
+
+                .prose h3 {
+                    font-size: 1.08rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                    margin: 24px 0 8px;
+                    scroll-margin-top: 100px;
+                }
+
+                .prose p {
+                    margin-bottom: 16px;
+                }
+
+                .prose ul,
+                .prose ol {
+                    padding-left: 20px;
+                    margin-bottom: 16px;
+                }
+
+                .prose li {
+                    margin-bottom: 6px;
+                }
+
+                .prose strong {
+                    color: var(--ink-800);
+                }
+
+                .prose blockquote {
+                    border-left: 4px solid var(--teal-500);
+                    background: var(--teal-100);
+                    padding: 14px 18px;
+                    border-radius: 0 var(--r-md) var(--r-md) 0;
+                    margin: 20px 0;
+                    font-style: italic;
+                    color: var(--teal-700);
+                }
+
+                .prose table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                    font-size: .88rem;
+                }
+
+                .prose th {
+                    background: var(--ink-900);
+                    color: white;
+                    padding: 10px 14px;
+                    text-align: left;
+                    font-weight: 600;
+                }
+
+                .prose td {
+                    padding: 9px 14px;
+                    border-bottom: 1px solid var(--gray-100);
+                }
+
+                .prose tr:nth-child(even) td {
+                    background: var(--gray-50);
+                }
+
+                /* Image Gallery */
+                .post-gallery {
+                    padding: 24px 44px;
+                    border-top: 1px solid var(--gray-100);
+                    background: var(--gray-50);
+                }
+
+                .gallery-title {
+                    font-size: .78rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1.2px;
+                    color: var(--gray-500);
+                    margin-bottom: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .gallery-title i {
+                    color: var(--teal-500);
+                }
+
+                .gallery-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 8px;
+                }
+
+                .gallery-img {
+                    aspect-ratio: 4/3;
+                    object-fit: cover;
+                    border-radius: var(--r-md);
+                    width: 100%;
+                    cursor: pointer;
+                    transition: var(--t-base);
+                    border: 2px solid transparent;
+                }
+
+                .gallery-img:hover {
+                    border-color: var(--teal-400);
+                    transform: scale(1.02);
+                    box-shadow: var(--shadow-md);
+                    z-index: 2;
+                    position: relative;
+                }
+
+                /* Files Section */
+                .post-files {
+                    padding: 24px 44px;
+                    border-top: 1px solid var(--gray-100);
+                }
+
+                .files-title {
+                    font-size: .78rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1.2px;
+                    color: var(--gray-500);
+                    margin-bottom: 14px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .files-title i {
+                    color: var(--teal-500);
+                }
+
+                .file-card {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 14px;
+                    background: var(--gray-50);
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-md);
+                    margin-bottom: 8px;
+                    transition: var(--t-fast);
+                    text-decoration: none;
+                    color: inherit;
+                }
+
+                .file-card:hover {
+                    border-color: var(--teal-400);
+                    background: var(--teal-100);
+                }
+
+                .file-icon {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: var(--r-md);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1rem;
+                    flex-shrink: 0;
+                }
+
+                .file-icon.pdf {
+                    background: #fee2e2;
+                    color: #b91c1c;
+                }
+
+                .file-icon.xlsx {
+                    background: #dcfce7;
+                    color: #15803d;
+                }
+
+                .file-icon.docx {
+                    background: #dbeafe;
+                    color: #1d4ed8;
+                }
+
+                .file-icon.other {
+                    background: #f1f5f9;
+                    color: #64748b;
+                }
+
+                .file-info {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .file-name {
+                    font-size: .855rem;
+                    font-weight: 600;
+                    color: var(--ink-800);
+                    margin-bottom: 2px;
+                }
+
+                .file-meta {
+                    font-size: .73rem;
+                    color: var(--gray-400);
+                }
+
+                .file-card:hover .file-name {
+                    color: var(--teal-700);
+                }
+
+                .file-dl-count {
+                    font-size: .72rem;
+                    color: var(--gray-400);
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    flex-shrink: 0;
+                }
+
+                .file-dl-count i {
+                    color: var(--teal-400);
+                    font-size: .65rem;
+                }
+
+                .file-dl-btn {
+                    padding: 5px 14px;
+                    background: var(--ink-800);
+                    color: white;
+                    border-radius: var(--r-md);
+                    font-size: .77rem;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    flex-shrink: 0;
+                    transition: var(--t-fast);
+                    white-space: nowrap;
+                }
+
+                .file-card:hover .file-dl-btn {
+                    background: var(--teal-600);
+                }
+
+                /* Post Tags */
+                .post-tags {
+                    padding: 20px 44px 24px;
+                    border-top: 1px solid var(--gray-100);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+
+                .post-tags-label {
+                    font-size: .75rem;
+                    font-weight: 700;
+                    color: var(--gray-500);
+                }
+
+                .post-tag {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 3px;
+                    padding: 4px 12px;
+                    background: var(--gray-100);
+                    border-radius: 50px;
+                    font-size: .75rem;
+                    font-weight: 600;
+                    color: var(--gray-600);
+                    text-decoration: none;
+                    transition: var(--t-fast);
+                }
+
+                .post-tag:hover {
+                    background: var(--teal-100);
+                    color: var(--teal-700);
+                }
+
+                /* Action Bar */
+                .post-action-bar {
+                    padding: 16px 44px;
+                    background: var(--gray-50);
+                    border-top: 1px solid var(--gray-100);
+                    border-bottom: 1px solid var(--gray-100);
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                }
+
+                .pab-left {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .share-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 7px 14px;
+                    background: white;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: 50px;
+                    font-size: .82rem;
+                    font-weight: 600;
+                    color: var(--gray-600);
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    text-decoration: none;
+                }
+
+                .share-btn:hover {
+                    border-color: var(--ink-400);
+                    color: var(--ink-800);
+                }
+
+                /* ============================================================
+   REACTION PICKER (FACEBOOK-STYLE HOVER MENU)
+============================================================ */
+                .reaction-picker-wrapper {
+                    position: relative;
+                    display: inline-flex;
+                }
+
+                .reaction-picker {
+                    position: absolute;
+                    bottom: calc(100% + 5px);
+                    left: 0;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 50px;
+                    padding: 6px 12px;
+                    display: flex;
+                    gap: 12px;
+                    box-shadow: var(--shadow-md);
+                    opacity: 0;
+                    visibility: hidden;
+                    transform: translateY(10px);
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    z-index: 100;
+                }
+
+                .reaction-picker-wrapper:hover .reaction-picker {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translateY(0);
+                }
+
+                .reaction-emoji-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 2px;
+                    cursor: pointer;
+                    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                .reaction-emoji-item:hover {
+                    transform: scale(1.3) translateY(-3px);
+                }
+
+                .re-icon-menu {
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .re-icon-menu img {
+                    width: 28px;
+                    height: 28px;
+                    object-fit: contain;
+                }
+
+                .re-count {
+                    font-size: 0.68rem;
+                    font-weight: 700;
+                    color: var(--gray-500);
+                }
+
+                .reaction-btn,
+                .cia-btn,
+                .ria-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    background: white;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: 50px;
+                    font-weight: 600;
+                    color: var(--gray-600);
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                }
+
+                .reaction-btn {
+                    padding: 7px 14px;
+                    font-size: .82rem;
+                }
+
+                .cia-btn {
+                    padding: 3px 9px;
+                    font-size: .75rem;
+                }
+
+                .ria-btn {
+                    padding: 2px 8px;
+                    font-size: .72rem;
+                }
+
+                .reaction-btn:hover,
+                .cia-btn:hover,
+                .ria-btn:hover {
+                    border-color: var(--teal-400);
+                    color: var(--teal-600);
+                    background: var(--gray-50);
+                }
+
+                .reaction-btn.active,
+                .cia-btn.active,
+                .ria-btn.active {
+                    background: var(--teal-100) !important;
+                    border-color: var(--teal-500) !important;
+                    color: var(--teal-700) !important;
+                }
+
+                .reaction-btn.hearted.active,
+                .cia-btn.hearted.active,
+                .ria-btn.hearted.active {
+                    background: #fee2e2 !important;
+                    border-color: #fca5a5 !important;
+                    color: #dc2626 !important;
+                }
+
+                .reaction-btn.liked.active,
+                .cia-btn.liked.active,
+                .ria-btn.liked.active {
+                    background: #eff6ff !important;
+                    border-color: #93c5fd !important;
+                    color: #2563eb !important;
+                }
+
+                .btn-icon-small {
+                    display: inline-flex;
+                    align-items: center;
+                }
+
+                .btn-icon-small img {
+                    width: 16px;
+                    height: 16px;
+                    object-fit: contain;
+                }
+
+                /* TOC Sidebar card */
+                .toc-card {
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-lg);
+                    overflow: hidden;
+                    margin-bottom: 16px;
+                }
+
+                .toc-head {
+                    padding: 12px 16px;
+                    background: var(--gray-50);
+                    border-bottom: 1px solid var(--gray-100);
+                    font-size: .75rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1.2px;
+                    color: var(--gray-600);
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .toc-head i {
+                    color: var(--teal-500);
+                }
+
+                .toc-body {
+                    padding: 12px 14px;
+                }
+
+                .toc-link {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 8px;
+                    padding: 5px 8px;
+                    border-radius: var(--r-sm);
+                    font-size: .81rem;
+                    color: var(--gray-600);
+                    text-decoration: none;
+                    transition: var(--t-fast);
+                    line-height: 1.35;
+                }
+
+                .toc-link:hover {
+                    background: var(--gray-50);
+                    color: var(--teal-700);
+                }
+
+                .toc-link.active {
+                    background: var(--teal-100);
+                    color: var(--teal-700);
+                    font-weight: 600;
+                }
+
+                .toc-num {
+                    font-size: .65rem;
+                    font-weight: 700;
+                    color: var(--teal-500);
+                    min-width: 18px;
+                    margin-top: 2px;
+                }
+
+                /* Related Posts Card */
+                .rel-post {
+                    display: flex;
+                    gap: 10px;
+                    padding: 10px 0;
+                    border-bottom: 1px solid var(--gray-100);
+                    text-decoration: none;
+                    color: inherit;
+                }
+
+                .rel-post:last-child {
+                    border-bottom: none;
+                }
+
+                .rel-img {
+                    width: 60px;
+                    height: 48px;
+                    flex-shrink: 0;
+                    border-radius: var(--r-sm);
+                    object-fit: cover;
+                    background: var(--gray-100);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .rel-title {
+                    font-size: .8rem;
+                    font-weight: 600;
+                    color: var(--gray-800);
+                    line-height: 1.35;
+                    margin-bottom: 3px;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
+
+                .rel-post:hover .rel-title {
+                    color: var(--teal-600);
+                }
+
+                .rel-date {
+                    font-size: .7rem;
+                    color: var(--gray-400);
+                }
+
+                /* Author Profile Card */
+                .author-card {
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-lg);
+                    padding: 18px;
+                    margin-bottom: 16px;
+                }
+
+                .author-card-inner {
+                    display: flex;
+                    gap: 12px;
+                }
+
+                .author-card-avatar {
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.1rem;
+                    color: white;
+                    font-weight: 800;
+                }
+
+                .author-card-name {
+                    font-size: .92rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                    margin-bottom: 3px;
+                }
+
+                .author-card-title {
+                    font-size: .76rem;
+                    color: var(--gray-500);
+                    margin-bottom: 8px;
+                }
+
+                .author-card-bio {
+                    font-size: .78rem;
+                    color: var(--gray-600);
+                    line-height: 1.6;
+                }
+
+                /* ============================================================
+   COMMENT SYSTEM (CMT + PH_CMT)
+============================================================ */
+                .comments-section {
+                    padding: 40px 44px;
+                }
+
+                .comments-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 28px;
+                }
+
+                .cs-title {
+                    font-size: 1.05rem;
+                    font-weight: 800;
+                    color: var(--ink-800);
+                }
+
+                .cs-count {
+                    background: var(--teal-500);
+                    color: white;
+                    padding: 2px 9px;
+                    border-radius: 50px;
+                    font-size: .72rem;
+                    font-weight: 700;
+                }
+
+                /* Comment Form */
+                .comment-form-card {
+                    background: var(--gray-50);
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-xl);
+                    padding: 20px;
+                    margin-bottom: 32px;
+                }
+
+                .cf-head {
+                    font-size: .85rem;
+                    font-weight: 700;
+                    color: var(--gray-700);
+                    margin-bottom: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                }
+
+                .cf-head i {
+                    color: var(--teal-500);
+                }
+
+                .cf-textarea {
+                    width: 100%;
+                    background: white;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: var(--r-lg);
+                    padding: 12px 16px;
+                    font-size: .88rem;
+                    color: var(--gray-800);
+                    outline: none;
+                    resize: vertical;
+                    min-height: 100px;
+                    font-family: inherit;
+                    transition: var(--t-fast);
+                    line-height: 1.6;
+                }
+
+                .cf-textarea:focus {
+                    border-color: var(--teal-400);
+                }
+
+                .cf-textarea::placeholder {
+                    color: var(--gray-400);
+                }
+
+                .cf-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 10px;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+
+                .cf-emotion-btns {
+                    display: flex;
+                    gap: 4px;
+                }
+
+                .ce-btn {
+                    padding: 4px 10px;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 50px;
+                    font-size: .75rem;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                }
+
+                .ce-btn:hover {
+                    background: var(--gray-100);
+                    transform: scale(1.1);
+                }
+
+                .cf-submit-btn {
+                    padding: 8px 20px;
+                    background: var(--ink-800);
+                    color: white;
+                    border: none;
+                    border-radius: var(--r-md);
+                    font-size: .855rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    font-family: inherit;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .cf-submit-btn:hover {
+                    background: var(--teal-600);
+                }
+
+                .cf-cancel-btn {
+                    padding: 8px 20px;
+                    background: white;
+                    color: var(--gray-600);
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-md);
+                    font-size: .855rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    font-family: inherit;
+                }
+
+                .cf-cancel-btn:hover {
+                    background: var(--gray-100);
+                }
+
+                .reply-form-wrapper {
+                    margin-top: 12px;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-lg);
+                    padding: 14px;
+                    width: 100%;
+                }
+
+                .reply-form-wrapper .cf-textarea {
+                    min-height: 60px;
+                    margin-bottom: 8px;
+                }
+
+                /* Guest CTA */
+                .comment-guest-cta {
+                    background: var(--gray-50);
+                    border: 1.5px dashed var(--gray-300);
+                    border-radius: var(--r-xl);
+                    padding: 24px;
+                    text-align: center;
+                    margin-bottom: 24px;
+                }
+
+                .comment-guest-cta i {
+                    font-size: 1.5rem;
+                    color: var(--gray-300);
+                    margin-bottom: 10px;
+                }
+
+                .comment-guest-cta p {
+                    font-size: .88rem;
+                    color: var(--gray-500);
+                    margin-bottom: 12px;
+                }
+
+                /* Comment Item (CMT Cấp 1) */
+                .comment-item {
+                    display: flex;
+                    gap: 12px;
+                    margin-bottom: 24px;
+                }
+
+                .ci-avatar {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .8rem;
+                    color: white;
+                    font-weight: 700;
+                }
+
+                .ci-bubble-wrapper {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .ci-bubble {
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 0 var(--r-lg) var(--r-lg) var(--r-lg);
+                    padding: 12px 16px;
+                }
+
+                .ci-bubble.moderated {
+                    background: #fffbeb;
+                    border-color: #fcd34d;
+                    opacity: .7;
+                }
+
+                .ci-bubble.hidden {
+                    background: #fef2f2;
+                    border-color: #fca5a5;
+                }
+
+                .ci-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 7px;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+
+                .ci-name {
+                    font-size: .84rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                }
+
+                .ci-role-badge {
+                    font-size: .65rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    padding: 1px 6px;
+                    border-radius: 3px;
+                    letter-spacing: .4px;
+                }
+
+                .ci-role-badge.doctor {
+                    background: rgba(0, 152, 152, .1);
+                    color: var(--teal-700);
+                }
+
+                .ci-role-badge.admin {
+                    background: rgba(0, 29, 61, .1);
+                    color: var(--ink-700);
+                }
+
+                .ci-date {
+                    font-size: .71rem;
+                    color: var(--gray-400);
+                }
+
+                .ci-content {
+                    font-size: .87rem;
+                    color: var(--gray-700);
+                    line-height: 1.65;
+                    margin-bottom: 10px;
+                }
+
+                .ci-moderation-banner {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: .73rem;
+                    color: #92400e;
+                    padding: 5px 8px;
+                    background: #fef3c7;
+                    border-radius: var(--r-sm);
+                    margin-bottom: 8px;
+                }
+
+                .ci-moderation-banner i {
+                    color: #d97706;
+                }
+
+                .ci-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    position: relative;
+                }
+
+                .cia-count {
+                    font-weight: 700;
+                }
+
+                .cia-reply {
+                    margin-left: auto;
+                }
+
+                /* Reply (PH_CMT Cấp 2+) */
+                .reply-thread {
+                    margin-top: 12px;
+                }
+
+                .reply-item {
+                    display: flex;
+                    gap: 10px;
+                    margin-bottom: 12px;
+                }
+
+                .ri-avatar {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    background: linear-gradient(135deg, var(--gold-500), var(--gold-700));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .68rem;
+                    color: white;
+                    font-weight: 700;
+                }
+
+                .ri-bubble-wrapper {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .ri-bubble {
+                    background: var(--gray-50);
+                    border: 1px solid var(--gray-100);
+                    border-radius: 0 var(--r-lg) var(--r-lg) var(--r-lg);
+                    padding: 10px 14px;
+                }
+
+                .ri-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 5px;
+                }
+
+                .ri-name {
+                    font-size: .8rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                }
+
+                .ri-date {
+                    font-size: .68rem;
+                    color: var(--gray-400);
+                }
+
+                .ri-content {
+                    font-size: .84rem;
+                    color: var(--gray-700);
+                    line-height: 1.6;
+                    margin-bottom: 7px;
+                }
+
+                .ri-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                /* Load more replies */
+                .load-replies-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 4px 12px;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 50px;
+                    font-size: .76rem;
+                    font-weight: 600;
+                    color: var(--teal-600);
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    margin-bottom: 16px;
+                }
+
+                .load-replies-btn:hover {
+                    background: var(--teal-100);
+                    border-color: var(--teal-400);
+                }
+
+                .comments-divider {
+                    border: none;
+                    border-top: 1px solid var(--gray-100);
+                    margin: 24px 0;
+                }
+
+                @media (max-width: 991px) {
+
+                    .article-body-inner,
+                    .post-gallery,
+                    .post-files,
+                    .post-tags,
+                    .post-action-bar,
+                    .comments-section {
+                        padding-left: 20px;
+                        padding-right: 20px;
+                    }
+
+                    .post-sidebar {
+                        position: static;
+                        max-height: none;
+                    }
+                }
+
+                @media (max-width: 576px) {
+                    .post-thumbnail {
+                        height: 220px;
+                    }
+
+                    .gallery-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+
+                /* Skeleton Loading Styles */
+                .skeleton {
+                    background: #e2e8f0;
+                    border-radius: 4px;
+                    animation: pulse 1.5s infinite;
+                }
+
+                @keyframes pulse {
+                    0% {
+                        opacity: 1;
+                    }
+
+                    50% {
+                        opacity: 0.5;
+                    }
+
+                    100% {
+                        opacity: 1;
+                    }
+                }
+
+                .skeleton-text {
+                    height: 16px;
+                    margin-bottom: 8px;
+                }
+
+                .skeleton-title {
+                    height: 36px;
+                    margin-bottom: 16px;
+                    width: 80%;
+                }
+            </style>
+
+            <section class="post-header">
+                <div class="container">
+                    <div class="ph-breadcrumb">
+                        <a href="/"><i class="fas fa-home"></i> Trang chủ</a>
+                        <i class="fas fa-chevron-right"></i>
+                        <a href="/tin-tuc-y-khoa">Thư viện Y khoa</a>
+                        <i class="fas fa-chevron-right"></i>
+                        <a href="#" id="ph-category-link">Đang tải...</a>
+                        <i class="fas fa-chevron-right"></i>
+                        <span id="ph-breadcrumb-title">Đang tải...</span>
+                    </div>
+                    <div class="ph-badges" id="ph-badges-container"></div>
+                    <h1 class="ph-title" id="ph-title">
+                        <div class="skeleton skeleton-title"></div>
+                        <div class="skeleton skeleton-title" style="width: 60%;"></div>
+                    </h1>
+                    <div class="ph-summary" id="ph-summary">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text" style="width: 40%;"></div>
+                    </div>
+                    <div class="ph-meta-row">
+                        <a href="#" class="ph-author-pill">
+                            <div class="ph-author-avatar" id="ph-author-avatar"><i class="fas fa-user"></i></div>
+                            <div>
+                                <div class="ph-author-name" id="ph-author-name">Đang tải...</div>
+                                <div class="ph-author-role">Tác giả</div>
+                            </div>
+                        </a>
+                        <div class="ph-meta-item"><i class="fas fa-calendar-alt"></i> <span id="ph-date">...</span>
+                        </div>
+                        <div class="ph-meta-item"><i class="fas fa-eye"></i> <span id="ph-views">...</span> lượt xem
+                        </div>
+                        <div class="ph-meta-item"><i class="fas fa-download"></i> <span id="ph-downloads">...</span>
+                            lượt tải</div>
+                        <div class="ph-meta-item"><i class="fas fa-comments"></i> <span id="ph-comments">...</span> bình
+                            luận</div>
+                        <div class="ph-meta-item"><i class="fas fa-clock"></i> <span id="ph-read-time">...</span> phút
+                            đọc</div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="post-thumb-strip">
+                <div class="container pts-inner" id="post-thumbnail-container"></div>
+            </div>
+
+            <div class="post-content-area">
+                <div class="container">
+                    <div class="row g-4">
+
+                        <div class="col-lg-8">
+                            <div class="article-body">
+
+                                <div class="article-body-inner">
+                                    <div class="prose" id="post-content"></div>
+
+                                    <div id="post-paywall-container" style="display: none;">
+                                        <div class="post-paywall">
+                                            <div class="paywall-card">
+                                                <div class="paywall-lock"><i class="fas fa-lock"></i></div>
+                                                <div class="paywall-title">Nội dung dành cho Chuyên gia Y tế</div>
+                                                <div class="paywall-desc">
+                                                    Phần còn lại bao gồm: Toàn văn kết quả phân tích gộp, tài liệu
+                                                    chuyên sâu,
+                                                    khuyến nghị lâm sàng chi tiết và tài liệu tham khảo đầy đủ.
+                                                    Vui lòng đăng nhập bằng tài khoản đã xác thực chứng chỉ hành nghề.
+                                                </div>
+                                                <div class="paywall-roles">
+                                                    <span class="pr-badge"><i class="fas fa-user-md fa-xs"></i> Bác
+                                                        sĩ</span>
+                                                    <span class="pr-badge"><i
+                                                            class="fas fa-prescription-bottle fa-xs"></i> Dược sĩ</span>
+                                                    <span class="pr-badge"><i class="fas fa-building fa-xs"></i> Đối tác
+                                                        B2B</span>
+                                                </div>
+                                                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                                    <a href="/login" class="btn-primary-pharma"><i
+                                                            class="fas fa-sign-in-alt fa-sm"></i> Đăng nhập ngay</a>
+                                                    <a href="/register" class="btn-gold-pharma"><i
+                                                            class="fas fa-user-plus fa-sm"></i> Đăng ký miễn phí</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="post-gallery-container" style="display: none;">
+                                    <div class="post-gallery">
+                                        <div class="gallery-title"><i class="fas fa-images"></i> Thư viện Hình ảnh
+                                            (<span id="gallery-count">0</span> ảnh)</div>
+                                        <div class="gallery-grid" id="gallery-grid"></div>
+                                    </div>
+                                </div>
+
+                                <div id="post-files-container" style="display: none;">
+                                    <div class="post-files">
+                                        <div class="files-title"><i class="fas fa-paperclip"></i> Tài liệu đính kèm
+                                        </div>
+                                        <div id="file-list"></div>
+                                    </div>
+                                </div>
+
+                                <div id="post-tags-container" style="display: none;">
+                                    <div class="post-tags">
+                                        <span class="post-tags-label"><i class="fas fa-tag"></i> Tags:</span>
+                                        <div id="tag-list" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="post-action-bar">
+                                    <div class="pab-left" id="action-bar-reactions">
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <a href="#" class="share-btn" onclick="saoChepDuongDanTrang(event)"><i
+                                                class="fas fa-link" style="color:var(--gray-500);"></i> Sao chép
+                                            link</a>
+                                    </div>
+                                </div>
+
+                                <div class="comments-section">
+                                    <div class="comments-header">
+                                        <div class="cs-title"><i class="fas fa-comments"
+                                                style="color:var(--teal-500);margin-right:6px;"></i> Bình luận chuyên
+                                            gia</div>
+                                        <span class="cs-count" id="comment-count-badge">0</span>
+                                    </div>
+
+                                    <div class="comment-form-card" sec:authorize="isAuthenticated()">
+                                        <div class="cf-head"><i class="fas fa-pen-nib"></i> Viết bình luận của bạn</div>
+                                        <textarea id="mainCommentContent" class="cf-textarea"
+                                            placeholder="Chia sẻ nhận xét lâm sàng, kinh nghiệm thực tiễn hoặc đặt câu hỏi cho tác giả..."></textarea>
+                                        <div class="cf-footer">
+                                            <div class="cf-emotion-btns">
+                                                <button class="ce-btn"
+                                                    onclick="dienBieuTuong('👍', 'mainCommentContent')">👍</button>
+                                                <button class="ce-btn"
+                                                    onclick="dienBieuTuong('🔬', 'mainCommentContent')">🔬</button>
+                                                <button class="ce-btn"
+                                                    onclick="dienBieuTuong('⚠️', 'mainCommentContent')">⚠️</button>
+                                                <button class="ce-btn"
+                                                    onclick="dienBieuTuong('💊', 'mainCommentContent')">💊</button>
+                                                <button class="ce-btn"
+                                                    onclick="dienBieuTuong('📊', 'mainCommentContent')">📊</button>
+                                            </div>
+                                            <button class="cf-submit-btn" onclick="guiBinhLuanGoc()"><i
+                                                    class="fas fa-paper-plane fa-xs"></i> Đăng bình luận</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="comment-guest-cta" sec:authorize="!isAuthenticated()">
+                                        <i class="fas fa-user-circle d-block"></i>
+                                        <p>Đăng nhập để tham gia thảo luận chuyên môn cùng đồng nghiệp y tế.</p>
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <a href="/login" class="btn-primary-pharma"
+                                                style="padding:7px 18px;font-size:.84rem;"><i
+                                                    class="fas fa-sign-in-alt fa-xs"></i> Đăng nhập</a>
+                                            <a href="/register" class="btn-outline-pharma"
+                                                style="padding:7px 18px;font-size:.84rem;"><i
+                                                    class="fas fa-user-plus fa-xs"></i> Đăng ký</a>
+                                        </div>
+                                    </div>
+
+                                    <div id="comment-list-container">
+                                        <div style="text-align: center; padding: 20px; color: var(--gray-400);">
+                                            <i class="fas fa-circle-notch fa-spin"></i> Đang tải bình luận...
+                                        </div>
+                                    </div>
+
+                                    <div id="load-more-comments-container"
+                                        style="text-align:center;margin-top:20px;display:none;">
+                                        <button onclick="taiThemBinhLuanGoc()"
+                                            style="padding:10px 28px;background:white;border:1.5px solid var(--gray-200);border-radius:var(--r-md);font-size:.85rem;font-weight:600;color:var(--gray-600);cursor:pointer;transition:var(--t-fast);">
+                                            <i class="fas fa-chevron-down fa-xs me-2"></i> Tải thêm bình luận
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <div class="post-sidebar">
+
+                                <div class="author-card reveal">
+                                    <div
+                                        style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray-400);margin-bottom:12px;">
+                                        Tác giả</div>
+                                    <div class="author-card-inner">
+                                        <div class="author-card-avatar" id="sb-author-avatar"><i
+                                                class="fas fa-user"></i></div>
+                                        <div>
+                                            <div class="author-card-name" id="sb-author-name">Đang tải...</div>
+                                            <div class="author-card-title" id="sb-author-role">Chuyên gia Y tế</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="toc-card reveal reveal-d1" id="toc-container" style="display: none;">
+                                    <div class="toc-head"><i class="fas fa-list-ul"></i> Mục lục</div>
+                                    <div class="toc-body" id="toc-body"></div>
+                                </div>
+
+                                <div class="toc-card reveal reveal-d2">
+                                    <div class="toc-head"><i class="fas fa-chart-bar"></i> Thống kê bài viết</div>
+                                    <div class="toc-body">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                            <div
+                                                style="text-align:center;padding:12px;background:var(--gray-50);border-radius:var(--r-md);">
+                                                <div style="font-size:1.3rem;font-weight:800;color:var(--teal-600);"
+                                                    id="sb-views">0</div>
+                                                <div style="font-size:.7rem;color:var(--gray-400);font-weight:600;">Lượt
+                                                    xem</div>
+                                            </div>
+                                            <div
+                                                style="text-align:center;padding:12px;background:var(--gray-50);border-radius:var(--r-md);">
+                                                <div style="font-size:1.3rem;font-weight:800;color:var(--ink-700);"
+                                                    id="sb-downloads">0</div>
+                                                <div style="font-size:.7rem;color:var(--gray-400);font-weight:600;">Lượt
+                                                    tải</div>
+                                            </div>
+                                            <div
+                                                style="text-align:center;padding:12px;background:var(--gray-50);border-radius:var(--r-md);">
+                                                <div style="font-size:1.3rem;font-weight:800;color:var(--gold-600);"
+                                                    id="sb-likes">0</div>
+                                                <div style="font-size:.7rem;color:var(--gray-400);font-weight:600;">Lượt
+                                                    tương tác</div>
+                                            </div>
+                                            <div
+                                                style="text-align:center;padding:12px;background:var(--gray-50);border-radius:var(--r-md);">
+                                                <div style="font-size:1.3rem;font-weight:800;color:var(--success);"
+                                                    id="sb-comments">0</div>
+                                                <div style="font-size:.7rem;color:var(--gray-400);font-weight:600;">Bình
+                                                    luận</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="related-posts-container" style="display: none;">
+                                    <div class="toc-card reveal reveal-d3">
+                                        <div class="toc-head"><i class="fas fa-link"></i> Bài liên quan</div>
+                                        <div class="toc-body" style="padding-top:8px;" id="related-posts-list"></div>
+                                    </div>
+                                </div>
+
+                                <div class="toc-card reveal"
+                                    style="background:var(--gold-100);border-color:rgba(244,169,0,.25);"
+                                    sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_SUPERADMIN')">
+                                    <div class="toc-head"
+                                        style="background:rgba(244,169,0,.1);border-color:rgba(244,169,0,.2);color:var(--gold-700);">
+                                        <i class="fas fa-search" style="color:var(--gold-600);"></i> SEO Meta (Admin
+                                        View)
+                                    </div>
+                                    <div class="toc-body">
+                                        <div
+                                            style="font-size:.72rem;color:var(--gray-600);margin-bottom:6px;font-weight:600;">
+                                            Title Tag:</div>
+                                        <div style="font-size:.78rem;color:var(--gray-700);background:white;border-radius:var(--r-sm);padding:6px 10px;margin-bottom:10px;"
+                                            id="seo-title">-</div>
+                                        <div
+                                            style="font-size:.72rem;color:var(--gray-600);margin-bottom:6px;font-weight:600;">
+                                            Meta Description:</div>
+                                        <div style="font-size:.78rem;color:var(--gray-700);background:white;border-radius:var(--r-sm);padding:6px 10px;"
+                                            id="seo-desc">-</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div th:replace="~{user_layout::user-footer}"></div>
+    <div th:replace="~{user_layout::user-scripts}"></div>
+
+    <script>
+        /* =========================================================================
+           LÕI JAVASCRIPT NGUYÊN THỦY — MODULE 3 (POST DETAIL)
+           =========================================================================
+           Thiết lập cơ chế Quản trị Trạng thái Cục bộ (Local State Management) để
+           triệt tiêu độ trễ làm mới DOM, mang lại trải nghiệm tương tác mượt mà
+           chuẩn Facebook. Các tương tác cảm xúc, gửi bình luận được bảo vệ nghiêm
+           ngặt bởi cơ chế kiểm tra xác thực từ API.
+        ========================================================================= */
+        (function () {
+            'use strict';
+
+            // 1. TRẠNG THÁI TOÀN CỤC BỘ (LOCAL STATE)
+            var duongDanSlugHienTai = window.location.pathname.split('/').pop();
+            var maBaiVietHienTai = null;
+
+            var trangBinhLuanHienTai = 0;
+            var kichThuocTrangBinhLuan = 10;
+            var conBinhLuanDeTai = false;
+            var danhSachLoaiCamXuc = [];
+
+            // Lưu trữ tạm thời trạng thái Cảm xúc của bài viết và bình luận
+            var khoTrangThaiBinhLuan = {};
+            var khoTrangThaiPhanHoi = {};
+
+            // 2. CÔNG CỤ BỔ TRỢ GIAO DIỆN
+            function lamSachChuoiHTML(chuoiKhongAnToan) {
+                if (chuoiKhongAnToan === null || chuoiKhongAnToan === undefined) return '';
+                return String(chuoiKhongAnToan).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            }
+
+            function dinhDangNgayThang(chuoiISO) {
+                if (chuoiISO === null || chuoiISO === undefined || chuoiISO === '') return '';
+                var ngay = new Date(chuoiISO);
+                if (isNaN(ngay.getTime())) return chuoiISO;
+                var d = String(ngay.getDate()).padStart(2, '0');
+                var m = String(ngay.getMonth() + 1).padStart(2, '0');
+                var y = ngay.getFullYear();
+                return d + '/' + m + '/' + y;
+            }
+
+            function dinhDangThoiGianChiTiet(chuoiISO) {
+                if (chuoiISO === null || chuoiISO === undefined || chuoiISO === '') return '';
+                var ngay = new Date(chuoiISO);
+                if (isNaN(ngay.getTime())) return chuoiISO;
+                var d = String(ngay.getDate()).padStart(2, '0');
+                var m = String(ngay.getMonth() + 1).padStart(2, '0');
+                var h = String(ngay.getHours()).padStart(2, '0');
+                var phut = String(ngay.getMinutes()).padStart(2, '0');
+                return d + '/' + m + ' — ' + h + ':' + phut;
+            }
+
+            function dinhDangSoNganCach(soCanDinhDang) {
+                if (soCanDinhDang === null || soCanDinhDang === undefined) return '0';
+                return Number(soCanDinhDang).toLocaleString('vi-VN');
+            }
+
+            function layChuCaiDauTien(hoTen) {
+                if (hoTen === null || hoTen === undefined || hoTen.trim() === '') return '?';
+                var cacPhan = hoTen.trim().split(' ');
+                if (cacPhan.length === 1) return cacPhan[0].charAt(0).toUpperCase();
+                return (cacPhan[0].charAt(0) + cacPhan[cacPhan.length - 1].charAt(0)).toUpperCase();
+            }
+
+            function tinhToanThoiGianDoc(noiDungVanBan) {
+                if (noiDungVanBan === null || noiDungVanBan === undefined || noiDungVanBan === '') return 3;
+                var soTu = noiDungVanBan.split(/\s+/).length;
+                var soPhut = Math.ceil(soTu / 200);
+                return soPhut < 2 ? 2 : soPhut;
+            }
+
+            function chuyenDoiKichThuocTep(soByte) {
+                if (soByte === 0 || soByte === null || soByte === undefined) return '0 B';
+                var k = 1024;
+                var cacDonVi = ['B', 'KB', 'MB', 'GB'];
+                var chiSo = Math.floor(Math.log(soByte) / Math.log(k));
+                return parseFloat((soByte / Math.pow(k, chiSo)).toFixed(1)) + ' ' + cacDonVi[chiSo];
+            }
+
+            // Cơ chế Phân loại Hiển thị Cảm xúc (Ảnh hoặc Emoji)
+            function laDuongDanAnh(chuoi) {
+                if (chuoi === null || chuoi === undefined || chuoi === '') return false;
+                var t = chuoi.toLowerCase();
+                return t.indexOf('/') > -1 || t.indexOf('http') > -1 || t.indexOf('.png') > -1 || t.indexOf('.svg') > -1 || t.indexOf('.jpg') > -1 || t.indexOf('.gif') > -1;
+            }
+
+            function hienThiIconMenu(giaTri) {
+                if (giaTri === null || giaTri === undefined || giaTri === '') return '<div class="re-icon-menu">👍</div>';
+                if (laDuongDanAnh(giaTri) === true) {
+                    return '<div class="re-icon-menu"><img src="' + lamSachChuoiHTML(giaTri) + '" alt=""></div>';
+                }
+                return '<div class="re-icon-menu">' + lamSachChuoiHTML(giaTri) + '</div>';
+            }
+
+            function hienThiIconNutChinh(giaTri) {
+                if (giaTri === null || giaTri === undefined || giaTri === '') return '<i class="fas fa-thumbs-up fa-xs"></i>';
+                if (laDuongDanAnh(giaTri) === true) {
+                    return '<span class="btn-icon-small"><img src="' + lamSachChuoiHTML(giaTri) + '" alt=""></span>';
+                }
+                return lamSachChuoiHTML(giaTri);
+            }
+
+            // 3. QUY TRÌNH KHỞI ĐỘNG
+            function khoiDongHeThong() {
+                taiDanhSachTuDienCamXuc();
+                taiChiTietBaiVietYKhoa();
+            }
+
+            function taiDanhSachTuDienCamXuc() {
+                callApi('/api/comments/reaction-types', 'GET', null, null, function (res) {
+                    if (res.status === 200) {
+                        danhSachLoaiCamXuc = res.data || [];
+                    }
+                });
+            }
+
+            function taiChiTietBaiVietYKhoa() {
+                callApi('/api/posts/' + duongDanSlugHienTai, 'GET', null, null, function (res) {
+                    if (res.status !== 200) {
+                        showToast('error', res.message || 'Lỗi hệ thống khi tải bài viết.');
+                        return;
+                    }
+                    var baiViet = res.data;
+                    if (baiViet === null || baiViet === undefined) return;
+
+                    maBaiVietHienTai = baiViet.id;
+
+                    callApi('/api/posts/' + maBaiVietHienTai + '/view', 'POST', null, null, function () { }, function () { });
+
+                    veKhuVucTieuDe(baiViet);
+                    veKhuVucNoiDung(baiViet);
+                    veKhuVucCotPhu(baiViet);
+
+                    var mangCamXucBaiViet = [];
+                    if (baiViet.reactionCounts !== null && baiViet.reactionCounts !== undefined) {
+                        var danhSachKhoa = Object.keys(baiViet.reactionCounts);
+                        for (var c = 0; c < danhSachKhoa.length; c = c + 1) {
+                            mangCamXucBaiViet.push({ code: danhSachKhoa[c], count: baiViet.reactionCounts[danhSachKhoa[c]] });
+                        }
+                    }
+
+                    khoTrangThaiBinhLuan['post'] = {
+                        reactions: mangCamXucBaiViet,
+                        currentUserReaction: baiViet.currentUserReaction
+                    };
+
+                    veKhuVucThaoTacTuongTac();
+                    taiDanhSachBinhLuan(0, true);
+                }, function (err) {
+                    document.getElementById('post-content').innerHTML = '<div style="color:var(--danger);text-align:center;padding:40px;">' + lamSachChuoiHTML(err) + '</div>';
+                });
+            }
+
+            // 4. KIẾN TẠO GIAO DIỆN
+            function veKhuVucTieuDe(baiViet) {
+                document.title = baiViet.seoTitle ? baiViet.seoTitle : baiViet.title;
+                document.getElementById('ph-category-link').textContent = baiViet.categoryName || 'Chuyên mục';
+                document.getElementById('ph-breadcrumb-title').textContent = baiViet.title.substring(0, 30) + '...';
+
+                var theHTMLBadges = '';
+                if (baiViet.categoryName) {
+                    theHTMLBadges += '<div class="ph-category-badge"><i class="fas fa-bookmark me-1"></i> ' + lamSachChuoiHTML(baiViet.categoryName) + '</div>';
+                }
+                if (baiViet.accessLevel !== 'PUBLIC') {
+                    theHTMLBadges += '<span class="badge-gated"><i class="fas fa-lock fa-xs me-1"></i> ' + lamSachChuoiHTML(baiViet.accessLevel) + '</span>';
+                }
+                document.getElementById('ph-badges-container').innerHTML = theHTMLBadges;
+
+                document.getElementById('ph-title').textContent = baiViet.title;
+                document.getElementById('ph-summary').innerHTML = baiViet.summary ? lamSachChuoiHTML(baiViet.summary) : '<i style="color:rgba(255,255,255,0.4)">Không có tóm tắt.</i>';
+
+                var tenTacGia = 'Ẩn danh';
+                if (baiViet.authorProfile && baiViet.authorProfile.fullName) {
+                    tenTacGia = baiViet.authorProfile.fullName;
+                }
+                document.getElementById('ph-author-avatar').textContent = layChuCaiDauTien(tenTacGia);
+                document.getElementById('ph-author-name').textContent = tenTacGia;
+                document.getElementById('ph-date').textContent = dinhDangNgayThang(baiViet.createdAt);
+
+                document.getElementById('ph-views').textContent = dinhDangSoNganCach(baiViet.viewCount);
+                document.getElementById('ph-downloads').textContent = dinhDangSoNganCach(baiViet.downloadCount);
+                document.getElementById('ph-comments').textContent = dinhDangSoNganCach(baiViet.commentCount);
+
+                var vanBanTinhThoiGian = baiViet.hasFullAccess ? baiViet.content : baiViet.summary;
+                document.getElementById('ph-read-time').textContent = tinhToanThoiGianDoc(vanBanTinhThoiGian);
+
+                if (baiViet.thumbnailUrl) {
+                    document.getElementById('post-thumbnail-container').innerHTML = '<img src="' + lamSachChuoiHTML(baiViet.thumbnailUrl) + '" alt="" class="post-thumbnail">';
+                } else {
+                    document.getElementById('post-thumbnail-container').innerHTML = '<div class="post-thumbnail" style="display:flex;align-items:center;justify-content:center;background:var(--ink-700);"><i class="fas fa-image fa-3x" style="color:var(--ink-600);"></i></div>';
+                }
+            }
+
+            function veKhuVucNoiDung(baiViet) {
+                var khoiNoiDung = document.getElementById('post-content');
+                var khoiBucTuong = document.getElementById('post-paywall-container');
+
+                if (baiViet.hasFullAccess === true) {
+                    khoiNoiDung.innerHTML = baiViet.content || '<p>Nội dung đang được cập nhật.</p>';
+                    khoiBucTuong.style.display = 'none';
+                    tuDongXayDungMucLuc();
+                } else {
+                    khoiNoiDung.innerHTML = '<div style="filter: blur(4px); opacity: 0.6; user-select: none; pointer-events: none;">' +
+                        '<h2>1. Bối cảnh và Ý nghĩa</h2><p>' + lamSachChuoiHTML(baiViet.summary) +
+                        '</p><p>Nội dung này đã được hệ thống mã hóa. Vui lòng định danh chuyên gia y tế để tiếp tục...</p></div>';
+                    khoiBucTuong.style.display = 'block';
+                }
+
+                if (baiViet.tags !== null && baiViet.tags !== undefined && baiViet.tags.length > 0) {
+                    var theHTMLTags = '';
+                    for (var i = 0; i < baiViet.tags.length; i = i + 1) {
+                        theHTMLTags += '<a href="/tin-tuc-y-khoa?keyword=' + encodeURIComponent(baiViet.tags[i].name) + '" class="post-tag">#' + lamSachChuoiHTML(baiViet.tags[i].name) + '</a>';
+                    }
+                    document.getElementById('tag-list').innerHTML = theHTMLTags;
+                    document.getElementById('post-tags-container').style.display = 'block';
+                }
+
+                if (baiViet.images !== null && baiViet.images !== undefined && baiViet.images.length > 0) {
+                    document.getElementById('gallery-count').textContent = baiViet.images.length;
+                    var theHTMLImages = '';
+                    for (var j = 0; j < baiViet.images.length; j = j + 1) {
+                        var anh = baiViet.images[j];
+                        theHTMLImages += '<img src="' + lamSachChuoiHTML(anh.imageUrl) + '" alt="Minh họa ' + (j + 1) + '" class="gallery-img" onclick="window.open(\'' + lamSachChuoiHTML(anh.imageUrl) + '\', \'_blank\')">';
+                    }
+                    document.getElementById('gallery-grid').innerHTML = theHTMLImages;
+                    document.getElementById('post-gallery-container').style.display = 'block';
+                }
+
+                if (baiViet.files !== null && baiViet.files !== undefined && baiViet.files.length > 0) {
+                    var theHTMLFiles = '';
+                    for (var k = 0; k < baiViet.files.length; k = k + 1) {
+                        var tep = baiViet.files[k];
+                        var lopIcon = 'other';
+                        var iconFontAwesome = 'fa-file-alt';
+                        var loaiTepThap = tep.fileType ? tep.fileType.toLowerCase() : '';
+
+                        if (loaiTepThap.indexOf('pdf') !== -1) { lopIcon = 'pdf'; iconFontAwesome = 'fa-file-pdf'; }
+                        else if (loaiTepThap.indexOf('xls') !== -1) { lopIcon = 'xlsx'; iconFontAwesome = 'fa-file-excel'; }
+                        else if (loaiTepThap.indexOf('doc') !== -1) { lopIcon = 'docx'; iconFontAwesome = 'fa-file-word'; }
+
+                        theHTMLFiles += '<a href="' + lamSachChuoiHTML(tep.fileUrl) + '" target="_blank" class="file-card">' +
+                            '<div class="file-icon ' + lopIcon + '"><i class="fas ' + iconFontAwesome + '"></i></div>' +
+                            '<div class="file-info">' +
+                            '<div class="file-name">' + lamSachChuoiHTML(tep.fileName) + '</div>' +
+                            '<div class="file-meta">' + (tep.fileType ? tep.fileType.toUpperCase() : 'FILE') + ' • ' + chuyenDoiKichThuocTep(tep.fileSize) + '</div>' +
+                            '</div>' +
+                            '<div class="file-dl-count"><i class="fas fa-download"></i> ' + dinhDangSoNganCach(tep.downloadCount) + ' lượt</div>' +
+                            '<div class="file-dl-btn"><i class="fas fa-download fa-xs"></i> Tải về</div>' +
+                            '</a>';
+                    }
+                    document.getElementById('file-list').innerHTML = theHTMLFiles;
+                    document.getElementById('post-files-container').style.display = 'block';
+                }
+            }
+
+            function veKhuVucCotPhu(baiViet) {
+                var tenTacGia = 'Ẩn danh';
+                if (baiViet.authorProfile && baiViet.authorProfile.fullName) {
+                    tenTacGia = baiViet.authorProfile.fullName;
+                }
+                document.getElementById('sb-author-name').textContent = tenTacGia;
+                document.getElementById('sb-author-avatar').textContent = layChuCaiDauTien(tenTacGia);
+
+                document.getElementById('sb-views').textContent = dinhDangSoNganCach(baiViet.viewCount);
+                document.getElementById('sb-downloads').textContent = dinhDangSoNganCach(baiViet.downloadCount);
+
+                var tongLuotThich = 0;
+                if (baiViet.reactionCounts !== null && baiViet.reactionCounts !== undefined) {
+                    var danhSachKhoa = Object.keys(baiViet.reactionCounts);
+                    for (var i = 0; i < danhSachKhoa.length; i = i + 1) {
+                        tongLuotThich = tongLuotThich + baiViet.reactionCounts[danhSachKhoa[i]];
+                    }
+                }
+                document.getElementById('sb-likes').textContent = dinhDangSoNganCach(tongLuotThich);
+                document.getElementById('sb-comments').textContent = dinhDangSoNganCach(baiViet.commentCount);
+
+                if (baiViet.relatedPosts !== null && baiViet.relatedPosts !== undefined && baiViet.relatedPosts.length > 0) {
+                    var theHTMLLienQuan = '';
+                    for (var j = 0; j < baiViet.relatedPosts.length; j = j + 1) {
+                        var baiLienQuan = baiViet.relatedPosts[j];
+                        var khoiHinhAnh = baiLienQuan.thumbnailUrl ? '<img src="' + lamSachChuoiHTML(baiLienQuan.thumbnailUrl) + '" class="rel-img" alt="">' : '<div class="rel-img"><i class="fas fa-file-alt" style="color:var(--gray-400);"></i></div>';
+                        theHTMLLienQuan += '<a href="/tin-tuc-y-khoa/' + lamSachChuoiHTML(baiLienQuan.slug) + '" class="rel-post">' +
+                            khoiHinhAnh + '<div>' +
+                            '<div class="rel-title">' + lamSachChuoiHTML(baiLienQuan.title) + '</div>' +
+                            '<div class="rel-date">' + dinhDangNgayThang(baiLienQuan.createdAt) + '</div>' +
+                            '</div></a>';
+                    }
+                    document.getElementById('related-posts-list').innerHTML = theHTMLLienQuan;
+                    document.getElementById('related-posts-container').style.display = 'block';
+                }
+
+                var khoiSeoTieuDe = document.getElementById('seo-title');
+                var khoiSeoMoTa = document.getElementById('seo-desc');
+                if (khoiSeoTieuDe !== null) khoiSeoTieuDe.textContent = baiViet.seoTitle || 'Trống';
+                if (khoiSeoMoTa !== null) khoiSeoMoTa.textContent = baiViet.seoDescription || 'Trống';
+            }
+
+            // =========================================================================
+            // MENU HOVER CẢM XÚC CHUẨN FACEBOOK
+            // =========================================================================
+            function laySoLuongCamXuc(maCamXuc, mangThongKe) {
+                if (mangThongKe === null || mangThongKe === undefined) return 0;
+
+                if (mangThongKe[maCamXuc] !== undefined) {
+                    return mangThongKe[maCamXuc];
+                }
+
+                if (Array.isArray(mangThongKe)) {
+                    for (var i = 0; i < mangThongKe.length; i = i + 1) {
+                        if (mangThongKe[i].code === maCamXuc) return mangThongKe[i].count;
+                    }
+                }
+                return 0;
+            }
+
+            function taoHoverMenuCamXuc(loaiDoiTuong, maDoiTuong, mangThongKe) {
+                if (danhSachLoaiCamXuc.length === 0) return '';
+                var theHTMLMenu = '<div class="reaction-picker">';
+                for (var m = 0; m < danhSachLoaiCamXuc.length; m = m + 1) {
+                    var camXuc = danhSachLoaiCamXuc[m];
+                    var soLuong = laySoLuongCamXuc(camXuc.code, mangThongKe);
+                    var theHienSoLuong = soLuong > 0 ? '<div class="re-count">' + dinhDangSoNganCach(soLuong) + '</div>' : '';
+
+                    theHTMLMenu += '<div class="reaction-emoji-item" onclick="guiThongTinCamXuc(\'' + loaiDoiTuong + '\', ' + maDoiTuong + ', \'' + camXuc.code + '\')" title="' + lamSachChuoiHTML(camXuc.name) + '">' +
+                        hienThiIconMenu(camXuc.iconUrl) +
+                        theHienSoLuong +
+                        '</div>';
+                }
+                theHTMLMenu += '</div>';
+                return theHTMLMenu;
+            }
+
+            function xdKhungCamXucThongMinh(loaiDoiTuong, maDoiTuong) {
+                var stateObj;
+                if (loaiDoiTuong === 'post') {
+                    stateObj = khoTrangThaiBinhLuan['post'];
+                } else if (loaiDoiTuong === 'cmt') {
+                    stateObj = khoTrangThaiBinhLuan[maDoiTuong];
+                } else {
+                    stateObj = khoTrangThaiPhanHoi[maDoiTuong];
+                }
+
+                if (stateObj === undefined) return '';
+
+                var menuHover = taoHoverMenuCamXuc(loaiDoiTuong, maDoiTuong, stateObj.reactions);
+                var lopNutThich = (loaiDoiTuong === 'post') ? 'reaction-btn' : (loaiDoiTuong === 'cmt' ? 'cia-btn' : 'ria-btn');
+
+                var iconChinh = (loaiDoiTuong === 'post') ? '<i class="fas fa-thumbs-up" style="font-size:1.1rem;"></i> Thích' : '<i class="fas fa-thumbs-up fa-xs"></i> Thích';
+                var lopMauChinh = '';
+                var camXucCuaToi = stateObj.currentUserReaction;
+
+                if (camXucCuaToi !== null && camXucCuaToi !== undefined && camXucCuaToi !== '') {
+                    for (var c = 0; c < danhSachLoaiCamXuc.length; c = c + 1) {
+                        if (danhSachLoaiCamXuc[c].code === camXucCuaToi) {
+                            var hienTen = (loaiDoiTuong === 'post') ? ' <span style="font-size:.88rem;">' + danhSachLoaiCamXuc[c].name + '</span>' : ' ' + danhSachLoaiCamXuc[c].name;
+                            iconChinh = hienThiIconNutChinh(danhSachLoaiCamXuc[c].iconUrl) + hienTen;
+                            lopMauChinh = (camXucCuaToi === 'LOVE') ? 'hearted active' : 'liked active';
+                            break;
+                        }
+                    }
+                }
+
+                var tongSo = 0;
+                if (stateObj.reactions !== null && stateObj.reactions !== undefined) {
+                    for (var r = 0; r < stateObj.reactions.length; r = r + 1) {
+                        tongSo = tongSo + stateObj.reactions[r].count;
+                    }
+                }
+
+                var theHienTongSo = (tongSo > 0) ? '<span class="cia-count" style="margin-left:4px;">' + dinhDangSoNganCach(tongSo) + '</span>' : '';
+
+                // BƯỚC 1: Lấy mã mặc định linh hoạt từ CSDL
+                var maCamXucMacDinh = 'LIKE'; // Giữ mức cơ sở
+                if (danhSachLoaiCamXuc.length > 0) {
+                    // Nếu CSDL có dữ liệu, lấy mã của phần tử đầu tiên làm mặc định (Ví dụ: 'THICH', 'LOVE'...)
+                    maCamXucMacDinh = danhSachLoaiCamXuc[0].code;
+                }
+
+                // BƯỚC 2: Truyền biến maCamXucMacDinh vào sự kiện onclick
+                return '<div class="reaction-picker-wrapper">' +
+                    '<button class="' + lopNutThich + ' ' + lopMauChinh + '" onclick="guiThongTinCamXuc(\'' + loaiDoiTuong + '\', ' + maDoiTuong + ', \'' + maCamXucMacDinh + '\')">' +
+                    iconChinh + theHienTongSo +
+                    '</button>' +
+                    menuHover +
+                    '</div>';
+            }
+
+            function veKhuVucThaoTacTuongTac() {
+                var khoiThaoTac = document.getElementById('action-bar-reactions');
+                if (danhSachLoaiCamXuc.length === 0) {
+                    khoiThaoTac.innerHTML = '<span style="font-size:.8rem;color:var(--gray-400);">Đang tải hệ thống cảm xúc...</span>';
+                    return;
+                }
+                khoiThaoTac.innerHTML = xdKhungCamXucThongMinh('post', maBaiVietHienTai);
+            }
+
+            // =========================================================================
+            // MỤC LỤC TỰ ĐỘNG
+            // =========================================================================
+            function tuDongXayDungMucLuc() {
+                var khoiVanBan = document.getElementById('post-content');
+                var danhSachTheTieuDe = khoiVanBan.querySelectorAll('h2, h3');
+                if (danhSachTheTieuDe.length === 0) return;
+
+                var phanTheMucLuc = document.getElementById('toc-body');
+                var theHTMLMucLuc = '';
+                var boDemH2 = 1;
+
+                for (var i = 0; i < danhSachTheTieuDe.length; i = i + 1) {
+                    var theTieuDe = danhSachTheTieuDe[i];
+                    var maIdTuDong = 'muc-luc-tu-dong-' + i;
+                    theTieuDe.id = maIdTuDong;
+
+                    var khoangCachLui = theTieuDe.tagName.toLowerCase() === 'h3' ? 'margin-left:15px;' : '';
+                    var soThuTu = theTieuDe.tagName.toLowerCase() === 'h2' ? '<span class="toc-num">' + (boDemH2++) + '</span>' : '<span class="toc-num">-</span>';
+
+                    theHTMLMucLuc += '<a href="#' + maIdTuDong + '" class="toc-link" style="' + khoangCachLui + '">' + soThuTu + lamSachChuoiHTML(theTieuDe.textContent) + '</a>';
+                }
+
+                phanTheMucLuc.innerHTML = theHTMLMucLuc;
+                document.getElementById('toc-container').style.display = 'block';
+
+                var danhSachLinkMucLuc = phanTheMucLuc.querySelectorAll('.toc-link');
+                window.addEventListener('scroll', function () {
+                    var viTriCuonHienTai = window.scrollY + 120;
+                    for (var j = 0; j < danhSachTheTieuDe.length; j = j + 1) {
+                        var tdt = danhSachTheTieuDe[j];
+                        if (tdt.offsetTop <= viTriCuonHienTai && (tdt.offsetTop + tdt.offsetHeight) > viTriCuonHienTai) {
+                            for (var k = 0; k < danhSachLinkMucLuc.length; k = k + 1) {
+                                danhSachLinkMucLuc[k].classList.remove('active');
+                            }
+                            if (danhSachLinkMucLuc[j] !== undefined) {
+                                danhSachLinkMucLuc[j].classList.add('active');
+                            }
+                        }
+                    }
+                });
+            }
+
+            // =========================================================================
+            // KHỐI LOGIC BÌNH LUẬN CHÍNH XÁC THEO DOM GỐC
+            // =========================================================================
+            function taiDanhSachBinhLuan(chiSoTrang, laLamMoiHoanToan) {
+                if (laLamMoiHoanToan === true) {
+                    trangBinhLuanHienTai = 0;
+                } else {
+                    trangBinhLuanHienTai = chiSoTrang;
+                }
+
+                if (maBaiVietHienTai === null) return;
+
+                var duongDanGoiAPI = '/api/comments/posts/' + maBaiVietHienTai + '?page=' + trangBinhLuanHienTai + '&size=' + kichThuocTrangBinhLuan;
+                callApi(duongDanGoiAPI, 'GET', null, null, function (res) {
+                    if (res.status === 200) {
+                        var duLieuTrang = res.data;
+                        var mangBinhLuan = duLieuTrang.content || [];
+                        conBinhLuanDeTai = !duLieuTrang.last;
+
+                        var tongSoBinhLuan = duLieuTrang.totalElements;
+                        document.getElementById('comment-count-badge').textContent = dinhDangSoNganCach(tongSoBinhLuan);
+                        var theThongKeBinhLuan = document.getElementById('sb-comments');
+                        if (theThongKeBinhLuan !== null) {
+                            theThongKeBinhLuan.textContent = dinhDangSoNganCach(tongSoBinhLuan);
+                        }
+
+                        var khoiBaoBinhLuan = document.getElementById('comment-list-container');
+                        var theHTMLNoiDung = '';
+
+                        if (mangBinhLuan.length === 0 && trangBinhLuanHienTai === 0) {
+                            theHTMLNoiDung = '<div style="text-align:center;padding:30px;color:var(--gray-400);font-style:italic;">Chưa có bình luận nào. Khởi tạo cuộc thảo luận ngay!</div>';
+                            khoiBaoBinhLuan.innerHTML = theHTMLNoiDung;
+                        } else {
+                            for (var i = 0; i < mangBinhLuan.length; i = i + 1) {
+                                khoTrangThaiBinhLuan[mangBinhLuan[i].id] = {
+                                    reactions: mangBinhLuan[i].reactions || [],
+                                    currentUserReaction: mangBinhLuan[i].currentUserReaction
+                                };
+
+                                if (mangBinhLuan[i].replies) {
+                                    for (var r = 0; r < mangBinhLuan[i].replies.length; r = r + 1) {
+                                        var rp = mangBinhLuan[i].replies[r];
+                                        khoTrangThaiPhanHoi[rp.id] = {
+                                            reactions: rp.reactions || [],
+                                            currentUserReaction: rp.currentUserReaction
+                                        };
+                                    }
+                                }
+
+                                theHTMLNoiDung += cauTrucHTMLBinhLuanGoc(mangBinhLuan[i]);
+                            }
+
+                            if (laLamMoiHoanToan === true) {
+                                khoiBaoBinhLuan.innerHTML = theHTMLNoiDung;
+                            } else {
+                                khoiBaoBinhLuan.insertAdjacentHTML('beforeend', theHTMLNoiDung);
+                            }
+                        }
+
+                        var nutTaiThem = document.getElementById('load-more-comments-container');
+                        if (conBinhLuanDeTai === true) {
+                            nutTaiThem.style.display = 'block';
+                        } else {
+                            nutTaiThem.style.display = 'none';
+                        }
+                    } else {
+                        showToast('error', res.message);
+                    }
+                });
+            }
+
+            window.taiThemBinhLuanGoc = function () {
+                if (conBinhLuanDeTai === true) {
+                    taiDanhSachBinhLuan(trangBinhLuanHienTai + 1, false);
+                }
+            };
+
+            function cauTrucHTMLBinhLuanGoc(cmt) {
+                var laBiAn = (cmt.currentStatus === 'HIDE' || cmt.currentStatus === 'DELETE');
+                if (laBiAn === true) {
+                    return '<div class="comment-item">' +
+                        '<div class="ci-avatar" style="background:#dee2e6;color:#6c757d;">?</div>' +
+                        '<div class="ci-bubble-wrapper"><div class="ci-bubble hidden">' +
+                        '<div class="ci-moderation-banner"><i class="fas fa-eye-slash"></i> Bình luận đã bị ẩn bởi Kiểm duyệt viên.</div>' +
+                        '<div class="ci-content" style="color:#adb5bd;font-style:italic;">[Nội dung đã bị chặn hiển thị]</div>' +
+                        '</div></div></div>';
+                }
+
+                var laBiCanhBao = (cmt.currentStatus === 'WARN');
+                var theHTMLLopMau = laBiCanhBao ? ' moderated' : '';
+                var theHTMLCanhBao = laBiCanhBao ? '<div class="ci-moderation-banner"><i class="fas fa-exclamation-triangle"></i> Bình luận này đang bị cảnh báo do vi phạm tiêu chuẩn cộng đồng.</div>' : '';
+
+                var theHTMLChucVu = '';
+                if (cmt.userRoleName === 'SUPERADMIN' || cmt.userRoleName === 'ADMIN') {
+                    theHTMLChucVu = '<span class="ci-role-badge admin">Quản trị viên</span>';
+                } else if (cmt.userRoleName === 'DOCTOR' || cmt.userRoleName === 'PHARMACIST') {
+                    theHTMLChucVu = '<span class="ci-role-badge doctor">Chuyên gia</span>';
+                }
+
+                var idVungCamXucCmt = 'react-wrap-cmt-' + cmt.id;
+                var theHTMLCamXucCuaCmt = '<div id="' + idVungCamXucCmt + '" style="display:inline-block;">' + xdKhungCamXucThongMinh('cmt', cmt.id) + '</div>';
+
+                var theHTMLPhanHoiCap2 = '';
+                if (cmt.replies !== null && cmt.replies !== undefined && cmt.replies.length > 0) {
+                    theHTMLPhanHoiCap2 += '<div class="reply-thread">';
+                    for (var r = 0; r < cmt.replies.length; r = r + 1) {
+                        var rp = cmt.replies[r];
+                        var rpBiAn = (rp.currentStatus === 'HIDE' || rp.currentStatus === 'DELETE');
+                        if (rpBiAn === true) continue;
+
+                        var rpHtmlChucVu = '';
+                        var idVungCamXucRp = 'react-wrap-reply-' + rp.id;
+                        var rpCamXuc = '<div id="' + idVungCamXucRp + '" style="display:inline-block;">' + xdKhungCamXucThongMinh('reply', rp.id) + '</div>';
+
+                        theHTMLPhanHoiCap2 += '<div class="reply-item">' +
+                            '<div class="ri-avatar">' + layChuCaiDauTien(rp.userFullName) + '</div>' +
+                            '<div class="ri-bubble-wrapper">' +
+                            '<div class="ri-bubble">' +
+                            '<div class="ri-header"><div class="d-flex align-items-center gap-2"><span class="ri-name">' + lamSachChuoiHTML(rp.userFullName) + '</span>' + rpHtmlChucVu + '</div><span class="ri-date">' + dinhDangThoiGianChiTiet(rp.createdAt) + '</span></div>' +
+                            '<div class="ri-content">' + lamSachChuoiHTML(rp.content) + '</div>' +
+                            '<div class="ri-actions">' + rpCamXuc + '<button class="ria-btn" onclick="hienThiFormPhanHoi(\'reply\', ' + cmt.id + ', ' + rp.id + ', \'' + lamSachChuoiHTML(rp.userFullName) + '\')"><i class="fas fa-reply fa-xs"></i> Trả lời</button></div>' +
+                            '</div>' +
+                            '<div id="reply-container-phcmt-' + rp.id + '"></div>' +
+                            '</div></div>';
+                    }
+                    theHTMLPhanHoiCap2 += '</div>';
+                }
+
+                return '<div class="comment-item" id="cmt-' + cmt.id + '">' +
+                    '<div class="ci-avatar">' + layChuCaiDauTien(cmt.userFullName) + '</div>' +
+                    '<div class="ci-bubble-wrapper">' +
+                    '<div class="ci-bubble' + theHTMLLopMau + '">' + theHTMLCanhBao +
+                    '<div class="ci-header"><div class="d-flex align-items-center gap-2"><span class="ci-name">' + lamSachChuoiHTML(cmt.userFullName) + '</span>' + theHTMLChucVu + '</div><span class="ci-date">' + dinhDangThoiGianChiTiet(cmt.createdAt) + '</span></div>' +
+                    '<div class="ci-content">' + lamSachChuoiHTML(cmt.content) + '</div>' +
+                    '<div class="ci-actions">' + theHTMLCamXucCuaCmt + '<button class="cia-btn cia-reply" onclick="hienThiFormPhanHoi(\'cmt\', ' + cmt.id + ', null, \'' + lamSachChuoiHTML(cmt.userFullName) + '\')"><i class="fas fa-reply fa-xs"></i> Phản hồi</button></div>' +
+                    '</div>' +
+                    '<div id="reply-container-cmt-' + cmt.id + '"></div>' +
+                    theHTMLPhanHoiCap2 +
+                    '</div></div>';
+            }
+
+            // =========================================================================
+            // HÀM TƯƠNG TÁC TỪ NGƯỜI DÙNG & CHỐNG NHÁY DOM (ANTI-BLINK)
+            // =========================================================================
+
+            window.dienBieuTuong = function (bieuTuong, idTextArea) {
+                var oNhap = document.getElementById(idTextArea);
+                if (oNhap !== null) {
+                    oNhap.value = oNhap.value + bieuTuong;
+                    oNhap.focus();
+                }
+            };
+
+            window.guiBinhLuanGoc = function () {
+                var theNhap = document.getElementById('mainCommentContent');
+                var noiDung = theNhap.value.trim();
+                if (noiDung === '') { showToast('warning', 'Vui lòng nhập nội dung tham gia thảo luận.'); return; }
+
+                var doiTuongData = { targetId: maBaiVietHienTai, content: noiDung };
+                callApi('/api/comments/posts/' + maBaiVietHienTai, 'POST', doiTuongData, null, function (res) {
+                    if (res.status === 200) {
+                        theNhap.value = '';
+                        showToast('success', 'Đăng tải thành công.');
+                        taiDanhSachBinhLuan(0, true);
+                    } else {
+                        showToast('error', res.message || 'Vui lòng đăng nhập để bình luận.');
+                    }
+                });
+            };
+
+            window.hienThiFormPhanHoi = function (loaiGoi, maCmtGoc, maPhCmtCha, tenNguoiNhan) {
+                var cacFormCu = document.querySelectorAll('[id^="reply-container-"]');
+                for (var f = 0; f < cacFormCu.length; f = f + 1) {
+                    cacFormCu[f].innerHTML = '';
+                }
+
+                var idKhuVuc = (loaiGoi === 'cmt') ? 'reply-container-cmt-' + maCmtGoc : 'reply-container-phcmt-' + maPhCmtCha;
+                var khoiChua = document.getElementById(idKhuVuc);
+
+                if (khoiChua === null) return;
+
+                var thePhCha = maPhCmtCha ? maPhCmtCha : 'null';
+                var theHTMLForm = '<div class="reply-form-wrapper" style="display:flex; flex-direction:column;">' +
+                    '<textarea id="reply-input-dynamic" class="cf-textarea" placeholder="Trả lời ' + tenNguoiNhan + '..."></textarea>' +
+                    '<div class="cf-footer">' +
+                    '<div class="cf-emotion-btns">' +
+                    '<button class="ce-btn" onclick="dienBieuTuong(\'👍\', \'reply-input-dynamic\')">👍</button>' +
+                    '<button class="ce-btn" onclick="dienBieuTuong(\'🔬\', \'reply-input-dynamic\')">🔬</button>' +
+                    '<button class="ce-btn" onclick="dienBieuTuong(\'⚠️\', \'reply-input-dynamic\')">⚠️</button>' +
+                    '<button class="ce-btn" onclick="dienBieuTuong(\'💊\', \'reply-input-dynamic\')">💊</button>' +
+                    '<button class="ce-btn" onclick="dienBieuTuong(\'📊\', \'reply-input-dynamic\')">📊</button>' +
+                    '</div>' +
+                    '<div style="display:flex; gap:8px;">' +
+                    '<button class="cf-cancel-btn" onclick="dongFormPhanHoi(\'' + idKhuVuc + '\')">Hủy</button>' +
+                    '<button class="cf-submit-btn" onclick="guiLenhPhanHoi(' + maCmtGoc + ', ' + thePhCha + ')"><i class="fas fa-paper-plane fa-xs"></i> Gửi</button>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+
+                khoiChua.innerHTML = theHTMLForm;
+                document.getElementById('reply-input-dynamic').focus();
+            };
+
+            window.dongFormPhanHoi = function (idKhuVuc) {
+                var khoiChua = document.getElementById(idKhuVuc);
+                if (khoiChua !== null) khoiChua.innerHTML = '';
+            };
+
+            window.guiLenhPhanHoi = function (maCmtGoc, maPhCmtCha) {
+                var theNhap = document.getElementById('reply-input-dynamic');
+                if (theNhap === null) return;
+                var noiDung = theNhap.value.trim();
+
+                if (noiDung === '') { showToast('warning', 'Nội dung phản hồi không được để trống.'); return; }
+
+                var doiTuongData = { rootCmtId: maCmtGoc, parentPhId: maPhCmtCha, content: noiDung };
+                callApi('/api/comments/reply', 'POST', doiTuongData, null, function (res) {
+                    if (res.status === 200) {
+                        showToast('success', 'Đã ghi nhận phản hồi.');
+                        taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                    } else {
+                        showToast('error', res.message || 'Vui lòng đăng nhập để phản hồi.');
+                    }
+                });
+            };
+
+            function capNhatCamXucCucBo(loaiDich, idDich, maLoaiCamXuc) {
+                var stateObj;
+                if (loaiDich === 'post') {
+                    stateObj = khoTrangThaiBinhLuan['post'];
+                } else if (loaiDich === 'cmt') {
+                    stateObj = khoTrangThaiBinhLuan[idDich];
+                } else {
+                    stateObj = khoTrangThaiPhanHoi[idDich];
+                }
+
+                if (stateObj === undefined) return;
+
+                var camXucCu = stateObj.currentUserReaction;
+
+                if (camXucCu !== null && camXucCu !== undefined && camXucCu !== '') {
+                    for (var i = 0; i < stateObj.reactions.length; i = i + 1) {
+                        if (stateObj.reactions[i].code === camXucCu) {
+                            stateObj.reactions[i].count = stateObj.reactions[i].count - 1;
+                            break;
+                        }
+                    }
+                }
+
+                if (camXucCu === maLoaiCamXuc) {
+                    stateObj.currentUserReaction = null;
+                }
+                else {
+                    stateObj.currentUserReaction = maLoaiCamXuc;
+                    var daCoSan = false;
+                    for (var j = 0; j < stateObj.reactions.length; j = j + 1) {
+                        if (stateObj.reactions[j].code === maLoaiCamXuc) {
+                            stateObj.reactions[j].count = stateObj.reactions[j].count + 1;
+                            daCoSan = true;
+                            break;
+                        }
+                    }
+                    if (daCoSan === false) {
+                        stateObj.reactions.push({ code: maLoaiCamXuc, count: 1 });
+                    }
+                }
+
+                if (loaiDich === 'post') {
+                    veKhuVucThaoTacTuongTac();
+
+                    // Cập nhật thống kê cột phải
+                    var tongLuotThich = 0;
+                    for (var r = 0; r < stateObj.reactions.length; r = r + 1) {
+                        tongLuotThich += stateObj.reactions[r].count;
+                    }
+                    var theThongKeThich = document.getElementById('sb-likes');
+                    if (theThongKeThich !== null) {
+                        theThongKeThich.textContent = dinhDangSoNganCach(tongLuotThich);
+                    }
+                } else {
+                    var vungId = (loaiDich === 'cmt') ? 'react-wrap-cmt-' + idDich : 'react-wrap-reply-' + idDich;
+                    var theBao = document.getElementById(vungId);
+                    if (theBao !== null) {
+                        theBao.innerHTML = xdKhungCamXucThongMinh(loaiDich, idDich);
+                    }
+                }
+            }
+
+            window.guiThongTinCamXuc = function (loaiDich, idDich, maLoaiCamXuc) {
+                var duongDanGoiAPI = (loaiDich === 'post') ? '/api/posts/like' : (loaiDich === 'cmt' ? '/api/comments/like/cmt' : '/api/comments/like/reply');
+                var idCanGui = (loaiDich === 'post') ? maBaiVietHienTai : idDich;
+                var doiTuongGoi = { targetId: idCanGui, loaiLikeCode: maLoaiCamXuc };
+
+                callApi(duongDanGoiAPI, 'POST', doiTuongGoi, null, function (res) {
+                    if (res.status === 200) {
+                        capNhatCamXucCucBo(loaiDich, idDich, maLoaiCamXuc);
+                    } else {
+                        showToast('error', res.message || 'Vui lòng đăng nhập để tương tác.');
+                    }
+                });
+            };
+
+            window.saoChepDuongDanTrang = function (suKien) {
+                suKien.preventDefault();
+                var theAo = document.createElement('input'), vanBan = window.location.href;
+                document.body.appendChild(theAo);
+                theAo.value = vanBan;
+                theAo.select();
+                document.execCommand('copy');
+                document.body.removeChild(theAo);
+                showToast('success', 'Đã sao chép đường dẫn bài báo khoa học!');
+            };
+
+            // KÍCH HOẠT QUY TRÌNH KHI TẢI TRANG XONG
+            document.addEventListener('DOMContentLoaded', khoiDongHeThong);
+
+        })();
+    </script>
+
+    </div>
+    </div>
+
+    <div th:replace="~{user_layout::user-footer}"></div>
+    <div th:replace="~{user_layout::user-scripts}"></div>
+</body>
+
+</html>

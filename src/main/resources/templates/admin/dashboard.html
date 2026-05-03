@@ -1,0 +1,248 @@
+<!-- src/main/resources/templates/admin/dashboard.html -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{admin_layout::admin-head('Bảng điều khiển')}"></head>
+
+<th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
+    <div id="admin-content-wrapper">
+        
+        <style>
+            /* Stat cards (Giữ nguyên 100% từ mẫu NodeJS) */
+            .hc-stat-card { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius-lg); padding:20px; display:flex; align-items:center; gap:16px; transition:background .2s; }
+            .hc-stat-card:hover { background:rgba(255,255,255,.08); }
+            .sc-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; background:rgba(0,97,255,.15); color:var(--primary); }
+            .sc-body { flex:1; min-width:0; }
+            .sc-label { font-size:.75rem; color:rgba(255,255,255,.5); font-weight:500; margin-bottom:4px; text-transform: uppercase; letter-spacing: 0.5px;}
+            .sc-value { font-size:1.6rem; font-weight:800; color:var(--primary); line-height:1; }
+            
+            /* Quick links (Giữ nguyên 100% từ mẫu NodeJS) */
+            .quick-link-card { display:flex; align-items:center; gap:12px; padding:14px 16px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius-md); text-decoration:none; color:rgba(255,255,255,.85); font-weight:600; font-size:.875rem; transition:background .2s,transform .2s; }
+            .quick-link-card:hover { background:rgba(255,255,255,.1); transform:translateY(-2px); color:white; }
+            .ql-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; }
+            
+            /* Tiêu đề bảng (Giữ nguyên 100%) */
+            .table-card { background: var(--bg-white, #fff); border-radius: var(--radius-lg, 12px); box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.1)); border: 1px solid var(--border-light, #eee); overflow: hidden; }
+            .table-card-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-light, #eee); background: var(--bg-soft, #f8f9fa); gap: 12px; flex-wrap: wrap; }
+            .table-card-title { font-size: .92rem; font-weight: 700; color: var(--text, #333); }
+        </style>
+
+        <div class="admin-page-header" style="margin-bottom:20px;">
+            <div>
+                <h4 style="font-size: 1.2rem; font-weight: 700; margin: 0;">Bảng điều khiển</h4>
+                <p style="font-size: .82rem; color: #6c757d; margin: 2px 0 0;">Tổng quan tình hình hệ thống</p>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="hc-stat-card" style="--sc-color:#0061ff; background: #fff; border-color: #eee;">
+                    <div class="sc-icon" style="background:rgba(0,97,255,.15); color:#0061ff;"><i class="fas fa-users"></i></div>
+                    <div class="sc-body">
+                        <div class="sc-label" style="color:#6c757d;">Tổng tài khoản</div>
+                        <div class="sc-value" style="color:#0061ff;" id="dashTotalUsers">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="hc-stat-card" style="--sc-color:#00875a; background: #fff; border-color: #eee;">
+                    <div class="sc-icon" style="background:rgba(0,135,90,.15); color:#00875a;"><i class="fas fa-user-check"></i></div>
+                    <div class="sc-body">
+                        <div class="sc-label" style="color:#6c757d;">Đang hoạt động</div>
+                        <div class="sc-value" style="color:#00875a;" id="dashActiveUsers">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="hc-stat-card" style="--sc-color:#de350b; background: #fff; border-color: #eee;">
+                    <div class="sc-icon" style="background:rgba(222,53,11,.15); color:#de350b;"><i class="fas fa-user-lock"></i></div>
+                    <div class="sc-body">
+                        <div class="sc-label" style="color:#6c757d;">Đang bị khóa</div>
+                        <div class="sc-value" style="color:#de350b;" id="dashLockedUsers">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="hc-stat-card" style="--sc-color:#f59e0b; background: #fff; border-color: #eee;">
+                    <div class="sc-icon" style="background:rgba(245,158,11,.15); color:#f59e0b;"><i class="fas fa-wifi"></i></div>
+                    <div class="sc-body">
+                        <div class="sc-label" style="color:#6c757d;">Đang Online</div>
+                        <div class="sc-value" style="color:#f59e0b;" id="dashOnlineUsers">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="hc-stat-card" style="background: #fff; border-color: #eee;">
+                    <div class="sc-icon" style="background:rgba(124,58,237,.15); color:#7c3aed;"><i class="fas fa-box"></i></div>
+                    <div class="sc-body">
+                        <div class="sc-label" style="color:#6c757d;">Danh mục Hệ thống</div>
+                        <div class="sc-value" style="color:#7c3aed;">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="hc-stat-card" style="background: #fff; border-color: #eee;">
+                    <div class="sc-icon" style="background:rgba(2,132,199,.15); color:#0284c7;"><i class="fas fa-file-alt"></i></div>
+                    <div class="sc-body">
+                        <div class="sc-label" style="color:#6c757d;">Nội dung số</div>
+                        <div class="sc-value" style="color:#0284c7;">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="hc-stat-card" style="background: #fff; border-color: #eee;">
+                    <div class="sc-icon" style="background:rgba(225,29,72,.15); color:#e11d48;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="sc-body">
+                        <div class="sc-label" style="color:#6c757d;">Cảnh báo bảo mật</div>
+                        <div class="sc-value" style="color:#e11d48;">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="hc-stat-card" style="background: #fff; border-color: #eee;">
+                    <div class="sc-icon" style="background:rgba(22,163,74,.15); color:#16a34a;"><i class="fas fa-server"></i></div>
+                    <div class="sc-body">
+                        <div class="sc-label" style="color:#6c757d;">Tải Server</div>
+                        <div class="sc-value" style="color:#16a34a;">Good</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <div style="font-size:.82rem;font-weight:700;color:#6c757d;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Truy cập nhanh</div>
+            <div class="row g-3">
+                <div class="col-6 col-md-4 col-xl-3">
+                    <a href="/admin/users" class="quick-link-card" style="background:#fff; border-color:#eee; color:#333;">
+                        <div class="ql-icon" style="background:rgba(0,97,255,.15);color:#0061ff;"><i class="fas fa-users-cog"></i></div>
+                        <span>Người dùng</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-xl-3">
+                    <a href="#" class="quick-link-card" style="background:#fff; border-color:#eee; color:#333;">
+                        <div class="ql-icon" style="background:rgba(0,135,90,.15);color:#00875a;"><i class="fas fa-cogs"></i></div>
+                        <span>Cài đặt hệ thống</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-xl-3">
+                    <a href="#" class="quick-link-card" style="background:#fff; border-color:#eee; color:#333;">
+                        <div class="ql-icon" style="background:rgba(255,107,53,.15);color:#ff6b35;"><i class="fas fa-chart-bar"></i></div>
+                        <span>Thống kê</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-xl-3">
+                    <a href="#" class="quick-link-card" style="background:#fff; border-color:#eee; color:#333;">
+                        <div class="ql-icon" style="background:rgba(124,58,237,.15);color:#7c3aed;"><i class="fas fa-shield-alt"></i></div>
+                        <span>Nhật ký bảo mật</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="table-card" style="background: #fff; border-color: #eee;">
+                    <div class="table-card-header" style="background: #f8f9fa; border-color: #eee;">
+                        <div class="table-card-title"><i class="fas fa-user-plus me-2" style="color:#00875a;"></i>Người dùng mới</div>
+                        <a href="/admin/users" class="btn-tbl btn-tbl-view">Xem tất cả</a>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f1f5f9;border-bottom:1px solid #e2e8f0;">
+                                    <th style="padding:10px 16px;font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Mã ID</th>
+                                    <th style="padding:10px 16px;font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Người dùng</th>
+                                    <th style="padding:10px 16px;font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentUsersTable">
+                                <tr><td colspan="3" style="padding:20px;text-align:center;color:#94a3b8;font-size:.84rem;"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="table-card" style="background: #fff; border-color: #eee;">
+                    <div class="table-card-header" style="background: #f8f9fa; border-color: #eee;">
+                        <div class="table-card-title"><i class="fas fa-history me-2" style="color:#93c5fd;"></i>Hoạt động gần đây</div>
+                        <a href="#" class="btn-tbl btn-tbl-view">Xem tất cả</a>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f1f5f9;border-bottom:1px solid #e2e8f0;">
+                                    <th style="padding:10px 16px;font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Mã Log</th>
+                                    <th style="padding:10px 16px;font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Hành động</th>
+                                    <th style="padding:10px 16px;font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="3" style="padding:20px;text-align:center;color:#94a3b8;font-size:.84rem;">Hệ thống chưa ghi nhận dữ liệu</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Hàm khởi tạo chạy ngay khi trang load xong
+            document.addEventListener('DOMContentLoaded', function() {
+                
+                // 1. GỌI API LẤY THỐNG KÊ (Dùng hàm callApi toàn cục từ admin_layout)
+                callApi('/api/admin/users/stats', 'GET', null, null, function(response) {
+                    if (response && response.status === 200 && response.data) {
+                        document.getElementById('dashTotalUsers').innerText = response.data.total || 0;
+                        document.getElementById('dashActiveUsers').innerText = response.data.active || 0;
+                        document.getElementById('dashLockedUsers').innerText = response.data.locked || 0;
+                        document.getElementById('dashOnlineUsers').innerText = response.data.online || 0;
+                    }
+                });
+
+                // 2. GỌI API LẤY DANH SÁCH 5 NGƯỜI DÙNG MỚI NHẤT
+                callApi('/api/admin/users?pageNo=0&pageSize=5&sortBy=id', 'GET', null, null, function(response) {
+                    var tbody = document.getElementById('recentUsersTable');
+                    
+                    if (response && response.status === 200 && response.data && response.data.length > 0) {
+                        var users = response.data;
+                        var html = '';
+                        
+                        // CHUẨN CODE PHỔ THÔNG: Dùng vòng lặp for truyền thống
+                        for (var i = 0; i < users.length; i++) {
+                            var u = users[i];
+                            var name = 'Vô Danh';
+                            if (u.fullName) {
+                                name = u.fullName;
+                            } else if (u.username) {
+                                name = u.username;
+                            }
+                            
+                            var statusHtml = '';
+                            if (u.locked === true) {
+                                statusHtml = '<span style="background:#fee2e2;color:#dc2626;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:700;">Đã khóa</span>';
+                            } else {
+                                statusHtml = '<span style="background:#dcfce7;color:#15803d;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:700;">Hoạt động</span>';
+                            }
+
+                            html += '<tr style="border-bottom:1px solid #f1f5f9;">';
+                            html += '  <td style="padding:11px 16px;"><span style="background:rgba(0,97,255,.1);color:#0061ff;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600;">#' + u.id + '</span></td>';
+                            html += '  <td style="padding:11px 16px;font-size:.84rem;color:#333;font-weight:600;">' + name + '</td>';
+                            html += '  <td style="padding:11px 16px;">' + statusHtml + '</td>';
+                            html += '</tr>';
+                        }
+                        tbody.innerHTML = html;
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="3" style="padding:20px;text-align:center;color:#94a3b8;font-size:.84rem;">Chưa có dữ liệu</td></tr>';
+                    }
+                });
+
+            });
+        </script>
+    </div>
+</th:block>
+</html>

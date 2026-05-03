@@ -1,0 +1,281 @@
+/*src/main/resources/static/css/admin.css*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --admin-primary: #4361ee;
+    --admin-primary-hover: #3a56d4;
+    --admin-sidebar-bg: #111827; /* Xanh đen tối chuẩn Dashboard */
+    --admin-sidebar-text: #9ca3af;
+    --admin-sidebar-active: #ffffff;
+    --admin-bg: #f3f4f6;
+    --admin-card-bg: #ffffff;
+    --admin-text: #374151;
+    --admin-border: #e5e7eb;
+    --admin-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --admin-transition: all 0.3s ease;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--admin-bg);
+    color: var(--admin-text);
+    margin: 0;
+    overflow-x: hidden;
+}
+
+/* --- BỐ CỤC CHÍNH --- */
+.admin-wrapper {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* --- SIDEBAR --- */
+.admin-sidebar {
+    width: 260px;
+    background-color: var(--admin-sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    transition: var(--admin-transition);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 1040;
+}
+
+.sidebar-brand {
+    height: 70px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 1.25rem; font-weight: 700;
+    text-decoration: none; letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.sidebar-brand:hover { color: #fff; }
+
+.sidebar-nav { list-style: none; padding: 20px 0; margin: 0; }
+.sidebar-title {
+    padding: 10px 25px; font-size: 0.75rem; font-weight: 700;
+    color: rgba(255,255,255,0.4); text-transform: uppercase;
+}
+.sidebar-nav a {
+    display: flex; align-items: center; padding: 12px 25px;
+    color: var(--admin-sidebar-text); text-decoration: none;
+    font-weight: 500; transition: var(--admin-transition);
+}
+.sidebar-nav a i { width: 30px; font-size: 1.1rem; }
+.sidebar-nav a:hover, .sidebar-nav a.active {
+    color: var(--admin-sidebar-active);
+    background-color: rgba(255,255,255,0.05);
+    border-left: 4px solid var(--admin-primary);
+}
+
+/* --- MAIN CONTENT & TOPBAR --- */
+.admin-main {
+    flex: 1;
+    margin-left: 260px; /* Bằng width của sidebar */
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    transition: var(--admin-transition);
+}
+
+.admin-topbar {
+    height: 70px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 25px; position: sticky; top: 0; z-index: 99;
+}
+
+.btn-sidebar-toggle {
+    background: none; border: none; font-size: 1.5rem; color: var(--admin-text); cursor: pointer; display: none;
+}
+
+.admin-content { padding: 30px; flex: 1; }
+
+/* --- RESPONSIVE (THU GỌN SIDEBAR KHI MÀN HÌNH NHỎ) --- */
+@media (max-width: 992px) {
+    .admin-sidebar { transform: translateX(-100%); }
+    .admin-sidebar.show { transform: translateX(0); }
+    .admin-main { margin-left: 0; }
+    .btn-sidebar-toggle { display: block; }
+    /* Lớp phủ đen khi mở menu trên mobile */
+    .sidebar-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 1030; display: none;
+    }
+    .sidebar-overlay.show { display: block; }
+}
+
+/* --- CARDS & TABLES --- */
+.admin-card {
+    background: var(--admin-card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--admin-border);
+    box-shadow: var(--admin-shadow);
+    margin-bottom: 25px;
+    overflow: visible; /* Để admin-card-header có thể sticky lên topbar */
+}
+
+.table-responsive-fixed {
+    max-height: 500px; /* Bạn có thể chỉnh con số này cho phù hợp màn hình */
+    overflow-y: auto;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    position: relative;
+}
+
+.table-admin thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5; /* Cao hơn td nhưng thấp hơn card-header */
+    background-color: #f9fafb !important; /* Phải có nền để không bị đè chữ */
+    box-shadow: inset 0 -1px 0 var(--admin-border); /* Tạo đường kẻ dưới giả */
+}
+
+.pagination-container-sticky {
+    position: sticky;
+    bottom: 0;
+    background-color: #fff;
+    padding: 15px;
+    border-top: 1px solid var(--admin-border);
+    z-index: 5;
+}
+
+.admin-card-header {
+    padding: 15px 25px;
+    border-bottom: 1px solid var(--admin-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff; /* Đảm bảo nền trắng để không bị xuyên thấu khi cuộn */
+    
+    /* --- THÊM CÁC DÒNG DƯỚI ĐÂY ĐỂ CỐ ĐỊNH --- */
+   position: sticky;
+    top: 70px; /* Chiều cao Topbar */
+    z-index: 20; /* Ưu tiên cao nhất */
+    background-color: #fff;
+}
+.admin-card-header h5 { margin: 0; font-weight: 700; color: var(--admin-text); }
+.admin-card-body { padding: 25px; }
+
+.table-admin thead th {
+    background-color: #f9fafb; color: #6b7280; font-weight: 600;
+    text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--admin-border);
+}
+.table-admin td { vertical-align: middle; padding: 1rem 0.5rem; }
+
+/* --- FORMS & UTILS --- */
+.error-message { color: #ef4444; font-size: 0.85rem; margin-top: 5px; display: block; }
+.form-control.is-invalid, .form-select.is-invalid { border-color: #ef4444; }
+.form-control:focus, .form-select:focus { border-color: var(--admin-primary); box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.15); }
+.btn-primary { background-color: var(--admin-primary); border-color: var(--admin-primary); }
+.btn-primary:hover { background-color: var(--admin-primary-hover); border-color: var(--admin-primary-hover); }
+
+
+/* --- HÌNH ẢNH SÁCH --- */
+.book-thumbnail {
+    width: 50px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--admin-border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    /* --- THÊM DÒNG NÀY --- */
+    background-color: #e2e8f0; /* Màu xám nhạt giữ chỗ để giao diện không bị giật */
+}
+
+.image-preview-box {
+    width: 100%;
+    height: 250px;
+    border: 2px dashed var(--admin-border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8fafc;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: var(--admin-transition);
+}
+
+.image-preview-box:hover {
+    border-color: var(--admin-primary);
+    background-color: #f1f5f9;
+}
+
+.image-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Hoặc cover tùy ý */
+    display: none;
+}
+
+.image-preview-text {
+    color: var(--admin-sidebar-text);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+}
+.image-preview-text i { font-size: 2rem; margin-bottom: 10px; color: var(--admin-primary); }
+
+/* --- RICH TEXT EDITOR (MÔ TẢ SÁCH) --- */
+.custom-editor-container {
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.editor-toolbar {
+    background-color: #f8fafc;
+    padding: 10px;
+    border-bottom: 1px solid var(--admin-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.editor-toolbar button, 
+.editor-toolbar select, 
+.editor-toolbar input[type="color"] {
+    background: #fff;
+    border: 1px solid var(--admin-border);
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    color: var(--admin-text);
+    font-size: 0.85rem;
+    transition: var(--admin-transition);
+}
+
+.editor-toolbar button:hover {
+    background: var(--admin-primary);
+    color: #fff;
+    border-color: var(--admin-primary);
+}
+
+.editor-content {
+    min-height: 200px;
+    max-height: 500px;
+    padding: 15px;
+    overflow-y: auto;
+    outline: none;
+}
+
+/* Nút xem thêm mô tả ở trang List */
+.desc-truncate-btn {
+    color: var(--admin-primary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: 5px;
+}
+.desc-truncate-btn:hover {
+    color: var(--admin-primary-hover);
+}

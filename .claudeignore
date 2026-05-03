@@ -1,0 +1,64 @@
+# Build & Output
+node_modules/
+target/
+build/
+dist/
+out/
+
+# Database & Data dumps
+CSDL/
+*.sql
+*.dump
+
+# Version Control & IDE
+.git/
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+
+# Java / Maven / Gradle
+.mvn/
+.gradle/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs & Temp
+*.log
+*.tmp
+*.bak
+*.swp
+logs/
+
+# Upload & Static assets (binary)
+uploads/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+mvnw
+mvnw.cmd
+gradlew
+gradlew.bat
+
+# Deep knowledge (agent đọc có chủ đích, không quét)
+.ai-memory/03_deep_knowledge/
+
+# Test data
+src/test/resources/fixtures/
+__snapshots__/
+*.test.js.snap

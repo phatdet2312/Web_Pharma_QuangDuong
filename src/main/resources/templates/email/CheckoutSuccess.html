@@ -1,0 +1,61 @@
+<!--src/main/resources/templates/email/CheckoutSuccess.html-->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đặt hàng thành công</title>
+</head>
+<body style="font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="center">
+                <table width="600" style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #dc3545, #b91c1c); padding: 30px; text-align: center; color: white;">
+                            <h1 style="margin: 0; font-size: 28px;">Đặt Hàng Thành Công!</h1>
+                            <p style="margin: 10px 0 0; font-size: 16px;">Cảm ơn bạn đã mua sách tại HUTECH Bookstore</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 30px;">
+                            <p>Xin chào <strong>{{TenKH}}</strong>,</p>
+                            <p>Chúng tôi đã nhận được yêu cầu đặt hàng của bạn. Thông tin chi tiết như sau:</p>
+
+                            <table width="100%" style="margin: 20px 0; border-collapse: collapse;">
+                                <tr><td><strong>Mã hóa đơn:</strong></td><td>#{{MaHD}}</td></tr>
+                                <tr><td><strong>Ngày đặt:</strong></td><td>{{NgayDat}}</td></tr>
+                                <tr><td><strong>Phương thức TT:</strong></td><td>{{PhuongThuc}}</td></tr>
+                                <tr>
+                                    <td><strong>Trạng thái hiện tại:</strong></td>
+                                    <td style="color: #dc3545; font-weight: bold;">{{TrangThaiHienTai}}</td>
+                                </tr>
+                                <tr><td><strong>Tổng tiền:</strong></td><td style="font-size: 20px; color: #dc3545;"><strong>{{TongTien}} ₫</strong></td></tr>
+                            </table>
+
+                            <h3 style="color: #333; border-bottom: 2px solid #dc3545; padding-bottom: 10px;">Chi tiết Đơn hàng</h3>
+                            <table width="100%" style="border-collapse: collapse; margin: 15px 0;">
+                                <thead style="background: #fef2f2;">
+                                    <tr style="text-align: left;">
+                                        <th style="padding: 12px; border-bottom: 2px solid #dc3545;">Tên sách</th>
+                                        <th style="padding: 12px; border-bottom: 2px solid #dc3545; text-align: center;">SL</th>
+                                        <th style="padding: 12px; border-bottom: 2px solid #dc3545; text-align: right;">Đơn giá</th>
+                                        <th style="padding: 12px; border-bottom: 2px solid #dc3545; text-align: right;">Thành tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{ChiTietSach}}
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background: #fef2f2; padding: 20px; text-align: center; color: #7f1d1d;">
+                            <p style="margin: 0;">Trân trọng,<br><strong>Đội ngũ HUTECH Bookstore</strong></p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

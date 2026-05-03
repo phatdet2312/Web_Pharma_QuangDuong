@@ -1,0 +1,697 @@
+<!-- src/main/resources/templates/events/detail.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{user_layout::user-head}"></head>
+
+<body>
+<div th:replace="~{user_layout::user-nav}"></div>
+
+<div th:replace="~{user_layout::layout(~{::#main-content})}">
+<div id="main-content">
+
+<style>
+/* ============================================================
+   EVENT DETAIL — Chi tiết Sự kiện
+============================================================ */
+
+/* Hero */
+.event-detail-hero {
+    background: var(--ink-900); position: relative; overflow: hidden;
+    min-height: 400px; display: flex; align-items: flex-end;
+}
+.edh-bg {
+    position: absolute; inset: 0;
+    background-image: url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1400&q=70');
+    background-size: cover; background-position: center;
+}
+.edh-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(1,13,30,.97) 0%, rgba(1,13,30,.7) 50%, rgba(1,13,30,.4) 100%);
+}
+.event-detail-hero .container { position: relative; z-index: 1; padding-bottom: 48px; padding-top: 100px; }
+.edh-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: .73rem; color: rgba(255,255,255,.4); margin-bottom: 14px; }
+.edh-breadcrumb a { color: var(--teal-400); text-decoration: none; }
+.edh-top-badges { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+.edh-type-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; background: var(--teal-600); color: white;
+    border-radius: var(--r-xs); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+}
+.edh-status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: var(--r-xs);
+    font-size: .68rem; font-weight: 700;
+}
+.edh-status-badge.upcoming { background: rgba(0,152,152,.2); color: var(--teal-300); border: 1px solid rgba(0,184,184,.3); }
+.edh-status-badge.full { background: rgba(220,38,38,.2); color: #f87171; border: 1px solid rgba(220,38,38,.3); }
+.live-indicator { animation: pulseDot 1.8s infinite; }
+
+.edh-title {
+    font-size: clamp(1.6rem, 3.2vw, 2.4rem); font-weight: 800; color: white;
+    letter-spacing: -.8px; line-height: 1.2; margin-bottom: 12px;
+}
+.edh-campaign-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; color: rgba(255,255,255,.55); text-decoration: none;
+    margin-bottom: 18px;
+}
+.edh-campaign-link:hover { color: var(--teal-300); }
+
+.edh-quick-facts {
+    display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--r-xl); overflow: hidden;
+}
+.eqf-item {
+    flex: 1; padding: 14px 18px; border-right: 1px solid rgba(255,255,255,.07);
+    min-width: 120px;
+}
+.eqf-item:last-child { border-right: none; }
+.eqf-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.4); margin-bottom: 4px; }
+.eqf-value { font-size: .9rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 6px; }
+.eqf-value i { color: var(--teal-400); font-size: .8rem; }
+
+/* Main Layout */
+.event-detail-body { padding: 48px 0 80px; background: var(--gray-50); }
+
+/* Main Article */
+.event-main-card {
+    background: white; border: 1px solid var(--gray-200);
+    border-radius: var(--r-xl); overflow: hidden; margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+}
+.emc-section-head {
+    padding: 16px 24px; background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; gap: 8px;
+    font-size: .78rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.2px; color: var(--gray-600);
+}
+.emc-section-head i { color: var(--teal-500); }
+.emc-section-body { padding: 24px; }
+
+/* Tags */
+.event-tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 4px 12px; background: var(--gray-100);
+    border-radius: 50px; font-size: .75rem; font-weight: 600;
+    color: var(--gray-600); text-decoration: none; transition: var(--t-fast); margin: 2px;
+}
+.event-tag:hover { background: var(--teal-100); color: var(--teal-700); }
+
+/* Related Posts (CT_POST_EVENTS) */
+.related-post-item {
+    display: flex; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100); text-decoration: none; color: inherit;
+}
+.related-post-item:last-child { border-bottom: none; }
+.rpi-img { width: 64px; height: 50px; flex-shrink: 0; border-radius: var(--r-sm); object-fit: cover; background: var(--gray-100); }
+.rpi-title { font-size: .82rem; font-weight: 600; color: var(--gray-800); line-height: 1.35; margin-bottom: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.related-post-item:hover .rpi-title { color: var(--teal-600); }
+.rpi-badge { font-size: .65rem; font-weight: 700; }
+
+/* Status History Timeline (CT_EVENT_STATUS_HISTORY) */
+.status-timeline { position: relative; }
+.st-item {
+    display: flex; gap: 14px; padding: 12px 0;
+    position: relative;
+}
+.st-item:not(:last-child)::before {
+    content: ''; position: absolute;
+    left: 15px; top: 36px; bottom: -12px; width: 1.5px;
+    background: var(--gray-200);
+}
+.st-dot {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; border: 2px solid;
+}
+.st-dot.create { background: rgba(0,152,152,.1); color: var(--teal-600); border-color: var(--teal-400); }
+.st-dot.update { background: rgba(244,169,0,.1); color: var(--gold-700); border-color: var(--gold-400); }
+.st-dot.cancel { background: rgba(220,38,38,.1); color: var(--danger); border-color: #fca5a5; }
+.st-info { flex: 1; }
+.st-action { font-size: .84rem; font-weight: 700; color: var(--ink-800); margin-bottom: 2px; }
+.st-meta { font-size: .76rem; color: var(--gray-400); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.st-reason { font-size: .78rem; color: var(--gray-600); margin-top: 3px; padding: 5px 9px; background: var(--gray-50); border-radius: var(--r-sm); border-left: 3px solid var(--gray-200); }
+
+/* Registration Sidebar Card */
+.reg-card {
+    background: white; border: 1px solid var(--gray-200);
+    border-radius: var(--r-xl); overflow: hidden; position: sticky; top: 110px;
+    box-shadow: var(--shadow-md);
+}
+.reg-card-header {
+    background: var(--ink-900); padding: 20px 22px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.rch-title { font-size: 1rem; font-weight: 800; color: white; margin-bottom: 8px; }
+.rch-slots-bar { margin-bottom: 12px; }
+.rsb-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: .76rem; }
+.rsb-label span { color: rgba(255,255,255,.6); }
+.rsb-label strong { color: var(--teal-300); }
+.rsb-track {
+    height: 6px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden;
+}
+.rsb-fill { height: 100%; background: linear-gradient(90deg, var(--teal-500), var(--teal-400)); border-radius: 3px; }
+.rch-urgency {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; background: rgba(244,169,0,.15);
+    border: 1px solid rgba(244,169,0,.25); border-radius: var(--r-md);
+    font-size: .75rem; color: var(--gold-400); font-weight: 600;
+}
+
+.reg-card-body { padding: 20px 22px; }
+
+/* Form Fields */
+.form-group { margin-bottom: 14px; }
+.form-label {
+    display: block; font-size: .78rem; font-weight: 600; color: var(--gray-700); margin-bottom: 5px;
+}
+.form-label .required { color: var(--danger); margin-left: 2px; }
+.form-input {
+    width: 100%; padding: 9px 13px; background: var(--gray-50);
+    border: 1.5px solid var(--gray-200); border-radius: var(--r-md);
+    font-size: .88rem; color: var(--gray-800); outline: none;
+    font-family: inherit; transition: var(--t-fast);
+}
+.form-input:focus { border-color: var(--teal-400); background: white; }
+.form-input::placeholder { color: var(--gray-400); }
+.form-divider { border: none; border-top: 1px solid var(--gray-100); margin: 16px 0; }
+.form-note { font-size: .74rem; color: var(--gray-400); line-height: 1.55; display: flex; align-items: flex-start; gap: 6px; }
+.form-note i { color: var(--teal-400); margin-top: 2px; flex-shrink: 0; }
+
+.submit-btn {
+    width: 100%; padding: 13px; background: var(--gold-500); color: var(--ink-800);
+    border: none; border-radius: var(--r-md); font-size: .92rem; font-weight: 800;
+    cursor: pointer; transition: var(--t-base); font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: var(--shadow-gold);
+}
+.submit-btn:hover { background: var(--gold-400); transform: translateY(-1px); box-shadow: 0 10px 28px rgba(244,169,0,.36); }
+
+.already-registered {
+    background: rgba(0,152,152,.08); border: 1.5px solid rgba(0,152,152,.25);
+    border-radius: var(--r-lg); padding: 16px; text-align: center;
+}
+.ar-icon { font-size: 1.8rem; color: var(--teal-500); margin-bottom: 8px; }
+.ar-title { font-size: .9rem; font-weight: 700; color: var(--teal-700); margin-bottom: 4px; }
+.ar-ticket { font-size: .78rem; color: var(--gray-500); }
+.ar-ticket strong { color: var(--ink-800); font-family: monospace; font-size: .85rem; }
+
+/* Attendees preview */
+.attendees-preview { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.att-avatars { display: flex; }
+.att-av {
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid white;
+    margin-left: -8px; first-child { margin-left: 0; }
+    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+    display: flex; align-items: center; justify-content: center;
+    font-size: .6rem; color: white; font-weight: 700;
+}
+.att-av:first-child { margin-left: 0; }
+.att-count { font-size: .79rem; color: var(--gray-500); }
+.att-count strong { color: var(--ink-800); }
+
+/* Location Map Placeholder */
+.location-map {
+    width: 100%; height: 200px; background: var(--gray-100);
+    border-radius: var(--r-md); display: flex; align-items: center; justify-content: center;
+    color: var(--gray-400); font-size: 2rem; position: relative; overflow: hidden;
+    margin-bottom: 14px;
+}
+.location-map img { width: 100%; height: 100%; object-fit: cover; }
+.location-map-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,.3);
+    display: flex; align-items: center; justify-content: center;
+}
+.location-pin {
+    width: 40px; height: 40px; background: var(--teal-500); border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg); display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,152,152,.4);
+}
+.location-pin i { transform: rotate(45deg); color: white; font-size: .85rem; }
+
+/* Speaker Card */
+.speaker-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--gray-100); }
+.speaker-item:last-child { border-bottom: none; }
+.speaker-avatar {
+    width: 50px; height: 50px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem; color: white; font-weight: 700;
+}
+.speaker-name { font-size: .88rem; font-weight: 700; color: var(--ink-800); margin-bottom: 2px; }
+.speaker-title { font-size: .75rem; color: var(--gray-500); line-height: 1.4; }
+.speaker-org { font-size: .72rem; color: var(--teal-600); font-weight: 600; margin-top: 3px; }
+
+/* Comments for event */
+.event-comment-form { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--r-xl); padding: 16px; margin-bottom: 20px; }
+
+@media (max-width: 991px) {
+    .edh-quick-facts { flex-direction: column; }
+    .eqf-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .eqf-item:last-child { border-bottom: none; }
+    .reg-card { position: static; }
+}
+@media (max-width: 576px) {
+    .edh-title { font-size: 1.4rem; }
+    .emc-section-body { padding: 16px; }
+}
+</style>
+
+<!-- Hero -->
+<section class="event-detail-hero">
+    <div class="edh-bg"></div>
+    <div class="edh-overlay"></div>
+    <div class="container">
+        <div class="edh-breadcrumb">
+            <a href="/"><i class="fas fa-home"></i> Trang chủ</a>
+            <i class="fas fa-chevron-right fa-xs"></i>
+            <a href="/hoi-thao">Sự kiện & Đào tạo</a>
+            <i class="fas fa-chevron-right fa-xs"></i>
+            <span>Chuỗi Hội thảo Kháng sinh 2026</span>
+        </div>
+        <div class="edh-top-badges">
+            <span class="edh-type-badge"><i class="fas fa-video fa-xs"></i> Hội thảo CME — Trực tuyến</span>
+            <span class="edh-status-badge upcoming"><span class="live-indicator" style="width:6px;height:6px;background:var(--teal-400);border-radius:50%;display:inline-block;"></span> Sắp diễn ra</span>
+            <span style="background:rgba(124,58,237,.2);color:#c4b5fd;padding:4px 12px;border-radius:var(--r-xs);font-size:.68rem;font-weight:700;border:1px solid rgba(124,58,237,.3);">
+                <i class="fas fa-certificate fa-xs me-1"></i> 4 điểm CME
+            </span>
+        </div>
+        <h1 class="edh-title">Buổi 1: Carbapenem Thế hệ Mới &<br>Quản lý Vi khuẩn ESBL Đa kháng</h1>
+        <a href="/su-kien/chuoi-hoi-thao-khang-sinh-2026" class="edh-campaign-link">
+            <i class="fas fa-layer-group fa-xs"></i> Thuộc: Chuỗi Hội thảo Khoa học Kháng sinh trong Kỷ nguyên Đa kháng 2026
+        </a>
+        <div class="edh-quick-facts">
+            <div class="eqf-item">
+                <div class="eqf-label">Ngày diễn ra</div>
+                <div class="eqf-value"><i class="fas fa-calendar-alt"></i> Chủ nhật, 20/04/2026</div>
+            </div>
+            <div class="eqf-item">
+                <div class="eqf-label">Thời gian</div>
+                <div class="eqf-value"><i class="fas fa-clock"></i> 14:00 – 16:30 (150 phút)</div>
+            </div>
+            <div class="eqf-item">
+                <div class="eqf-label">Địa điểm</div>
+                <div class="eqf-value"><i class="fas fa-video"></i> Trực tuyến – Zoom</div>
+            </div>
+            <div class="eqf-item">
+                <div class="eqf-label">Đã đăng ký</div>
+                <div class="eqf-value"><i class="fas fa-users"></i> 158 / 200</div>
+            </div>
+            <div class="eqf-item">
+                <div class="eqf-label">Còn lại</div>
+                <div class="eqf-value" style="color:var(--danger);"><i class="fas fa-ticket-alt"></i> 42 slot</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Body -->
+<div class="event-detail-body">
+    <div class="container">
+        <div class="row g-4">
+
+            <!-- Main Column -->
+            <div class="col-lg-8">
+
+                <!-- Description -->
+                <div class="event-main-card reveal">
+                    <div class="emc-section-head"><i class="fas fa-info-circle"></i> Giới thiệu Sự kiện</div>
+                    <div class="emc-section-body">
+                        <div class="prose" style="font-size:.9rem;line-height:1.8;">
+                            <p>Trong bối cảnh vi khuẩn đa kháng kháng sinh (AMR) đang trở thành mối đe dọa y tế toàn cầu, buổi hội thảo CME này sẽ cập nhật cho Bác sĩ và Dược sĩ những kiến thức thực tiễn nhất về:</p>
+                            <ul>
+                                <li>Phân loại và đặc điểm lâm sàng của vi khuẩn ESBL, KPC, NDM</li>
+                                <li>Hiệu quả và độ an toàn của carbapenem thế hệ mới (cefiderocol, imipenem/relebactam)</li>
+                                <li>Chiến lược phối hợp kháng sinh theo kết quả kháng sinh đồ</li>
+                                <li>Antimicrobial Stewardship Program — triển khai tại bệnh viện Việt Nam</li>
+                                <li>Tình huống lâm sàng thực tế từ khoa ICU</li>
+                            </ul>
+                            <p>Buổi hội thảo được Hội Dược lâm sàng Việt Nam (VSCCP) cấp <strong>4 điểm CME</strong> và chứng nhận tham dự chính thức.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agenda -->
+                <div class="event-main-card reveal reveal-d1">
+                    <div class="emc-section-head"><i class="fas fa-list-ol"></i> Chương trình chi tiết</div>
+                    <div class="emc-section-body" style="padding:0;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:var(--ink-900);color:rgba(255,255,255,.7);font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;">
+                                    <th style="padding:10px 18px;text-align:left;width:100px;">Thời gian</th>
+                                    <th style="padding:10px 18px;text-align:left;">Nội dung</th>
+                                    <th style="padding:10px 18px;text-align:left;width:160px;">Diễn giả</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--gray-100);">
+                                    <td style="padding:12px 18px;font-size:.82rem;color:var(--teal-600);font-weight:700;white-space:nowrap;">14:00 – 14:10</td>
+                                    <td style="padding:12px 18px;">
+                                        <div style="font-size:.87rem;font-weight:600;color:var(--ink-800);">Khai mạc và giới thiệu chương trình</div>
+                                    </td>
+                                    <td style="padding:12px 18px;font-size:.8rem;color:var(--gray-500);">Ban tổ chức</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--gray-100);background:var(--gray-50);">
+                                    <td style="padding:12px 18px;font-size:.82rem;color:var(--teal-600);font-weight:700;white-space:nowrap;">14:10 – 15:00</td>
+                                    <td style="padding:12px 18px;">
+                                        <div style="font-size:.87rem;font-weight:600;color:var(--ink-800);margin-bottom:3px;">Tổng quan về ESBL và KPC: Dịch tễ học và Cơ chế đề kháng</div>
+                                        <div style="font-size:.75rem;color:var(--gray-400);">Báo cáo khoa học — 50 phút + Q&A</div>
+                                    </td>
+                                    <td style="padding:12px 18px;font-size:.8rem;color:var(--gray-700);font-weight:600;">PGS.TS. Nguyễn Văn Hùng</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--gray-100);">
+                                    <td style="padding:12px 18px;font-size:.82rem;color:var(--teal-600);font-weight:700;white-space:nowrap;">15:00 – 15:50</td>
+                                    <td style="padding:12px 18px;">
+                                        <div style="font-size:.87rem;font-weight:600;color:var(--ink-800);margin-bottom:3px;">Cefiderocol và Imipenem/Relebactam: Bằng chứng lâm sàng mới nhất</div>
+                                        <div style="font-size:.75rem;color:var(--gray-400);">Tổng quan nghiên cứu — 50 phút</div>
+                                    </td>
+                                    <td style="padding:12px 18px;font-size:.8rem;color:var(--gray-700);font-weight:600;">TS.BS. Trần Hữu Khanh</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--gray-100);background:var(--gray-50);">
+                                    <td style="padding:12px 18px;font-size:.82rem;color:var(--warning);font-weight:700;white-space:nowrap;">15:50 – 16:10</td>
+                                    <td style="padding:12px 18px;">
+                                        <div style="font-size:.87rem;font-weight:600;color:var(--gray-600);">Giải lao — Networking online (Breakout Rooms)</div>
+                                    </td>
+                                    <td style="padding:12px 18px;font-size:.8rem;color:var(--gray-400);">—</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--gray-100);">
+                                    <td style="padding:12px 18px;font-size:.82rem;color:var(--teal-600);font-weight:700;white-space:nowrap;">16:10 – 16:25</td>
+                                    <td style="padding:12px 18px;">
+                                        <div style="font-size:.87rem;font-weight:600;color:var(--ink-800);margin-bottom:3px;">Tình huống lâm sàng — Thảo luận nhóm</div>
+                                        <div style="font-size:.75rem;color:var(--gray-400);">Bệnh nhân CAP nặng ICU + ESBL K.pneumoniae</div>
+                                    </td>
+                                    <td style="padding:12px 18px;font-size:.8rem;color:var(--gray-700);font-weight:600;">Panel diễn giả</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 18px;font-size:.82rem;color:var(--gold-700);font-weight:700;white-space:nowrap;">16:25 – 16:30</td>
+                                    <td style="padding:12px 18px;">
+                                        <div style="font-size:.87rem;font-weight:600;color:var(--ink-800);">Phát chứng nhận CME & Bế mạc</div>
+                                    </td>
+                                    <td style="padding:12px 18px;font-size:.8rem;color:var(--gray-500);">Ban tổ chức</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Speakers -->
+                <div class="event-main-card reveal reveal-d2">
+                    <div class="emc-section-head"><i class="fas fa-user-tie"></i> Diễn giả</div>
+                    <div class="emc-section-body">
+                        <div class="speaker-item">
+                            <div class="speaker-avatar">N</div>
+                            <div>
+                                <div class="speaker-name">PGS.TS. Nguyễn Văn Hùng</div>
+                                <div class="speaker-title">Trưởng Bộ môn Dược lý, ĐH Y Hà Nội</div>
+                                <div class="speaker-org"><i class="fas fa-building fa-xs me-1"></i> Đại học Y Hà Nội — Hội Dược lâm sàng VN</div>
+                            </div>
+                        </div>
+                        <div class="speaker-item">
+                            <div class="speaker-avatar" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">T</div>
+                            <div>
+                                <div class="speaker-name">TS.BS. Trần Hữu Khanh</div>
+                                <div class="speaker-title">Nguyên Trưởng khoa Nhiễm — Thần kinh, BV Nhi đồng 1 TP.HCM</div>
+                                <div class="speaker-org"><i class="fas fa-building fa-xs me-1"></i> Hội Truyền nhiễm Nhi khoa VN</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location (LOCATIONS table) -->
+                <div class="event-main-card reveal">
+                    <div class="emc-section-head"><i class="fas fa-map-marker-alt"></i> Địa điểm tổ chức (LOCATIONS)</div>
+                    <div class="emc-section-body">
+                        <div class="location-map">
+                            <img src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=600&q=60" alt="Location Map">
+                            <div class="location-map-overlay">
+                                <div class="location-pin"><i class="fas fa-map-marker-alt"></i></div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--gray-50);border-radius:var(--r-lg);border:1px solid var(--gray-200);">
+                            <div style="width:36px;height:36px;background:var(--teal-100);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--teal-600);flex-shrink:0;"><i class="fas fa-video"></i></div>
+                            <div>
+                                <div style="font-size:.9rem;font-weight:700;color:var(--ink-800);margin-bottom:3px;">Hội thảo Trực tuyến — Zoom Webinar</div>
+                                <div style="font-size:.82rem;color:var(--gray-500);margin-bottom:6px;">Link tham gia sẽ được gửi qua email đã đăng ký sau khi Admin duyệt vé</div>
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <span style="font-size:.75rem;color:var(--gray-400);"><i class="fas fa-info-circle fa-xs me-1" style="color:var(--teal-400);"></i> Meeting ID sẽ hiển thị sau đăng ký</span>
+                                    <span style="font-size:.75rem;color:var(--gray-400);"><i class="fas fa-lock fa-xs me-1" style="color:var(--teal-400);"></i> Đã xác thực danh tính</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tags (CT_EVENT_TAGS) -->
+                <div class="event-main-card reveal">
+                    <div class="emc-section-head"><i class="fas fa-tags"></i> Thẻ chủ đề sự kiện (CT_EVENT_TAGS)</div>
+                    <div class="emc-section-body">
+                        <a href="#" class="event-tag">#KhangSinh</a>
+                        <a href="#" class="event-tag">#ESBL</a>
+                        <a href="#" class="event-tag">#Carbapenem</a>
+                        <a href="#" class="event-tag">#CME2026</a>
+                        <a href="#" class="event-tag">#Stewardship</a>
+                        <a href="#" class="event-tag">#ICU</a>
+                        <a href="#" class="event-tag">#DuocLamSang</a>
+                        <a href="#" class="event-tag">#HoiThaoTrucTuyen</a>
+                    </div>
+                </div>
+
+                <!-- Related Posts (CT_POST_EVENTS) -->
+                <div class="event-main-card reveal">
+                    <div class="emc-section-head"><i class="fas fa-newspaper"></i> Tài liệu đính kèm sự kiện (CT_POST_EVENTS)</div>
+                    <div class="emc-section-body">
+                        <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:14px;">Bài viết và tài liệu học thuật liên quan đến chủ đề hội thảo này:</p>
+                        <a href="/tin-tuc/danh-gia-hieu-qua-lam-sang-khang-sinh" class="related-post-item">
+                            <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=120&q=60" class="rpi-img" alt="">
+                            <div>
+                                <div style="display:flex;gap:4px;margin-bottom:4px;"><span class="badge-gated rpi-badge"><i class="fas fa-lock fa-xs"></i> Gated</span></div>
+                                <div class="rpi-title">Đánh giá hiệu quả lâm sàng carbapenem thế hệ mới 2025–2026 — Meta-analysis</div>
+                                <div style="font-size:.7rem;color:var(--gray-400);">PGS.TS. Nguyễn Văn Hùng — 16/04/2026</div>
+                            </div>
+                        </a>
+                        <a href="/tin-tuc/khang-sinh-do-beta-lactam" class="related-post-item">
+                            <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=120&q=60" class="rpi-img" alt="">
+                            <div>
+                                <div class="rpi-title">Cơ chế đề kháng beta-lactam và chiến lược phối hợp kháng sinh thế hệ 5</div>
+                                <div style="font-size:.7rem;color:var(--gray-400);">TS. Trần Văn Tùng — 12/04/2026</div>
+                            </div>
+                        </a>
+                        <a href="/tin-tuc/bao-cao-adr-khang-sinh" class="related-post-item">
+                            <img src="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=120&q=60" class="rpi-img" alt="">
+                            <div>
+                                <div class="rpi-title">Slide trình chiếu ISPID 2026 — Antimicrobial Stewardship tại bệnh viện tuyến tỉnh</div>
+                                <div style="font-size:.7rem;color:var(--gray-400);">Hội Truyền nhiễm VN — 08/04/2026</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Status History (CT_EVENT_STATUS_HISTORY) -->
+                <div class="event-main-card reveal">
+                    <div class="emc-section-head"><i class="fas fa-history"></i> Lịch sử trạng thái (CT_EVENT_STATUS_HISTORY)</div>
+                    <div class="emc-section-body">
+                        <div class="status-timeline">
+                            <div class="st-item">
+                                <div class="st-dot create"><i class="fas fa-plus fa-xs"></i></div>
+                                <div class="st-info">
+                                    <div class="st-action">CREATED — Sự kiện được khởi tạo</div>
+                                    <div class="st-meta">
+                                        <span><i class="fas fa-user fa-xs me-1"></i>Admin: Lê Thị Hoa</span>
+                                        <span><i class="fas fa-clock fa-xs me-1"></i>01/03/2026 — 09:00</span>
+                                    </div>
+                                    <div class="st-reason">Sự kiện đã được tạo và chuẩn bị trạng thái DRAFT</div>
+                                </div>
+                            </div>
+                            <div class="st-item">
+                                <div class="st-dot update"><i class="fas fa-check fa-xs"></i></div>
+                                <div class="st-info">
+                                    <div class="st-action">PUBLISHED → UPCOMING — Mở đăng ký</div>
+                                    <div class="st-meta">
+                                        <span><i class="fas fa-user fa-xs me-1"></i>Admin: Lê Thị Hoa</span>
+                                        <span><i class="fas fa-clock fa-xs me-1"></i>05/03/2026 — 14:30</span>
+                                    </div>
+                                    <div class="st-reason">Thông tin xác nhận đủ, mở đăng ký cho công chúng</div>
+                                </div>
+                            </div>
+                            <div class="st-item">
+                                <div class="st-dot update"><i class="fas fa-edit fa-xs"></i></div>
+                                <div class="st-info">
+                                    <div class="st-action">UPDATED — Cập nhật thông tin diễn giả</div>
+                                    <div class="st-meta">
+                                        <span><i class="fas fa-user fa-xs me-1"></i>Admin: Trần Đình Vinh</span>
+                                        <span><i class="fas fa-clock fa-xs me-1"></i>10/04/2026 — 11:15</span>
+                                    </div>
+                                    <div class="st-reason">Bổ sung TS.BS. Trần Hữu Khanh vào danh sách diễn giả thay thế</div>
+                                </div>
+                            </div>
+                            <div class="st-item">
+                                <div class="st-dot upcoming" style="background:rgba(0,152,152,.1);color:var(--teal-600);border-color:var(--teal-400);"><i class="fas fa-calendar-check fa-xs"></i></div>
+                                <div class="st-info">
+                                    <div class="st-action" style="color:var(--teal-700);">UPCOMING — Trạng thái hiện tại</div>
+                                    <div class="st-meta">
+                                        <span><i class="fas fa-clock fa-xs me-1"></i>Trạng thái đang hoạt động</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Comments (CT_EVENT_CMT) -->
+                <div class="event-main-card reveal">
+                    <div class="emc-section-head"><i class="fas fa-comments"></i> Bình luận sự kiện (CT_EVENT_CMT)</div>
+                    <div class="emc-section-body">
+                        <!-- Quick form -->
+                        <div class="event-comment-form" sec:authorize="isAuthenticated()">
+                            <textarea class="form-input" style="min-height:80px;resize:vertical;" placeholder="Đặt câu hỏi cho diễn giả hoặc chia sẻ kỳ vọng của bạn về buổi hội thảo..."></textarea>
+                            <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+                                <button class="submit-btn" style="width:auto;padding:7px 18px;font-size:.84rem;background:var(--ink-800);">
+                                    <i class="fas fa-paper-plane fa-xs"></i> Gửi bình luận
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Sample comments -->
+                        <div style="display:flex;gap:10px;margin-bottom:16px;">
+                            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal-600),var(--ink-700));display:flex;align-items:center;justify-content:center;color:white;font-size:.75rem;font-weight:700;flex-shrink:0;">B</div>
+                            <div style="flex:1;background:var(--gray-50);border:1px solid var(--gray-100);border-radius:0 var(--r-lg) var(--r-lg) var(--r-lg);padding:10px 14px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                                    <span style="font-size:.82rem;font-weight:700;color:var(--ink-800);">BS. Bùi Thanh Hùng <span style="font-size:.65rem;background:rgba(0,152,152,.1);color:var(--teal-700);padding:1px 6px;border-radius:3px;margin-left:4px;">Bác sĩ CK1</span></span>
+                                    <span style="font-size:.7rem;color:var(--gray-400);">18/04 — 21:30</span>
+                                </div>
+                                <div style="font-size:.85rem;color:var(--gray-700);line-height:1.6;margin-bottom:7px;">Xin hỏi diễn giả: với bệnh nhân ICU suy thận eGFR &lt; 30, liều cefiderocol có cần hiệu chỉnh không? Tôi có 2 ca đang điều trị tại khoa.</div>
+                                <div style="display:flex;gap:6px;">
+                                    <button style="padding:2px 8px;background:white;border:1px solid var(--gray-200);border-radius:50px;font-size:.72rem;cursor:pointer;"><i class="fas fa-thumbs-up fa-xs me-1"></i> 8</button>
+                                    <button style="padding:2px 8px;background:white;border:1px solid var(--gray-200);border-radius:50px;font-size:.72rem;cursor:pointer;color:var(--teal-600);">Trả lời</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align:center;margin-top:10px;">
+                            <button style="padding:8px 20px;background:white;border:1px solid var(--gray-200);border-radius:var(--r-md);font-size:.82rem;color:var(--gray-600);cursor:pointer;font-weight:600;">
+                                Xem thêm 14 bình luận <i class="fas fa-chevron-down fa-xs ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /col main -->
+
+            <!-- Registration Sidebar -->
+            <div class="col-lg-4">
+
+                <!-- Registration Card (CT_EVENT_REGISTRATIONS) -->
+                <div class="reg-card reveal">
+                    <div class="reg-card-header">
+                        <div class="rch-title">Đăng ký Tham dự</div>
+                        <div class="rch-slots-bar">
+                            <div class="rsb-label">
+                                <span>Đã đăng ký: 158</span>
+                                <strong>42 slot còn lại!</strong>
+                            </div>
+                            <div class="rsb-track">
+                                <div class="rsb-fill" style="width:79%;"></div>
+                            </div>
+                        </div>
+                        <div class="rch-urgency">
+                            <i class="fas fa-fire fa-xs"></i>
+                            Chỉ còn 42/200 chỗ — Đăng ký trước khi hết!
+                        </div>
+                    </div>
+
+                    <div class="reg-card-body">
+                        <!-- If user already registered, show ticket info -->
+                        <div class="already-registered" style="display:none;" sec:authorize="isAuthenticated()">
+                            <div class="ar-icon"><i class="fas fa-check-circle"></i></div>
+                            <div class="ar-title">Bạn đã đăng ký thành công!</div>
+                            <div class="ar-ticket">Mã vé: <strong>#EVT-2026-04-20-00158</strong></div>
+                            <div class="ar-ticket" style="margin-top:4px;">Trạng thái: <span style="color:var(--success);font-weight:700;">✓ Đã xác nhận</span></div>
+                            <a href="#" style="display:block;margin-top:12px;padding:8px;background:white;border:1px solid var(--teal-400);border-radius:var(--r-md);font-size:.8rem;font-weight:600;color:var(--teal-600);text-align:center;text-decoration:none;">
+                                <i class="fas fa-download fa-xs me-1"></i> Tải vé xác nhận (PDF)
+                            </a>
+                        </div>
+
+                        <!-- Registration Form (CT_EVENT_REGISTRATIONS fields) -->
+                        <form>
+                            <div class="form-group">
+                                <label class="form-label">Họ và tên<span class="required">*</span></label>
+                                <input type="text" class="form-input" placeholder="Nguyễn Văn A" value="PGS. Lê Thị Mai">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email nhận vé<span class="required">*</span></label>
+                                <input type="email" class="form-input" placeholder="bac.si@benhvien.vn" value="lethi.mai@bvBach.vn">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Số điện thoại<span class="required">*</span></label>
+                                <input type="tel" class="form-input" placeholder="0912 345 678">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nơi công tác <span style="font-size:.72rem;color:var(--gray-400);">(WORKPLACE)</span></label>
+                                <input type="text" class="form-input" placeholder="BV Bạch Mai / Nhà thuốc An Phúc / Phòng khám...">
+                            </div>
+                            <hr class="form-divider">
+                            <div class="form-note">
+                                <i class="fas fa-info-circle fa-xs"></i>
+                                Link Zoom sẽ gửi vào email sau khi Admin xác nhận đăng ký. Vui lòng kiểm tra hộp Spam.
+                            </div>
+                            <div class="form-note" style="margin-top:8px;">
+                                <i class="fas fa-certificate fa-xs" style="color:var(--gold-500);"></i>
+                                Chứng chỉ CME (4 điểm) gửi sau sự kiện, yêu cầu tham dự ≥ 80% thời lượng.
+                            </div>
+                            <button type="submit" class="submit-btn" style="margin-top:16px;">
+                                <i class="fas fa-ticket-alt"></i> Đăng ký tham dự — Miễn phí
+                            </button>
+                            <div style="text-align:center;margin-top:10px;font-size:.72rem;color:var(--gray-400);">
+                                <i class="fas fa-shield-alt fa-xs me-1"></i> Không chia sẻ thông tin cho bên thứ ba
+                            </div>
+                        </form>
+
+                        <!-- Attendees preview -->
+                        <div class="attendees-preview">
+                            <div class="att-avatars">
+                                <div class="att-av">N</div>
+                                <div class="att-av" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">T</div>
+                                <div class="att-av" style="background:linear-gradient(135deg,#16a34a,#166534);">L</div>
+                                <div class="att-av" style="background:linear-gradient(135deg,var(--gold-600),var(--gold-700));">H</div>
+                                <div class="att-av" style="background:linear-gradient(135deg,#dc2626,#991b1b);">P</div>
+                            </div>
+                            <span class="att-count"><strong>158 chuyên gia</strong> đã đăng ký</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Organizer Info -->
+                <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--r-lg);padding:16px;margin-top:16px;" class="reveal reveal-d1">
+                    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray-400);margin-bottom:12px;">Nhà tổ chức</div>
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                        <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--ink-800),var(--ink-600));border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:white;font-size:.9rem;flex-shrink:0;"><i class="fas fa-pills"></i></div>
+                        <div>
+                            <div style="font-size:.9rem;font-weight:700;color:var(--ink-800);">PharmaCorp B2B</div>
+                            <div style="font-size:.74rem;color:var(--gray-400);">Hệ sinh thái Phân phối Dược phẩm</div>
+                        </div>
+                    </div>
+                    <div style="font-size:.79rem;color:var(--gray-500);line-height:1.6;margin-bottom:12px;">Phối hợp cùng Hội Dược lâm sàng Việt Nam (VSCCP) tổ chức. Chứng nhận CME được cấp bởi Bộ Y tế.</div>
+                    <div style="display:flex;gap:8px;">
+                        <a href="#" style="flex:1;padding:7px;border:1px solid var(--gray-200);border-radius:var(--r-md);font-size:.78rem;text-align:center;color:var(--gray-600);text-decoration:none;font-weight:600;transition:var(--t-fast);">
+                            <i class="fas fa-envelope fa-xs me-1"></i> Liên hệ
+                        </a>
+                        <a href="tel:19006868" style="flex:1;padding:7px;border:1px solid var(--gray-200);border-radius:var(--r-md);font-size:.78rem;text-align:center;color:var(--gray-600);text-decoration:none;font-weight:600;transition:var(--t-fast);">
+                            <i class="fas fa-phone fa-xs me-1"></i> 1900 6868
+                        </a>
+                    </div>
+                </div>
+
+            </div><!-- /col sidebar -->
+
+        </div>
+    </div>
+</div>
+
+</div>
+</div>
+
+<div th:replace="~{user_layout::user-footer}"></div>
+<div th:replace="~{user_layout::user-scripts}"></div>
+</body>
+</html>

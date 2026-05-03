@@ -1,0 +1,1081 @@
+<!--src/main/resources/templates/admin/role-management.html-->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{admin_layout::admin-head('Quản lý Chức vụ & Quyền')}"></head>
+
+<th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
+    <div id="admin-content-wrapper">
+
+        <style>
+            /* ================================================================
+     * ROLE MANAGEMENT — LOCAL DESIGN SYSTEM
+     * ================================================================ */
+            .rm-card {
+                background: #fff;
+                border-radius: 14px;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, .04);
+                border: 1px solid #e2e8f0;
+                overflow: hidden;
+                margin-bottom: 20px;
+            }
+
+            .rm-card-hdr {
+                padding: 16px 20px;
+                border-bottom: 1px solid #e2e8f0;
+                background: #f8fafc;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .rm-card-title {
+                font-size: 1rem;
+                font-weight: 800;
+                color: #1e293b;
+                margin: 0;
+            }
+
+            /* Tab navigation */
+            .rm-nav-tabs {
+                border-bottom: 2px solid #e2e8f0;
+                margin-bottom: 22px;
+                display: flex;
+                gap: 4px;
+            }
+
+            .rm-tab-btn {
+                background: none;
+                border: none;
+                border-bottom: 3px solid transparent;
+                padding: 12px 22px;
+                font-weight: 700;
+                font-size: .9rem;
+                color: #64748b;
+                cursor: pointer;
+                transition: all .2s;
+                margin-bottom: -2px;
+                border-radius: 6px 6px 0 0;
+            }
+
+            .rm-tab-btn:hover {
+                color: #3b82f6;
+                background: #f8fafc;
+            }
+
+            .rm-tab-btn.active {
+                color: #3b82f6;
+                border-bottom-color: #3b82f6;
+                background: #eff6ff;
+            }
+
+            /* Table */
+            .rm-table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 700px;
+            }
+
+            .rm-table thead th {
+                background: #f1f5f9;
+                font-size: .72rem;
+                font-weight: 800;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: .4px;
+                padding: 10px 18px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .rm-table tbody tr {
+                border-bottom: 1px solid #f1f5f9;
+                transition: background .15s;
+            }
+
+            .rm-table tbody tr:hover {
+                background: #fafbff;
+            }
+
+            .rm-table tbody td {
+                padding: 13px 18px;
+                vertical-align: middle;
+            }
+
+            .rm-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            /* Badges */
+            .role-badge {
+                padding: 3px 10px;
+                background: #e0e7ff;
+                color: #4338ca;
+                border-radius: 6px;
+                font-size: .75rem;
+                font-weight: 700;
+                display: inline-block;
+                border: 1px solid #c7d2fe;
+            }
+
+            .perm-badge {
+                padding: 2px 7px;
+                background: #f1f5f9;
+                color: #64748b;
+                border-radius: 4px;
+                font-size: .65rem;
+                font-weight: 600;
+                display: inline-block;
+                margin: 2px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .level-badge {
+                padding: 3px 10px;
+                background: #fee2e2;
+                color: #dc2626;
+                border-radius: 6px;
+                font-size: .75rem;
+                font-weight: 700;
+                border: 1px solid #fecaca;
+            }
+
+            .user-count-badge {
+                padding: 3px 10px;
+                background: #f0fdf4;
+                color: #15803d;
+                border-radius: 6px;
+                font-size: .8rem;
+                font-weight: 700;
+                border: 1px solid #bbf7d0;
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            .user-count-badge.warning {
+                background: #fff7ed;
+                color: #c2410c;
+                border-color: #fed7aa;
+            }
+
+            /* Risk Level badges */
+            .risk-badge {
+                padding: 3px 9px;
+                border-radius: 5px;
+                font-size: .7rem;
+                font-weight: 700;
+                display: inline-block;
+            }
+
+            .risk-badge.CRITICAL {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+
+            .risk-badge.HIGH {
+                background: #fff7ed;
+                color: #ea580c;
+                border: 1px solid #fed7aa;
+            }
+
+            .risk-badge.MEDIUM {
+                background: #fefce8;
+                color: #ca8a04;
+                border: 1px solid #fef08a;
+            }
+
+            .risk-badge.LOW {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+
+            .risk-badge.SAFE {
+                background: #f1f5f9;
+                color: #64748b;
+                border: 1px solid #e2e8f0;
+            }
+
+            /* Action buttons in table */
+            .btn-tbl {
+                width: 30px;
+                height: 30px;
+                border-radius: 7px;
+                border: 1px solid #e2e8f0;
+                background: #fff;
+                cursor: pointer;
+                font-size: .78rem;
+                transition: all .2s;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .btn-tbl-edit {
+                color: #3b82f6;
+            }
+
+            .btn-tbl-edit:hover {
+                background: #eff6ff;
+                border-color: #3b82f6;
+            }
+
+            .btn-tbl-clone {
+                color: #8b5cf6;
+            }
+
+            .btn-tbl-clone:hover {
+                background: #f5f3ff;
+                border-color: #8b5cf6;
+            }
+
+            .btn-tbl-delete {
+                color: #ef4444;
+            }
+
+            .btn-tbl-delete:hover {
+                background: #fff5f5;
+                border-color: #ef4444;
+            }
+
+            /* Permissions grid in modal */
+            .perm-check-box {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                background: #f8fafc;
+                padding: 11px 12px;
+                border-radius: 8px;
+                border: 1.5px solid #e2e8f0;
+                transition: all .2s;
+                cursor: pointer;
+            }
+
+            .perm-check-box:hover {
+                border-color: #3b82f6;
+                background: #eff6ff;
+            }
+
+            .perm-check-box.checked-box {
+                border-color: #3b82f6;
+                background: #eff6ff;
+            }
+
+            .perm-check-box input {
+                margin-top: 2px;
+                cursor: pointer;
+                width: 15px;
+                height: 15px;
+                flex-shrink: 0;
+            }
+
+            .perm-check-code {
+                font-weight: 700;
+                font-size: .82rem;
+                color: #1e293b;
+                margin-bottom: 2px;
+            }
+
+            .perm-check-desc {
+                font-size: .73rem;
+                color: #64748b;
+                line-height: 1.4;
+            }
+
+            .perm-group-label {
+                font-size: .72rem;
+                font-weight: 800;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: .5px;
+                padding: 6px 0 6px;
+                border-bottom: 1px solid #f1f5f9;
+                margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                gap: 7px;
+            }
+        </style>
+
+        <!-- PAGE HEADER -->
+        <div class="admin-page-header" style="margin-bottom: 24px;">
+            <div>
+                <h4 style="margin-bottom: 4px;">Quản lý Chức vụ & Quyền thao tác (RBAC)</h4>
+                <p style="color: #64748b; margin: 0;">Khởi tạo nhóm quyền động và tự định nghĩa các quyền hạt lựu trực
+                    tiếp từ CSDL.</p>
+            </div>
+        </div>
+
+        <!-- TAB NAVIGATION (tự xây, không dùng Bootstrap Tab để kiểm soát hoàn toàn) -->
+        <div class="rm-nav-tabs">
+            <button class="rm-tab-btn active" id="tabBtnRoles" onclick="switchTab('roles')">
+                <i class="fas fa-user-tie me-2"></i>Nhóm Chức Vụ (Roles)
+            </button>
+            <button class="rm-tab-btn" id="tabBtnPerms" onclick="switchTab('perms')">
+                <i class="fas fa-key me-2"></i>Từ điển Quyền Hạt Lựu
+            </button>
+        </div>
+
+        <!-- ================================================================
+     TAB 1: ROLE COMMAND — QUẢN LÝ CHỨC VỤ
+     ================================================================ -->
+        <div id="panelRoles">
+            <div class="rm-card">
+                <div class="rm-card-hdr">
+                    <h5 class="rm-card-title"><i class="fas fa-shield-alt me-2 text-primary"></i>Danh sách Chức vụ hiện
+                        hành</h5>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-ghost" onclick="loadRoles()" style="padding: 7px 14px;">
+                            <i class="fas fa-sync-alt me-1"></i>Làm mới
+                        </button>
+                        <button class="btn-hc-primary" onclick="moModalThemChucVu()" style="padding: 7px 16px;">
+                            <i class="fas fa-plus-circle me-2"></i>Thêm Chức Vụ
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="rm-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 55px;">ID</th>
+                                <th style="width: 200px;">Tên Chức Vụ</th>
+                                <th style="width: 90px; text-align: center;">Cấp Bậc</th>
+                                <th>Quyền Hạt Lựu Đang Sở Hữu</th>
+                                <th style="width: 120px; text-align: center;">Người Dùng</th>
+                                <th style="width: 130px; text-align: right;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rolesTableBody">
+                            <tr>
+                                <td colspan="6" style="padding: 40px; text-align: center;"><i
+                                        class="fas fa-circle-notch fa-spin fa-2x" style="color: #94a3b8;"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+     TAB 2: PERMISSION DICTIONARY — TỪ ĐIỂN QUYỀN HẠT LỰU
+     ================================================================ -->
+        <div id="panelPerms" style="display: none;">
+            <div class="rm-card">
+                <div class="rm-card-hdr">
+                    <h5 class="rm-card-title"><i class="fas fa-list-ul me-2 text-success"></i>Từ điển Quyền Hạt Lựu</h5>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-ghost" onclick="loadPermissionsForTab2()" style="padding: 7px 14px;">
+                            <i class="fas fa-sync-alt me-1"></i>Làm mới
+                        </button>
+                        <button class="btn-hc-primary" onclick="moModalThemQuyen()"
+                            style="padding: 7px 16px; background: #10b981; border-color: #10b981;">
+                            <i class="fas fa-plus-circle me-2"></i>Tạo Quyền Mới
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="rm-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 65px;">ID</th>
+                                <th style="width: 240px;">Mã Quyền (Code)</th>
+                                <th>Diễn giải Nghiệp vụ</th>
+                                <th style="width: 120px; text-align: center;">Mức Rủi Ro</th>
+                                <th style="width: 110px; text-align: right;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="permsTableBody">
+                            <tr>
+                                <td colspan="5" style="padding: 40px; text-align: center;"><i
+                                        class="fas fa-circle-notch fa-spin fa-2x" style="color: #94a3b8;"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+     MODAL: TẠO / CHỈNH SỬA CHỨC VỤ
+     ================================================================ -->
+        <div class="modal fade" id="modalChucVu" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content" style="border-radius: 16px; border: none;">
+                    <div class="modal-header" style="padding: 20px 28px; border-bottom: 1px solid #f1f5f9;">
+                        <h5 class="modal-title" id="modalChucVuTitle" style="font-weight: 800; color: #1e293b;"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 24px 28px;">
+                        <input type="hidden" id="chucVuId">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-7">
+                                <label
+                                    style="font-size: .82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 5px;">
+                                    Tên Chức Vụ <span style="color: #dc2626;">*</span>
+                                </label>
+                                <input type="text" id="chucVuName" class="form-control text-uppercase"
+                                    placeholder="VD: KETOAN, BACSI, SALEREP..."
+                                    style="font-weight: 700; border-radius: 8px;">
+                                <p style="font-size: .7rem; color: #94a3b8; margin-top: 4px;">Viết hoa, liền không dấu.
+                                    Ví dụ: ACCOUNTANT</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label
+                                    style="font-size: .82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 5px;">
+                                    Cấp Bậc (Level) <span style="color: #dc2626;">*</span>
+                                </label>
+                                <input type="number" id="chucVuLevel" class="form-control" placeholder="0–99" min="0"
+                                    max="99" value="3" style="border-radius: 8px;">
+                                <p style="font-size: .7rem; color: #94a3b8; margin-top: 4px;">Số nhỏ hơn = quyền cao
+                                    hơn.</p>
+                            </div>
+                            <div class="col-md-2" style="display: flex; align-items: center; padding-top: 22px;">
+                                <div id="levelPreviewBadge" style="text-align: center;">
+                                    <span class="level-badge" id="levelPreviewText" style="font-size: .9rem;">Lv
+                                        3</span>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label
+                                    style="font-size: .82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 5px;">Mô
+                                    tả chi tiết</label>
+                                <textarea id="chucVuDesc" class="form-control" rows="2"
+                                    placeholder="Diễn giải nhiệm vụ và phạm vi trách nhiệm của chức vụ này..."
+                                    style="border-radius: 8px; resize: none;"></textarea>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px dashed #e2e8f0; padding-top: 20px;">
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <div>
+                                    <h6 style="font-weight: 800; color: #1e293b; margin-bottom: 2px;">Cấp Quyền Hạt Lựu
+                                        (Permissions)</h6>
+                                    <p style="font-size: .78rem; color: #64748b; margin: 0;">Tích chọn các quyền thao
+                                        tác sẽ được gán cho chức vụ này.</p>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" onclick="chonTatCaQuyen()" class="btn-ghost"
+                                        style="padding: 5px 12px; font-size: .78rem;">Chọn tất cả</button>
+                                    <button type="button" onclick="boChonTatCa()" class="btn-ghost"
+                                        style="padding: 5px 12px; font-size: .78rem;">Bỏ tất cả</button>
+                                </div>
+                            </div>
+                            <div id="permissionsGrid">
+                                <div style="text-align: center; padding: 20px; color: #94a3b8;">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Đang tải danh sách quyền...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 16px 28px; gap: 10px;">
+                        <button type="button" class="btn-ghost" data-bs-dismiss="modal" style="padding: 9px 22px;">Hủy
+                            bỏ</button>
+                        <button type="button" id="btnLuuChucVu" class="btn-hc-primary" onclick="luuChucVu()"
+                            style="padding: 9px 24px;">
+                            <i class="fas fa-save me-2"></i>Lưu Chức Vụ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+     MODAL: NHÂN BẢN CHỨC VỤ (CLONE)
+     ================================================================ -->
+        <div class="modal fade" id="modalClone" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+                <div class="modal-content" style="border-radius: 16px; border: none;">
+                    <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #f1f5f9;">
+                        <h5 class="modal-title" style="font-weight: 800; color: #8b5cf6;">
+                            <i class="fas fa-copy me-2"></i>Nhân bản Chức vụ
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 20px 24px;">
+                        <p id="cloneSourceDesc"
+                            style="font-size: .88rem; color: #64748b; margin-bottom: 16px; background: #f8fafc; border-radius: 8px; padding: 10px 12px; border: 1px solid #e2e8f0;">
+                        </p>
+                        <input type="hidden" id="cloneSourceId">
+                        <label
+                            style="font-size: .82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                            Tên Chức Vụ Bản Sao <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="text" id="cloneNewName" class="form-control text-uppercase"
+                            placeholder="VD: ADMIN_2, KETOAN_CAP2..." style="font-weight: 700; border-radius: 8px;">
+                        <p style="font-size: .72rem; color: #94a3b8; margin-top: 5px;">Tên mới sẽ được tạo với toàn bộ
+                            quyền hạt lựu từ chức vụ gốc.</p>
+                        <p id="cloneNameError"
+                            style="color: #dc2626; font-size: .75rem; margin-top: 6px; display: none;">
+                            <i class="fas fa-exclamation-circle me-1"></i>Vui lòng nhập tên chức vụ bản sao.
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 14px 24px; gap: 10px;">
+                        <button type="button" class="btn-ghost" data-bs-dismiss="modal" style="padding: 8px 20px;">Hủy
+                            bỏ</button>
+                        <button type="button" id="btnLuuClone" onclick="luuClone()"
+                            style="padding: 8px 22px; background: #8b5cf6; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                            <i class="fas fa-copy me-2"></i>Tạo Bản Sao
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+     MODAL: TẠO / CHỈNH SỬA QUYỀN HẠT LỰU
+     ================================================================ -->
+        <div class="modal fade" id="modalQuyen" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+                <div class="modal-content" style="border-radius: 16px; border: none;">
+                    <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #f1f5f9;">
+                        <h5 class="modal-title" id="modalQuyenTitle" style="font-weight: 800; color: #10b981;"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 20px 24px;">
+                        <input type="hidden" id="quyenId">
+                        <div class="mb-4">
+                            <label
+                                style="font-size: .82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                                Mã Quyền Thao Tác <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input type="text" id="quyenCode" class="form-control text-uppercase"
+                                placeholder="VD: DUYET_BAO_GIA, XOA_BENH_NHAN..."
+                                style="font-weight: 700; border-radius: 8px;">
+                            <p style="font-size: .7rem; color: #94a3b8; margin-top: 5px;">Viết hoa, nối bằng gạch dưới
+                                (_). Ví dụ: XOA_BAI_VIET</p>
+                            <p id="quyenCodeError"
+                                style="color: #dc2626; font-size: .75rem; margin-top: 4px; display: none;">
+                                <i class="fas fa-exclamation-circle me-1"></i>Mã quyền không được để trống.
+                            </p>
+                        </div>
+                        <div>
+                            <label
+                                style="font-size: .82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">Diễn
+                                giải Nghiệp vụ</label>
+                            <textarea id="quyenDesc" class="form-control" rows="3"
+                                placeholder="Quyền này cho phép làm gì trong hệ thống? Dùng ở nghiệp vụ nào?"
+                                style="border-radius: 8px; resize: none;"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 14px 24px; gap: 10px;">
+                        <button type="button" class="btn-ghost" data-bs-dismiss="modal" style="padding: 8px 20px;">Hủy
+                            bỏ</button>
+                        <button type="button" id="btnLuuQuyen" onclick="luuQuyen()"
+                            style="padding: 8px 22px; background: #10b981; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                            <i class="fas fa-check-circle me-2"></i>Lưu Quyền
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // ================================================================
+            // GLOBAL STATE
+            // ================================================================
+            var danhSachPermissionsGoc = [];
+
+            var modalChucVuInstance = null;
+            var modalCloneInstance = null;
+            var modalQuyenInstance = null;
+
+            // ================================================================
+            // TAB SWITCHING
+            // ================================================================
+            function switchTab(tabName) {
+                if (tabName === 'roles') {
+                    document.getElementById('panelRoles').style.display = 'block';
+                    document.getElementById('panelPerms').style.display = 'none';
+                    document.getElementById('tabBtnRoles').classList.add('active');
+                    document.getElementById('tabBtnPerms').classList.remove('active');
+                } else {
+                    document.getElementById('panelRoles').style.display = 'none';
+                    document.getElementById('panelPerms').style.display = 'block';
+                    document.getElementById('tabBtnRoles').classList.remove('active');
+                    document.getElementById('tabBtnPerms').classList.add('active');
+                }
+            }
+
+            // ================================================================
+            // INITIALIZATION
+            // ================================================================
+            document.addEventListener('DOMContentLoaded', function () {
+                modalChucVuInstance = new bootstrap.Modal(document.getElementById('modalChucVu'));
+                modalCloneInstance = new bootstrap.Modal(document.getElementById('modalClone'));
+                modalQuyenInstance = new bootstrap.Modal(document.getElementById('modalQuyen'));
+
+                // Level input → live preview badge
+                document.getElementById('chucVuLevel').addEventListener('input', function () {
+                    document.getElementById('levelPreviewText').textContent = 'Lv ' + (this.value || '?');
+                });
+
+                // Name input → auto uppercase
+                document.getElementById('chucVuName').addEventListener('input', function () {
+                    var pos = this.selectionStart;
+                    this.value = this.value.toUpperCase();
+                    this.setSelectionRange(pos, pos);
+                });
+                document.getElementById('quyenCode').addEventListener('input', function () {
+                    var pos = this.selectionStart;
+                    this.value = this.value.toUpperCase();
+                    this.setSelectionRange(pos, pos);
+                });
+                document.getElementById('cloneNewName').addEventListener('input', function () {
+                    var pos = this.selectionStart;
+                    this.value = this.value.toUpperCase();
+                    this.setSelectionRange(pos, pos);
+                });
+
+                loadRoles();
+                loadPermissionsForTab2();
+                loadPermissionsForCheckbox();
+            });
+
+            // ================================================================
+            // PHẦN 1: CHỨC VỤ (ROLES)
+            // ================================================================
+            function loadRoles() {
+                document.getElementById('rolesTableBody').innerHTML =
+                    '<tr><td colspan="6" style="padding:40px;text-align:center;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:#94a3b8;"></i></td></tr>';
+
+                callApi('/api/admin/role-management/roles', 'GET', null, '', function (response) {
+                    var roles = response.data;
+                    var html = '';
+
+                    if (roles === null || roles === undefined || roles.length === 0) {
+                        html = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;">Hệ thống chưa có chức vụ nào.</td></tr>';
+                    } else {
+                        for (var i = 0; i < roles.length; i = i + 1) {
+                            var r = roles[i];
+
+                            // Permissions badges
+                            var permsHtml = '';
+                            if (r.permissions !== null && r.permissions !== undefined && r.permissions.length > 0) {
+                                for (var j = 0; j < r.permissions.length; j = j + 1) {
+                                    permsHtml += '<span class="perm-badge">' + r.permissions[j] + '</span>';
+                                }
+                            } else {
+                                permsHtml = '<span style="color:#94a3b8;font-size:.75rem;font-style:italic;">Không có quyền</span>';
+                            }
+
+                            // Description
+                            var desc = r.description;
+                            if (desc === null || desc === undefined || desc === '') {
+                                desc = '<i style="color:#cbd5e1;">Không có mô tả</i>';
+                            }
+
+                            // User count (impact analysis)
+                            var userCount = r.userCount || 0;
+                            var countClass = (userCount > 0) ? 'warning' : '';
+                            var countHtml = '<span class="user-count-badge ' + countClass + '">' +
+                                '<i class="fas fa-users" style="font-size:.7rem;"></i>' + userCount +
+                                '</span>';
+
+                            // Serialize permissions to pass into onclick
+                            var permsJson = '[]';
+                            if (r.permissions !== null && r.permissions !== undefined) {
+                                permsJson = JSON.stringify(r.permissions).replace(/'/g, "\\'");
+                            }
+                            var descEscaped = (r.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                            // Bảo vệ chức vụ lõi — không cho xóa
+                            var deleteBtn = '';
+                            if (r.roleName !== 'SUPERADMIN' && r.roleName !== 'ADMIN' && r.roleName !== 'USER') {
+                                deleteBtn = '<button class="btn-tbl btn-tbl-delete" title="Xóa chức vụ" onclick="xoaChucVu(' + r.id + ', \'' + r.roleName + '\')">' +
+                                    '<i class="fas fa-trash-alt"></i>' +
+                                    '</button>';
+                            }
+
+                            html += '<tr>' +
+                                '<td style="font-weight:700;color:#64748b;font-size:.85rem;">#' + r.id + '</td>' +
+                                '<td>' +
+                                '<span class="role-badge"><i class="fas fa-id-badge me-1"></i>' + r.roleName + '</span>' +
+                                '<div style="font-size:.75rem;color:#64748b;margin-top:5px;">' + desc + '</div>' +
+                                '</td>' +
+                                '<td style="text-align:center;"><span class="level-badge">Lv ' + r.roleLevel + '</span></td>' +
+                                '<td style="max-width:280px;">' + permsHtml + '</td>' +
+                                '<td style="text-align:center;">' + countHtml + '</td>' +
+                                '<td style="text-align:right;">' +
+                                '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
+                                'onclick=\'moModalSuaChucVu(' + r.id + ',"' + r.roleName + '",' + r.roleLevel + ',"' + descEscaped + '",' + permsJson + ')\'>' +
+                                '<i class="fas fa-edit"></i>' +
+                                '</button>' +
+                                '<button class="btn-tbl btn-tbl-clone me-1" title="Nhân bản" onclick="moModalClone(' + r.id + ', \'' + r.roleName + '\')">' +
+                                '<i class="fas fa-copy"></i>' +
+                                '</button>' +
+                                deleteBtn +
+                                '</td>' +
+                                '</tr>';
+                        }
+                    }
+
+                    document.getElementById('rolesTableBody').innerHTML = html;
+                }, function (errMsg) {
+                    document.getElementById('rolesTableBody').innerHTML =
+                        '<tr><td colspan="6" style="padding:30px;text-align:center;color:#dc2626;">' +
+                        '<i class="fas fa-exclamation-triangle me-2"></i>' + errMsg + '</td></tr>';
+                });
+            }
+
+            window.moModalThemChucVu = function () {
+                document.getElementById('modalChucVuTitle').innerHTML = '<i class="fas fa-plus-circle text-primary me-2"></i>Thêm Chức Vụ Mới';
+                document.getElementById('chucVuId').value = '';
+                document.getElementById('chucVuName').value = '';
+                document.getElementById('chucVuName').readOnly = false;
+                document.getElementById('chucVuLevel').value = '3';
+                document.getElementById('chucVuDesc').value = '';
+                document.getElementById('levelPreviewText').textContent = 'Lv 3';
+                vePermissionsGrid([]);
+                modalChucVuInstance.show();
+            };
+
+            window.moModalSuaChucVu = function (id, name, level, desc, permsArray) {
+                document.getElementById('modalChucVuTitle').innerHTML = '<i class="fas fa-edit text-primary me-2"></i>Chỉnh sửa: <span style="color:#3b82f6;">' + name + '</span>';
+                document.getElementById('chucVuId').value = id;
+                document.getElementById('chucVuName').value = name;
+                document.getElementById('chucVuName').readOnly = true;
+                document.getElementById('chucVuLevel').value = level;
+                document.getElementById('chucVuDesc').value = desc;
+                document.getElementById('levelPreviewText').textContent = 'Lv ' + level;
+                vePermissionsGrid(permsArray || []);
+                modalChucVuInstance.show();
+            };
+
+            window.chonTatCaQuyen = function () {
+                var checkboxes = document.getElementsByName('permissionsGroup');
+                for (var i = 0; i < checkboxes.length; i = i + 1) {
+                    checkboxes[i].checked = true;
+                    var box = checkboxes[i].closest('.perm-check-box');
+                    if (box !== null) box.classList.add('checked-box');
+                }
+            };
+
+            window.boChonTatCa = function () {
+                var checkboxes = document.getElementsByName('permissionsGroup');
+                for (var i = 0; i < checkboxes.length; i = i + 1) {
+                    checkboxes[i].checked = false;
+                    var box = checkboxes[i].closest('.perm-check-box');
+                    if (box !== null) box.classList.remove('checked-box');
+                }
+            };
+
+            function vePermissionsGrid(permsDaDuocChon) {
+                var grid = document.getElementById('permissionsGrid');
+
+                if (danhSachPermissionsGoc === null || danhSachPermissionsGoc === undefined || danhSachPermissionsGoc.length === 0) {
+                    grid.innerHTML = '<div style="background:#fff7ed;border:1px solid #fbbf24;border-radius:8px;padding:14px;font-size:.85rem;color:#92400e;">' +
+                        '<i class="fas fa-exclamation-triangle me-2"></i>Chưa có Quyền hạt lựu nào. Hãy sang tab <strong>Từ điển Quyền Hạt Lựu</strong> để tạo trước.' +
+                        '</div>';
+                    return;
+                }
+
+                // Nhóm theo prefix để dễ tích chọn
+                var nhomKeys = [];
+                var nhomDict = {};
+
+                for (var i = 0; i < danhSachPermissionsGoc.length; i = i + 1) {
+                    var p = danhSachPermissionsGoc[i];
+                    var prefix = p.permissionCode.split('_')[0];
+                    var found = false;
+
+                    for (var k = 0; k < nhomKeys.length; k = k + 1) {
+                        if (nhomKeys[k] === prefix) { found = true; break; }
+                    }
+                    if (found === false) {
+                        nhomKeys.push(prefix);
+                        nhomDict[prefix] = [];
+                    }
+                    nhomDict[prefix].push(p);
+                }
+
+                var html = '';
+                for (var g = 0; g < nhomKeys.length; g = g + 1) {
+                    var groupKey = nhomKeys[g];
+                    var groupPerms = nhomDict[groupKey];
+
+                    html += '<div style="margin-bottom:16px;">' +
+                        '<div class="perm-group-label"><i class="fas fa-layer-group"></i>' + groupKey + ' (' + groupPerms.length + ')</div>' +
+                        '<div class="row g-2">';
+
+                    for (var pg = 0; pg < groupPerms.length; pg = pg + 1) {
+                        var perm = groupPerms[pg];
+                        var isChecked = false;
+
+                        for (var j = 0; j < permsDaDuocChon.length; j = j + 1) {
+                            if (permsDaDuocChon[j] === perm.permissionCode) { isChecked = true; break; }
+                        }
+
+                        var checkedAttr = isChecked ? ' checked' : '';
+                        var checkedClass = isChecked ? ' checked-box' : '';
+                        var desc = (perm.description !== null && perm.description !== undefined) ? perm.description : '';
+
+                        html += '<div class="col-md-6 col-lg-4">' +
+                            '<label class="perm-check-box' + checkedClass + '" onclick="togglePermCheckBox(this)">' +
+                            '<input type="checkbox" name="permissionsGroup" value="' + perm.permissionCode + '"' + checkedAttr + ' style="pointer-events:none;">' +
+                            '<div>' +
+                            '<div class="perm-check-code">' + perm.permissionCode + '</div>' +
+                            '<div class="perm-check-desc">' + desc + '</div>' +
+                            '</div>' +
+                            '</label>' +
+                            '</div>';
+                    }
+
+                    html += '</div></div>';
+                }
+
+                grid.innerHTML = html;
+            }
+
+            window.togglePermCheckBox = function (label) {
+                var checkbox = label.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                if (checkbox.checked) {
+                    label.classList.add('checked-box');
+                } else {
+                    label.classList.remove('checked-box');
+                }
+            };
+
+            window.luuChucVu = function () {
+                var id = document.getElementById('chucVuId').value;
+                var roleName = document.getElementById('chucVuName').value.trim();
+                var roleLevel = document.getElementById('chucVuLevel').value;
+                var description = document.getElementById('chucVuDesc').value.trim();
+
+                if (roleName === '') {
+                    Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Tên chức vụ không được để trống.', confirmButtonColor: '#3b82f6' });
+                    return;
+                }
+                if (roleLevel === '' || parseInt(roleLevel) < 0) {
+                    Swal.fire({ icon: 'warning', title: 'Cấp bậc không hợp lệ', text: 'Vui lòng nhập cấp bậc từ 0 trở lên.', confirmButtonColor: '#3b82f6' });
+                    return;
+                }
+
+                var checkboxes = document.getElementsByName('permissionsGroup');
+                var selectedPerms = [];
+                for (var i = 0; i < checkboxes.length; i = i + 1) {
+                    if (checkboxes[i].checked === true) {
+                        selectedPerms.push(checkboxes[i].value);
+                    }
+                }
+
+                var requestData = {
+                    roleName: roleName,
+                    roleLevel: parseInt(roleLevel),
+                    description: description,
+                    permissions: selectedPerms
+                };
+
+                var apiUrl = '/api/admin/role-management/roles';
+                var method = 'POST';
+                if (id !== '') {
+                    apiUrl = apiUrl + '/' + id;
+                    method = 'PUT';
+                }
+
+                callApi(apiUrl, method, requestData, '#btnLuuChucVu', function (response) {
+                    modalChucVuInstance.hide();
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Lưu chức vụ thành công!', showConfirmButton: false, timer: 2000 });
+                    loadRoles();
+                }, function (errMsg) {
+                    Swal.fire({ icon: 'error', title: 'Lưu thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                });
+            };
+
+            window.xoaChucVu = function (id, roleName) {
+                Swal.fire({
+                    title: 'Xóa chức vụ ' + roleName + '?',
+                    html: '<div style="color:#64748b;font-size:.9rem;">Không thể xóa nếu đang có nhân sự giữ chức vụ này.<br>Mọi liên kết sẽ bị hủy vĩnh viễn.</div>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: '<i class="fas fa-trash-alt me-1"></i>Xác nhận xóa',
+                    cancelButtonText: 'Hủy'
+                }).then(function (result) {
+                    if (result.isConfirmed !== true) return;
+                    callApi('/api/admin/role-management/roles/' + id, 'DELETE', null, '', function (response) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Đã xóa chức vụ', showConfirmButton: false, timer: 2000 });
+                        loadRoles();
+                    }, function (errMsg) {
+                        Swal.fire({ icon: 'error', title: 'Xóa thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                    });
+                });
+            };
+
+            window.moModalClone = function (id, roleName) {
+                document.getElementById('cloneSourceId').value = id;
+                document.getElementById('cloneNewName').value = '';
+                document.getElementById('cloneNameError').style.display = 'none';
+                document.getElementById('cloneSourceDesc').innerHTML =
+                    'Nhân bản từ chức vụ: <strong>' + roleName + '</strong>. Bản sao sẽ thừa kế toàn bộ quyền hạt lựu của chức vụ gốc.';
+                modalCloneInstance.show();
+            };
+
+            window.luuClone = function () {
+                var sourceId = document.getElementById('cloneSourceId').value;
+                var newName = document.getElementById('cloneNewName').value.trim();
+
+                if (newName === '') {
+                    document.getElementById('cloneNameError').style.display = 'block';
+                    return;
+                }
+                document.getElementById('cloneNameError').style.display = 'none';
+
+                callApi('/api/admin/role-management/roles/' + sourceId + '/clone', 'POST', { roleName: newName }, '#btnLuuClone', function (response) {
+                    modalCloneInstance.hide();
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Nhân bản thành công!', showConfirmButton: false, timer: 2000 });
+                    loadRoles();
+                }, function (errMsg) {
+                    Swal.fire({ icon: 'error', title: 'Nhân bản thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                });
+            };
+
+            // ================================================================
+            // PHẦN 2: QUYỀN HẠT LỰU (PERMISSIONS)
+            // ================================================================
+            function loadPermissionsForCheckbox() {
+                callApi('/api/admin/role-management/permissions', 'GET', null, '', function (response) {
+                    danhSachPermissionsGoc = response.data || [];
+                }, function () {
+                    danhSachPermissionsGoc = [];
+                });
+            }
+
+            function loadPermissionsForTab2() {
+                document.getElementById('permsTableBody').innerHTML =
+                    '<tr><td colspan="5" style="padding:40px;text-align:center;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:#94a3b8;"></i></td></tr>';
+
+                callApi('/api/admin/role-management/permissions', 'GET', null, '', function (response) {
+                    var perms = response.data || [];
+                    danhSachPermissionsGoc = perms; // Đồng bộ cho modal chức vụ
+                    var html = '';
+
+                    if (perms.length === 0) {
+                        html = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#94a3b8;">Hệ thống chưa có quyền hạt lựu nào.</td></tr>';
+                    } else {
+                        for (var i = 0; i < perms.length; i = i + 1) {
+                            var p = perms[i];
+                            var desc = p.description;
+                            if (desc === null || desc === undefined || desc === '') {
+                                desc = '<i style="color:#cbd5e1;">Chưa có mô tả nghiệp vụ</i>';
+                            }
+
+                            var riskLevel = p.riskLevel || 'SAFE';
+                            var riskLabel = getRiskLabel(riskLevel);
+                            var descEscaped = (p.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                            html += '<tr>' +
+                                '<td style="font-weight:700;color:#64748b;font-size:.85rem;">#' + p.id + '</td>' +
+                                '<td><span class="perm-badge" style="font-size:.78rem;padding:4px 10px;">' + p.permissionCode + '</span></td>' +
+                                '<td style="font-size:.82rem;color:#475569;">' + desc + '</td>' +
+                                '<td style="text-align:center;"><span class="risk-badge ' + riskLevel + '">' + riskLabel + '</span></td>' +
+                                '<td style="text-align:right;">' +
+                                '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
+                                'onclick=\'moModalSuaQuyen(' + p.id + ',"' + p.permissionCode + '","' + descEscaped + '")\'>' +
+                                '<i class="fas fa-edit"></i>' +
+                                '</button>' +
+                                '<button class="btn-tbl btn-tbl-delete" title="Xóa" onclick="xoaQuyen(' + p.id + ', \'' + p.permissionCode + '\')">' +
+                                '<i class="fas fa-trash-alt"></i>' +
+                                '</button>' +
+                                '</td>' +
+                                '</tr>';
+                        }
+                    }
+
+                    document.getElementById('permsTableBody').innerHTML = html;
+                }, function (errMsg) {
+                    document.getElementById('permsTableBody').innerHTML =
+                        '<tr><td colspan="5" style="padding:30px;text-align:center;color:#dc2626;">' +
+                        '<i class="fas fa-exclamation-triangle me-2"></i>' + errMsg + '</td></tr>';
+                });
+            }
+
+            window.moModalThemQuyen = function () {
+                document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Tạo Quyền Hạt Lựu Mới';
+                document.getElementById('quyenId').value = '';
+                document.getElementById('quyenCode').value = '';
+                document.getElementById('quyenCode').readOnly = false;
+                document.getElementById('quyenDesc').value = '';
+                document.getElementById('quyenCodeError').style.display = 'none';
+                modalQuyenInstance.show();
+            };
+
+            window.moModalSuaQuyen = function (id, code, desc) {
+                document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Sửa Quyền: <span style="color:#10b981;">' + code + '</span>';
+                document.getElementById('quyenId').value = id;
+                document.getElementById('quyenCode').value = code;
+                document.getElementById('quyenCode').readOnly = false;
+                document.getElementById('quyenDesc').value = desc;
+                document.getElementById('quyenCodeError').style.display = 'none';
+                modalQuyenInstance.show();
+            };
+
+            window.luuQuyen = function () {
+                var id = document.getElementById('quyenId').value;
+                var code = document.getElementById('quyenCode').value.trim();
+                var desc = document.getElementById('quyenDesc').value.trim();
+
+                if (code === '') {
+                    document.getElementById('quyenCodeError').style.display = 'block';
+                    return;
+                }
+                document.getElementById('quyenCodeError').style.display = 'none';
+
+                var requestData = { permissionCode: code, description: desc };
+                var apiUrl = '/api/admin/role-management/permissions';
+                var method = 'POST';
+                if (id !== '') {
+                    apiUrl = apiUrl + '/' + id;
+                    method = 'PUT';
+                }
+
+                callApi(apiUrl, method, requestData, '#btnLuuQuyen', function (response) {
+                    modalQuyenInstance.hide();
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Lưu quyền thành công!', showConfirmButton: false, timer: 2000 });
+                    loadPermissionsForTab2();
+                }, function (errMsg) {
+                    Swal.fire({ icon: 'error', title: 'Lưu thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                });
+            };
+
+            window.xoaQuyen = function (id, code) {
+                Swal.fire({
+                    title: 'Xóa quyền ' + code + '?',
+                    html: '<div style="color:#64748b;font-size:.9rem;">Chỉ xóa được nếu quyền này chưa gắn vào bất kỳ chức vụ nào.<br>Hành động này không thể hoàn tác.</div>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: '<i class="fas fa-trash-alt me-1"></i>Xác nhận xóa',
+                    cancelButtonText: 'Hủy'
+                }).then(function (result) {
+                    if (result.isConfirmed !== true) return;
+                    callApi('/api/admin/role-management/permissions/' + id, 'DELETE', null, '', function (response) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Đã xóa quyền', showConfirmButton: false, timer: 2000 });
+                        loadPermissionsForTab2();
+                    }, function (errMsg) {
+                        Swal.fire({ icon: 'error', title: 'Xóa thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                    });
+                });
+            };
+
+            // ================================================================
+            // UTILITY
+            // ================================================================
+            function getRiskLabel(riskLevel) {
+                if (riskLevel === 'CRITICAL') return 'Nguy hiểm';
+                if (riskLevel === 'HIGH') return 'Cao';
+                if (riskLevel === 'MEDIUM') return 'Trung bình';
+                if (riskLevel === 'LOW') return 'Thấp';
+                return 'An toàn';
+            }
+        </script>
+
+    </div>
+</th:block>
+
+</html>

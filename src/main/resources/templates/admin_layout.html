@@ -1,0 +1,198 @@
+<!-- src/main/resources/templates/admin_layout.html -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:fragment="admin-head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title != null ? title + ' — Admin' : 'Admin — Pharma Portal'}"></title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+    
+    <link rel="stylesheet" th:href="@{/css/design-system.css}">
+    
+    <style>
+        .sb-badge { background: rgba(0,97,255,.3); color: #93c5fd; padding: 2px 7px; border-radius: 20px; font-size: .68rem; font-weight: 600; margin-left: auto; }
+        .hc-card-actions { display: flex; align-items: center; gap: 6px; }
+        .btn-tbl { padding: 5px 12px; font-size: .78rem; border-radius: 8px; font-weight: 500; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; transition: var(--transition-fast); border: 1.5px solid; text-decoration: none;}
+        .btn-tbl-view   { color: var(--primary); border-color: var(--primary); background: var(--primary-light); }
+        .btn-tbl-edit   { color: var(--warning); border-color: var(--warning); background: var(--warning-light); }
+        .btn-tbl-delete { color: var(--danger);  border-color: var(--danger);  background: var(--danger-light); }
+        .btn-tbl:hover  { opacity: .85; transform: translateY(-1px); }
+        .admin-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .admin-page-header h4 { font-size: 1.2rem; font-weight: 700; margin: 0; color: var(--text); }
+        .admin-page-header p  { font-size: .82rem; color: var(--text-muted); margin: 2px 0 0; }
+        .table-card { background: var(--bg-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); overflow: hidden; }
+        .table-card-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-light); background: var(--bg-soft); gap: 12px; flex-wrap: wrap; }
+        .table-card-title { font-size: .92rem; font-weight: 700; color: var(--text); }
+        .img-thumb { width: 44px; height: 36px; object-fit: cover; border-radius: 6px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-on  { background: var(--success); }
+        .status-off { background: var(--text-muted); }
+    </style>
+</head>
+
+<body class="hc-admin-body" th:fragment="layout(content)">
+
+    <nav class="hc-sidebar" id="adminSidebar">
+        <a class="sb-brand" href="/admin/dashboard">
+            <div class="sb-brand-icon"><i class="fas fa-pills"></i></div>
+            <div>
+                <div class="sb-brand-text">Pharma Portal</div>
+                <div class="sb-brand-sub">Admin Panel</div>
+            </div>
+        </a>
+
+        <div class="sb-section">Tổng quan</div>
+        <a class="sb-link" href="/admin/dashboard"><i class="fas fa-chart-line"></i> Bảng điều khiển</a>
+        
+        <div class="sb-section">Quản trị Hệ thống</div>
+        <a class="sb-link" href="/admin/users"><i class="fas fa-users-cog"></i> Quản lý Người dùng</a>
+
+        <div class="sb-footer">
+            <div class="sb-user">
+                <div class="sb-user-avatar">A</div>
+                <div style="flex:1;min-width:0;">
+                    <div class="sb-user-name" sec:authentication="name">Admin</div>
+                    <div class="sb-user-role">Quản trị viên</div>
+                </div>
+            </div>
+            <a href="/" class="sb-link" style="border-radius:var(--radius-sm);margin-bottom:4px;border-left:none;">
+                <i class="fas fa-external-link-alt"></i> Xem website
+            </a>
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="sb-link" style="width:100%;text-align:left;background:none;border-radius:var(--radius-sm);color:rgba(252,165,165,.8);border-left:none;">
+                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="hc-main" id="adminMain">
+        <div class="hc-topbar">
+            <button class="btn-icon d-xl-none me-2" id="btnToggleSidebar" style="border:none;background:none;font-size:1.1rem;color:var(--text-secondary);">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div style="flex:1;">
+                <div class="tb-title" th:text="${title != null ? title : ''}"></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/" class="btn-ghost" style="font-size:.8rem;padding:6px 12px;text-decoration:none;">
+                    <i class="fas fa-globe"></i>
+                    <span class="d-none d-md-inline">Website</span>
+                </a>
+                <div class="d-flex align-items-center gap-2 ps-2" style="border-left:1px solid var(--border);">
+                    <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;color:white;font-size:.8rem;font-weight:700;">
+                        A
+                    </div>
+                    <div class="d-none d-md-block">
+                        <div style="font-size:.82rem;font-weight:600;color:var(--text)" sec:authentication="name">Admin</div>
+                        <div style="font-size:.72rem;color:var(--text-muted)">Quản trị</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hc-page-content">
+            <div th:replace="${content}"></div>
+        </div>
+    </div>
+
+    <div th:fragment="admin-scripts">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script th:src="@{/js/jquery-3.7.0.min.js}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+        <script th:src="@{/js/auth-sync.js}"></script>
+        <script th:src="@{/js/security-core.js}"></script>
+
+        <script>
+            var btnToggle = document.getElementById('btnToggleSidebar');
+            if (btnToggle !== null) {
+                btnToggle.addEventListener('click', function() {
+                    document.getElementById('adminSidebar').classList.toggle('show');
+                });
+            }
+
+            document.addEventListener('click', function(e) {
+                var sb = document.getElementById('adminSidebar');
+                if (sb !== null) {
+                    if (sb.classList.contains('show') === true && sb.contains(e.target) === false && e.target.id !== 'btnToggleSidebar' && e.target.parentNode.id !== 'btnToggleSidebar') {
+                        sb.classList.remove('show');
+                    }
+                }
+            });
+
+            var currentPath = window.location.pathname;
+            var links = document.querySelectorAll('.hc-sidebar .sb-link');
+            for (var i = 0; i < links.length; i++) {
+                var link = links[i];
+                var href = link.getAttribute('href');
+                if (href !== '/' && currentPath.indexOf(href) === 0) {
+                    link.classList.add('active');
+                }
+            }
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+
+            function showToast(icon, message) {
+                Toast.fire({ icon: icon, title: message });
+            }
+
+            function callApi(url, method, data, btnSelector, onSuccess, onError) {
+                var token = localStorage.getItem('jwtToken');
+                var btn = null;
+                var originalText = "";
+
+                if (btnSelector !== undefined && btnSelector !== null && btnSelector !== "") {
+                    btn = document.querySelector(btnSelector);
+                    if (btn !== null) {
+                        originalText = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Đang xử lý...';
+                    }
+                }
+
+                $.ajax({
+                    url: url,
+                    type: method,
+                    contentType: 'application/json',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    data: data ? JSON.stringify(data) : null,
+                    success: function (response) {
+                        onSuccess(response);
+                    },
+                    error: function (xhr) {
+                        var msg = "Lỗi hệ thống";
+                        if (xhr.responseJSON !== undefined && xhr.responseJSON !== null) {
+                            if (xhr.responseJSON.message !== undefined && xhr.responseJSON.message !== null) {
+                                msg = xhr.responseJSON.message;
+                            }
+                        }
+                        if (onError !== undefined && typeof onError === 'function') {
+                            onError(msg);
+                        } else {
+                            Swal.fire('Thất bại', msg, 'error');
+                        }
+                    },
+                    complete: function () {
+                        if (btn !== null) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    }
+                });
+            }
+        </script>
+    </div>
+</body>
+</html>

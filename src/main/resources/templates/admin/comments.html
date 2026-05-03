@@ -1,0 +1,967 @@
+<!-- src/main/resources/templates/admin/comments.html -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{admin_layout::admin-head('Kiểm duyệt Bình luận')}"></head>
+
+<th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
+<div id="admin-content-wrapper">
+
+<style>
+/* ===== ADMIN COMMENTS PAGE ===== */
+.cm-stat-row { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:24px; }
+.cm-stat { background:#fff; border:1px solid #eee; border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:10px; }
+.cm-stat-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:.88rem; flex-shrink:0; }
+.cm-stat-num { font-size:1.3rem; font-weight:800; line-height:1; }
+.cm-stat-label { font-size:.67rem; color:#6c757d; font-weight:600; margin-top:3px; text-transform:uppercase; letter-spacing:.5px; }
+
+/* Toolbar */
+.cm-toolbar { background:#fff; border:1px solid #eee; border-radius:14px; padding:12px 18px; margin-bottom:18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.cm-search { flex:1; min-width:220px; position:relative; }
+.cm-search i { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#adb5bd; font-size:.8rem; }
+.cm-search input { width:100%; padding:8px 12px 8px 32px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.84rem; outline:none; font-family:inherit; }
+.cm-search input:focus { border-color:#0061ff; }
+.cm-filter { padding:8px 14px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.83rem; outline:none; cursor:pointer; font-family:inherit; color:#495057; background:#fff; }
+.cm-filter:focus { border-color:#0061ff; }
+.cm-btn { display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:.84rem; font-weight:600; cursor:pointer; transition:all .15s; border:none; font-family:inherit; }
+.cm-btn-primary { background:#0061ff; color:#fff; }
+.cm-btn-primary:hover { background:#0048c2; }
+.cm-btn-ghost { background:#fff; border:1.5px solid #e9ecef; color:#495057; }
+.cm-btn-ghost:hover { border-color:#0061ff; color:#0061ff; }
+
+/* Tab bar */
+.cm-tabs { display:flex; border-bottom:2px solid #f0f2fa; margin-bottom:18px; gap:0; }
+.cm-tab { padding:10px 20px; font-size:.85rem; font-weight:600; color:#6c757d; border-bottom:2.5px solid transparent; cursor:pointer; margin-bottom:-2px; display:flex; align-items:center; gap:6px; transition:color .15s; }
+.cm-tab.active { color:#0061ff; border-bottom-color:#0061ff; }
+.cm-tab .tab-count { background:#e8f0ff; color:#0061ff; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:10px; }
+.cm-tab.active .tab-count { background:#0061ff; color:#fff; }
+.cm-tab .tab-warn { background:#ffebe6; color:#de350b; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:10px; }
+
+/* Bulk bar */
+.bulk-bar { background:linear-gradient(90deg,#0061ff,#2d8cf0); color:#fff; border-radius:12px; padding:10px 20px; margin-bottom:16px; display:none; align-items:center; gap:16px; flex-wrap:wrap; }
+.bulk-bar.visible { display:flex; }
+.bulk-count { font-size:.85rem; font-weight:700; }
+.bulk-actions { display:flex; gap:8px; margin-left:auto; }
+.bulk-btn { padding:6px 14px; border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer; border:none; font-family:inherit; display:flex; align-items:center; gap:5px; }
+.bulk-btn-white  { background:rgba(255,255,255,.9); color:#0061ff; }
+.bulk-btn-yellow { background:rgba(249,168,37,.85); color:#fff; }
+.bulk-btn-red    { background:rgba(222,53,11,.8); color:#fff; }
+.bulk-btn-clear  { background:transparent; color:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.3); }
+
+/* Comment Cards — CMT + PH_CMT */
+.cmt-list { display:flex; flex-direction:column; gap:12px; }
+.cmt-card { background:#fff; border:1px solid #eee; border-radius:14px; overflow:hidden; transition:box-shadow .18s; }
+.cmt-card:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); }
+.cmt-card.reported { border-left:3px solid #de350b; }
+.cmt-card.hidden   { border-left:3px solid #6c757d; opacity:.75; }
+.cmt-card.approved { border-left:3px solid #00875a; }
+.cmt-card.pending  { border-left:3px solid #ff8b00; }
+
+.cmt-card-header { padding:12px 16px; display:flex; align-items:flex-start; gap:12px; }
+.cmt-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#0061ff,#2d8cf0); color:#fff; display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:700; flex-shrink:0; }
+.cmt-meta { flex:1; min-width:0; }
+.cmt-meta-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cmt-author { font-size:.87rem; font-weight:700; color:#1a2040; }
+.cmt-time { font-size:.72rem; color:#adb5bd; }
+.cmt-type-badge { padding:1px 8px; border-radius:5px; font-size:.65rem; font-weight:700; }
+.ctb-post  { background:#e8f0ff; color:#0061ff; }
+.ctb-event { background:#e3fcf7; color:#00875a; }
+.ctb-reply { background:#f0f2fa; color:#6c757d; }
+.cmt-target { font-size:.75rem; color:#6c757d; margin-top:3px; }
+.cmt-target a { color:#0061ff; text-decoration:none; font-weight:600; }
+.cmt-target a:hover { text-decoration:underline; }
+.cmt-status-pill { padding:2px 9px; border-radius:6px; font-size:.67rem; font-weight:700; display:inline-block; }
+.csp-approved  { background:#e3fcf7; color:#00875a; }
+.csp-pending   { background:#fff8e1; color:#f9a825; }
+.csp-hidden    { background:#f0f2fa; color:#6c757d; }
+.csp-reported  { background:#ffebe6; color:#de350b; }
+.cmt-actions   { display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+
+.cmt-body { padding:0 16px 12px 64px; }
+.cmt-text { font-size:.87rem; color:#344054; line-height:1.6; }
+.cmt-text.hidden-text { color:#adb5bd; font-style:italic; }
+
+/* Reactions row — CT_LIKECMT + CT_LIKEPHCMT + LOAI_LIKE */
+.cmt-reactions { display:flex; align-items:center; gap:10px; padding:8px 16px 12px 64px; border-top:1px solid #f8f9ff; flex-wrap:wrap; }
+.reaction-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:8px; font-size:.75rem; font-weight:600; background:#f8f9ff; color:#495057; border:1px solid #f0f2fa; }
+.reaction-chip .rc-count { font-weight:800; color:#1a2040; }
+.cmt-footer-meta { margin-left:auto; display:flex; align-items:center; gap:12px; }
+.cmt-ip { font-size:.7rem; color:#adb5bd; font-family:monospace; }
+.cmt-report-flag { display:inline-flex; align-items:center; gap:4px; font-size:.72rem; color:#de350b; font-weight:600; cursor:pointer; }
+
+/* Reply comments (PH_CMT) */
+.replies-toggle { padding:6px 16px 6px 64px; border-top:1px dashed #f0f2fa; }
+.replies-toggle-btn { background:none; border:none; font-size:.78rem; color:#0061ff; font-weight:600; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:5px; padding:0; }
+.replies-panel { background:#fafbff; border-top:1px solid #f0f2fa; }
+.reply-item { padding:10px 16px 10px 56px; border-bottom:1px dashed #f0f2fa; display:flex; align-items:flex-start; gap:10px; }
+.reply-item:last-child { border-bottom:none; }
+.reply-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#00875a,#2db86f); color:#fff; display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700; flex-shrink:0; }
+.reply-body { flex:1; min-width:0; }
+.reply-meta { display:flex; align-items:center; gap:8px; margin-bottom:3px; flex-wrap:wrap; }
+.reply-author { font-size:.82rem; font-weight:700; color:#1a2040; }
+.reply-time { font-size:.7rem; color:#adb5bd; }
+.reply-text { font-size:.83rem; color:#344054; line-height:1.5; }
+.reply-actions { display:flex; gap:5px; flex-shrink:0; }
+.reply-reactions { display:flex; gap:6px; margin-top:4px; }
+.reply-reactions .reaction-chip { font-size:.7rem; padding:2px 7px; }
+
+/* Moderation log */
+.mod-log-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px dashed #f0f2fa; }
+.mod-log-item:last-child { border-bottom:none; }
+.mod-action-badge { padding:2px 9px; border-radius:6px; font-size:.67rem; font-weight:700; white-space:nowrap; }
+.mab-hide    { background:#f0f2fa; color:#6c757d; }
+.mab-unhide  { background:#e3fcf7; color:#00875a; }
+.mab-delete  { background:#ffebe6; color:#de350b; }
+.mab-warn    { background:#fff8e1; color:#f9a825; }
+.mab-approve { background:#e3fcf7; color:#00875a; }
+
+/* Modals */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
+.modal-box { background:#fff; border-radius:20px; width:100%; max-width:620px; max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.2); }
+.modal-box-wide { max-width:860px; }
+.modal-head { padding:20px 24px; border-bottom:1px solid #f0f2fa; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:#fff; z-index:1; }
+.modal-title { font-size:1rem; font-weight:800; color:#1a2040; }
+.modal-close { background:#f0f2fa; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#6c757d; font-size:.85rem; }
+.modal-body { padding:24px; }
+.mf-group { margin-bottom:16px; }
+.mf-label { display:block; font-size:.78rem; font-weight:600; color:#495057; margin-bottom:5px; }
+.mf-label .req { color:#de350b; }
+.mf-input { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; }
+.mf-input:focus { border-color:#0061ff; }
+.mf-textarea { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; resize:vertical; min-height:80px; }
+.mf-textarea:focus { border-color:#0061ff; }
+.mf-select { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; cursor:pointer; background:#fff; }
+.mf-select:focus { border-color:#0061ff; }
+.mf-row { display:grid; gap:14px; }
+.mf-row.cols-2 { grid-template-columns:1fr 1fr; }
+.mf-section-divider { border:none; border-top:1px dashed #e9ecef; margin:20px 0; }
+.mf-section-label { font-size:.75rem; font-weight:800; color:#0061ff; text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
+.modal-footer { padding:16px 24px; border-top:1px solid #f0f2fa; display:flex; align-items:center; justify-content:flex-end; gap:10px; background:#fff; position:sticky; bottom:0; }
+.mf-btn { padding:9px 22px; border-radius:10px; font-size:.87rem; font-weight:700; cursor:pointer; border:none; font-family:inherit; }
+.mf-btn-primary { background:#0061ff; color:#fff; }
+.mf-btn-primary:hover { background:#0048c2; }
+.mf-btn-danger { background:#de350b; color:#fff; }
+.mf-btn-danger:hover { background:#b92e09; }
+.mf-btn-warning { background:#ff8b00; color:#fff; }
+.mf-btn-cancel { background:#f0f2fa; color:#495057; }
+.mf-btn-cancel:hover { background:#e2e8f0; }
+
+/* Moderation action quick buttons */
+.mod-quick-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+.mod-quick-btn { padding:5px 14px; border-radius:8px; font-size:.78rem; font-weight:600; cursor:pointer; border:none; font-family:inherit; display:flex; align-items:center; gap:5px; }
+.mqb-approve { background:#e3fcf7; color:#00875a; }
+.mqb-hide    { background:#f0f2fa; color:#6c757d; }
+.mqb-unhide  { background:#fff8e1; color:#f9a825; }
+.mqb-warn    { background:#fff3cd; color:#b87800; }
+.mqb-delete  { background:#ffebe6; color:#de350b; }
+.mod-quick-btn:hover { filter:brightness(.92); }
+
+/* Pagination */
+.pager { display:flex; align-items:center; justify-content:space-between; margin-top:20px; flex-wrap:wrap; gap:12px; }
+.pager-info { font-size:.8rem; color:#6c757d; }
+.pager-btns { display:flex; gap:5px; }
+.pager-btn { width:34px; height:34px; border:1.5px solid #e9ecef; border-radius:9px; background:#fff; color:#495057; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.83rem; font-weight:600; font-family:inherit; transition:all .15s; }
+.pager-btn:hover { border-color:#0061ff; color:#0061ff; }
+.pager-btn.active { background:#0061ff; border-color:#0061ff; color:#fff; }
+
+/* LOAI_LIKE legend */
+.like-type-row { display:flex; gap:8px; flex-wrap:wrap; padding:10px 16px; background:#f8f9ff; border-radius:10px; margin-bottom:14px; }
+.like-type-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:8px; font-size:.75rem; font-weight:600; background:#fff; border:1px solid #e9ecef; color:#495057; }
+</style>
+
+<!-- Page Header -->
+<div class="admin-page-header">
+    <div>
+        <h4><i class="fas fa-comments" style="color:#0061ff;margin-right:8px;"></i>Kiểm duyệt Bình luận</h4>
+        <p>Quản lý bình luận bài viết (CMT), phản hồi (PH_CMT), lịch sử kiểm duyệt và phản ứng cảm xúc</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <button class="cm-btn cm-btn-ghost" onclick="openModal('likeTypesModal')">
+            <i class="fas fa-heart"></i> Loại cảm xúc (LOAI_LIKE)
+        </button>
+        <button class="cm-btn cm-btn-ghost" onclick="openModal('modActionsModal')">
+            <i class="fas fa-shield-alt"></i> Hành động (MODERATION_ACTIONS)
+        </button>
+        <button class="cm-btn cm-btn-primary" onclick="openModal('settingsModal')">
+            <i class="fas fa-cog"></i> Cài đặt kiểm duyệt
+        </button>
+    </div>
+</div>
+
+<!-- Stat Row — CMT + PH_CMT + reports + moderation -->
+<div class="cm-stat-row">
+    <div class="cm-stat">
+        <div class="cm-stat-icon" style="background:#e8f0ff;"><i class="fas fa-comment" style="color:#0061ff;"></i></div>
+        <div>
+            <div class="cm-stat-num" style="color:#0061ff;">3,847</div>
+            <div class="cm-stat-label">Tổng CMT</div>
+        </div>
+    </div>
+    <div class="cm-stat">
+        <div class="cm-stat-icon" style="background:#e3fcf7;"><i class="fas fa-reply" style="color:#00875a;"></i></div>
+        <div>
+            <div class="cm-stat-num" style="color:#00875a;">1,294</div>
+            <div class="cm-stat-label">Phản hồi PH_CMT</div>
+        </div>
+    </div>
+    <div class="cm-stat">
+        <div class="cm-stat-icon" style="background:#fff8e1;"><i class="fas fa-clock" style="color:#f9a825;"></i></div>
+        <div>
+            <div class="cm-stat-num" style="color:#f9a825;">47</div>
+            <div class="cm-stat-label">Chờ duyệt</div>
+        </div>
+    </div>
+    <div class="cm-stat">
+        <div class="cm-stat-icon" style="background:#ffebe6;"><i class="fas fa-flag" style="color:#de350b;"></i></div>
+        <div>
+            <div class="cm-stat-num" style="color:#de350b;">12</div>
+            <div class="cm-stat-label">Bị báo cáo</div>
+        </div>
+    </div>
+    <div class="cm-stat">
+        <div class="cm-stat-icon" style="background:#f0f2fa;"><i class="fas fa-eye-slash" style="color:#6c757d;"></i></div>
+        <div>
+            <div class="cm-stat-num" style="color:#6c757d;">89</div>
+            <div class="cm-stat-label">Đã ẩn</div>
+        </div>
+    </div>
+    <div class="cm-stat">
+        <div class="cm-stat-icon" style="background:#e3fcf7;"><i class="fas fa-heart" style="color:#de350b;"></i></div>
+        <div>
+            <div class="cm-stat-num" style="color:#de350b;">18,472</div>
+            <div class="cm-stat-label">Tổng reactions</div>
+        </div>
+    </div>
+</div>
+
+<!-- Toolbar -->
+<div class="cm-toolbar">
+    <div class="cm-search">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Tìm nội dung, tên người dùng, bài viết...">
+    </div>
+    <select class="cm-filter">
+        <option>Tất cả trạng thái</option>
+        <option>Đang hiển thị</option>
+        <option>Chờ duyệt</option>
+        <option>Đã ẩn</option>
+        <option>Bị báo cáo</option>
+    </select>
+    <select class="cm-filter">
+        <option>Tất cả loại</option>
+        <option>Bình luận bài viết (CMT)</option>
+        <option>Phản hồi (PH_CMT)</option>
+    </select>
+    <select class="cm-filter">
+        <option>Tất cả bài viết</option>
+        <option>GMP 2025: Tiêu chuẩn mới</option>
+        <option>Dược phẩm OTC và thị trường</option>
+        <option>Chuỗi cung ứng lạnh</option>
+    </select>
+    <input type="date" class="cm-filter" style="cursor:pointer;">
+    <button class="cm-btn cm-btn-ghost"><i class="fas fa-download"></i> Xuất</button>
+</div>
+
+<!-- Tab Bar -->
+<div class="cm-tabs">
+    <div class="cm-tab active" onclick="switchTab(this,'all')">
+        Tất cả <span class="tab-count">3,847</span>
+    </div>
+    <div class="cm-tab" onclick="switchTab(this,'pending')">
+        Chờ duyệt <span class="tab-warn">47</span>
+    </div>
+    <div class="cm-tab" onclick="switchTab(this,'reported')">
+        Bị báo cáo <span class="tab-warn">12</span>
+    </div>
+    <div class="cm-tab" onclick="switchTab(this,'hidden')">
+        Đã ẩn <span class="tab-count">89</span>
+    </div>
+    <div class="cm-tab" onclick="switchTab(this,'post-cmt')">
+        Bài viết (CMT) <span class="tab-count">2,553</span>
+    </div>
+    <div class="cm-tab" onclick="switchTab(this,'replies')">
+        Phản hồi (PH_CMT) <span class="tab-count">1,294</span>
+    </div>
+</div>
+
+<!-- Bulk Action Bar -->
+<div class="bulk-bar" id="bulkBar">
+    <i class="fas fa-check-square"></i>
+    <span class="bulk-count" id="bulkCount">0 bình luận được chọn</span>
+    <div class="bulk-actions">
+        <button class="bulk-btn bulk-btn-white"><i class="fas fa-check"></i> Duyệt</button>
+        <button class="bulk-btn bulk-btn-yellow"><i class="fas fa-eye-slash"></i> Ẩn</button>
+        <button class="bulk-btn bulk-btn-red"><i class="fas fa-trash"></i> Xóa</button>
+        <button class="bulk-btn bulk-btn-clear" onclick="clearBulk()"><i class="fas fa-times"></i> Bỏ chọn</button>
+    </div>
+</div>
+
+<!-- Comment List — CMT + PH_CMT + CT_LIKECMT + CT_LIKEPHCMT + LOAI_LIKE + CT_CMT_MODERATION_LOG -->
+<div class="cmt-list">
+
+    <!-- Comment 1: Reported — CMT -->
+    <div class="cmt-card reported">
+        <div class="cmt-card-header">
+            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:6px;cursor:pointer;">
+            <div class="cmt-avatar">T</div>
+            <div class="cmt-meta">
+                <div class="cmt-meta-top">
+                    <span class="cmt-author">Trần Thanh Tùng</span>
+                    <span class="cmt-type-badge ctb-post">CMT</span>
+                    <span class="cmt-status-pill csp-reported"><i class="fas fa-flag"></i> Bị báo cáo (3)</span>
+                    <span class="cmt-time">hôm nay 08:22</span>
+                </div>
+                <div class="cmt-target">
+                    Bình luận trên: <a href="#">GMP 2025: Tiêu chuẩn sản xuất mới nhất</a>
+                    <span style="color:#adb5bd;margin:0 4px;">•</span>
+                    <span style="font-family:monospace;font-size:.68rem;color:#adb5bd;">IP: 192.168.1.45</span>
+                </div>
+            </div>
+            <div class="cmt-actions">
+                <button class="mod-quick-btn mqb-approve" onclick="doMod('approve')"><i class="fas fa-check"></i> Duyệt</button>
+                <button class="mod-quick-btn mqb-hide" onclick="doMod('hide')"><i class="fas fa-eye-slash"></i> Ẩn</button>
+                <button class="mod-quick-btn mqb-warn" onclick="doMod('warn')"><i class="fas fa-exclamation-triangle"></i> Cảnh báo</button>
+                <button class="mod-quick-btn mqb-delete" onclick="doMod('delete')"><i class="fas fa-trash"></i></button>
+                <button class="btn-tbl btn-tbl-view" onclick="openModal('detailModal')" style="font-size:.75rem;"><i class="fas fa-eye"></i> Chi tiết</button>
+            </div>
+        </div>
+        <div class="cmt-body">
+            <p class="cmt-text">
+                Bài viết này có nhiều thông tin sai lệch về quy trình GMP. Tiêu chuẩn WHO-GMP không hề quy định như vậy.
+                Tác giả cần kiểm tra lại nguồn tài liệu trước khi đăng, đặc biệt phần liên quan đến điều kiện bảo quản nhiệt độ.
+            </p>
+        </div>
+        <!-- Reactions: CT_LIKECMT + LOAI_LIKE -->
+        <div class="cmt-reactions">
+            <span class="reaction-chip">👍 <span class="rc-count">12</span></span>
+            <span class="reaction-chip">❤️ <span class="rc-count">3</span></span>
+            <span class="reaction-chip">😮 <span class="rc-count">7</span></span>
+            <span class="reaction-chip">😡 <span class="rc-count">15</span></span>
+            <div class="cmt-footer-meta">
+                <span class="cmt-report-flag" onclick="openModal('reportModal')">
+                    <i class="fas fa-flag"></i> 3 báo cáo
+                </span>
+                <span class="cmt-ip">ID: #CMT-4821</span>
+            </div>
+        </div>
+        <!-- Replies toggle: PH_CMT -->
+        <div class="replies-toggle">
+            <button class="replies-toggle-btn" onclick="toggleReplies('r1')">
+                <i class="fas fa-reply"></i> 2 phản hồi (PH_CMT)
+                <i class="fas fa-chevron-down" id="r1-chevron" style="font-size:.7rem;margin-left:4px;"></i>
+            </button>
+        </div>
+        <div class="replies-panel" id="r1-panel" style="display:none;">
+            <div class="reply-item">
+                <div class="reply-avatar">N</div>
+                <div class="reply-body">
+                    <div class="reply-meta">
+                        <span class="reply-author">Nguyễn Văn Admin</span>
+                        <span class="cmt-type-badge ctb-reply" style="font-size:.62rem;">PH_CMT</span>
+                        <span class="cmt-status-pill csp-approved" style="font-size:.62rem;">Hiển thị</span>
+                        <span class="reply-time">hôm nay 08:45</span>
+                    </div>
+                    <div class="reply-text">Cảm ơn bạn đã phản hồi. Chúng tôi đã kiểm tra lại và sẽ cập nhật bài viết.</div>
+                    <div class="reply-reactions">
+                        <span class="reaction-chip">👍 <span class="rc-count">5</span></span>
+                        <span class="reaction-chip">❤️ <span class="rc-count">2</span></span>
+                    </div>
+                </div>
+                <div class="reply-actions">
+                    <button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button>
+                    <button class="btn-tbl btn-tbl-delete" style="font-size:.7rem;"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="reply-item">
+                <div class="reply-avatar" style="background:linear-gradient(135deg,#de350b,#ff6b6b);">L</div>
+                <div class="reply-body">
+                    <div class="reply-meta">
+                        <span class="reply-author">Lê Thị Hương</span>
+                        <span class="cmt-type-badge ctb-reply" style="font-size:.62rem;">PH_CMT</span>
+                        <span class="cmt-status-pill csp-pending" style="font-size:.62rem;">Chờ duyệt</span>
+                        <span class="reply-time">hôm nay 09:12</span>
+                    </div>
+                    <div class="reply-text">Tôi đồng ý với ý kiến trên, bài viết cần được xem xét lại về phần kỹ thuật.</div>
+                    <div class="reply-reactions">
+                        <span class="reaction-chip">👍 <span class="rc-count">1</span></span>
+                    </div>
+                </div>
+                <div class="reply-actions">
+                    <button class="mod-quick-btn mqb-approve" style="font-size:.72rem;padding:4px 10px;"><i class="fas fa-check"></i></button>
+                    <button class="btn-tbl btn-tbl-delete" style="font-size:.7rem;"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comment 2: Pending — CMT -->
+    <div class="cmt-card pending">
+        <div class="cmt-card-header">
+            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:6px;cursor:pointer;">
+            <div class="cmt-avatar" style="background:linear-gradient(135deg,#ff8b00,#f9a825);">P</div>
+            <div class="cmt-meta">
+                <div class="cmt-meta-top">
+                    <span class="cmt-author">Phạm Minh Khoa</span>
+                    <span class="cmt-type-badge ctb-post">CMT</span>
+                    <span class="cmt-status-pill csp-pending"><i class="fas fa-clock"></i> Chờ duyệt</span>
+                    <span class="cmt-time">hôm nay 07:15</span>
+                </div>
+                <div class="cmt-target">
+                    Bình luận trên: <a href="#">Thị trường dược phẩm OTC Việt Nam Q1/2025</a>
+                </div>
+            </div>
+            <div class="cmt-actions">
+                <button class="mod-quick-btn mqb-approve" onclick="doMod('approve')"><i class="fas fa-check"></i> Duyệt</button>
+                <button class="mod-quick-btn mqb-delete"><i class="fas fa-trash"></i> Xóa</button>
+                <button class="btn-tbl btn-tbl-view" onclick="openModal('detailModal')" style="font-size:.75rem;"><i class="fas fa-eye"></i> Chi tiết</button>
+            </div>
+        </div>
+        <div class="cmt-body">
+            <p class="cmt-text">
+                Số liệu thị trường OTC rất thú vị! Theo báo cáo IQVIA gần đây, tốc độ tăng trưởng còn có thể cao hơn nếu tính cả
+                kênh phân phối điện tử. Rất mong tác giả có bài phân tích sâu hơn về phân khúc này.
+            </p>
+        </div>
+        <div class="cmt-reactions">
+            <span class="reaction-chip">👍 <span class="rc-count">0</span></span>
+            <div class="cmt-footer-meta">
+                <span class="cmt-ip">ID: #CMT-4820</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comment 3: Approved + Visible — CMT on event -->
+    <div class="cmt-card approved">
+        <div class="cmt-card-header">
+            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:6px;cursor:pointer;">
+            <div class="cmt-avatar" style="background:linear-gradient(135deg,#00875a,#2db86f);">H</div>
+            <div class="cmt-meta">
+                <div class="cmt-meta-top">
+                    <span class="cmt-author">Hoàng Thu Hà</span>
+                    <span class="cmt-type-badge ctb-event">CMT Sự kiện</span>
+                    <span class="cmt-status-pill csp-approved"><i class="fas fa-check-circle"></i> Hiển thị</span>
+                    <span class="cmt-time">hôm qua 16:33</span>
+                </div>
+                <div class="cmt-target">
+                    Bình luận tại sự kiện: <a href="#">Hội nghị Dược phẩm Quốc tế VN 2025</a>
+                </div>
+            </div>
+            <div class="cmt-actions">
+                <button class="mod-quick-btn mqb-hide" onclick="doMod('hide')"><i class="fas fa-eye-slash"></i> Ẩn</button>
+                <button class="mod-quick-btn mqb-warn" onclick="doMod('warn')"><i class="fas fa-exclamation-triangle"></i> Cảnh báo</button>
+                <button class="mod-quick-btn mqb-delete"><i class="fas fa-trash"></i></button>
+                <button class="btn-tbl btn-tbl-view" onclick="openModal('detailModal')" style="font-size:.75rem;"><i class="fas fa-eye"></i> Chi tiết</button>
+            </div>
+        </div>
+        <div class="cmt-body">
+            <p class="cmt-text">
+                Hội nghị năm nay rất chuyên sâu và bổ ích. Phiên chuyên đề về chuỗi cung ứng lạnh đặc biệt ấn tượng.
+                Cảm ơn ban tổ chức đã chuẩn bị rất chu đáo!
+            </p>
+        </div>
+        <div class="cmt-reactions">
+            <span class="reaction-chip">👍 <span class="rc-count">24</span></span>
+            <span class="reaction-chip">❤️ <span class="rc-count">18</span></span>
+            <span class="reaction-chip">🎉 <span class="rc-count">9</span></span>
+            <div class="cmt-footer-meta">
+                <span class="cmt-ip">ID: #CMT-4815</span>
+            </div>
+        </div>
+        <div class="replies-toggle">
+            <button class="replies-toggle-btn" onclick="toggleReplies('r3')">
+                <i class="fas fa-reply"></i> 1 phản hồi (PH_CMT)
+                <i class="fas fa-chevron-down" id="r3-chevron" style="font-size:.7rem;margin-left:4px;"></i>
+            </button>
+        </div>
+        <div class="replies-panel" id="r3-panel" style="display:none;">
+            <div class="reply-item">
+                <div class="reply-avatar" style="background:linear-gradient(135deg,#0061ff,#2d8cf0);">B</div>
+                <div class="reply-body">
+                    <div class="reply-meta">
+                        <span class="reply-author">Ban Tổ chức</span>
+                        <span class="cmt-type-badge ctb-reply" style="font-size:.62rem;">PH_CMT</span>
+                        <span class="cmt-status-pill csp-approved" style="font-size:.62rem;">Hiển thị</span>
+                        <span class="reply-time">hôm qua 17:00</span>
+                    </div>
+                    <div class="reply-text">Cảm ơn bạn đã tham dự và chia sẻ! Hẹn gặp lại tại Hội nghị 2026 🎊</div>
+                    <div class="reply-reactions">
+                        <span class="reaction-chip">❤️ <span class="rc-count">8</span></span>
+                    </div>
+                </div>
+                <div class="reply-actions">
+                    <button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button>
+                    <button class="btn-tbl btn-tbl-delete" style="font-size:.7rem;"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comment 4: Hidden -->
+    <div class="cmt-card hidden">
+        <div class="cmt-card-header">
+            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:6px;cursor:pointer;">
+            <div class="cmt-avatar" style="background:#dee2e6;color:#6c757d;">?</div>
+            <div class="cmt-meta">
+                <div class="cmt-meta-top">
+                    <span class="cmt-author" style="color:#6c757d;">Người dùng ẩn danh</span>
+                    <span class="cmt-type-badge ctb-post">CMT</span>
+                    <span class="cmt-status-pill csp-hidden"><i class="fas fa-eye-slash"></i> Đã ẩn</span>
+                    <span class="cmt-time">3 ngày trước</span>
+                </div>
+                <div class="cmt-target">
+                    Bình luận trên: <a href="#">Chuỗi cung ứng dược lạnh: Thách thức logistics</a>
+                    <span style="color:#adb5bd;margin:0 4px;">•</span>
+                    <span style="font-size:.68rem;color:#de350b;font-weight:600;"><i class="fas fa-gavel"></i> Ẩn bởi: admin@pharma.vn — Spam</span>
+                </div>
+            </div>
+            <div class="cmt-actions">
+                <button class="mod-quick-btn mqb-unhide" onclick="doMod('unhide')"><i class="fas fa-eye"></i> Bỏ ẩn</button>
+                <button class="mod-quick-btn mqb-delete"><i class="fas fa-trash"></i> Xóa hẳn</button>
+                <button class="btn-tbl btn-tbl-view" onclick="openModal('detailModal')" style="font-size:.75rem;"><i class="fas fa-eye"></i> Chi tiết</button>
+            </div>
+        </div>
+        <div class="cmt-body">
+            <p class="cmt-text hidden-text">
+                [Nội dung đã bị ẩn — click "Chi tiết" để xem]
+            </p>
+        </div>
+        <div class="cmt-reactions">
+            <span class="reaction-chip" style="opacity:.5;">👍 <span class="rc-count">0</span></span>
+            <div class="cmt-footer-meta">
+                <span class="cmt-ip">ID: #CMT-4799</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Pagination -->
+<div class="pager">
+    <div class="pager-info">Hiển thị 1–4 / 3,847 bình luận</div>
+    <div class="pager-btns">
+        <button class="pager-btn" disabled><i class="fas fa-chevron-left" style="font-size:.7rem;"></i></button>
+        <button class="pager-btn active">1</button>
+        <button class="pager-btn">2</button>
+        <button class="pager-btn">3</button>
+        <span style="display:flex;align-items:center;padding:0 4px;color:#adb5bd;font-size:.8rem;">...</span>
+        <button class="pager-btn">962</button>
+        <button class="pager-btn"><i class="fas fa-chevron-right" style="font-size:.7rem;"></i></button>
+    </div>
+</div>
+
+
+<!-- ======================== MODALS ======================== -->
+
+<!-- Detail + Moderation Log Modal — CT_CMT_MODERATION_LOG + CT_PH_CMT_MODERATION_LOG -->
+<div class="modal-overlay" id="detailModal" style="display:none;">
+    <div class="modal-box modal-box-wide">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-comment-dots" style="color:#0061ff;margin-right:8px;"></i>Chi tiết Bình luận #CMT-4821</span>
+            <button class="modal-close" onclick="closeModal('detailModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <!-- Comment info -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                <div style="background:#f8f9ff;border-radius:12px;padding:14px;">
+                    <div class="mf-section-label">Thông tin bình luận (CMT)</div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">ID:</span><span style="font-family:monospace;font-weight:600;">#CMT-4821</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Người dùng:</span><span style="font-weight:600;">Trần Thanh Tùng</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Email:</span><span>tung.tt@example.com</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">IP Address:</span><span style="font-family:monospace;">192.168.1.45</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Thời gian:</span><span>21/04/2026 08:22</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Trạng thái:</span><span class="cmt-status-pill csp-reported">Bị báo cáo</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Số báo cáo:</span><span style="color:#de350b;font-weight:800;">3</span></div>
+                    </div>
+                </div>
+                <div style="background:#f8f9ff;border-radius:12px;padding:14px;">
+                    <div class="mf-section-label">Bài viết liên quan</div>
+                    <div style="font-size:.85rem;font-weight:700;color:#1a2040;margin-bottom:8px;">GMP 2025: Tiêu chuẩn sản xuất mới nhất</div>
+                    <div style="font-size:.78rem;color:#6c757d;margin-bottom:12px;">Đăng bởi: admin • 10/04/2025 • Bài viết chuyên môn</div>
+                    <div class="mf-section-label" style="margin-top:12px;">Phản ứng (CT_LIKECMT + LOAI_LIKE)</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <span class="reaction-chip">👍 Thích <span class="rc-count">12</span></span>
+                        <span class="reaction-chip">❤️ Yêu thích <span class="rc-count">3</span></span>
+                        <span class="reaction-chip">😮 Ngạc nhiên <span class="rc-count">7</span></span>
+                        <span class="reaction-chip">😡 Tức giận <span class="rc-count">15</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full content -->
+            <div class="mf-group">
+                <label class="mf-label">Nội dung đầy đủ</label>
+                <div style="background:#fffbf0;border:1.5px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:.87rem;color:#344054;line-height:1.7;">
+                    Bài viết này có nhiều thông tin sai lệch về quy trình GMP. Tiêu chuẩn WHO-GMP không hề quy định như vậy.
+                    Tác giả cần kiểm tra lại nguồn tài liệu trước khi đăng, đặc biệt phần liên quan đến điều kiện bảo quản nhiệt độ.
+                </div>
+            </div>
+
+            <hr class="mf-section-divider">
+
+            <!-- Moderation Log — CT_CMT_MODERATION_LOG -->
+            <div class="mf-section-label">Lịch sử Kiểm duyệt (CT_CMT_MODERATION_LOG)</div>
+            <div style="background:#f8f9ff;border-radius:12px;padding:12px 16px;margin-bottom:20px;">
+                <div class="mod-log-item">
+                    <span class="mod-action-badge mab-warn">WARN</span>
+                    <div style="flex:1;">
+                        <div style="font-size:.82rem;font-weight:600;color:#1a2040;">Cảnh báo người dùng — Nội dung không tích cực</div>
+                        <div style="font-size:.72rem;color:#6c757d;margin-top:2px;">admin@pharma.vn • 21/04/2026 10:15</div>
+                    </div>
+                </div>
+                <div class="mod-log-item">
+                    <span class="mod-action-badge mab-hide">HIDE</span>
+                    <div style="flex:1;">
+                        <div style="font-size:.82rem;font-weight:600;color:#1a2040;">Tạm ẩn bình luận để xem xét</div>
+                        <div style="font-size:.72rem;color:#6c757d;margin-top:2px;">moderator@pharma.vn • 21/04/2026 09:30</div>
+                    </div>
+                </div>
+                <div class="mod-log-item" style="border:none;">
+                    <span class="mod-action-badge" style="background:#ffebe6;color:#de350b;">REPORT</span>
+                    <div style="flex:1;">
+                        <div style="font-size:.82rem;font-weight:600;color:#1a2040;">3 người dùng báo cáo: Thông tin sai lệch</div>
+                        <div style="font-size:.72rem;color:#6c757d;margin-top:2px;">Hệ thống tự động • 21/04/2026 08:22–09:10</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick moderation action -->
+            <div class="mf-section-label">Thực hiện hành động (MODERATION_ACTIONS)</div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Hành động <span class="req">*</span></label>
+                    <select class="mf-select">
+                        <option>APPROVE — Duyệt hiển thị</option>
+                        <option>HIDE — Ẩn khỏi công khai</option>
+                        <option>UNHIDE — Bỏ ẩn</option>
+                        <option selected>WARN — Cảnh báo người dùng</option>
+                        <option>DELETE — Xóa vĩnh viễn</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Mức độ nghiêm trọng</label>
+                    <select class="mf-select">
+                        <option>Thấp</option>
+                        <option selected>Trung bình</option>
+                        <option>Cao</option>
+                        <option>Nghiêm trọng</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Ghi chú kiểm duyệt</label>
+                <textarea class="mf-textarea" placeholder="Lý do thực hiện hành động này...">Nội dung có thể gây hiểu nhầm, người dùng đã được cảnh báo lần 1.</textarea>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fffbf0;border-radius:10px;border:1px solid #fde68a;font-size:.82rem;">
+                <i class="fas fa-user-slash" style="color:#ff8b00;"></i>
+                <span style="color:#6c757d;">Khóa tài khoản người dùng này:</span>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                    <input type="checkbox"> <span style="font-weight:600;color:#de350b;">Khóa tạm thời (7 ngày)</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:10px;">
+                    <input type="checkbox"> <span style="font-weight:600;color:#de350b;">Khóa vĩnh viễn</span>
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('detailModal')">Đóng</button>
+            <button class="mf-btn" style="background:#00875a;color:#fff;"><i class="fas fa-check" style="margin-right:5px;"></i>Duyệt</button>
+            <button class="mf-btn mf-btn-warning"><i class="fas fa-exclamation-triangle" style="margin-right:5px;"></i>Cảnh báo</button>
+            <button class="mf-btn mf-btn-danger"><i class="fas fa-trash" style="margin-right:5px;"></i>Xóa</button>
+        </div>
+    </div>
+</div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" id="reportModal" style="display:none;">
+    <div class="modal-box" style="max-width:540px;">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-flag" style="color:#de350b;margin-right:8px;"></i>Chi tiết Báo cáo — #CMT-4821</span>
+            <button class="modal-close" onclick="closeModal('reportModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <table style="width:100%;border-collapse:collapse;font-size:.83rem;">
+                <thead>
+                    <tr>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">#</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Người báo cáo</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Lý do</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Thời gian</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;color:#adb5bd;font-family:monospace;">1</td>
+                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Nguyễn Thị Mai</td>
+                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;">Thông tin sai lệch</td>
+                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;font-size:.75rem;color:#6c757d;">08:22</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;color:#adb5bd;font-family:monospace;">2</td>
+                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Trần Văn Bình</td>
+                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;">Nội dung gây hiểu nhầm</td>
+                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;font-size:.75rem;color:#6c757d;">08:55</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px 12px;color:#adb5bd;font-family:monospace;">3</td>
+                        <td style="padding:10px 12px;font-weight:600;">Lê Hoàng Nam</td>
+                        <td style="padding:10px 12px;">Thiếu căn cứ khoa học</td>
+                        <td style="padding:10px 12px;font-size:.75rem;color:#6c757d;">09:10</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('reportModal')">Đóng</button>
+            <button class="mf-btn" style="background:#00875a;color:#fff;"><i class="fas fa-check" style="margin-right:5px;"></i>Xử lý báo cáo</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOAI_LIKE Management Modal -->
+<div class="modal-overlay" id="likeTypesModal" style="display:none;">
+    <div class="modal-box" style="max-width:500px;">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-heart" style="color:#de350b;margin-right:8px;"></i>Loại Cảm xúc (LOAI_LIKE)</span>
+            <button class="modal-close" onclick="closeModal('likeTypesModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:.82rem;color:#6c757d;margin-bottom:14px;">Quản lý các loại cảm xúc được dùng trong CT_LIKECMT và CT_LIKEPHCMT</p>
+            <div class="like-type-row">
+                <span class="like-type-chip">👍 Thích</span>
+                <span class="like-type-chip">❤️ Yêu thích</span>
+                <span class="like-type-chip">😮 Ngạc nhiên</span>
+                <span class="like-type-chip">😂 Hài hước</span>
+                <span class="like-type-chip">😡 Tức giận</span>
+                <span class="like-type-chip">😢 Buồn</span>
+                <span class="like-type-chip">🎉 Chúc mừng</span>
+                <span class="like-type-chip">💊 Hữu ích</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:14px;">
+                <thead>
+                    <tr>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Emoji</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Tên</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Slug</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Lượt dùng</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-size:1.2rem;">👍</td>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Thích</td>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-family:monospace;font-size:.75rem;color:#adb5bd;">like</td>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#0061ff;">8,420</td>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;"><button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-size:1.2rem;">❤️</td>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Yêu thích</td>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-family:monospace;font-size:.75rem;color:#adb5bd;">love</td>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#0061ff;">5,130</td>
+                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;"><button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px 12px;font-size:1.2rem;">💊</td>
+                        <td style="padding:8px 12px;font-weight:600;">Hữu ích</td>
+                        <td style="padding:8px 12px;font-family:monospace;font-size:.75rem;color:#adb5bd;">helpful</td>
+                        <td style="padding:8px 12px;font-weight:700;color:#0061ff;">3,890</td>
+                        <td style="padding:8px 12px;"><button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="mf-row" style="grid-template-columns:80px 1fr;">
+                <div class="mf-group">
+                    <label class="mf-label">Emoji</label>
+                    <input class="mf-input" type="text" placeholder="💬" style="text-align:center;font-size:1.2rem;">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Tên cảm xúc</label>
+                    <input class="mf-input" type="text" placeholder="VD: Hữu ích">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('likeTypesModal')">Đóng</button>
+            <button class="mf-btn mf-btn-primary"><i class="fas fa-plus" style="margin-right:5px;"></i>Thêm loại</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODERATION_ACTIONS Management Modal -->
+<div class="modal-overlay" id="modActionsModal" style="display:none;">
+    <div class="modal-box" style="max-width:520px;">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-shield-alt" style="color:#0061ff;margin-right:8px;"></i>Hành động Kiểm duyệt (MODERATION_ACTIONS)</span>
+            <button class="modal-close" onclick="closeModal('modActionsModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:.82rem;color:#6c757d;margin-bottom:14px;">Các hành động được ghi vào CT_CMT_MODERATION_LOG và CT_PH_CMT_MODERATION_LOG</p>
+            <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+                <thead>
+                    <tr>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Mã</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Tên hành động</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Mô tả</th>
+                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Tổng lần dùng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;"><span class="mod-action-badge mab-approve">APPROVE</span></td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Duyệt</td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-size:.78rem;color:#6c757d;">Cho hiển thị công khai</td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#00875a;">2,341</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;"><span class="mod-action-badge mab-hide">HIDE</span></td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Ẩn</td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-size:.78rem;color:#6c757d;">Ẩn khỏi giao diện người dùng</td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#6c757d;">89</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;"><span class="mod-action-badge mab-unhide">UNHIDE</span></td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Bỏ ẩn</td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-size:.78rem;color:#6c757d;">Khôi phục hiển thị</td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#f9a825;">34</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;"><span class="mod-action-badge mab-warn">WARN</span></td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Cảnh báo</td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-size:.78rem;color:#6c757d;">Gửi cảnh báo đến người dùng</td>
+                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#ff8b00;">156</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:9px 12px;"><span class="mod-action-badge mab-delete">DELETE</span></td>
+                        <td style="padding:9px 12px;font-weight:600;">Xóa</td>
+                        <td style="padding:9px 12px;font-size:.78rem;color:#6c757d;">Xóa vĩnh viễn khỏi hệ thống</td>
+                        <td style="padding:9px 12px;font-weight:700;color:#de350b;">412</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('modActionsModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- Moderation Settings Modal -->
+<div class="modal-overlay" id="settingsModal" style="display:none;">
+    <div class="modal-box" style="max-width:500px;">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-cog" style="color:#0061ff;margin-right:8px;"></i>Cài đặt Kiểm duyệt</span>
+            <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="mf-section-label">Chế độ tự động</div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
+                    <div>
+                        <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Duyệt tự động bình luận thành viên tin cậy</div>
+                        <div style="font-size:.75rem;color:#6c757d;">Không cần chờ duyệt thủ công</div>
+                    </div>
+                    <div style="position:relative;width:40px;height:22px;flex-shrink:0;">
+                        <input type="checkbox" checked style="opacity:0;width:0;height:0;">
+                        <div style="position:absolute;cursor:pointer;inset:0;background:#00875a;border-radius:20px;"></div>
+                        <div style="position:absolute;height:16px;width:16px;right:3px;bottom:3px;background:white;border-radius:50%;"></div>
+                    </div>
+                </label>
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
+                    <div>
+                        <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Ẩn tự động khi có ≥ 5 báo cáo</div>
+                        <div style="font-size:.75rem;color:#6c757d;">Bình luận bị báo cáo nhiều sẽ tự ẩn</div>
+                    </div>
+                    <div style="position:relative;width:40px;height:22px;flex-shrink:0;">
+                        <input type="checkbox" checked style="opacity:0;width:0;height:0;">
+                        <div style="position:absolute;cursor:pointer;inset:0;background:#00875a;border-radius:20px;"></div>
+                        <div style="position:absolute;height:16px;width:16px;right:3px;bottom:3px;background:white;border-radius:50%;"></div>
+                    </div>
+                </label>
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
+                    <div>
+                        <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Lọc từ ngữ nhạy cảm</div>
+                        <div style="font-size:.75rem;color:#6c757d;">Tự động đánh dấu chờ duyệt</div>
+                    </div>
+                    <div style="position:relative;width:40px;height:22px;flex-shrink:0;">
+                        <input type="checkbox" style="opacity:0;width:0;height:0;">
+                        <div style="position:absolute;cursor:pointer;inset:0;background:#dee2e6;border-radius:20px;"></div>
+                        <div style="position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:white;border-radius:50%;"></div>
+                    </div>
+                </label>
+            </div>
+            <div class="mf-section-label">Giới hạn</div>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Số báo cáo để tự ẩn</label>
+                    <input class="mf-input" type="number" value="5">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Giới hạn ký tự / bình luận</label>
+                    <input class="mf-input" type="number" value="2000">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Tối đa phản hồi / bình luận</label>
+                    <input class="mf-input" type="number" value="50">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Cooldown gửi bình luận (giây)</label>
+                    <input class="mf-input" type="number" value="30">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('settingsModal')">Hủy</button>
+            <button class="mf-btn mf-btn-primary"><i class="fas fa-save" style="margin-right:5px;"></i>Lưu cài đặt</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+function openModal(id){ document.getElementById(id).style.display='flex'; }
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+    m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; });
+});
+
+let bulkCount=0;
+function toggleBulk(cb){
+    bulkCount += cb.checked ? 1 : -1;
+    bulkCount = Math.max(0,bulkCount);
+    document.getElementById('bulkCount').textContent = bulkCount + ' bình luận được chọn';
+    document.getElementById('bulkBar').classList.toggle('visible', bulkCount>0);
+}
+function clearBulk(){
+    document.querySelectorAll('.cmt-card input[type=checkbox]').forEach(c=>c.checked=false);
+    bulkCount=0;
+    document.getElementById('bulkBar').classList.remove('visible');
+}
+
+function switchTab(el,tab){
+    document.querySelectorAll('.cm-tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+}
+
+function toggleReplies(id){
+    const panel = document.getElementById(id+'-panel');
+    const chevron = document.getElementById(id+'-chevron');
+    const visible = panel.style.display!=='none';
+    panel.style.display = visible ? 'none' : 'block';
+    chevron.style.transform = visible ? '' : 'rotate(180deg)';
+}
+
+function doMod(action){
+    const labels = {approve:'Duyệt',hide:'Ẩn',unhide:'Bỏ ẩn',warn:'Cảnh báo',delete:'Xóa'};
+    if(action==='delete'){
+        if(!confirm('Xóa vĩnh viễn bình luận này?')) return;
+    }
+    // UI feedback only — no real backend
+    console.log('Moderation action:', action);
+}
+</script>
+
+</div>
+</th:block>
+</html>

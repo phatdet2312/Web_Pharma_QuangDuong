@@ -1,0 +1,1902 @@
+<!-- src/main/resources/templates/events/detail.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{user_layout::user-head}"></head>
+
+<body>
+    <div th:replace="~{user_layout::user-nav}"></div>
+
+    <div th:replace="~{user_layout::layout(~{::#main-content})}">
+        <div id="main-content">
+
+            <style>
+                /* ============================================================
+   EVENT DETAIL — Chi tiết Sự kiện
+============================================================ */
+
+                /* Hero */
+                .event-detail-hero {
+                    background: var(--ink-900);
+                    position: relative;
+                    overflow: hidden;
+                    min-height: 400px;
+                    display: flex;
+                    align-items: flex-end;
+                }
+
+                .edh-bg {
+                    position: absolute;
+                    inset: 0;
+                    background-size: cover;
+                    background-position: center;
+                }
+
+                .edh-overlay {
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(to top, rgba(1, 13, 30, .97) 0%, rgba(1, 13, 30, .7) 50%, rgba(1, 13, 30, .4) 100%);
+                }
+
+                .event-detail-hero .container {
+                    position: relative;
+                    z-index: 1;
+                    padding-bottom: 48px;
+                    padding-top: 100px;
+                }
+
+                .edh-breadcrumb {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: .73rem;
+                    color: rgba(255, 255, 255, .4);
+                    margin-bottom: 14px;
+                }
+
+                .edh-breadcrumb a {
+                    color: var(--teal-400);
+                    text-decoration: none;
+                }
+
+                .edh-top-badges {
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                    flex-wrap: wrap;
+                    margin-bottom: 14px;
+                }
+
+                .edh-type-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 4px 12px;
+                    background: var(--teal-600);
+                    color: white;
+                    border-radius: var(--r-xs);
+                    font-size: .68rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: .8px;
+                }
+
+                .edh-status-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 4px 12px;
+                    border-radius: var(--r-xs);
+                    font-size: .68rem;
+                    font-weight: 700;
+                }
+
+                .edh-status-badge.upcoming {
+                    background: rgba(0, 152, 152, .2);
+                    color: var(--teal-300);
+                    border: 1px solid rgba(0, 184, 184, .3);
+                }
+
+                .edh-status-badge.full {
+                    background: rgba(220, 38, 38, .2);
+                    color: #f87171;
+                    border: 1px solid rgba(220, 38, 38, .3);
+                }
+
+                .live-indicator {
+                    animation: pulseDot 1.8s infinite;
+                }
+
+                .edh-title {
+                    font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+                    font-weight: 800;
+                    color: white;
+                    letter-spacing: -.8px;
+                    line-height: 1.2;
+                    margin-bottom: 12px;
+                }
+
+                .edh-campaign-link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: .82rem;
+                    color: rgba(255, 255, 255, .55);
+                    text-decoration: none;
+                    margin-bottom: 18px;
+                }
+
+                .edh-campaign-link:hover {
+                    color: var(--teal-300);
+                }
+
+                .edh-quick-facts {
+                    display: flex;
+                    align-items: center;
+                    gap: 0;
+                    flex-wrap: wrap;
+                    background: rgba(255, 255, 255, .05);
+                    border: 1px solid rgba(255, 255, 255, .1);
+                    border-radius: var(--r-xl);
+                    overflow: hidden;
+                }
+
+                .eqf-item {
+                    flex: 1;
+                    padding: 14px 18px;
+                    border-right: 1px solid rgba(255, 255, 255, .07);
+                    min-width: 120px;
+                }
+
+                .eqf-item:last-child {
+                    border-right: none;
+                }
+
+                .eqf-label {
+                    font-size: .65rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    color: rgba(255, 255, 255, .4);
+                    margin-bottom: 4px;
+                }
+
+                .eqf-value {
+                    font-size: .9rem;
+                    font-weight: 700;
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .eqf-value i {
+                    color: var(--teal-400);
+                    font-size: .8rem;
+                }
+
+                /* Main Layout */
+                .event-detail-body {
+                    padding: 48px 0 80px;
+                    background: var(--gray-50);
+                }
+
+                /* Main Article */
+                .event-main-card {
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-xl);
+                    overflow: hidden;
+                    margin-bottom: 20px;
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .emc-section-head {
+                    padding: 16px 24px;
+                    background: var(--gray-50);
+                    border-bottom: 1px solid var(--gray-100);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: .78rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1.2px;
+                    color: var(--gray-600);
+                }
+
+                .emc-section-head i {
+                    color: var(--teal-500);
+                }
+
+                .emc-section-body {
+                    padding: 24px;
+                }
+
+                /* Tags */
+                .event-tag {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 3px;
+                    padding: 4px 12px;
+                    background: var(--gray-100);
+                    border-radius: 50px;
+                    font-size: .75rem;
+                    font-weight: 600;
+                    color: var(--gray-600);
+                    text-decoration: none;
+                    transition: var(--t-fast);
+                    margin: 2px;
+                }
+
+                .event-tag:hover {
+                    background: var(--teal-100);
+                    color: var(--teal-700);
+                }
+
+                /* Related Posts (CT_POST_EVENTS) */
+                .related-post-item {
+                    display: flex;
+                    gap: 10px;
+                    padding: 10px 0;
+                    border-bottom: 1px solid var(--gray-100);
+                    text-decoration: none;
+                    color: inherit;
+                }
+
+                .related-post-item:last-child {
+                    border-bottom: none;
+                }
+
+                .rpi-img {
+                    width: 64px;
+                    height: 50px;
+                    flex-shrink: 0;
+                    border-radius: var(--r-sm);
+                    object-fit: cover;
+                    background: var(--gray-100);
+                }
+
+                .rpi-title {
+                    font-size: .82rem;
+                    font-weight: 600;
+                    color: var(--gray-800);
+                    line-height: 1.35;
+                    margin-bottom: 3px;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
+
+                .related-post-item:hover .rpi-title {
+                    color: var(--teal-600);
+                }
+
+                .rpi-badge {
+                    font-size: .65rem;
+                    font-weight: 700;
+                }
+
+                /* Status History Timeline (CT_EVENT_STATUS_HISTORY) */
+                .status-timeline {
+                    position: relative;
+                }
+
+                .st-item {
+                    display: flex;
+                    gap: 14px;
+                    padding: 12px 0;
+                    position: relative;
+                }
+
+                .st-item:not(:last-child)::before {
+                    content: '';
+                    position: absolute;
+                    left: 15px;
+                    top: 36px;
+                    bottom: -12px;
+                    width: 1.5px;
+                    background: var(--gray-200);
+                }
+
+                .st-dot {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .7rem;
+                    border: 2px solid;
+                }
+
+                .st-dot.create {
+                    background: rgba(0, 152, 152, .1);
+                    color: var(--teal-600);
+                    border-color: var(--teal-400);
+                }
+
+                .st-dot.update {
+                    background: rgba(244, 169, 0, .1);
+                    color: var(--gold-700);
+                    border-color: var(--gold-400);
+                }
+
+                .st-dot.cancel {
+                    background: rgba(220, 38, 38, .1);
+                    color: var(--danger);
+                    border-color: #fca5a5;
+                }
+
+                .st-info {
+                    flex: 1;
+                }
+
+                .st-action {
+                    font-size: .84rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                    margin-bottom: 2px;
+                }
+
+                .st-meta {
+                    font-size: .76rem;
+                    color: var(--gray-400);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+
+                .st-reason {
+                    font-size: .78rem;
+                    color: var(--gray-600);
+                    margin-top: 3px;
+                    padding: 5px 9px;
+                    background: var(--gray-50);
+                    border-radius: var(--r-sm);
+                    border-left: 3px solid var(--gray-200);
+                }
+
+                /* Registration Sidebar Card */
+                .reg-card {
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-xl);
+                    overflow: hidden;
+                    box-shadow: var(--shadow-md);
+                }
+
+                .reg-card-header {
+                    background: var(--ink-900);
+                    padding: 20px 22px;
+                    border-bottom: 1px solid rgba(255, 255, 255, .08);
+                }
+
+                .event-sidebar-sticky {
+                    position: sticky;
+                    top: 110px;
+                    max-height: calc(100vh - 120px);
+                    overflow-y: auto;
+                    scrollbar-width: none;
+                    /* Ẩn scrollbar cho Firefox */
+                }
+
+                .event-sidebar-sticky::-webkit-scrollbar {
+                    display: none;
+                    /* Ẩn scrollbar cho Chrome/Safari */
+                }
+
+                .rch-title {
+                    font-size: 1rem;
+                    font-weight: 800;
+                    color: white;
+                    margin-bottom: 8px;
+                }
+
+                .rch-slots-bar {
+                    margin-bottom: 12px;
+                }
+
+                .rsb-label {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 5px;
+                    font-size: .76rem;
+                }
+
+                .rsb-label span {
+                    color: rgba(255, 255, 255, .6);
+                }
+
+                .rsb-label strong {
+                    color: var(--teal-300);
+                }
+
+                .rsb-track {
+                    height: 6px;
+                    background: rgba(255, 255, 255, .1);
+                    border-radius: 3px;
+                    overflow: hidden;
+                }
+
+                .rsb-fill {
+                    height: 100%;
+                    background: linear-gradient(90deg, var(--teal-500), var(--teal-400));
+                    border-radius: 3px;
+                    transition: width .6s ease;
+                }
+
+                .rch-urgency {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 10px;
+                    background: rgba(244, 169, 0, .15);
+                    border: 1px solid rgba(244, 169, 0, .25);
+                    border-radius: var(--r-md);
+                    font-size: .75rem;
+                    color: var(--gold-400);
+                    font-weight: 600;
+                }
+
+                .reg-card-body {
+                    padding: 20px 22px;
+                }
+
+                /* Form Fields */
+                .form-group {
+                    margin-bottom: 14px;
+                }
+
+                .form-label {
+                    display: block;
+                    font-size: .78rem;
+                    font-weight: 600;
+                    color: var(--gray-700);
+                    margin-bottom: 5px;
+                }
+
+                .form-label .required {
+                    color: var(--danger);
+                    margin-left: 2px;
+                }
+
+                .form-input {
+                    width: 100%;
+                    padding: 9px 13px;
+                    background: var(--gray-50);
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: var(--r-md);
+                    font-size: .88rem;
+                    color: var(--gray-800);
+                    outline: none;
+                    font-family: inherit;
+                    transition: var(--t-fast);
+                }
+
+                .form-input:focus {
+                    border-color: var(--teal-400);
+                    background: white;
+                }
+
+                .form-input::placeholder {
+                    color: var(--gray-400);
+                }
+
+                .form-divider {
+                    border: none;
+                    border-top: 1px solid var(--gray-100);
+                    margin: 16px 0;
+                }
+
+                .form-note {
+                    font-size: .74rem;
+                    color: var(--gray-400);
+                    line-height: 1.55;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 6px;
+                }
+
+                .form-note i {
+                    color: var(--teal-400);
+                    margin-top: 2px;
+                    flex-shrink: 0;
+                }
+
+                .submit-btn {
+                    width: 100%;
+                    padding: 13px;
+                    background: var(--gold-500);
+                    color: var(--ink-800);
+                    border: none;
+                    border-radius: var(--r-md);
+                    font-size: .92rem;
+                    font-weight: 800;
+                    cursor: pointer;
+                    transition: var(--t-base);
+                    font-family: inherit;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    box-shadow: var(--shadow-gold);
+                }
+
+                .submit-btn:hover {
+                    background: var(--gold-400);
+                    transform: translateY(-1px);
+                    box-shadow: 0 10px 28px rgba(244, 169, 0, .36);
+                }
+
+                .already-registered {
+                    background: rgba(0, 152, 152, .08);
+                    border: 1.5px solid rgba(0, 152, 152, .25);
+                    border-radius: var(--r-lg);
+                    padding: 16px;
+                    text-align: center;
+                }
+
+                .ar-icon {
+                    font-size: 1.8rem;
+                    color: var(--teal-500);
+                    margin-bottom: 8px;
+                }
+
+                .ar-title {
+                    font-size: .9rem;
+                    font-weight: 700;
+                    color: var(--teal-700);
+                    margin-bottom: 4px;
+                }
+
+                .ar-ticket {
+                    font-size: .78rem;
+                    color: var(--gray-500);
+                }
+
+                .ar-ticket strong {
+                    color: var(--ink-800);
+                    font-family: monospace;
+                    font-size: .85rem;
+                }
+
+                /* Attendees preview */
+                .attendees-preview {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-top: 14px;
+                }
+
+                .att-avatars {
+                    display: flex;
+                }
+
+                .att-av {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    margin-left: -8px;
+                    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .6rem;
+                    color: white;
+                    font-weight: 700;
+                }
+
+                .att-av:first-child {
+                    margin-left: 0;
+                }
+
+                .att-count {
+                    font-size: .79rem;
+                    color: var(--gray-500);
+                }
+
+                .att-count strong {
+                    color: var(--ink-800);
+                }
+
+                /* Location Map Placeholder */
+                .location-map {
+                    width: 100%;
+                    height: 200px;
+                    background: var(--gray-100);
+                    border-radius: var(--r-md);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: var(--gray-400);
+                    font-size: 2rem;
+                    position: relative;
+                    overflow: hidden;
+                    margin-bottom: 14px;
+                }
+
+                .location-map img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .location-map-overlay {
+                    position: absolute;
+                    inset: 0;
+                    background: rgba(0, 0, 0, .3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .location-pin {
+                    width: 40px;
+                    height: 40px;
+                    background: var(--teal-500);
+                    border-radius: 50% 50% 50% 0;
+                    transform: rotate(-45deg);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 12px rgba(0, 152, 152, .4);
+                }
+
+                .location-pin i {
+                    transform: rotate(45deg);
+                    color: white;
+                    font-size: .85rem;
+                }
+
+                /* Speaker Card */
+                .speaker-item {
+                    display: flex;
+                    gap: 12px;
+                    padding: 12px 0;
+                    border-bottom: 1px solid var(--gray-100);
+                }
+
+                .speaker-item:last-child {
+                    border-bottom: none;
+                }
+
+                .speaker-avatar {
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .9rem;
+                    color: white;
+                    font-weight: 700;
+                }
+
+                .speaker-name {
+                    font-size: .88rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                    margin-bottom: 2px;
+                }
+
+                .speaker-title {
+                    font-size: .75rem;
+                    color: var(--gray-500);
+                    line-height: 1.4;
+                }
+
+                .speaker-org {
+                    font-size: .72rem;
+                    color: var(--teal-600);
+                    font-weight: 600;
+                    margin-top: 3px;
+                }
+
+                /* Comments for event */
+                .event-comment-form {
+                    background: var(--gray-50);
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-xl);
+                    padding: 16px;
+                    margin-bottom: 20px;
+                }
+
+                @media (max-width: 991px) {
+                    .edh-quick-facts {
+                        flex-direction: column;
+                    }
+
+                    .eqf-item {
+                        border-right: none;
+                        border-bottom: 1px solid rgba(255, 255, 255, .07);
+                    }
+
+                    .eqf-item:last-child {
+                        border-bottom: none;
+                    }
+
+                    .reg-card {
+                        position: static;
+                    }
+                }
+
+                @media (max-width: 576px) {
+                    .edh-title {
+                        font-size: 1.4rem;
+                    }
+
+                    .emc-section-body {
+                        padding: 16px;
+                    }
+                }
+            </style>
+
+            <!-- Auth anchor: phần tử này chỉ render khi đã đăng nhập (sec:authorize loại bỏ với guest) -->
+            <span id="auth-check-anchor" sec:authorize="isAuthenticated()" style="display:none;"></span>
+
+            <!-- Hero -->
+            <section class="event-detail-hero">
+                <div class="edh-bg" id="hero-bg"></div>
+                <div class="edh-overlay"></div>
+                <div class="container">
+                    <div class="edh-breadcrumb">
+                        <a href="/"><i class="fas fa-home"></i> Trang chủ</a>
+                        <i class="fas fa-chevron-right fa-xs"></i>
+                        <a href="/hoi-thao">Sự kiện &amp; Đào tạo</a>
+                        <i class="fas fa-chevron-right fa-xs"></i>
+                        <a href="#" id="hero-breadcrumb-campaign">...</a>
+                    </div>
+                    <div class="edh-top-badges">
+                        <span class="edh-type-badge" id="hero-type-badge"><i class="fas fa-tag fa-xs"></i></span>
+                        <span class="edh-status-badge" id="hero-status-badge"></span>
+                    </div>
+                    <h1 class="edh-title" id="hero-title"></h1>
+                    <a href="#" class="edh-campaign-link" id="hero-campaign-link"></a>
+                    <div class="edh-quick-facts">
+                        <div class="eqf-item">
+                            <div class="eqf-label">Ngày diễn ra</div>
+                            <div class="eqf-value" id="eqf-date"><i class="fas fa-calendar-alt"></i> —</div>
+                        </div>
+                        <div class="eqf-item">
+                            <div class="eqf-label">Thời gian</div>
+                            <div class="eqf-value" id="eqf-time"><i class="fas fa-clock"></i> —</div>
+                        </div>
+                        <div class="eqf-item">
+                            <div class="eqf-label">Địa điểm</div>
+                            <div class="eqf-value" id="eqf-location"><i class="fas fa-map-marker-alt"></i> —</div>
+                        </div>
+                        <div class="eqf-item">
+                            <div class="eqf-label">Đã đăng ký</div>
+                            <div class="eqf-value" id="eqf-registered"><i class="fas fa-users"></i> —</div>
+                        </div>
+                        <div class="eqf-item">
+                            <div class="eqf-label">Còn lại</div>
+                            <div class="eqf-value" id="eqf-available"><i class="fas fa-ticket-alt"></i> —</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Session Switcher (hiển thị khi chiến dịch có nhiều buổi) -->
+            <div id="session-switcher" style="background:white;border-bottom:1px solid var(--gray-200);display:none;">
+                <div class="container">
+                    <div id="session-tabs"
+                        style="display:flex;gap:8px;overflow-x:auto;padding:12px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="event-detail-body">
+                <div class="container">
+                    <div class="row g-4">
+
+                        <!-- Main Column -->
+                        <div class="col-lg-8">
+
+                            <!-- Description -->
+                            <div class="event-main-card reveal">
+                                <div class="emc-section-head"><i class="fas fa-info-circle"></i> Giới thiệu Sự kiện
+                                </div>
+                                <div class="emc-section-body">
+                                    <div id="session-description" class="prose"
+                                        style="font-size:.9rem;line-height:1.8;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Agenda -->
+                            <div class="event-main-card reveal reveal-d1">
+                                <div class="emc-section-head"><i class="fas fa-list-ol"></i> Chương trình chi tiết</div>
+                                <div class="emc-section-body" style="padding:0;">
+                                    <table style="width:100%;border-collapse:collapse;">
+                                        <thead>
+                                            <tr
+                                                style="background:var(--ink-900);color:rgba(255,255,255,.7);font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;">
+                                                <th style="padding:10px 18px;text-align:left;width:100px;">Thời gian
+                                                </th>
+                                                <th style="padding:10px 18px;text-align:left;">Nội dung</th>
+                                                <th style="padding:10px 18px;text-align:left;width:160px;">Diễn giả</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="agenda-tbody">
+                                            <tr>
+                                                <td colspan="3"
+                                                    style="text-align:center;padding:28px;color:var(--gray-400);"><i
+                                                        class="fas fa-spinner fa-spin"></i></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Speakers -->
+                            <div class="event-main-card reveal reveal-d2">
+                                <div class="emc-section-head"><i class="fas fa-user-tie"></i> Diễn giả</div>
+                                <div class="emc-section-body" id="speakers-container">
+                                    <div style="text-align:center;padding:28px;color:var(--gray-400);"><i
+                                            class="fas fa-spinner fa-spin fa-lg"></i></div>
+                                </div>
+                            </div>
+
+                            <!-- Location -->
+                            <div class="event-main-card reveal">
+                                <div class="emc-section-head"><i class="fas fa-map-marker-alt"></i> Địa điểm tổ chức
+                                </div>
+                                <div class="emc-section-body" id="location-container">
+                                    <div style="text-align:center;padding:28px;color:var(--gray-400);"><i
+                                            class="fas fa-spinner fa-spin fa-lg"></i></div>
+                                </div>
+                            </div>
+
+                            <!-- Tags -->
+                            <div class="event-main-card reveal" id="tags-card" style="display:none;">
+                                <div class="emc-section-head"><i class="fas fa-tags"></i> Thẻ chủ đề</div>
+                                <div class="emc-section-body" id="tags-container"></div>
+                            </div>
+
+                            <!-- Related Posts -->
+                            <div class="event-main-card reveal" id="related-posts-card" style="display:none;">
+                                <div class="emc-section-head"><i class="fas fa-newspaper"></i> Tài liệu liên quan</div>
+                                <div class="emc-section-body">
+                                    <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:14px;">Bài viết và
+                                        tài liệu học thuật liên quan đến chủ đề hội thảo này:</p>
+                                    <div id="related-posts-container"></div>
+                                </div>
+                            </div>
+
+                            <!-- Status History -->
+                            <div class="event-main-card reveal">
+                                <div class="emc-section-head"><i class="fas fa-history"></i> Lịch sử trạng thái</div>
+                                <div class="emc-section-body" id="status-timeline-container">
+                                    <div style="text-align:center;padding:28px;color:var(--gray-400);"><i
+                                            class="fas fa-spinner fa-spin fa-lg"></i></div>
+                                </div>
+                            </div>
+
+                            <!-- Comments -->
+                            <div class="event-main-card reveal">
+                                <div class="emc-section-head"><i class="fas fa-comments"></i> Bình luận</div>
+                                <div class="emc-section-body">
+                                    <!-- Comment form: chỉ render khi đã đăng nhập -->
+                                    <div class="event-comment-form" sec:authorize="isAuthenticated()">
+                                        <textarea id="cmt-input" class="form-input"
+                                            style="min-height:80px;resize:vertical;"
+                                            placeholder="Đặt câu hỏi cho diễn giả hoặc chia sẻ kỳ vọng của bạn về buổi hội thảo..."></textarea>
+                                        <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+                                            <button id="btn-gui-cmt" class="submit-btn"
+                                                style="width:auto;padding:7px 18px;font-size:.84rem;background:var(--ink-800);"
+                                                onclick="guiBinhLuan()">
+                                                <i class="fas fa-paper-plane fa-xs"></i> Gửi bình luận
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- CTA đăng nhập cho guest -->
+                                    <div sec:authorize="!isAuthenticated()"
+                                        style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--r-lg);padding:14px;margin-bottom:16px;text-align:center;font-size:.84rem;color:var(--gray-500);">
+                                        <i class="fas fa-sign-in-alt fa-xs me-1"></i>
+                                        <a href="/login" style="color:var(--teal-600);font-weight:600;">Đăng nhập</a> để
+                                        đặt câu hỏi cho diễn giả
+                                    </div>
+                                    <!-- Danh sách bình luận -->
+                                    <div id="comments-list"></div>
+                                    <!-- Load more -->
+                                    <div style="text-align:center;margin-top:10px;">
+                                        <button id="cmt-load-more"
+                                            style="display:none;padding:8px 20px;background:white;border:1px solid var(--gray-200);border-radius:var(--r-md);font-size:.82rem;color:var(--gray-600);cursor:pointer;font-weight:600;"
+                                            onclick="taiBinhLuan(cmtTrangHt + 1)">
+                                            Xem thêm bình luận <i class="fas fa-chevron-down fa-xs ms-1"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div><!-- /col main -->
+
+                        <!-- Registration Sidebar -->
+                        <div class="col-lg-4">
+
+                            <!-- Registration Card -->
+                            <div class="event-sidebar-sticky">
+                                <div class="reg-card reveal">
+                                    <div class="reg-card-header">
+                                        <div class="rch-title">Đăng ký Tham dự</div>
+                                        <div class="rch-slots-bar">
+                                            <div class="rsb-label">
+                                                <span id="reg-count-text">Đang tải...</span>
+                                                <strong id="reg-slots-text"></strong>
+                                            </div>
+                                            <div class="rsb-track">
+                                                <div class="rsb-fill" id="reg-fill-bar" style="width:0%;"></div>
+                                            </div>
+                                        </div>
+                                        <div class="rch-urgency" id="reg-urgency-block" style="display:none;">
+                                            <i class="fas fa-fire fa-xs"></i>
+                                            <span id="reg-urgency"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="reg-card-body">
+                                        <div id="reg-form-wrapper">
+                                            <!-- Đã đăng ký (chỉ hiển thị sau khi kiểm tra API) -->
+                                            <div id="already-reg-block" style="display:none;">
+                                                <div class="already-registered">
+                                                    <div class="ar-icon"><i class="fas fa-check-circle"></i></div>
+                                                    <div class="ar-title">Bạn đã đăng ký thành công!</div>
+                                                    <div class="ar-ticket" id="ar-ticket-code">Mã vé: —</div>
+                                                    <div class="ar-ticket" id="ar-ticket-status"
+                                                        style="margin-top:4px;"></div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Form đăng ký -->
+                                            <form id="reg-form" onsubmit="guiDangKy(event)">
+                                                <div class="form-group">
+                                                    <label class="form-label">Họ và tên<span
+                                                            class="required">*</span></label>
+                                                    <input type="text" id="reg-name" class="form-input"
+                                                        placeholder="Nguyễn Văn A">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label">Email nhận vé<span
+                                                            class="required">*</span></label>
+                                                    <input type="email" id="reg-email" class="form-input"
+                                                        placeholder="bac.si@benhvien.vn">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label">Số điện thoại<span
+                                                            class="required">*</span></label>
+                                                    <input type="tel" id="reg-phone" class="form-input"
+                                                        placeholder="0912 345 678">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label">Nơi công tác</label>
+                                                    <input type="text" id="reg-workplace" class="form-input"
+                                                        placeholder="BV Bạch Mai / Nhà thuốc An Phúc...">
+                                                </div>
+                                                <hr class="form-divider">
+                                                <div class="form-note">
+                                                    <i class="fas fa-info-circle fa-xs"></i>
+                                                    Thông tin xác nhận sẽ được gửi qua email. Vui lòng kiểm tra hộp
+                                                    Spam.
+                                                </div>
+                                                <button type="submit" id="btn-dang-ky" class="submit-btn"
+                                                    style="margin-top:16px;">
+                                                    <i class="fas fa-ticket-alt"></i> Đăng ký tham dự — Miễn phí
+                                                </button>
+                                                <div
+                                                    style="text-align:center;margin-top:10px;font-size:.72rem;color:var(--gray-400);">
+                                                    <i class="fas fa-shield-alt fa-xs me-1"></i> Không chia sẻ thông tin
+                                                    cho bên thứ ba
+                                                </div>
+                                            </form>
+
+                                            <!-- Attendees preview -->
+                                            <div id="attendees-preview" class="attendees-preview" style="display:none;">
+                                                <div class="att-avatars" id="att-avatars"></div>
+                                                <span class="att-count" id="att-count-text"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Organizer Info (tĩnh) -->
+                                <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--r-lg);padding:16px;margin-top:16px;"
+                                    class="reveal reveal-d1">
+                                    <div
+                                        style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray-400);margin-bottom:12px;">
+                                        Nhà tổ chức</div>
+                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                                        <div
+                                            style="width:40px;height:40px;background:linear-gradient(135deg,var(--ink-800),var(--ink-600));border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:white;font-size:.9rem;flex-shrink:0;">
+                                            <i class="fas fa-pills"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-size:.9rem;font-weight:700;color:var(--ink-800);">
+                                                PharmaCorp B2B</div>
+                                            <div style="font-size:.74rem;color:var(--gray-400);">Hệ sinh thái Phân phối
+                                                Dược phẩm</div>
+                                        </div>
+                                        <div class="event-sidebar-sticky"></div>
+                                    </div>
+                                    <div
+                                        style="font-size:.79rem;color:var(--gray-500);line-height:1.6;margin-bottom:12px;">
+                                        Phối hợp cùng Hội Dược lâm sàng Việt Nam (VSCCP) tổ chức. Chứng nhận CME được
+                                        cấp bởi Bộ Y tế.</div>
+                                    <div style="display:flex;gap:8px;">
+                                        <a href="#"
+                                            style="flex:1;padding:7px;border:1px solid var(--gray-200);border-radius:var(--r-md);font-size:.78rem;text-align:center;color:var(--gray-600);text-decoration:none;font-weight:600;transition:var(--t-fast);">
+                                            <i class="fas fa-envelope fa-xs me-1"></i> Liên hệ
+                                        </a>
+                                        <a href="tel:19006868"
+                                            style="flex:1;padding:7px;border:1px solid var(--gray-200);border-radius:var(--r-md);font-size:.78rem;text-align:center;color:var(--gray-600);text-decoration:none;font-weight:600;transition:var(--t-fast);">
+                                            <i class="fas fa-phone fa-xs me-1"></i> 1900 6868
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div><!-- /col sidebar -->
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div th:replace="~{user_layout::user-footer}"></div>
+    <div th:replace="~{user_layout::user-scripts}"></div>
+
+    <script>
+        // ============================================================
+        // EVENTS DETAIL — Kiến trúc mù: 100% dữ liệu từ API
+        // ============================================================
+
+        var chienDich = null;
+        var buoiHienTai = null;
+        var ctEventId = null;
+        var cmtTrangHt = 0;
+        var cmtTongTrang = 0;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            khoiDong();
+        });
+
+        function khoiDong() {
+            var parts = window.location.pathname.replace(/\/$/, '').split('/');
+            var slug = parts[parts.length - 1];
+            if (!slug || slug === 'hoi-thao') {
+                hienLoiChinh('Không tìm thấy sự kiện. Vui lòng quay lại danh sách.');
+                return;
+            }
+            var params = new URLSearchParams(window.location.search);
+            var sessionIdStr = params.get('session');
+            var sessionId = sessionIdStr ? parseInt(sessionIdStr) : null;
+            taiChienDich(slug, sessionId);
+        }
+
+        // ============================================================
+        // TẢI CHIẾN DỊCH VÀ CHỌN BUỔI
+        // ============================================================
+
+        function taiChienDich(slug, sessionId) {
+            callApi('/api/events/' + slug, 'GET', null, null, function (res) {
+                if (res.status !== 200) {
+                    hienLoiChinh('Không tìm thấy sự kiện này.');
+                    return;
+                }
+                chienDich = res.data;
+                chonBuoi(sessionId);
+            }, function () {
+                hienLoiChinh('Lỗi kết nối. Vui lòng thử lại.');
+            });
+        }
+
+        function chonBuoi(sessionId) {
+            var sessions = chienDich.sessions;
+            if (!sessions || sessions.length === 0) {
+                hienLoiChinh('Chiến dịch chưa có buổi nào được lên lịch.');
+                return;
+            }
+
+            buoiHienTai = null;
+
+            if (sessionId) {
+                for (var i = 0; i < sessions.length; i++) {
+                    if (sessions[i].id === sessionId) {
+                        buoiHienTai = sessions[i];
+                        break;
+                    }
+                }
+            }
+
+            if (!buoiHienTai) {
+                for (var i = 0; i < sessions.length; i++) {
+                    var st = sessions[i].currentStatus;
+                    if (st === 'UPCOMING' || st === 'OPEN') {
+                        buoiHienTai = sessions[i];
+                        break;
+                    }
+                }
+            }
+
+            if (!buoiHienTai) {
+                buoiHienTai = sessions[0];
+            }
+
+            ctEventId = buoiHienTai.id;
+
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', window.location.pathname + '?session=' + ctEventId);
+            }
+
+            renderHero();
+            renderSessionSwitcher();
+            renderMoTa();
+            renderViTri();
+            renderTags();
+            renderBaiVietLienQuan();
+            khoiDongRegCard();
+
+            taiAgenda();
+            taiDienGia();
+            taiLichSuTrangThai();
+            taiBinhLuan(0);
+        }
+
+        // ============================================================
+        // RENDER HERO
+        // ============================================================
+
+        function renderHero() {
+            var cd = chienDich;
+            var s = buoiHienTai;
+
+            var bgEl = document.getElementById('hero-bg');
+            if (cd.thumbnailUrl) {
+                bgEl.style.backgroundImage = "url('" + esc(cd.thumbnailUrl) + "')";
+            }
+
+            var bcEl = document.getElementById('hero-breadcrumb-campaign');
+            bcEl.href = '/hoi-thao/' + esc(cd.slug);
+            bcEl.textContent = cd.title || '';
+
+            var typeBadge = document.getElementById('hero-type-badge');
+            typeBadge.innerHTML = '<i class="fas fa-tag fa-xs"></i> ' + esc(cd.eventTypeName || '');
+
+            var statusBadge = document.getElementById('hero-status-badge');
+            renderStatusBadge(statusBadge, s.currentStatus);
+
+            document.getElementById('hero-title').textContent = s.title ? s.title : (cd.title || '');
+
+            var linkEl = document.getElementById('hero-campaign-link');
+            linkEl.href = '/hoi-thao/' + esc(cd.slug);
+            linkEl.innerHTML = '<i class="fas fa-layer-group fa-xs"></i> Thuộc: ' + esc(cd.title || '');
+
+            renderQuickFacts(s);
+        }
+
+        function renderStatusBadge(el, status) {
+            el.className = 'edh-status-badge';
+            el.removeAttribute('style');
+
+            if (status === 'UPCOMING' || status === 'OPEN') {
+                el.className = 'edh-status-badge upcoming';
+                el.innerHTML = '<span class="live-indicator" style="width:6px;height:6px;background:var(--teal-400);border-radius:50%;display:inline-block;"></span> Sắp diễn ra';
+            } else if (status === 'ONGOING') {
+                el.style.background = 'rgba(0,152,152,.2)';
+                el.style.color = 'var(--teal-300)';
+                el.style.border = '1px solid rgba(0,184,184,.3)';
+                el.innerHTML = '<span style="width:6px;height:6px;background:var(--teal-400);border-radius:50%;display:inline-block;animation:pulseDot 1.8s infinite;"></span> Đang diễn ra';
+            } else if (status === 'FULL') {
+                el.className = 'edh-status-badge full';
+                el.innerHTML = '<i class="fas fa-ban fa-xs"></i> Hết chỗ';
+            } else if (status === 'CANCELLED') {
+                el.style.background = 'rgba(220,38,38,.2)';
+                el.style.color = '#f87171';
+                el.style.border = '1px solid rgba(220,38,38,.3)';
+                el.innerHTML = '<i class="fas fa-times fa-xs"></i> Đã hủy';
+            } else if (status === 'FINISHED' || status === 'ENDED') {
+                el.style.background = 'rgba(107,114,128,.2)';
+                el.style.color = 'var(--gray-400)';
+                el.style.border = '1px solid rgba(107,114,128,.3)';
+                el.innerHTML = '<i class="fas fa-check fa-xs"></i> Đã kết thúc';
+            } else {
+                el.style.background = 'rgba(107,114,128,.2)';
+                el.style.color = 'var(--gray-400)';
+                el.style.border = '1px solid rgba(107,114,128,.3)';
+                el.innerHTML = esc(status || '');
+            }
+        }
+
+        function renderQuickFacts(s) {
+            var start = new Date(s.startTime);
+            var end = s.endTime ? new Date(s.endTime) : null;
+
+            document.getElementById('eqf-date').innerHTML = '<i class="fas fa-calendar-alt"></i> ' + dinhDangNgayDayDu(s.startTime);
+
+            var thoiGian = pad2(start.getHours()) + ':' + pad2(start.getMinutes());
+            if (end) {
+                thoiGian += ' – ' + pad2(end.getHours()) + ':' + pad2(end.getMinutes());
+                var phut = Math.round((end.getTime() - start.getTime()) / 60000);
+                if (phut > 0) {
+                    thoiGian += ' (' + phut + ' phút)';
+                }
+            }
+            document.getElementById('eqf-time').innerHTML = '<i class="fas fa-clock"></i> ' + esc(thoiGian);
+
+            var diaIcon = s.online ? 'fa-video' : 'fa-map-marker-alt';
+            var diaText = s.locationName ? s.locationName : (s.online ? 'Trực tuyến' : 'Chưa xác định');
+            document.getElementById('eqf-location').innerHTML = '<i class="fas ' + diaIcon + '"></i> ' + esc(diaText);
+
+            var regCount = s.registeredCount || 0;
+            var regText = dinhDangSo(regCount);
+            if (s.totalSlots > 0) {
+                regText += ' / ' + dinhDangSo(s.totalSlots);
+            }
+            document.getElementById('eqf-registered').innerHTML = '<i class="fas fa-users"></i> ' + regText;
+
+            var conEl = document.getElementById('eqf-available');
+            if (s.totalSlots > 0) {
+                var available = s.availableSlots || 0;
+                conEl.innerHTML = '<i class="fas fa-ticket-alt"></i> ' + dinhDangSo(available) + ' slot';
+                if (available <= 10) {
+                    conEl.style.color = 'var(--danger)';
+                }
+            } else {
+                conEl.innerHTML = '<i class="fas fa-infinity"></i> Không giới hạn';
+            }
+        }
+
+        // ============================================================
+        // SESSION SWITCHER
+        // ============================================================
+
+        function renderSessionSwitcher() {
+            var sessions = chienDich.sessions;
+            var el = document.getElementById('session-switcher');
+            if (!sessions || sessions.length <= 1) {
+                el.style.display = 'none';
+                return;
+            }
+            el.style.display = 'block';
+            var html = '';
+            for (var i = 0; i < sessions.length; i++) {
+                var s = sessions[i];
+                var isActive = (s.id === ctEventId);
+                var label = s.title ? s.title : ('Buổi ' + (i + 1));
+                var dateLabel = s.startTime ? ' — ' + dinhDangNgay(s.startTime) : '';
+                if (isActive) {
+                    html += '<span style="flex-shrink:0;padding:6px 14px;background:var(--teal-600);color:white;border:1.5px solid var(--teal-600);border-radius:var(--r-md);font-size:.8rem;font-weight:700;white-space:nowrap;">';
+                    html += esc(label + dateLabel) + '</span>';
+                } else {
+                    html += '<a href="?session=' + s.id + '" style="flex-shrink:0;padding:6px 14px;background:white;color:var(--gray-600);border:1.5px solid var(--gray-200);border-radius:var(--r-md);font-size:.8rem;font-weight:600;white-space:nowrap;text-decoration:none;">';
+                    html += esc(label + dateLabel) + '</a>';
+                }
+            }
+            document.getElementById('session-tabs').innerHTML = html;
+        }
+
+        // ============================================================
+        // MÔ TẢ, VỊ TRÍ, TAGS, BÀI VIẾT LIÊN QUAN
+        // ============================================================
+
+        function renderMoTa() {
+            var el = document.getElementById('session-description');
+            if (buoiHienTai.content) {
+                el.innerHTML = buoiHienTai.content;
+            } else if (chienDich.description) {
+                el.innerHTML = chienDich.description;
+            } else {
+                el.innerHTML = '<p style="color:var(--gray-400);">Chưa có mô tả chi tiết.</p>';
+            }
+        }
+
+        function renderViTri() {
+            var s = buoiHienTai;
+            var container = document.getElementById('location-container');
+            var html = '';
+            if (s.online) {
+                html += '<div class="location-map" style="background:linear-gradient(135deg,var(--ink-800),var(--ink-700));justify-content:center;">';
+                html += '<i class="fas fa-video" style="font-size:3rem;color:rgba(255,255,255,.2);"></i>';
+                html += '</div>';
+                html += '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--gray-50);border-radius:var(--r-lg);border:1px solid var(--gray-200);">';
+                html += '<div style="width:36px;height:36px;background:var(--teal-100);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--teal-600);flex-shrink:0;"><i class="fas fa-video"></i></div>';
+                html += '<div>';
+                html += '<div style="font-size:.9rem;font-weight:700;color:var(--ink-800);margin-bottom:3px;">' + esc(s.locationName || 'Trực tuyến') + '</div>';
+                html += '<div style="font-size:.82rem;color:var(--gray-500);">' + (s.locationAddress ? esc(s.locationAddress) : 'Link tham gia sẽ được gửi qua email sau khi xác nhận đăng ký.') + '</div>';
+                html += '</div></div>';
+            } else {
+                html += '<div class="location-map">';
+                html += '<div class="location-map-overlay"><div class="location-pin"><i class="fas fa-map-marker-alt"></i></div></div>';
+                html += '</div>';
+                html += '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--gray-50);border-radius:var(--r-lg);border:1px solid var(--gray-200);">';
+                html += '<div style="width:36px;height:36px;background:var(--teal-100);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--teal-600);flex-shrink:0;"><i class="fas fa-map-marker-alt"></i></div>';
+                html += '<div>';
+                html += '<div style="font-size:.9rem;font-weight:700;color:var(--ink-800);margin-bottom:3px;">' + esc(s.locationName || 'Hội trường') + '</div>';
+                if (s.locationAddress) {
+                    html += '<div style="font-size:.82rem;color:var(--gray-500);">' + esc(s.locationAddress) + '</div>';
+                }
+                html += '</div></div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function renderTags() {
+            var tags = buoiHienTai.tags;
+            var card = document.getElementById('tags-card');
+            if (!tags || tags.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+            card.style.display = 'block';
+            var html = '';
+            for (var i = 0; i < tags.length; i++) {
+                var t = tags[i];
+                html += '<a href="/hoi-thao?tag=' + esc(t.slug || '') + '" class="event-tag">#' + esc(t.name || '') + '</a>';
+            }
+            document.getElementById('tags-container').innerHTML = html;
+        }
+
+        function renderBaiVietLienQuan() {
+            var posts = buoiHienTai.relatedPosts;
+            var card = document.getElementById('related-posts-card');
+            if (!posts || posts.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+            card.style.display = 'block';
+            var html = '';
+            for (var i = 0; i < posts.length; i++) {
+                var p = posts[i];
+                html += '<a href="/tin-tuc/' + esc(p.slug || '') + '" class="related-post-item">';
+                if (p.thumbnailUrl) {
+                    html += '<img src="' + esc(p.thumbnailUrl) + '" class="rpi-img" alt="">';
+                } else {
+                    html += '<div class="rpi-img" style="display:flex;align-items:center;justify-content:center;"><i class="fas fa-newspaper" style="color:var(--gray-400);font-size:1.2rem;"></i></div>';
+                }
+                html += '<div>';
+                html += '<div class="rpi-title">' + esc(p.title || '') + '</div>';
+                var meta = [];
+                if (p.authorName) { meta.push(p.authorName); }
+                if (p.createdAt) { meta.push(dinhDangNgay(p.createdAt)); }
+                if (meta.length > 0) {
+                    html += '<div style="font-size:.7rem;color:var(--gray-400);">' + esc(meta.join(' — ')) + '</div>';
+                }
+                html += '</div></a>';
+            }
+            document.getElementById('related-posts-container').innerHTML = html;
+        }
+
+        // ============================================================
+        // AGENDA
+        // ============================================================
+
+        function taiAgenda() {
+            callApi('/api/events/sessions/' + ctEventId + '/agenda', 'GET', null, null, function (res) {
+                var tbody = document.getElementById('agenda-tbody');
+                if (res.status !== 200 || !res.data || res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--gray-400);font-size:.85rem;">Chưa có lịch trình chi tiết.</td></tr>';
+                    return;
+                }
+                renderAgenda(res.data);
+            }, function () {
+                document.getElementById('agenda-tbody').innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--danger);font-size:.85rem;">Lỗi tải lịch trình.</td></tr>';
+            });
+        }
+
+        function renderAgenda(list) {
+            var html = '';
+            for (var i = 0; i < list.length; i++) {
+                var a = list[i];
+                var gioText = layGio(a.startTime);
+                if (a.endTime) {
+                    gioText += ' – ' + layGio(a.endTime);
+                }
+                var dienGiaHtml = '';
+                if (a.speakers && a.speakers.length > 0) {
+                    var tenArr = [];
+                    for (var j = 0; j < a.speakers.length; j++) {
+                        var sp = a.speakers[j];
+                        var ten = (sp.academicTitle ? sp.academicTitle + ' ' : '') + (sp.fullName || '');
+                        tenArr.push(ten);
+                    }
+                    dienGiaHtml = esc(tenArr.join(', '));
+                } else {
+                    dienGiaHtml = '<span style="color:var(--gray-400);">—</span>';
+                }
+                var bg = (i % 2 === 1) ? 'background:var(--gray-50);' : '';
+                html += '<tr style="border-bottom:1px solid var(--gray-100);' + bg + '">';
+                html += '<td style="padding:12px 18px;font-size:.82rem;color:var(--teal-600);font-weight:700;white-space:nowrap;">' + esc(gioText) + '</td>';
+                html += '<td style="padding:12px 18px;">';
+                html += '<div style="font-size:.87rem;font-weight:600;color:var(--ink-800);' + (a.description ? 'margin-bottom:3px;' : '') + '">' + esc(a.sessionTitle || '') + '</div>';
+                if (a.description) {
+                    html += '<div style="font-size:.75rem;color:var(--gray-400);">' + esc(a.description) + '</div>';
+                }
+                html += '</td>';
+                html += '<td style="padding:12px 18px;font-size:.8rem;color:var(--gray-700);font-weight:600;">' + dienGiaHtml + '</td>';
+                html += '</tr>';
+            }
+            document.getElementById('agenda-tbody').innerHTML = html;
+        }
+
+        // ============================================================
+        // DIỄN GIẢ
+        // ============================================================
+
+        function taiDienGia() {
+            callApi('/api/events/sessions/' + ctEventId + '/speakers', 'GET', null, null, function (res) {
+                var container = document.getElementById('speakers-container');
+                if (res.status !== 200 || !res.data || res.data.length === 0) {
+                    container.innerHTML = '<p style="font-size:.85rem;color:var(--gray-400);">Chưa có thông tin diễn giả.</p>';
+                    return;
+                }
+                renderDienGia(res.data);
+            }, function () {
+                document.getElementById('speakers-container').innerHTML = '<p style="font-size:.85rem;color:var(--danger);">Lỗi tải diễn giả.</p>';
+            });
+        }
+
+        function renderDienGia(list) {
+            var colors = [
+                'linear-gradient(135deg,var(--teal-600),var(--ink-700))',
+                'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                'linear-gradient(135deg,#16a34a,#166534)',
+                'linear-gradient(135deg,var(--gold-600),var(--gold-700))',
+                'linear-gradient(135deg,#dc2626,#991b1b)'
+            ];
+            var html = '';
+            for (var i = 0; i < list.length; i++) {
+                var sp = list[i];
+                var fullName = sp.fullName || '';
+                var lastSpace = fullName.lastIndexOf(' ');
+                var initial = (lastSpace >= 0 ? fullName.charAt(lastSpace + 1) : (fullName.charAt(0) || 'D')).toUpperCase();
+                var color = colors[i % colors.length];
+                html += '<div class="speaker-item">';
+                if (sp.avatarUrl) {
+                    html += '<img src="' + esc(sp.avatarUrl) + '" class="speaker-avatar" style="object-fit:cover;" alt="' + esc(fullName) + '">';
+                } else {
+                    html += '<div class="speaker-avatar" style="background:' + color + ';">' + esc(initial) + '</div>';
+                }
+                html += '<div>';
+                html += '<div class="speaker-name">' + esc((sp.academicTitle ? sp.academicTitle + ' ' : '') + fullName) + '</div>';
+                if (sp.bio) {
+                    html += '<div class="speaker-title">' + esc(sp.bio) + '</div>';
+                }
+                if (sp.organization) {
+                    html += '<div class="speaker-org"><i class="fas fa-building fa-xs me-1"></i>' + esc(sp.organization) + '</div>';
+                }
+                html += '</div></div>';
+            }
+            document.getElementById('speakers-container').innerHTML = html;
+        }
+
+        // ============================================================
+        // LỊCH SỬ TRẠNG THÁI
+        // ============================================================
+
+        function taiLichSuTrangThai() {
+            callApi('/api/events/sessions/' + ctEventId + '/status-history', 'GET', null, null, function (res) {
+                var container = document.getElementById('status-timeline-container');
+                if (res.status !== 200 || !res.data || res.data.length === 0) {
+                    container.innerHTML = '<p style="font-size:.85rem;color:var(--gray-400);">Chưa có lịch sử trạng thái.</p>';
+                    return;
+                }
+                renderLichSuTrangThai(res.data);
+            }, function () {
+                document.getElementById('status-timeline-container').innerHTML = '<p style="font-size:.85rem;color:var(--danger);">Lỗi tải lịch sử.</p>';
+            });
+        }
+
+        function renderLichSuTrangThai(list) {
+            var html = '<div class="status-timeline">';
+            for (var i = 0; i < list.length; i++) {
+                var h = list[i];
+                var isLast = (i === list.length - 1);
+                var dotClass = layDotClass(h.statusCode);
+                var iconClass = layIconClass(h.statusCode);
+                html += '<div class="st-item">';
+                html += '<div class="st-dot ' + dotClass + '"><i class="fas ' + iconClass + ' fa-xs"></i></div>';
+                html += '<div class="st-info">';
+                html += '<div class="st-action">' + esc(h.statusCode || '') + (isLast ? ' — Trạng thái hiện tại' : '') + '</div>';
+                html += '<div class="st-meta">';
+                if (h.changedByUserName) {
+                    html += '<span><i class="fas fa-user fa-xs me-1"></i>' + esc(h.changedByUserName) + '</span>';
+                }
+                if (h.changedAt) {
+                    html += '<span><i class="fas fa-clock fa-xs me-1"></i>' + dinhDangNgayGio(h.changedAt) + '</span>';
+                }
+                html += '</div>';
+                if (h.note) {
+                    html += '<div class="st-reason">' + esc(h.note) + '</div>';
+                }
+                html += '</div></div>';
+            }
+            html += '</div>';
+            document.getElementById('status-timeline-container').innerHTML = html;
+        }
+
+        function layDotClass(code) {
+            if (code === 'DRAFT') { return 'create'; }
+            if (code === 'CANCELLED') { return 'cancel'; }
+            return 'update';
+        }
+
+        function layIconClass(code) {
+            if (code === 'DRAFT') { return 'fa-plus'; }
+            if (code === 'OPEN') { return 'fa-lock-open'; }
+            if (code === 'UPCOMING') { return 'fa-calendar-check'; }
+            if (code === 'ONGOING') { return 'fa-play'; }
+            if (code === 'FINISHED') { return 'fa-check'; }
+            if (code === 'ENDED') { return 'fa-flag-checkered'; }
+            if (code === 'CANCELLED') { return 'fa-times'; }
+            if (code === 'FULL') { return 'fa-ban'; }
+            return 'fa-edit';
+        }
+
+        // ============================================================
+        // BÌNH LUẬN
+        // ============================================================
+
+        function taiBinhLuan(trang) {
+            if (trang === 0) {
+                document.getElementById('comments-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin"></i></div>';
+            }
+            callApi('/api/events/sessions/' + ctEventId + '/comments?page=' + trang + '&size=5', 'GET', null, null, function (res) {
+                var container = document.getElementById('comments-list');
+                if (res.status !== 200) {
+                    container.innerHTML = '<p style="font-size:.85rem;color:var(--danger);text-align:center;">Lỗi tải bình luận.</p>';
+                    return;
+                }
+                var page = res.data;
+                cmtTrangHt = page.number;
+                cmtTongTrang = page.totalPages;
+
+                if (trang === 0) {
+                    container.innerHTML = '';
+                }
+
+                if (!page.content || page.content.length === 0) {
+                    if (trang === 0) {
+                        container.innerHTML = '<p style="font-size:.85rem;color:var(--gray-400);text-align:center;padding:20px;">Chưa có bình luận. Hãy là người đầu tiên!</p>';
+                    }
+                    document.getElementById('cmt-load-more').style.display = 'none';
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < page.content.length; i++) {
+                    html += renderCmt(page.content[i]);
+                }
+                if (trang === 0) {
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML += html;
+                }
+
+                var loadMoreBtn = document.getElementById('cmt-load-more');
+                if ((page.number + 1) < page.totalPages) {
+                    var remaining = page.totalElements - (page.number + 1) * 5;
+                    loadMoreBtn.style.display = 'block';
+                    loadMoreBtn.innerHTML = 'Xem thêm ' + remaining + ' bình luận <i class="fas fa-chevron-down fa-xs ms-1"></i>';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                }
+            }, function () {
+                document.getElementById('comments-list').innerHTML = '<p style="font-size:.85rem;color:var(--danger);text-align:center;">Lỗi kết nối.</p>';
+            });
+        }
+
+        function renderCmt(cmt) {
+            var initial = cmt.userFullName ? cmt.userFullName.charAt(0).toUpperCase() : '?';
+            var avatarHtml = '';
+            if (cmt.userAvatar && (cmt.userAvatar.indexOf('http') === 0 || cmt.userAvatar.indexOf('/') === 0)) {
+                avatarHtml = '<img src="' + esc(cmt.userAvatar) + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" alt="">';
+            } else {
+                var av = cmt.userAvatar ? cmt.userAvatar : initial;
+                avatarHtml = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal-600),var(--ink-700));display:flex;align-items:center;justify-content:center;color:white;font-size:.75rem;font-weight:700;">' + esc(av) + '</div>';
+            }
+
+            var roleBadge = '';
+            if (cmt.userRoleName) {
+                roleBadge = ' <span style="font-size:.65rem;background:rgba(0,152,152,.1);color:var(--teal-700);padding:1px 6px;border-radius:3px;">' + esc(cmt.userRoleName) + '</span>';
+            }
+
+            var reactHtml = '';
+            if (cmt.reactions && cmt.reactions.length > 0) {
+                reactHtml = '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">';
+                for (var i = 0; i < cmt.reactions.length; i++) {
+                    var r = cmt.reactions[i];
+                    if (r.count > 0) {
+                        var icon = r.iconUrl ? '<img src="' + esc(r.iconUrl) + '" style="width:13px;height:13px;vertical-align:middle;"> ' : '';
+                        reactHtml += '<span style="padding:2px 7px;background:var(--gray-100);border-radius:50px;font-size:.72rem;cursor:default;">' + icon + esc(r.name || r.code || '') + ' ' + r.count + '</span>';
+                    }
+                }
+                reactHtml += '</div>';
+            }
+
+            var repliesHtml = '';
+            if (cmt.replies && cmt.replies.length > 0) {
+                repliesHtml = '<div style="margin-left:42px;margin-top:4px;">';
+                for (var i = 0; i < cmt.replies.length; i++) {
+                    repliesHtml += renderReply(cmt.replies[i]);
+                }
+                repliesHtml += '</div>';
+            }
+
+            var html = '<div style="display:flex;gap:10px;margin-bottom:16px;">';
+            html += '<div style="flex-shrink:0;">' + avatarHtml + '</div>';
+            html += '<div style="flex:1;background:var(--gray-50);border:1px solid var(--gray-100);border-radius:0 var(--r-lg) var(--r-lg) var(--r-lg);padding:10px 14px;">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">';
+            html += '<span style="font-size:.82rem;font-weight:700;color:var(--ink-800);">' + esc(cmt.userFullName || 'Ẩn danh') + roleBadge + '</span>';
+            html += '<span style="font-size:.7rem;color:var(--gray-400);white-space:nowrap;">' + dinhDangNgayGio(cmt.createdAt) + '</span>';
+            html += '</div>';
+            html += '<div style="font-size:.85rem;color:var(--gray-700);line-height:1.6;">' + esc(cmt.content || '') + '</div>';
+            html += reactHtml;
+            html += '</div></div>';
+            html += repliesHtml;
+            return html;
+        }
+
+        function renderReply(reply) {
+            var initial = reply.userFullName ? reply.userFullName.charAt(0).toUpperCase() : '?';
+            var avatarHtml = '';
+            if (reply.userAvatar && (reply.userAvatar.indexOf('http') === 0 || reply.userAvatar.indexOf('/') === 0)) {
+                avatarHtml = '<img src="' + esc(reply.userAvatar) + '" style="width:26px;height:26px;border-radius:50%;object-fit:cover;" alt="">';
+            } else {
+                var av = reply.userAvatar ? reply.userAvatar : initial;
+                avatarHtml = '<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--teal-600),var(--ink-700));display:flex;align-items:center;justify-content:center;color:white;font-size:.65rem;font-weight:700;">' + esc(av) + '</div>';
+            }
+            var html = '<div style="display:flex;gap:8px;margin-bottom:8px;">';
+            html += '<div style="flex-shrink:0;">' + avatarHtml + '</div>';
+            html += '<div style="flex:1;background:white;border:1px solid var(--gray-100);border-radius:0 var(--r-md) var(--r-md) var(--r-md);padding:8px 12px;">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;">';
+            html += '<span style="font-size:.79rem;font-weight:700;color:var(--ink-800);">' + esc(reply.userFullName || 'Ẩn danh') + '</span>';
+            html += '<span style="font-size:.68rem;color:var(--gray-400);white-space:nowrap;">' + dinhDangNgayGio(reply.createdAt) + '</span>';
+            html += '</div>';
+            html += '<div style="font-size:.82rem;color:var(--gray-700);line-height:1.55;">' + esc(reply.content || '') + '</div>';
+            html += '</div></div>';
+            return html;
+        }
+
+        function guiBinhLuan() {
+            var input = document.getElementById('cmt-input');
+            if (!input) { return; }
+            var content = input.value.trim();
+            if (!content) {
+                input.focus();
+                return;
+            }
+            var body = { targetId: ctEventId, content: content };
+            callApi('/api/events/sessions/' + ctEventId + '/comments', 'POST', body, '#btn-gui-cmt', function (res) {
+                if (res.status === 200 || res.status === 201) {
+                    input.value = '';
+                    cmtTrangHt = 0;
+                    taiBinhLuan(0);
+                } else {
+                    alert(res.message || 'Gửi bình luận thất bại. Vui lòng thử lại.');
+                }
+            }, function () {
+                alert('Lỗi kết nối. Vui lòng thử lại.');
+            });
+        }
+
+        // ============================================================
+        // ĐĂNG KÝ
+        // ============================================================
+
+        function khoiDongRegCard() {
+            var s = buoiHienTai;
+
+            var filled = 0;
+            if (s.totalSlots > 0) {
+                filled = Math.min(100, Math.round((s.registeredCount || 0) * 100 / s.totalSlots));
+            }
+            document.getElementById('reg-fill-bar').style.width = filled + '%';
+            document.getElementById('reg-count-text').textContent = 'Đã đăng ký: ' + dinhDangSo(s.registeredCount || 0);
+
+            var urgencyBlock = document.getElementById('reg-urgency-block');
+            if (s.totalSlots > 0) {
+                document.getElementById('reg-slots-text').textContent = dinhDangSo(s.availableSlots || 0) + ' slot còn lại!';
+                document.getElementById('reg-urgency').textContent = 'Chỉ còn ' + dinhDangSo(s.availableSlots || 0) + '/' + dinhDangSo(s.totalSlots) + ' chỗ — Đăng ký trước khi hết!';
+                urgencyBlock.style.display = 'flex';
+            } else {
+                document.getElementById('reg-slots-text').textContent = 'Không giới hạn chỗ';
+                urgencyBlock.style.display = 'none';
+            }
+
+            var status = s.currentStatus;
+            var canReg = (status === 'OPEN' || status === 'UPCOMING');
+            var isFull = (status === 'FULL' || (s.totalSlots > 0 && (s.availableSlots || 0) <= 0));
+
+            if (!canReg || isFull) {
+                var msg = '';
+                if (isFull || status === 'FULL') {
+                    msg = 'Buổi sự kiện đã hết chỗ.';
+                } else if (status === 'CANCELLED') {
+                    msg = 'Buổi sự kiện đã bị hủy.';
+                } else if (status === 'FINISHED' || status === 'ENDED') {
+                    msg = 'Buổi sự kiện đã kết thúc.';
+                } else if (status === 'ONGOING') {
+                    msg = 'Buổi sự kiện đang diễn ra, không nhận đăng ký mới.';
+                } else {
+                    msg = 'Buổi sự kiện hiện không nhận đăng ký.';
+                }
+                document.getElementById('reg-form-wrapper').innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-500);font-size:.88rem;line-height:1.7;"><i class="fas fa-ban fa-2x" style="color:var(--danger);display:block;margin-bottom:10px;"></i>' + esc(msg) + '</div>';
+                return;
+            }
+
+            var authAnchor = document.getElementById('auth-check-anchor');
+            if (authAnchor) {
+                kiemTraDaDangKy();
+            }
+
+            taiNguoiThamDu();
+        }
+
+        function kiemTraDaDangKy() {
+            callApi('/api/events/my-registrations', 'GET', null, null, function (res) {
+                if (res.status !== 200 || !res.data) { return; }
+                var regs = res.data;
+                for (var i = 0; i < regs.length; i++) {
+                    if (regs[i].ctEventId === ctEventId) {
+                        hienDaDangKy(regs[i]);
+                        return;
+                    }
+                }
+            }, null);
+        }
+
+        function hienDaDangKy(reg) {
+            var form = document.getElementById('reg-form');
+            if (form) { form.style.display = 'none'; }
+            var block = document.getElementById('already-reg-block');
+            if (block) { block.style.display = 'block'; }
+            document.getElementById('ar-ticket-code').innerHTML = 'Mã vé: <strong>#' + esc(String(reg.id || '—')) + '</strong>';
+            var statusLabel = '';
+            if (reg.status === 'CONFIRMED') {
+                statusLabel = '<span style="color:var(--success);font-weight:700;">✓ Đã xác nhận</span>';
+            } else if (reg.status === 'PENDING') {
+                statusLabel = '<span style="color:var(--gold-600);font-weight:700;">⏳ Đang chờ</span>';
+            } else if (reg.status === 'CANCELLED') {
+                statusLabel = '<span style="color:var(--danger);font-weight:700;">✕ Đã hủy</span>';
+            } else {
+                statusLabel = '<span style="font-weight:700;">' + esc(reg.status || '') + '</span>';
+            }
+            document.getElementById('ar-ticket-status').innerHTML = 'Trạng thái: ' + statusLabel;
+        }
+
+        function guiDangKy(evt) {
+            if (evt) { evt.preventDefault(); }
+            var ten = document.getElementById('reg-name').value.trim();
+            var email = document.getElementById('reg-email').value.trim();
+            var sdt = document.getElementById('reg-phone').value.trim();
+            var congTac = document.getElementById('reg-workplace').value.trim();
+
+            if (!ten || !email || !sdt) {
+                alert('Vui lòng điền đầy đủ họ tên, email và số điện thoại.');
+                return;
+            }
+
+            var body = {
+                ctEventId: ctEventId,
+                guestName: ten,
+                guestEmail: email,
+                guestPhone: sdt,
+                workplace: congTac
+            };
+
+            callApi('/api/events/register', 'POST', body, '#btn-dang-ky', function (res) {
+                if (res.status === 200 || res.status === 201) {
+                    hienDaDangKy(res.data);
+                } else {
+                    alert(res.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+                }
+            }, function () {
+                alert('Lỗi kết nối. Vui lòng thử lại.');
+            });
+        }
+
+        // ============================================================
+        // NGƯỜI THAM DỰ
+        // ============================================================
+
+        function taiNguoiThamDu() {
+            callApi('/api/events/sessions/' + ctEventId + '/attendees-summary', 'GET', null, null, function (res) {
+                if (res.status !== 200 || !res.data) { return; }
+                renderNguoiThamDu(res.data);
+            }, null);
+        }
+
+        function renderNguoiThamDu(summary) {
+            var preview = document.getElementById('attendees-preview');
+            var avatarsEl = document.getElementById('att-avatars');
+            var countEl = document.getElementById('att-count-text');
+            if (!summary.attendees || summary.attendees.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            var colors = [
+                'linear-gradient(135deg,var(--teal-600),var(--ink-700))',
+                'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                'linear-gradient(135deg,#16a34a,#166534)',
+                'linear-gradient(135deg,var(--gold-600),var(--gold-700))',
+                'linear-gradient(135deg,#dc2626,#991b1b)'
+            ];
+            var html = '';
+            var max = Math.min(5, summary.attendees.length);
+            for (var i = 0; i < max; i++) {
+                var att = summary.attendees[i];
+                html += '<div class="att-av" style="background:' + colors[i % colors.length] + ';">' + esc(att.initial || '?') + '</div>';
+            }
+            avatarsEl.innerHTML = html;
+            countEl.innerHTML = '<strong>' + dinhDangSo(summary.totalCount) + ' chuyên gia</strong> đã đăng ký';
+            preview.style.display = 'flex';
+        }
+
+        // ============================================================
+        // TIỆN ÍCH
+        // ============================================================
+
+        function hienLoiChinh(msg) {
+            var body = document.querySelector('.event-detail-body');
+            if (body) {
+                body.innerHTML = '<div class="container" style="text-align:center;padding:80px 20px;"><i class="fas fa-exclamation-triangle fa-3x" style="color:var(--danger);display:block;margin-bottom:16px;"></i><div style="font-size:1rem;color:var(--gray-600);">' + esc(msg) + '</div><a href="/hoi-thao" style="margin-top:20px;display:inline-block;padding:10px 24px;background:var(--teal-600);color:white;border-radius:var(--r-md);text-decoration:none;font-weight:600;">Quay lại danh sách</a></div>';
+            }
+        }
+
+        function dinhDangNgay(iso) {
+            if (!iso) { return '—'; }
+            var d = new Date(iso);
+            return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
+        }
+
+        function dinhDangNgayGio(iso) {
+            if (!iso) { return '—'; }
+            var d = new Date(iso);
+            return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + ' — ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+        }
+
+        function dinhDangNgayDayDu(iso) {
+            if (!iso) { return '—'; }
+            var d = new Date(iso);
+            var thu = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+            return thu[d.getDay()] + ', ' + pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
+        }
+
+        function layGio(iso) {
+            if (!iso) { return '—'; }
+            var d = new Date(iso);
+            return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+        }
+
+        function dinhDangSo(n) {
+            if (n === null || n === undefined) { return '0'; }
+            return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function pad2(n) {
+            return n < 10 ? '0' + n : '' + n;
+        }
+
+        function esc(s) {
+            if (!s) { return ''; }
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+
+</body>
+
+</html>

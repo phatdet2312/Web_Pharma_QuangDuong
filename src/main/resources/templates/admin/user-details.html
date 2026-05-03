@@ -1,0 +1,1701 @@
+<!--src/main/resources/templates/admin/user-details.html-->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{admin_layout::admin-head('Hồ sơ Người dùng')}"></head>
+
+<th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
+    <div id="admin-content-wrapper">
+
+        <style>
+            /* ================================================================
+     * USER DETAILS — LOCAL DESIGN SYSTEM
+     * ================================================================ */
+            .ud-card {
+                background: #fff;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+                border: 1px solid #e2e8f0;
+                margin-bottom: 20px;
+            }
+
+            .ud-card-title {
+                font-size: 1rem;
+                font-weight: 800;
+                color: #1e293b;
+                margin-bottom: 18px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding-bottom: 14px;
+                border-bottom: 2px solid #f1f5f9;
+            }
+
+            /* ---- HERO CARD ---- */
+            .hero-name {
+                font-size: 1.2rem;
+                font-weight: 900;
+                color: #1e293b;
+                text-align: center;
+                margin-bottom: 3px;
+            }
+
+            .hero-username {
+                font-size: .82rem;
+                color: #64748b;
+                text-align: center;
+                margin-bottom: 14px;
+            }
+
+            .hero-badges {
+                display: flex;
+                justify-content: center;
+                gap: 6px;
+                flex-wrap: wrap;
+                margin-bottom: 14px;
+            }
+
+            .badge-role {
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: .72rem;
+                font-weight: 700;
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            .badge-role.super {
+                background: #fef9c3;
+                color: #a16207;
+                border: 1px solid #fde68a;
+            }
+
+            .badge-role.admin {
+                background: #fee2e2;
+                color: #b91c1c;
+                border: 1px solid #fecaca;
+            }
+
+            .badge-role.normal {
+                background: #dcfce7;
+                color: #15803d;
+                border: 1px solid #bbf7d0;
+            }
+
+            .hero-meta-row {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+
+            .hero-meta-icon {
+                width: 30px;
+                height: 30px;
+                border-radius: 8px;
+                background: #f1f5f9;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: .78rem;
+                color: #64748b;
+                flex-shrink: 0;
+            }
+
+            .hero-meta-label {
+                font-size: .68rem;
+                font-weight: 700;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: .4px;
+            }
+
+            .hero-meta-value {
+                font-size: .85rem;
+                font-weight: 700;
+                color: #334155;
+                word-break: break-all;
+            }
+
+            .status-active {
+                background: #dcfce7;
+                color: #15803d;
+                border: 1px solid #bbf7d0;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: .78rem;
+                font-weight: 700;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .status-locked {
+                background: #fee2e2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: .78rem;
+                font-weight: 700;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .status-pulse {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+
+            .status-pulse.green {
+                background: #22c55e;
+                animation: pulse-green 1.5s infinite;
+            }
+
+            .status-pulse.red {
+                background: #ef4444;
+            }
+
+            @keyframes pulse-green {
+
+                0%,
+                100% {
+                    opacity: 1;
+                }
+
+                50% {
+                    opacity: .3;
+                }
+            }
+
+            .risk-indicator {
+                background: linear-gradient(135deg, #fff7ed, #fef3c7);
+                border: 1px solid #fbbf24;
+                border-radius: 10px;
+                padding: 12px 14px;
+                margin: 12px 0;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .risk-indicator i {
+                font-size: 1.3rem;
+                color: #d97706;
+                flex-shrink: 0;
+            }
+
+            .risk-indicator strong {
+                font-size: .82rem;
+                color: #92400e;
+                display: block;
+            }
+
+            .risk-indicator span {
+                font-size: .72rem;
+                color: #a16207;
+            }
+
+            .btn-lock {
+                width: 100%;
+                padding: 10px;
+                border-radius: 10px;
+                font-weight: 700;
+                font-size: .88rem;
+                cursor: pointer;
+                border: none;
+                transition: all .2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+
+            .btn-lock.do-lock {
+                background: #fee2e2;
+                color: #dc2626;
+                border: 1.5px solid #fca5a5;
+            }
+
+            .btn-lock.do-lock:hover {
+                background: #dc2626;
+                color: #fff;
+            }
+
+            .btn-lock.do-unlock {
+                background: #dcfce7;
+                color: #15803d;
+                border: 1.5px solid #86efac;
+            }
+
+            .btn-lock.do-unlock:hover {
+                background: #16a34a;
+                color: #fff;
+            }
+
+            /* ---- AUDIT TIMELINE ---- */
+            .timeline {
+                position: relative;
+                padding-left: 28px;
+            }
+
+            .timeline::before {
+                content: '';
+                position: absolute;
+                left: 10px;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background: #e2e8f0;
+            }
+
+            .timeline-item {
+                position: relative;
+                margin-bottom: 18px;
+            }
+
+            .tl-dot {
+                position: absolute;
+                left: -24px;
+                top: 3px;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: .6rem;
+                color: #fff;
+            }
+
+            .tl-dot.lock {
+                background: #dc2626;
+            }
+
+            .tl-dot.unlock {
+                background: #16a34a;
+            }
+
+            .tl-dot.ban {
+                background: #f59e0b;
+            }
+
+            .tl-dot.unban {
+                background: #3b82f6;
+            }
+
+            .tl-dot.assign {
+                background: #16a34a;
+            }
+
+            .tl-dot.revoke {
+                background: #f59e0b;
+            }
+
+            /* [THÊM MỚI] Nút bộ lọc lịch sử kiểm toán */
+            .audit-filter-btn {
+                padding: 4px 10px;
+                border-radius: 6px;
+                font-size: .72rem;
+                font-weight: 700;
+                cursor: pointer;
+                border: 1.5px solid #e2e8f0;
+                background: #f8fafc;
+                color: #475569;
+                transition: all .2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .audit-filter-btn:hover {
+                border-color: #3b82f6;
+                color: #3b82f6;
+            }
+
+            .tl-dot.def {
+                background: #94a3b8;
+            }
+
+            .tl-body {
+                background: #f8fafc;
+                border-radius: 8px;
+                padding: 10px 12px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .tl-action {
+                font-size: .82rem;
+                font-weight: 700;
+                color: #1e293b;
+            }
+
+            .tl-meta {
+                font-size: .72rem;
+                color: #64748b;
+                margin-top: 3px;
+            }
+
+            .tl-reason {
+                font-size: .74rem;
+                color: #475569;
+                margin-top: 6px;
+                font-style: italic;
+                background: #fff;
+                border-radius: 4px;
+                padding: 4px 8px;
+                border: 1px solid #e2e8f0;
+            }
+
+            /* ---- ROLE ASSIGNER ---- */
+            .role-card {
+                border: 1.5px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 14px 56px 14px 16px;
+                cursor: pointer;
+                transition: all .2s;
+                margin-bottom: 10px;
+                position: relative;
+            }
+
+            .role-card:hover:not(.disabled) {
+                border-color: #3b82f6;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, .1);
+                transform: translateY(-1px);
+            }
+
+            .role-card.disabled {
+                opacity: .55;
+                cursor: not-allowed;
+                background: #f8fafc;
+            }
+
+            .role-card.checked {
+                border-color: #3b82f6;
+                background: #eff6ff;
+            }
+
+            .role-card-name {
+                font-weight: 800;
+                font-size: .9rem;
+                color: #1e293b;
+            }
+
+            .role-card-level {
+                font-size: .68rem;
+                font-weight: 700;
+                background: #fee2e2;
+                color: #dc2626;
+                padding: 2px 8px;
+                border-radius: 4px;
+                display: inline-block;
+                margin-left: 6px;
+            }
+
+            .role-card-esc {
+                font-size: .68rem;
+                font-weight: 700;
+                background: #fef9c3;
+                color: #a16207;
+                padding: 2px 8px;
+                border-radius: 4px;
+                display: inline-block;
+                margin-left: 6px;
+            }
+
+            .role-card-desc {
+                font-size: .76rem;
+                color: #64748b;
+                margin-top: 5px;
+                line-height: 1.4;
+            }
+
+            .role-card-count {
+                font-size: .7rem;
+                color: #94a3b8;
+                margin-top: 5px;
+            }
+
+            .rc-switch {
+                position: absolute;
+                top: 50%;
+                right: 14px;
+                transform: translateY(-50%);
+            }
+
+            .rc-track {
+                width: 42px;
+                height: 22px;
+                border-radius: 11px;
+                background: #cbd5e1;
+                position: relative;
+                transition: .3s;
+            }
+
+            .rc-track.on {
+                background: #3b82f6;
+            }
+
+            .rc-thumb {
+                width: 16px;
+                height: 16px;
+                background: #fff;
+                border-radius: 50%;
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                transition: .3s;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
+            }
+
+            .rc-thumb.on {
+                left: 23px;
+            }
+
+            .effective-box {
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 10px;
+                padding: 14px;
+                margin-top: 16px;
+            }
+
+            .effective-title {
+                font-size: .75rem;
+                font-weight: 800;
+                color: #15803d;
+                margin-bottom: 8px;
+                text-transform: uppercase;
+                letter-spacing: .4px;
+            }
+
+            .perm-chip {
+                display: inline-block;
+                padding: 3px 9px;
+                border-radius: 4px;
+                font-size: .7rem;
+                font-weight: 600;
+                margin: 2px;
+                background: #dcfce7;
+                color: #15803d;
+                border: 1px solid #bbf7d0;
+            }
+
+            /* ---- PERMISSION MATRIX ---- */
+            .perm-group-hdr {
+                font-size: .78rem;
+                font-weight: 800;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: .5px;
+                padding: 6px 0;
+                border-bottom: 1px solid #f1f5f9;
+                margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .perm-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 7px 12px;
+                border-radius: 7px;
+                margin-bottom: 5px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+            }
+
+            .perm-row-code {
+                font-size: .8rem;
+                font-weight: 700;
+                color: #334155;
+                flex: 1;
+            }
+
+            .perm-row-desc {
+                font-size: .72rem;
+                color: #94a3b8;
+            }
+
+            .perm-status {
+                font-size: .68rem;
+                font-weight: 700;
+                padding: 2px 9px;
+                border-radius: 4px;
+                white-space: nowrap;
+            }
+
+            .perm-status.active {
+                background: #dcfce7;
+                color: #15803d;
+            }
+
+            .perm-status.blacklisted {
+                background: #fee2e2;
+                color: #dc2626;
+            }
+
+            .perm-status.none {
+                background: #f1f5f9;
+                color: #94a3b8;
+            }
+
+            .risk-badge {
+                font-size: .62rem;
+                font-weight: 700;
+                padding: 2px 6px;
+                border-radius: 3px;
+            }
+
+            .risk-badge.CRITICAL {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+            .risk-badge.HIGH {
+                background: #fff7ed;
+                color: #ea580c;
+            }
+
+            .risk-badge.MEDIUM {
+                background: #fefce8;
+                color: #ca8a04;
+            }
+
+            .risk-badge.LOW {
+                background: #f0fdf4;
+                color: #16a34a;
+            }
+
+            .risk-badge.SAFE {
+                background: #f1f5f9;
+                color: #64748b;
+            }
+
+            /* ---- BLACKLIST MANAGER ---- */
+            .bl-row {
+                display: flex;
+                align-items: center;
+                padding: 12px 14px;
+                border-radius: 10px;
+                border: 1px solid #e2e8f0;
+                margin-bottom: 9px;
+                gap: 14px;
+                transition: all .2s;
+            }
+
+            .bl-row:hover {
+                border-color: #cbd5e1;
+                background: #f8fafc;
+            }
+
+            .bl-row.banned {
+                border-color: #fca5a5;
+                background: #fff5f5;
+            }
+
+            .bl-info {
+                flex: 1;
+            }
+
+            .bl-perm-code {
+                font-size: .83rem;
+                font-weight: 800;
+                color: #1e293b;
+            }
+
+            .bl-perm-desc {
+                font-size: .73rem;
+                color: #64748b;
+                margin-top: 2px;
+            }
+
+            .bl-switch-wrap {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 3px;
+            }
+
+            .bl-switch-btn {
+                width: 46px;
+                height: 24px;
+                border-radius: 12px;
+                position: relative;
+                cursor: pointer;
+                transition: .3s;
+            }
+
+            .bl-switch-btn.off {
+                background: #e2e8f0;
+            }
+
+            .bl-switch-btn.on {
+                background: #ef4444;
+            }
+
+            .bl-switch-thumb {
+                width: 18px;
+                height: 18px;
+                background: #fff;
+                border-radius: 50%;
+                position: absolute;
+                top: 3px;
+                transition: .3s;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, .15);
+            }
+
+            .bl-switch-thumb.off-pos {
+                left: 3px;
+            }
+
+            .bl-switch-thumb.on-pos {
+                left: 25px;
+            }
+
+            .bl-switch-label {
+                font-size: .62rem;
+                font-weight: 700;
+            }
+        </style>
+
+        <!-- PAGE HEADER -->
+        <div class="admin-page-header" style="margin-bottom: 24px;">
+            <div>
+                <h4 style="margin-bottom: 4px;">Hồ sơ Người dùng</h4>
+                <p style="color: #64748b; margin: 0;">Phân quyền — Giám sát — Kiểm soát tài khoản</p>
+            </div>
+            <a href="/admin/users" class="btn-ghost"
+                style="padding: 8px 16px; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+        </div>
+
+        <!-- LOADING STATE -->
+        <div id="loadingState" style="text-align: center; padding: 80px 0;">
+            <i class="fas fa-circle-notch fa-spin fa-3x" style="color: #3b82f6;"></i>
+            <p style="margin-top: 20px; color: #64748b; font-weight: 600; font-size: 1rem;">Đang tải hồ sơ người dùng...
+            </p>
+        </div>
+
+        <!-- 403 BANNER (ẩn mặc định) -->
+        <div id="banner403"
+            style="display: none; background: #fff7ed; border: 1.5px solid #fbbf24; border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; align-items: center; gap: 14px;">
+            <i class="fas fa-exclamation-triangle" style="color: #d97706; font-size: 1.5rem; flex-shrink: 0;"></i>
+            <div>
+                <strong style="color: #92400e; font-size: .9rem; display: block;">Không đủ quyền xem toàn bộ dữ liệu
+                    quản trị</strong>
+                <span style="color: #a16207; font-size: .8rem;">Một số tính năng bị giới hạn theo cấp bậc. Liên hệ
+                    SUPERADMIN để được cấp quyền đầy đủ.</span>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT (ẩn cho đến khi load xong) -->
+        <div id="mainContent" style="display: none;">
+            <div class="row g-4">
+
+                <!-- ============================================================
+             CỘT TRÁI (35%) — Hero Card + Audit Timeline
+             ============================================================ -->
+                <div class="col-xl-4 col-lg-5">
+                    <div class="ud-card" id="heroCard"></div>
+                    <div class="ud-card" id="auditTimeline"></div>
+                </div>
+
+                <!-- ============================================================
+             CỘT PHẢI (65%) — Block 1, 2, 3
+             ============================================================ -->
+                <div class="col-xl-8 col-lg-7">
+                    <div class="ud-card" id="block1"></div>
+                    <div class="ud-card" id="block2"></div>
+                    <div class="ud-card" id="block3"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================================================================
+     MODAL: KHÓA / MỞ KHÓA TÀI KHOẢN
+     ================================================================ -->
+        <div class="modal fade" id="modalKhoa" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 16px; border: none;">
+                    <div class="modal-header" style="border-bottom: 1px solid #f1f5f9; padding: 20px 24px;">
+                        <h5 class="modal-title" id="modalKhoaTitle" style="font-weight: 800;"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 20px 24px;">
+                        <p id="modalKhoaDesc"
+                            style="color: #64748b; font-size: .9rem; margin-bottom: 16px; line-height: 1.6;"></p>
+                        <label
+                            style="font-size: .8rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                            Lý do <span style="color: #dc2626;">*</span>
+                        </label>
+                        <textarea id="khoaReason" class="form-control" rows="3"
+                            placeholder="Nhập lý do để ghi vào sổ kiểm toán bảo mật..."
+                            style="border-radius: 8px; font-size: .9rem; resize: none;"></textarea>
+                        <p id="khoaReasonError"
+                            style="color: #dc2626; font-size: .75rem; margin-top: 5px; display: none;">
+                            <i class="fas fa-exclamation-circle me-1"></i>Vui lòng nhập lý do trước khi xác nhận.
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 14px 24px; gap: 10px;">
+                        <button type="button" class="btn-ghost" data-bs-dismiss="modal" style="padding: 8px 20px;">Hủy
+                            bỏ</button>
+                        <button type="button" id="btnConfirmKhoa" onclick="thucThiKhoaTaiKhoan()"
+                            style="padding: 8px 24px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; font-size: .9rem;"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+     MODAL: BLACKLIST / UNBLACKLIST QUYỀN HẠT LỰU
+     ================================================================ -->
+        <div class="modal fade" id="modalBlacklist" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 16px; border: none;">
+                    <div class="modal-header" style="border-bottom: 1px solid #f1f5f9; padding: 20px 24px;">
+                        <h5 class="modal-title" id="modalBlacklistTitle" style="font-weight: 800;"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 20px 24px;">
+                        <p id="modalBlacklistDesc"
+                            style="color: #64748b; font-size: .9rem; margin-bottom: 16px; line-height: 1.6;"></p>
+                        <label
+                            style="font-size: .8rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                            Lý do kiểm soát <span style="color: #dc2626;">*</span>
+                        </label>
+                        <textarea id="blacklistReason" class="form-control" rows="3"
+                            placeholder="Nhập lý do đóng băng/khôi phục quyền để ghi vào sổ kiểm toán..."
+                            style="border-radius: 8px; font-size: .9rem; resize: none;"></textarea>
+                        <p id="blacklistReasonError"
+                            style="color: #dc2626; font-size: .75rem; margin-top: 5px; display: none;">
+                            <i class="fas fa-exclamation-circle me-1"></i>Vui lòng nhập lý do trước khi xác nhận.
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 14px 24px; gap: 10px;">
+                        <button type="button" class="btn-ghost" data-bs-dismiss="modal" style="padding: 8px 20px;">Hủy
+                            bỏ</button>
+                        <button type="button" id="btnConfirmBlacklist" onclick="thucThiBlacklist()"
+                            style="padding: 8px 24px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; font-size: .9rem;"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // ================================================================
+            // GLOBAL STATE
+            // ================================================================
+            var targetUserId = null;
+            var adminInfo = null;
+            var userInfo = null;
+            var danhSachChucVuToanCuc = [];
+            var danhSachQuyenToanCuc = [];
+            var danhSachBlacklist = [];
+            var danhSachAuditLog = [];
+            var danhSachHanhViKiemDuyet = []; // [THÊM MỚI] Populate từ DB — không gán cứng
+            // [THÊM MỚI] Trạng thái bộ lọc & phân trang lịch sử kiểm toán
+            var auditBoLocHienTai = 'ALL';
+            var auditTrangHienTai = 0;
+            var auditConTiepTheo = false;
+            var auditSoLanBiKhoa = 0;
+            var pendingLockAction = false;
+            var pendingBlacklistPermId = null;
+            var pendingBlacklistBanned = false;
+
+            var modalKhoaInstance = null;
+            var modalBlacklistInstance = null;
+
+            // ================================================================
+            // UTILITY FUNCTIONS
+            // ================================================================
+            function getInitials(name) {
+                if (name === null || name === undefined || name === '') return 'U';
+                var parts = name.trim().split(' ');
+                if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+                return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+            }
+
+            function getAvatarColor(name) {
+                var palette = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+                var sum = 0;
+                if (name !== null && name !== undefined) {
+                    for (var i = 0; i < name.length; i = i + 1) {
+                        sum = sum + name.charCodeAt(i);
+                    }
+                }
+                return palette[sum % palette.length];
+            }
+
+            function formatDateTime(dateVal) {
+                if (dateVal === null || dateVal === undefined) return '—';
+                var d;
+                if (Array.isArray(dateVal)) {
+                    d = new Date(dateVal[0], dateVal[1] - 1, dateVal[2], dateVal[3] || 0, dateVal[4] || 0);
+                } else {
+                    d = new Date(dateVal);
+                }
+                if (isNaN(d.getTime())) return '—';
+                var day = String(d.getDate()).padStart(2, '0');
+                var month = String(d.getMonth() + 1).padStart(2, '0');
+                var hour = String(d.getHours()).padStart(2, '0');
+                var min = String(d.getMinutes()).padStart(2, '0');
+                return day + '/' + month + '/' + d.getFullYear() + ' lúc ' + hour + ':' + min;
+            }
+
+            function coTrongMangSo(mang, soCanTim) {
+                for (var i = 0; i < mang.length; i = i + 1) {
+                    if (parseInt(mang[i]) === parseInt(soCanTim)) return true;
+                }
+                return false;
+            }
+
+            function coTrongMangChuoi(mang, chuoiCanTim) {
+                for (var i = 0; i < mang.length; i = i + 1) {
+                    if (mang[i] === chuoiCanTim) return true;
+                }
+                return false;
+            }
+
+            function getProviderLabel(provider) {
+                if (provider === 'GOOGLE') return '<i class="fab fa-google" style="color:#ea4335;"></i> Google OAuth2';
+                if (provider === 'LOCAL') return '<i class="fas fa-key" style="color:#3b82f6;"></i> Tài khoản nội bộ';
+                if (provider === null || provider === undefined) return '—';
+                return provider;
+            }
+
+            function getRiskLabel(riskLevel) {
+                if (riskLevel === 'CRITICAL') return 'Nguy hiểm';
+                if (riskLevel === 'HIGH') return 'Cao';
+                if (riskLevel === 'MEDIUM') return 'Trung bình';
+                if (riskLevel === 'LOW') return 'Thấp';
+                return 'An toàn';
+            }
+
+            // ================================================================
+            // SEQUENTIAL API LOADERS (6 bước, chạy tuần tự chống race condition)
+            // ================================================================
+            function buoc1_LayThongTinAdmin() {
+                callApi('/api/admin/users/me', 'GET', null, '', function (res) {
+                    adminInfo = res.data;
+                    buoc2_LayThongTinUser();
+                }, function () {
+                    // 403 hoặc lỗi — fallback, vẫn tiếp tục nhưng hiển thị banner cảnh báo
+                    document.getElementById('banner403').style.display = 'flex';
+                    adminInfo = { id: null, maxRoleLevel: 999 };
+                    buoc2_LayThongTinUser();
+                });
+            }
+
+            function buoc2_LayThongTinUser() {
+                callApi('/api/admin/users/' + targetUserId, 'GET', null, '', function (res) {
+                    userInfo = res.data;
+                    buoc3_LayDanhSachChucVu();
+                }, function () {
+                    document.getElementById('loadingState').innerHTML =
+                        '<i class="fas fa-user-times fa-3x" style="color:#dc2626;"></i>' +
+                        '<p style="margin-top:16px;color:#dc2626;font-weight:700;">Không tìm thấy người dùng với ID: ' + targetUserId + '</p>';
+                });
+            }
+
+            function buoc3_LayDanhSachChucVu() {
+                callApi('/api/admin/role-management/roles', 'GET', null, '', function (res) {
+                    danhSachChucVuToanCuc = res.data || [];
+                    buoc4_LayDanhSachQuyen();
+                }, function () {
+                    danhSachChucVuToanCuc = [];
+                    buoc4_LayDanhSachQuyen();
+                });
+            }
+
+            function buoc4_LayDanhSachQuyen() {
+                callApi('/api/admin/role-management/permissions', 'GET', null, '', function (res) {
+                    danhSachQuyenToanCuc = res.data || [];
+                    buoc5_LayBlacklist();
+                }, function () {
+                    danhSachQuyenToanCuc = [];
+                    buoc5_LayBlacklist();
+                });
+            }
+
+            // [SỬA] Gọi buoc6_LayHanhViKiemDuyet thay vì buoc6_LayAuditLog trực tiếp
+            function buoc5_LayBlacklist() {
+                callApi('/api/admin/role-management/blacklist/users/' + targetUserId, 'GET', null, '', function (res) {
+                    danhSachBlacklist = res.data || [];
+                    buoc6_LayHanhViKiemDuyet();
+                }, function () {
+                    danhSachBlacklist = [];
+                    buoc6_LayHanhViKiemDuyet();
+                });
+            }
+
+            // [THÊM MỚI] Tải danh sách hành vi kiểm duyệt từ DB để làm dropdown bộ lọc
+            function buoc6_LayHanhViKiemDuyet() {
+                callApi('/api/admin/audit/moderation-actions', 'GET', null, '', function (res) {
+                    danhSachHanhViKiemDuyet = res.data || [];
+                    buoc7_LayAuditLog();
+                }, function () {
+                    danhSachHanhViKiemDuyet = [];
+                    buoc7_LayAuditLog();
+                });
+            }
+
+            // [SỬA] Tải trang đầu với bộ lọc ALL, parse định dạng phân trang mới
+            function buoc7_LayAuditLog() {
+                var url = '/api/admin/audit/users/' + targetUserId + '?actionCode=ALL&pageNo=0&pageSize=5';
+                callApi(url, 'GET', null, '', function (res) {
+                    danhSachAuditLog = (res.data.danhSachLog !== null && res.data.danhSachLog !== undefined) ? res.data.danhSachLog : [];
+                    auditConTiepTheo = res.data.conTrangTiepTheo === true;
+                    auditSoLanBiKhoa = res.data.soLanBiKhoa || 0;
+                    buocCuoi_VeGiaoDien();
+                }, function () {
+                    danhSachAuditLog = [];
+                    auditConTiepTheo = false;
+                    auditSoLanBiKhoa = 0;
+                    buocCuoi_VeGiaoDien();
+                });
+            }
+
+            function buocCuoi_VeGiaoDien() {
+                veHeroCard();
+                veAuditTimeline();
+                veKhoi1RoleAssigner();
+                veKhoi2MatranQuyen();
+                veKhoi3Blacklist();
+
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+
+                modalKhoaInstance = new bootstrap.Modal(document.getElementById('modalKhoa'));
+                modalBlacklistInstance = new bootstrap.Modal(document.getElementById('modalBlacklist'));
+            }
+
+            // ================================================================
+            // Hàm dùng chung để tải lại sổ kiểm toán sau bất kỳ thao tác nào
+            // ================================================================
+            // [SỬA] Reset về trang 0, giữ bộ lọc hiện tại, parse định dạng phân trang mới
+            window.taiLaiLichSuKiemToan = function () {
+                auditTrangHienTai = 0;
+                auditConTiepTheo = false;
+                danhSachAuditLog = [];
+
+                var url = '/api/admin/audit/users/' + targetUserId +
+                    '?actionCode=' + auditBoLocHienTai + '&pageNo=0&pageSize=10&t=' + new Date().getTime();
+                callApi(url, 'GET', null, '', function (res) {
+                    danhSachAuditLog = (res.data.danhSachLog !== null && res.data.danhSachLog !== undefined) ? res.data.danhSachLog : [];
+                    auditConTiepTheo = res.data.conTrangTiepTheo === true;
+                    auditSoLanBiKhoa = res.data.soLanBiKhoa || 0;
+                    veAuditTimeline();
+                    veHeroCard();
+                }, function () {
+                    console.warn("Không thể tải lại lịch sử kiểm toán.");
+                });
+            };
+
+
+            // ================================================================
+            // [THÊM MỚI] BỘ LỌC & PHÂN TRANG LỊCH SỬ KIỂM TOÁN
+            // ================================================================
+
+            // Áp bộ lọc mới: reset về trang 0, gọi API với actionCode được chọn
+            window.apBoLocAudit = function (loai) {
+                auditBoLocHienTai = loai;
+                auditTrangHienTai = 0;
+                danhSachAuditLog = [];
+                auditConTiepTheo = false;
+
+                var url = '/api/admin/audit/users/' + targetUserId + '?actionCode=' + loai + '&pageNo=0&pageSize=10';
+                callApi(url, 'GET', null, '', function (res) {
+                    danhSachAuditLog = (res.data.danhSachLog !== null && res.data.danhSachLog !== undefined) ? res.data.danhSachLog : [];
+                    auditConTiepTheo = res.data.conTrangTiepTheo === true;
+                    auditSoLanBiKhoa = res.data.soLanBiKhoa || 0;
+                    veAuditTimeline();
+                    veHeroCard();
+                }, function () {
+                    console.warn("Không thể áp dụng bộ lọc lịch sử kiểm toán.");
+                });
+            };
+
+            // Tải thêm bản ghi: tăng số trang, nối vào danhSachAuditLog, vẽ lại
+            window.taiThemAuditLog = function () {
+                auditTrangHienTai = auditTrangHienTai + 1;
+                var url = '/api/admin/audit/users/' + targetUserId +
+                    '?actionCode=' + auditBoLocHienTai + '&pageNo=' + auditTrangHienTai + '&pageSize=10';
+
+                callApi(url, 'GET', null, '#btnTaiThem', function (res) {
+                    var logMoi = (res.data.danhSachLog !== null && res.data.danhSachLog !== undefined) ? res.data.danhSachLog : [];
+                    for (var i = 0; i < logMoi.length; i = i + 1) {
+                        danhSachAuditLog.push(logMoi[i]);
+                    }
+                    auditConTiepTheo = res.data.conTrangTiepTheo === true;
+                    veAuditTimeline();
+                }, function () {
+                    // Rollback số trang nếu API thất bại
+                    auditTrangHienTai = auditTrangHienTai - 1;
+                    console.warn("Không thể tải thêm lịch sử kiểm toán.");
+                });
+            };
+
+            // [THÊM MỚI] Thu gọn về trang 0 — tái dùng apBoLocAudit với filter hiện tại
+            window.thuGonAuditLog = function () {
+                apBoLocAudit(auditBoLocHienTai);
+            };
+
+            // ================================================================
+            // RENDER: HERO CARD
+            // ================================================================
+            function veHeroCard() {
+                var u = userInfo;
+                var nameDisplay = (u.fullName !== null && u.fullName !== undefined && u.fullName !== '') ? u.fullName : (u.username || 'Vô Danh');
+                var isLocked = u.locked;
+                var avatarColor = getAvatarColor(nameDisplay);
+                var initials = getInitials(nameDisplay);
+
+                // [SỬA] Dùng auditSoLanBiKhoa từ backend — chính xác dù đang ở trang nào
+                var soLanBiKhoa = auditSoLanBiKhoa;
+
+                // Role badges
+                var currentRoles = (u.roles !== null && u.roles !== undefined) ? Array.from(u.roles) : [];
+                var badgesHtml = '';
+                if (currentRoles.length === 0) {
+                    badgesHtml = '<span style="color:#94a3b8;font-size:.75rem;font-style:italic;">Chưa phân quyền</span>';
+                } else {
+                    for (var r = 0; r < currentRoles.length; r = r + 1) {
+                        var rName = currentRoles[r];
+                        var badgeClass = 'normal';
+                        var badgeIcon = 'fa-user-shield';
+                        if (rName === 'SUPERADMIN') { badgeClass = 'super'; badgeIcon = 'fa-crown'; }
+                        else if (rName === 'ADMIN') { badgeClass = 'admin'; badgeIcon = 'fa-shield-alt'; }
+                        badgesHtml += '<span class="badge-role ' + badgeClass + '"><i class="fas ' + badgeIcon + '"></i>' + rName + '</span>';
+                    }
+                }
+
+                // Lock overlay badge trên avatar
+                var lockOverlay = '';
+                if (isLocked) {
+                    lockOverlay = '<div style="position:absolute;bottom:0;right:0;width:26px;height:26px;background:#dc2626;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:.62rem;color:#fff;"><i class="fas fa-lock"></i></div>';
+                }
+
+                // Status label
+                var statusHtml = '';
+                if (isLocked) {
+                    statusHtml = '<span class="status-locked"><span class="status-pulse red"></span>Đang bị khóa</span>';
+                } else {
+                    statusHtml = '<span class="status-active"><span class="status-pulse green"></span>Hoạt động bình thường</span>';
+                }
+
+                // Risk indicator
+                var riskHtml = '';
+                if (soLanBiKhoa >= 2) {
+                    riskHtml = '<div class="risk-indicator">' +
+                        '<i class="fas fa-radiation-alt"></i>' +
+                        '<div>' +
+                        '<strong>Rủi ro cao — Tài khoản tái phạm</strong>' +
+                        '<span>Đã bị khóa <strong>' + soLanBiKhoa + ' lần</strong> trong lịch sử kiểm toán</span>' +
+                        '</div>' +
+                        '</div>';
+                }
+
+                // Lock / Unlock button
+                var lockBtnClass = isLocked ? 'do-unlock' : 'do-lock';
+                var lockBtnIcon = isLocked ? 'fa-lock-open' : 'fa-lock';
+                var lockBtnText = isLocked ? 'Mở Khóa Tài Khoản' : 'Khóa Tài Khoản';
+                var lockBtnOnClick = isLocked ? 'moModalKhoa(false)' : 'moModalKhoa(true)';
+
+                var html =
+                    '<div class="ud-card-title"><i class="fas fa-id-card" style="color:#3b82f6;"></i> Hồ sơ tài khoản</div>' +
+                    '<div style="text-align:center;padding-bottom:4px;">' +
+                    '<div style="position:relative;width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:' + avatarColor + ';color:#fff;font-weight:900;font-size:2.1rem;text-transform:uppercase;box-shadow:0 8px 24px rgba(0,0,0,.15);margin:0 auto 14px;">' +
+                    initials + lockOverlay +
+                    '</div>' +
+                    '<div class="hero-name">' + nameDisplay + '</div>' +
+                    '<div class="hero-username">@' + (u.username || '—') + '</div>' +
+                    '<div class="hero-badges">' + badgesHtml + '</div>' +
+                    '<div style="margin-bottom:12px;">' + statusHtml + '</div>' +
+                    '</div>' +
+                    riskHtml +
+                    '<div class="hero-meta" style="border-top:1px dashed #e2e8f0;padding-top:14px;">' +
+                    '<div class="hero-meta-row"><div class="hero-meta-icon"><i class="fas fa-hashtag"></i></div><div><div class="hero-meta-label">ID Hệ thống</div><div class="hero-meta-value">#' + u.id + '</div></div></div>' +
+                    '<div class="hero-meta-row"><div class="hero-meta-icon"><i class="fas fa-envelope"></i></div><div><div class="hero-meta-label">Email</div><div class="hero-meta-value">' + (u.email || '—') + '</div></div></div>' +
+                    '<div class="hero-meta-row"><div class="hero-meta-icon"><i class="fas fa-phone"></i></div><div><div class="hero-meta-label">Số điện thoại</div><div class="hero-meta-value">' + (u.phone || 'Chưa cập nhật') + '</div></div></div>' +
+                    '<div class="hero-meta-row"><div class="hero-meta-icon"><i class="fas fa-map-marker-alt"></i></div><div><div class="hero-meta-label">Địa chỉ</div><div class="hero-meta-value">' + (u.address || 'Chưa cập nhật') + '</div></div></div>' +
+                    '<div class="hero-meta-row"><div class="hero-meta-icon"><i class="fas fa-plug"></i></div><div><div class="hero-meta-label">Phương thức đăng ký</div><div class="hero-meta-value">' + getProviderLabel(u.provider) + '</div></div></div>' +
+                    '<div class="hero-meta-row"><div class="hero-meta-icon"><i class="fas fa-calendar-plus"></i></div><div><div class="hero-meta-label">Ngày tham gia</div><div class="hero-meta-value">' + formatDateTime(u.createdAt) + '</div></div></div>' +
+                    '</div>' +
+                    '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f1f5f9;">' +
+                    '<button class="btn-lock ' + lockBtnClass + '" onclick="' + lockBtnOnClick + '">' +
+                    '<i class="fas ' + lockBtnIcon + '"></i>' + lockBtnText +
+                    '</button>' +
+                    '</div>';
+
+                document.getElementById('heroCard').innerHTML = html;
+            }
+
+            // ================================================================
+            // RENDER: AUDIT TIMELINE
+            // ================================================================
+            // [SỬA] Dropdown bộ lọc động từ DB; thêm nút Thu gọn cạnh Tải thêm
+            function veAuditTimeline() {
+                var html = '<div class="ud-card-title"><i class="fas fa-history" style="color:#8b5cf6;"></i> Lịch sử kiểm toán bảo mật</div>';
+
+                // [SỬA] <select> dropdown — danh sách lấy từ danhSachHanhViKiemDuyet (DB), không gán cứng
+                html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">';
+                html += '<label style="font-size:.73rem;font-weight:700;color:#64748b;white-space:nowrap;"><i class="fas fa-filter me-1"></i>Lọc:</label>';
+                html += '<select onchange="apBoLocAudit(this.value)" style="flex:1;padding:5px 9px;border-radius:6px;border:1.5px solid #e2e8f0;font-size:.76rem;font-weight:600;color:#334155;background:#f8fafc;cursor:pointer;">';
+                html += '<option value="ALL"' + (auditBoLocHienTai === 'ALL' ? ' selected' : '') + '>— Tất cả hành vi —</option>';
+                for (var f = 0; f < danhSachHanhViKiemDuyet.length; f = f + 1) {
+                    var sel = auditBoLocHienTai === danhSachHanhViKiemDuyet[f].code ? ' selected' : '';
+                    html += '<option value="' + danhSachHanhViKiemDuyet[f].code + '"' + sel + '>' + danhSachHanhViKiemDuyet[f].name + '</option>';
+                }
+                html += '</select>';
+                html += '</div>';
+
+                if (danhSachAuditLog.length === 0) {
+                    html += '<div style="text-align:center;padding:28px 0;color:#94a3b8;">' +
+                        '<i class="fas fa-clipboard-list fa-2x" style="display:block;margin-bottom:10px;"></i>' +
+                        '<span style="font-size:.85rem;">Không có hoạt động kiểm toán nào với bộ lọc này.</span>' +
+                        '</div>';
+                    document.getElementById('auditTimeline').innerHTML = html;
+                    return;
+                }
+
+                html += '<div class="timeline">';
+                for (var i = 0; i < danhSachAuditLog.length; i = i + 1) {
+                    var log = danhSachAuditLog[i];
+                    var actionCode = log.actionCode || '';
+                    var dotClass = 'def';
+                    var iconClass = 'fa-info-circle';
+
+                    if (actionCode === 'LOCK_USER') { dotClass = 'lock'; iconClass = 'fa-lock'; }
+                    else if (actionCode === 'UNLOCK_USER') { dotClass = 'unlock'; iconClass = 'fa-lock-open'; }
+                    else if (actionCode === 'BLACKLIST_PERM') { dotClass = 'ban'; iconClass = 'fa-ban'; }
+                    else if (actionCode === 'UNBLACKLIST_PERM') { dotClass = 'unban'; iconClass = 'fa-check-circle'; }
+                    else if (actionCode === 'ASSIGN_ROLE') { dotClass = 'assign'; iconClass = 'fa-user-plus'; }
+                    else if (actionCode === 'REVOKE_ROLE') { dotClass = 'revoke'; iconClass = 'fa-user-minus'; }
+
+                    var permInfo = '';
+                    if (log.permissionCode !== null && log.permissionCode !== undefined && log.permissionCode !== '') {
+                        permInfo = ' &bull; <code style="font-size:.7rem;">' + log.permissionCode + '</code>';
+                    }
+
+                    var reasonHtml = '';
+                    if (log.reason !== null && log.reason !== undefined && log.reason !== '') {
+                        reasonHtml = '<div class="tl-reason"><i class="fas fa-quote-left me-1" style="font-size:.62rem;"></i>' + log.reason + '</div>';
+                    }
+
+                    html += '<div class="timeline-item">' +
+                        '<div class="tl-dot ' + dotClass + '"><i class="fas ' + iconClass + '"></i></div>' +
+                        '<div class="tl-body">' +
+                        '<div class="tl-action">' + (log.actionName || actionCode) + '</div>' +
+                        '<div class="tl-meta">' +
+                        '<i class="fas fa-user-cog me-1"></i>' + (log.moderatorName || 'Hệ thống') +
+                        ' &bull; ' + formatDateTime(log.createdAt) + permInfo +
+                        '</div>' +
+                        reasonHtml +
+                        '</div>' +
+                        '</div>';
+                }
+                html += '</div>';
+
+                // [SỬA] Thu gọn + Tải thêm — hiển thị tùy trạng thái phân trang
+                if (auditTrangHienTai > 0 || auditConTiepTheo === true) {
+                    html += '<div style="display:flex;gap:8px;margin-top:12px;">';
+                    if (auditTrangHienTai > 0) {
+                        html += '<button class="audit-filter-btn" style="flex:1;justify-content:center;" onclick="thuGonAuditLog()">' +
+                            '<i class="fas fa-chevron-up me-1"></i>Thu gọn' +
+                            '</button>';
+                    }
+                    if (auditConTiepTheo === true) {
+                        html += '<button class="audit-filter-btn" id="btnTaiThem" style="flex:1;justify-content:center;" onclick="taiThemAuditLog()">' +
+                            '<i class="fas fa-chevron-down me-1"></i>Tải thêm' +
+                            '</button>';
+                    }
+                    html += '</div>';
+                }
+
+                document.getElementById('auditTimeline').innerHTML = html;
+            }
+
+            // ================================================================
+            // RENDER: BLOCK 1 — ROLE ASSIGNER (chống lạm quyền Anti-privilege-escalation)
+            // ================================================================
+            function veKhoi1RoleAssigner() {
+                var currentRoles = (userInfo.roles !== null && userInfo.roles !== undefined) ? Array.from(userInfo.roles) : [];
+                var maxLevel = adminInfo.maxRoleLevel;
+
+                var html =
+                    '<div class="ud-card-title"><i class="fas fa-user-shield" style="color:#3b82f6;"></i> Thiết lập Chức vụ</div>' +
+                    '<p style="color:#64748b;font-size:.86rem;margin-bottom:18px;line-height:1.6;">' +
+                    'Tích chọn chức vụ để phân quyền cho tài khoản này. ' +
+                    'Chức vụ <strong style="color:#a16207;">bôi xám</strong> có cấp bậc ngang hoặc cao hơn bạn — không thể gán (chống lạm quyền).' +
+                    '</p>' +
+                    '<div id="roleCardsGrid">';
+
+                if (danhSachChucVuToanCuc.length === 0) {
+                    html += '<p style="color:#dc2626;font-size:.88rem;">Không tải được danh sách chức vụ từ hệ thống.</p>';
+                } else {
+                    for (var k = 0; k < danhSachChucVuToanCuc.length; k = k + 1) {
+                        var cv = danhSachChucVuToanCuc[k];
+                        var isChecked = coTrongMangChuoi(currentRoles, cv.roleName);
+                        // Anti-privilege-escalation: Không được gán chức vụ có level <= level của chính mình
+                        var isDisabled = (cv.roleLevel !== null && cv.roleLevel !== undefined && cv.roleLevel <= maxLevel);
+                        var permCount = (cv.permissions !== null && cv.permissions !== undefined) ? cv.permissions.length : 0;
+                        var desc = (cv.description !== null && cv.description !== undefined && cv.description !== '') ? cv.description : 'Không có mô tả chi tiết.';
+
+                        var checkedClass = isChecked ? ' checked' : '';
+                        var disabledClass = isDisabled ? ' disabled' : '';
+                        var clickAttr = isDisabled ? '' : ' onclick="toggleRoleCard(this)"';
+                        var trackClass = isChecked ? ' on' : '';
+                        var thumbClass = isChecked ? ' on' : '';
+                        var escBadge = isDisabled ? '<span class="role-card-esc"><i class="fas fa-shield-alt me-1"></i>Vượt cấp</span>' : '';
+
+                        html += '<div class="role-card' + checkedClass + disabledClass + '"' + clickAttr +
+                            ' data-role="' + cv.roleName + '" data-checked="' + isChecked + '">' +
+                            '<div>' +
+                            '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:5px;">' +
+                            '<span class="role-card-name"><i class="fas fa-id-badge" style="color:#94a3b8;margin-right:5px;"></i>' + cv.roleName + '</span>' +
+                            '<span class="role-card-level">Level ' + cv.roleLevel + '</span>' +
+                            escBadge +
+                            '</div>' +
+                            '<div class="role-card-desc">' + desc + '</div>' +
+                            '<div class="role-card-count"><i class="fas fa-key me-1"></i>' + permCount + ' quyền hạt lựu &nbsp;&bull;&nbsp; <i class="fas fa-users me-1"></i>' + (cv.userCount || 0) + ' người dùng</div>' +
+                            '</div>' +
+                            '<div class="rc-switch">' +
+                            '<div class="rc-track' + trackClass + '">' +
+                            '<div class="rc-thumb' + thumbClass + '"></div>' +
+                            '</div>' +
+                            '</div>' +
+                            '</div>';
+                    }
+                }
+
+                html += '</div>' +
+                    '<div class="effective-box">' +
+                    '<div class="effective-title"><i class="fas fa-bolt me-2"></i>Quyền thao tác thực tế sẽ được cấp:</div>' +
+                    '<div id="effectivePermsContainer"><span style="color:#64748b;font-size:.82rem;font-style:italic;">Chọn chức vụ ở trên để xem trước.</span></div>' +
+                    '</div>' +
+                    '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">' +
+                    '<a href="/admin/users" class="btn-ghost" style="padding:10px 22px;text-decoration:none;">Hủy bỏ</a>' +
+                    '<button type="button" id="btnLuuPhanQuyen" class="btn-hc-primary" onclick="luuPhanQuyen()" style="padding:10px 22px;">' +
+                    '<i class="fas fa-check-circle me-2"></i>Lưu Phân Quyền' +
+                    '</button>' +
+                    '</div>';
+
+                document.getElementById('block1').innerHTML = html;
+                capNhatQuyenThucTe();
+            }
+
+            window.toggleRoleCard = function (card) {
+                if (card.classList.contains('disabled')) return;
+                var isChecked = card.getAttribute('data-checked') === 'true';
+                var newChecked = !isChecked;
+                card.setAttribute('data-checked', String(newChecked));
+
+                var track = card.querySelector('.rc-track');
+                var thumb = card.querySelector('.rc-thumb');
+
+                if (newChecked) {
+                    card.classList.add('checked');
+                    track.classList.add('on');
+                    thumb.classList.add('on');
+                } else {
+                    card.classList.remove('checked');
+                    track.classList.remove('on');
+                    thumb.classList.remove('on');
+                }
+                capNhatQuyenThucTe();
+            };
+
+            function capNhatQuyenThucTe() {
+                var cards = document.querySelectorAll('#roleCardsGrid .role-card');
+                var tatCaQuyen = [];
+
+                for (var i = 0; i < cards.length; i = i + 1) {
+                    if (cards[i].getAttribute('data-checked') === 'true') {
+                        var roleName = cards[i].getAttribute('data-role');
+                        for (var j = 0; j < danhSachChucVuToanCuc.length; j = j + 1) {
+                            if (danhSachChucVuToanCuc[j].roleName === roleName) {
+                                var perms = danhSachChucVuToanCuc[j].permissions;
+                                if (perms !== null && perms !== undefined) {
+                                    for (var k = 0; k < perms.length; k = k + 1) {
+                                        if (coTrongMangChuoi(tatCaQuyen, perms[k]) === false) {
+                                            tatCaQuyen.push(perms[k]);
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                var container = document.getElementById('effectivePermsContainer');
+                if (tatCaQuyen.length === 0) {
+                    container.innerHTML = '<span style="color:#ef4444;font-size:.8rem;font-weight:600;"><i class="fas fa-exclamation-triangle me-1"></i>Tài khoản sẽ không có bất kỳ quyền thao tác nào!</span>';
+                } else {
+                    var html = '';
+                    for (var x = 0; x < tatCaQuyen.length; x = x + 1) {
+                        html += '<span class="perm-chip"><i class="fas fa-check me-1"></i>' + tatCaQuyen[x] + '</span>';
+                    }
+                    container.innerHTML = html;
+                }
+            }
+
+            window.luuPhanQuyen = function () {
+                var cards = document.querySelectorAll('#roleCardsGrid .role-card');
+                var danhSachDuocChon = [];
+
+                for (var i = 0; i < cards.length; i = i + 1) {
+                    if (cards[i].getAttribute('data-checked') === 'true') {
+                        danhSachDuocChon.push(cards[i].getAttribute('data-role'));
+                    }
+                }
+
+                if (danhSachDuocChon.length === 0) {
+                    Swal.fire({ icon: 'warning', title: 'Chưa chọn chức vụ', text: 'Vui lòng chọn ít nhất 1 chức vụ cho tài khoản này.', confirmButtonColor: '#3b82f6' });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Xác nhận lưu phân quyền?',
+                    html: 'Tài khoản sẽ được cập nhật chức vụ: <strong>' + danhSachDuocChon.join(', ') + '</strong>',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: '<i class="fas fa-check me-1"></i>Xác nhận',
+                    cancelButtonText: 'Hủy'
+                }).then(function (result) {
+                    if (result.isConfirmed !== true) return;
+
+                    var requestData = { roles: danhSachDuocChon };
+                    callApi('/api/admin/users/' + targetUserId + '/roles', 'POST', requestData, '#btnLuuPhanQuyen', function () {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Lưu phân quyền thành công!', showConfirmButton: false, timer: 2000 });
+                        // Cập nhật trạng thái cục bộ
+                        userInfo.roles = danhSachDuocChon.slice();
+                        // Re-render các block phụ thuộc
+                        veHeroCard();
+                        veKhoi2MatranQuyen();
+                        veKhoi3Blacklist();
+                        taiLaiLichSuKiemToan();
+                    }, function (errMsg) {
+                        Swal.fire({ icon: 'error', title: 'Lưu phân quyền thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                        // Rollback: vẽ lại block1 từ userInfo.roles gốc (chưa bị thay đổi)
+                        veKhoi1RoleAssigner();
+                    });
+                });
+            };
+
+            // ================================================================
+            // RENDER: BLOCK 2 — PERMISSION MATRIX (nhóm theo prefix)
+            // ================================================================
+            function veKhoi2MatranQuyen() {
+                var html =
+                    '<div class="ud-card-title"><i class="fas fa-th" style="color:#f59e0b;"></i> Ma trận Quyền thao tác</div>' +
+                    '<p style="color:#64748b;font-size:.84rem;margin-bottom:16px;">' +
+                    'Toàn bộ quyền trong hệ thống và trạng thái thực tế của tài khoản này. ' +
+                    '<span style="background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:3px;font-size:.75rem;font-weight:700;">Bị đóng băng</span> = quyền bị khóa cấp cá nhân.' +
+                    '</p>';
+
+                if (danhSachQuyenToanCuc.length === 0) {
+                    html += '<p style="color:#94a3b8;font-size:.88rem;text-align:center;padding:20px;">Chưa có quyền hạt lựu nào trong hệ thống.</p>';
+                    document.getElementById('block2').innerHTML = html;
+                    return;
+                }
+
+                var currentPerms = (userInfo.permissions !== null && userInfo.permissions !== undefined) ? Array.from(userInfo.permissions) : [];
+
+                // Nhóm permissions theo prefix (ký tự trước dấu _ đầu tiên)
+                var nhomKeys = [];
+                var nhomDict = {};
+
+                for (var i = 0; i < danhSachQuyenToanCuc.length; i = i + 1) {
+                    var perm = danhSachQuyenToanCuc[i];
+                    var prefix = perm.permissionCode.split('_')[0];
+                    var daCoPrefix = false;
+
+                    for (var p = 0; p < nhomKeys.length; p = p + 1) {
+                        if (nhomKeys[p] === prefix) { daCoPrefix = true; break; }
+                    }
+                    if (daCoPrefix === false) {
+                        nhomKeys.push(prefix);
+                        nhomDict[prefix] = [];
+                    }
+                    nhomDict[prefix].push(perm);
+                }
+
+                // Vẽ từng nhóm
+                for (var g = 0; g < nhomKeys.length; g = g + 1) {
+                    var groupKey = nhomKeys[g];
+                    var groupPerms = nhomDict[groupKey];
+
+                    var activeInGroup = 0;
+                    for (var ag = 0; ag < groupPerms.length; ag = ag + 1) {
+                        if (coTrongMangChuoi(currentPerms, groupPerms[ag].permissionCode)) {
+                            activeInGroup = activeInGroup + 1;
+                        }
+                    }
+
+                    html += '<div style="margin-bottom:18px;">' +
+                        '<div class="perm-group-hdr">' +
+                        '<i class="fas fa-layer-group"></i><span>' + groupKey + '</span>' +
+                        '<span style="font-size:.7rem;background:#f1f5f9;padding:2px 8px;border-radius:4px;font-weight:600;margin-left:auto;">' + activeInGroup + '/' + groupPerms.length + ' đang có</span>' +
+                        '</div>';
+
+                    for (var pg = 0; pg < groupPerms.length; pg = pg + 1) {
+                        var p = groupPerms[pg];
+                        var hasPerm = coTrongMangChuoi(currentPerms, p.permissionCode);
+                        var isBlocked = coTrongMangSo(danhSachBlacklist, p.id);
+                        var rowStyle = '';
+                        var statusClass = 'none';
+                        var statusText = 'Chưa được cấp';
+
+                        if (isBlocked) {
+                            statusClass = 'blacklisted';
+                            statusText = '<i class="fas fa-ban me-1"></i>Bị đóng băng';
+                            rowStyle = 'background:#fff5f5;border-color:#fca5a5;';
+                        } else if (hasPerm) {
+                            statusClass = 'active';
+                            statusText = '<i class="fas fa-check me-1"></i>Đang có';
+                        }
+
+                        var riskLevel = p.riskLevel || 'SAFE';
+
+                        html += '<div class="perm-row" style="' + rowStyle + '">' +
+                            '<div style="flex:1;">' +
+                            '<div class="perm-row-code">' + p.permissionCode + '</div>' +
+                            '<div class="perm-row-desc">' + (p.description || '') + '</div>' +
+                            '</div>' +
+                            '<span class="risk-badge ' + riskLevel + '">' + getRiskLabel(riskLevel) + '</span>' +
+                            '<span class="perm-status ' + statusClass + '">' + statusText + '</span>' +
+                            '</div>';
+                    }
+
+                    html += '</div>';
+                }
+
+                document.getElementById('block2').innerHTML = html;
+            }
+
+            // ================================================================
+            // RENDER: BLOCK 3 — BLACKLIST MANAGER (chỉ hiển thị quyền User đang có)
+            // ================================================================
+            function veKhoi3Blacklist() {
+                var html =
+                    '<div class="ud-card-title"><i class="fas fa-ban" style="color:#ef4444;"></i> Kiểm soát Quyền hạt lựu cá nhân</div>' +
+                    '<p style="color:#64748b;font-size:.84rem;margin-bottom:16px;">' +
+                    'Đóng băng quyền cụ thể ở cấp cá nhân, không ảnh hưởng đến tài khoản khác cùng chức vụ. Mỗi thay đổi cần nhập lý do và được ghi vào sổ kiểm toán.' +
+                    '</p>';
+
+                var currentPerms = (userInfo.permissions !== null && userInfo.permissions !== undefined) ? Array.from(userInfo.permissions) : [];
+
+                // Chỉ lấy permissions mà user đang sở hữu qua Roles
+                var permsThuocUser = [];
+                for (var i = 0; i < danhSachQuyenToanCuc.length; i = i + 1) {
+                    var perm = danhSachQuyenToanCuc[i];
+                    if (coTrongMangChuoi(currentPerms, perm.permissionCode)) {
+                        permsThuocUser.push(perm);
+                    }
+                }
+
+                if (permsThuocUser.length === 0) {
+                    html += '<div style="text-align:center;padding:28px 0;color:#94a3b8;">' +
+                        '<i class="fas fa-clipboard-check fa-2x" style="display:block;margin-bottom:10px;"></i>' +
+                        '<span style="font-size:.85rem;">Tài khoản này chưa có quyền hạt lựu nào được cấp qua chức vụ.</span>' +
+                        '</div>';
+                    document.getElementById('block3').innerHTML = html;
+                    return;
+                }
+
+                html += '<div>';
+                for (var b = 0; b < permsThuocUser.length; b = b + 1) {
+                    var p = permsThuocUser[b];
+                    var isBanned = coTrongMangSo(danhSachBlacklist, p.id);
+                    var rowClass = isBanned ? ' banned' : '';
+                    var switchClass = isBanned ? 'on' : 'off';
+                    var thumbClass = isBanned ? 'on-pos' : 'off-pos';
+                    var labelColor = isBanned ? '#dc2626' : '#94a3b8';
+                    var labelText = isBanned ? 'BỊ CẤM' : 'CHO PHÉP';
+                    var riskLevel = p.riskLevel || 'SAFE';
+                    // willBan = hành động tiếp theo nếu user click (toggle): nếu đang bị cấm thì click = bỏ cấm, ngược lại
+                    var willBanNext = !isBanned;
+
+                    html += '<div class="bl-row' + rowClass + '">' +
+                        '<div class="bl-info">' +
+                        '<div class="bl-perm-code">' +
+                        '<i class="fas fa-key me-2" style="color:#94a3b8;"></i>' + p.permissionCode +
+                        '&nbsp;<span class="risk-badge ' + riskLevel + '">' + getRiskLabel(riskLevel) + '</span>' +
+                        '</div>' +
+                        '<div class="bl-perm-desc">' + (p.description || '') + '</div>' +
+                        '</div>' +
+                        '<div class="bl-switch-wrap">' +
+                        '<div class="bl-switch-btn ' + switchClass + '" onclick="moModalBlacklist(' + p.id + ', \'' + p.permissionCode + '\', ' + willBanNext + ')">' +
+                        '<div class="bl-switch-thumb ' + thumbClass + '"></div>' +
+                        '</div>' +
+                        '<div style="font-size:.62rem;font-weight:700;color:' + labelColor + ';text-align:center;">' + labelText + '</div>' +
+                        '</div>' +
+                        '</div>';
+                }
+                html += '</div>';
+
+                document.getElementById('block3').innerHTML = html;
+            }
+
+            // ================================================================
+            // ACTION: KHÓA / MỞ KHÓA TÀI KHOẢN
+            // ================================================================
+            window.moModalKhoa = function (lock) {
+                pendingLockAction = lock;
+                var nameDisplay = userInfo.fullName || userInfo.username || 'tài khoản này';
+
+                document.getElementById('khoaReason').value = '';
+                document.getElementById('khoaReasonError').style.display = 'none';
+
+                var btn = document.getElementById('btnConfirmKhoa');
+                if (lock) {
+                    document.getElementById('modalKhoaTitle').innerHTML = '<i class="fas fa-lock text-danger me-2"></i>Xác nhận khóa tài khoản';
+                    document.getElementById('modalKhoaDesc').innerHTML =
+                        'Bạn sắp <strong style="color:#dc2626;">khóa</strong> tài khoản của <strong>' + nameDisplay + '</strong>. ' +
+                        'Tài khoản sẽ không thể đăng nhập cho đến khi được mở khóa thủ công.';
+                    btn.style.background = '#dc2626';
+                    btn.style.color = '#fff';
+                    btn.innerHTML = '<i class="fas fa-lock me-2"></i>Xác nhận khóa';
+                } else {
+                    document.getElementById('modalKhoaTitle').innerHTML = '<i class="fas fa-lock-open" style="color:#16a34a;" class="me-2"></i>Xác nhận mở khóa tài khoản';
+                    document.getElementById('modalKhoaDesc').innerHTML =
+                        'Bạn sắp <strong style="color:#16a34a;">mở khóa</strong> tài khoản của <strong>' + nameDisplay + '</strong>. ' +
+                        'Tài khoản sẽ có thể đăng nhập trở lại ngay sau khi xác nhận.';
+                    btn.style.background = '#16a34a';
+                    btn.style.color = '#fff';
+                    btn.innerHTML = '<i class="fas fa-lock-open me-2"></i>Xác nhận mở khóa';
+                }
+
+                modalKhoaInstance.show();
+            };
+
+            window.thucThiKhoaTaiKhoan = function () {
+                var reason = document.getElementById('khoaReason').value.trim();
+                if (reason === '') {
+                    document.getElementById('khoaReasonError').style.display = 'block';
+                    return;
+                }
+                document.getElementById('khoaReasonError').style.display = 'none';
+
+                var requestData = { lock: pendingLockAction, reason: reason };
+                callApi('/api/admin/users/' + targetUserId + '/lock', 'POST', requestData, '#btnConfirmKhoa', function () {
+                    modalKhoaInstance.hide();
+                    var msg = pendingLockAction ? 'Đã khóa tài khoản thành công' : 'Đã mở khóa tài khoản thành công';
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: msg, showConfirmButton: false, timer: 2000 });
+
+                    // Cập nhật trạng thái cục bộ
+                    userInfo.locked = pendingLockAction;
+
+                    // Re-render hero card rồi cập nhật audit log
+                    taiLaiLichSuKiemToan();
+                }, function (errMsg) {
+                    Swal.fire({ icon: 'error', title: 'Thao tác thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                    // Không thay đổi userInfo.locked — trạng thái giữ nguyên
+                });
+            };
+
+            // ================================================================
+            // ACTION: BLACKLIST / UNBLACKLIST QUYỀN HẠT LỰU
+            // ================================================================
+            window.moModalBlacklist = function (permId, permCode, willBan) {
+                pendingBlacklistPermId = permId;
+                pendingBlacklistBanned = willBan;
+
+                document.getElementById('blacklistReason').value = '';
+                document.getElementById('blacklistReasonError').style.display = 'none';
+
+                var btn = document.getElementById('btnConfirmBlacklist');
+                if (willBan) {
+                    document.getElementById('modalBlacklistTitle').innerHTML = '<i class="fas fa-ban text-danger me-2"></i>Đóng băng quyền hạt lựu';
+                    document.getElementById('modalBlacklistDesc').innerHTML =
+                        'Đóng băng quyền <code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;">' + permCode + '</code> ở cấp cá nhân. ' +
+                        'Người dùng sẽ mất quyền này ngay cả khi chức vụ vẫn còn hiệu lực.';
+                    btn.style.background = '#dc2626';
+                    btn.style.color = '#fff';
+                    btn.innerHTML = '<i class="fas fa-ban me-2"></i>Xác nhận đóng băng';
+                } else {
+                    document.getElementById('modalBlacklistTitle').innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;" class="me-2"></i>Khôi phục quyền hạt lựu';
+                    document.getElementById('modalBlacklistDesc').innerHTML =
+                        'Gỡ lệnh đóng băng quyền <code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;">' + permCode + '</code>. ' +
+                        'Người dùng sẽ lại sử dụng được quyền này thông qua chức vụ đang mang.';
+                    btn.style.background = '#16a34a';
+                    btn.style.color = '#fff';
+                    btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Xác nhận khôi phục';
+                }
+
+                modalBlacklistInstance.show();
+            };
+
+            window.thucThiBlacklist = function () {
+                var reason = document.getElementById('blacklistReason').value.trim();
+                if (reason === '') {
+                    document.getElementById('blacklistReasonError').style.display = 'block';
+                    return;
+                }
+                document.getElementById('blacklistReasonError').style.display = 'none';
+
+                var requestData = {
+                    permissionId: pendingBlacklistPermId,
+                    banned: pendingBlacklistBanned,
+                    reason: reason
+                };
+
+                callApi('/api/admin/role-management/blacklist/users/' + targetUserId, 'POST', requestData, '#btnConfirmBlacklist', function () {
+                    modalBlacklistInstance.hide();
+                    var msg = pendingBlacklistBanned ? 'Đã đóng băng quyền thành công' : 'Đã khôi phục quyền thành công';
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: msg, showConfirmButton: false, timer: 2000 });
+
+                    // Cập nhật danhSachBlacklist cục bộ
+                    if (pendingBlacklistBanned) {
+                        if (coTrongMangSo(danhSachBlacklist, pendingBlacklistPermId) === false) {
+                            danhSachBlacklist.push(pendingBlacklistPermId);
+                        }
+                    } else {
+                        var newBlacklist = [];
+                        for (var i = 0; i < danhSachBlacklist.length; i = i + 1) {
+                            if (parseInt(danhSachBlacklist[i]) !== parseInt(pendingBlacklistPermId)) {
+                                newBlacklist.push(danhSachBlacklist[i]);
+                            }
+                        }
+                        danhSachBlacklist = newBlacklist;
+                    }
+
+                    // Re-render block 2 và 3
+                    veKhoi2MatranQuyen();
+                    veKhoi3Blacklist();
+
+                    // Cập nhật audit log
+                    taiLaiLichSuKiemToan();
+                }, function (errMsg) {
+                    Swal.fire({ icon: 'error', title: 'Thao tác thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                    // API thất bại — KHÔNG thay đổi danhSachBlacklist, KHÔNG re-render
+                });
+            };
+
+            // ================================================================
+            // INITIALIZATION
+            // ================================================================
+            document.addEventListener('DOMContentLoaded', function () {
+                var pathArray = window.location.pathname.split('/');
+                targetUserId = pathArray[pathArray.length - 1];
+                buoc1_LayThongTinAdmin();
+            });
+        </script>
+
+    </div>
+</th:block>
+
+</html>

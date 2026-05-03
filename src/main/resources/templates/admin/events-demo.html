@@ -1,0 +1,1226 @@
+<!-- src/main/resources/templates/admin/events.html -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{admin_layout::admin-head('Quản lý Sự kiện')}"></head>
+
+<th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
+<div id="admin-content-wrapper">
+
+<style>
+/* ===== ADMIN EVENTS PAGE ===== */
+.ev-stat-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px; }
+.ev-stat { background:#fff; border:1px solid #eee; border-radius:14px; padding:16px 18px; display:flex; align-items:center; gap:12px; }
+.ev-stat-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:.92rem; flex-shrink:0; }
+.ev-stat-num { font-size:1.45rem; font-weight:800; line-height:1; }
+.ev-stat-label { font-size:.7rem; color:#6c757d; font-weight:600; margin-top:3px; text-transform:uppercase; letter-spacing:.5px; }
+.ev-stat-sub { font-size:.7rem; color:#6c757d; margin-top:1px; }
+
+/* Toolbar */
+.ev-toolbar { background:#fff; border:1px solid #eee; border-radius:14px; padding:12px 18px; margin-bottom:20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ev-search { flex:1; min-width:220px; position:relative; }
+.ev-search i { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#adb5bd; font-size:.8rem; }
+.ev-search input { width:100%; padding:8px 12px 8px 32px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.84rem; outline:none; font-family:inherit; }
+.ev-search input:focus { border-color:#0061ff; }
+.ev-filter { padding:8px 14px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.83rem; outline:none; cursor:pointer; font-family:inherit; color:#495057; background:#fff; }
+.ev-filter:focus { border-color:#0061ff; }
+.ev-btn { display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:.84rem; font-weight:600; cursor:pointer; transition:all .15s; border:none; font-family:inherit; }
+.ev-btn-primary { background:#0061ff; color:#fff; }
+.ev-btn-primary:hover { background:#0048c2; }
+.ev-btn-ghost { background:#fff; border:1.5px solid #e9ecef; color:#495057; }
+.ev-btn-ghost:hover { border-color:#0061ff; color:#0061ff; }
+.ev-btn-danger { background:#ffebe6; color:#de350b; border:1.5px solid #ffc9b8; }
+.ev-btn-success { background:#e3fcf7; color:#00875a; border:1.5px solid #b8f0e0; }
+
+/* Bulk bar */
+.bulk-bar { background:linear-gradient(90deg,#0061ff,#2d8cf0); color:#fff; border-radius:12px; padding:10px 20px; margin-bottom:18px; display:none; align-items:center; gap:16px; flex-wrap:wrap; }
+.bulk-bar.visible { display:flex; }
+.bulk-count { font-size:.85rem; font-weight:700; }
+.bulk-actions { display:flex; gap:8px; margin-left:auto; }
+.bulk-btn { padding:6px 14px; border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer; border:none; font-family:inherit; display:flex; align-items:center; gap:5px; }
+.bulk-btn-white { background:rgba(255,255,255,.9); color:#0061ff; }
+.bulk-btn-red { background:rgba(222,53,11,.8); color:#fff; }
+.bulk-btn-clear { background:transparent; color:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.3); }
+
+/* Campaign Cards Layout */
+.campaigns-wrapper { display:flex; flex-direction:column; gap:18px; }
+.campaign-card { background:#fff; border:1px solid #eee; border-radius:16px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.04); transition:box-shadow .2s; }
+.campaign-card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08); }
+
+.campaign-header { padding:16px 20px; display:flex; align-items:flex-start; gap:16px; background:#fff; }
+.campaign-cover { width:80px; height:60px; border-radius:10px; object-fit:cover; flex-shrink:0; background:linear-gradient(135deg,#0061ff22,#00875a22); display:flex; align-items:center; justify-content:center; color:#0061ff; font-size:1.4rem; }
+.campaign-meta { flex:1; min-width:0; }
+.campaign-title { font-size:.96rem; font-weight:800; color:#1a2040; margin:0 0 4px; cursor:pointer; }
+.campaign-title:hover { color:#0061ff; }
+.campaign-slug { font-size:.7rem; color:#adb5bd; font-family:monospace; }
+.campaign-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.camp-tag { padding:2px 9px; border-radius:6px; font-size:.68rem; font-weight:700; }
+.camp-tag-type { background:#e8f0ff; color:#0061ff; }
+.camp-tag-status-upcoming { background:#fff8e1; color:#f9a825; }
+.camp-tag-status-ongoing  { background:#e3fcf7; color:#00875a; }
+.camp-tag-status-ended    { background:#f0f2fa; color:#6c757d; }
+.camp-tag-status-cancelled{ background:#ffebe6; color:#de350b; }
+.campaign-actions { display:flex; gap:7px; flex-shrink:0; }
+
+.campaign-info-row { display:flex; gap:24px; padding:0 20px 12px; flex-wrap:wrap; }
+.camp-info-item { display:flex; align-items:center; gap:5px; font-size:.78rem; color:#6c757d; }
+.camp-info-item i { color:#0061ff; font-size:.75rem; width:14px; }
+.camp-info-item strong { color:#1a2040; }
+
+/* Sessions table inside card */
+.sessions-toggle-btn { margin:0 20px 0; padding:8px 16px; background:#f8f9ff; border:1.5px solid #e9ecef; border-radius:10px; font-size:.8rem; font-weight:600; color:#495057; cursor:pointer; display:flex; align-items:center; gap:8px; width:calc(100% - 40px); margin-bottom:16px; }
+.sessions-toggle-btn i { color:#0061ff; }
+.sessions-toggle-btn .sessions-count { background:#0061ff; color:#fff; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:10px; margin-left:auto; }
+
+.sessions-panel { border-top:1px solid #f0f2fa; background:#fafbff; padding:14px 20px; }
+.sessions-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+.sessions-table th { background:#f0f2fa; padding:8px 12px; text-align:left; font-size:.68rem; font-weight:700; color:#6c757d; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
+.sessions-table th:first-child { border-radius:8px 0 0 8px; }
+.sessions-table th:last-child { border-radius:0 8px 8px 0; }
+.sessions-table td { padding:10px 12px; border-bottom:1px solid #f0f2fa; vertical-align:middle; }
+.sessions-table tr:last-child td { border-bottom:none; }
+.sessions-table tr:hover td { background:rgba(0,97,255,.02); }
+.slot-bar-wrap { width:90px; background:#e9ecef; border-radius:10px; height:6px; display:inline-block; vertical-align:middle; margin-left:6px; }
+.slot-bar-fill { height:6px; border-radius:10px; background:#00875a; }
+.slot-bar-fill.half { background:#ff8b00; }
+.slot-bar-fill.full  { background:#de350b; }
+.session-status-badge { padding:2px 9px; border-radius:6px; font-size:.67rem; font-weight:700; display:inline-block; }
+.ssb-upcoming  { background:#fff8e1; color:#f9a825; }
+.ssb-ongoing   { background:#e3fcf7; color:#00875a; }
+.ssb-ended     { background:#f0f2fa; color:#6c757d; }
+.ssb-cancelled { background:#ffebe6; color:#de350b; }
+
+/* Registration detail side drawer simulation */
+.reg-badge { background:#e8f0ff; color:#0061ff; padding:2px 8px; border-radius:6px; font-size:.7rem; font-weight:700; cursor:pointer; }
+.reg-badge:hover { background:#0061ff; color:#fff; }
+
+/* Session add row */
+.session-add-row td { padding:8px 12px; }
+.session-add-btn { display:flex; align-items:center; gap:6px; padding:6px 14px; border:1.5px dashed #0061ff; color:#0061ff; background:transparent; border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer; font-family:inherit; }
+.session-add-btn:hover { background:#e8f0ff; }
+
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
+.modal-box { background:#fff; border-radius:20px; width:100%; max-width:720px; max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.2); }
+.modal-box-wide { max-width:900px; }
+.modal-head { padding:20px 24px; border-bottom:1px solid #f0f2fa; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:#fff; z-index:1; }
+.modal-title { font-size:1rem; font-weight:800; color:#1a2040; }
+.modal-close { background:#f0f2fa; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#6c757d; font-size:.85rem; }
+.modal-body { padding:24px; }
+.mf-group { margin-bottom:16px; }
+.mf-label { display:block; font-size:.78rem; font-weight:600; color:#495057; margin-bottom:5px; }
+.mf-label .req { color:#de350b; }
+.mf-input { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; transition:border-color .15s; }
+.mf-input:focus { border-color:#0061ff; }
+.mf-textarea { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; resize:vertical; min-height:80px; }
+.mf-textarea:focus { border-color:#0061ff; }
+.mf-select { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; cursor:pointer; background:#fff; }
+.mf-select:focus { border-color:#0061ff; }
+.mf-row { display:grid; gap:14px; }
+.mf-row.cols-2 { grid-template-columns:1fr 1fr; }
+.mf-row.cols-3 { grid-template-columns:1fr 1fr 1fr; }
+.mf-section-divider { border:none; border-top:1px dashed #e9ecef; margin:20px 0; }
+.mf-section-label { font-size:.75rem; font-weight:800; color:#0061ff; text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
+.modal-footer { padding:16px 24px; border-top:1px solid #f0f2fa; display:flex; align-items:center; justify-content:flex-end; gap:10px; background:#fff; position:sticky; bottom:0; }
+.mf-btn { padding:9px 22px; border-radius:10px; font-size:.87rem; font-weight:700; cursor:pointer; border:none; font-family:inherit; }
+.mf-btn-primary { background:#0061ff; color:#fff; }
+.mf-btn-primary:hover { background:#0048c2; }
+.mf-btn-cancel { background:#f0f2fa; color:#495057; }
+.mf-btn-cancel:hover { background:#e2e8f0; }
+
+/* Status History Timeline inside modal */
+.sh-timeline { position:relative; padding-left:22px; }
+.sh-timeline::before { content:''; position:absolute; left:7px; top:0; bottom:0; width:2px; background:#e9ecef; }
+.sh-item { position:relative; margin-bottom:16px; }
+.sh-dot { position:absolute; left:-22px; top:4px; width:14px; height:14px; border-radius:50%; border:2.5px solid #fff; box-shadow:0 0 0 2px #e9ecef; background:#6c757d; }
+.sh-dot.approved  { background:#00875a; }
+.sh-dot.pending   { background:#ff8b00; }
+.sh-dot.cancelled { background:#de350b; }
+.sh-content { background:#f8f9ff; border-radius:10px; padding:10px 14px; }
+.sh-content-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+.sh-status-label { font-size:.78rem; font-weight:700; color:#1a2040; }
+.sh-time { font-size:.7rem; color:#adb5bd; }
+.sh-note { font-size:.78rem; color:#6c757d; }
+.sh-actor { font-size:.7rem; color:#0061ff; margin-top:3px; }
+
+/* Registrations table in modal */
+.reg-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+.reg-table th { background:#f8f9ff; padding:8px 12px; text-align:left; font-size:.68rem; font-weight:700; color:#6c757d; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; border-bottom:2px solid #f0f2fa; }
+.reg-table td { padding:10px 12px; border-bottom:1px solid #f0f2fa; vertical-align:middle; }
+.reg-table tr:last-child td { border-bottom:none; }
+.reg-table tr:hover td { background:#f8f9ff; }
+.reg-status { padding:2px 8px; border-radius:6px; font-size:.67rem; font-weight:700; }
+.reg-confirmed { background:#e3fcf7; color:#00875a; }
+.reg-pending   { background:#fff8e1; color:#f9a825; }
+.reg-cancelled { background:#ffebe6; color:#de350b; }
+.reg-attended  { background:#e8f0ff; color:#0061ff; }
+
+/* Location badge */
+.loc-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:6px; font-size:.7rem; font-weight:600; }
+.loc-online   { background:#e3fcf7; color:#00875a; }
+.loc-physical { background:#e8f0ff; color:#0061ff; }
+
+/* Pagination */
+.pager { display:flex; align-items:center; justify-content:space-between; margin-top:20px; flex-wrap:wrap; gap:12px; }
+.pager-info { font-size:.8rem; color:#6c757d; }
+.pager-btns { display:flex; gap:5px; }
+.pager-btn { width:34px; height:34px; border:1.5px solid #e9ecef; border-radius:9px; background:#fff; color:#495057; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.83rem; font-weight:600; font-family:inherit; transition:all .15s; }
+.pager-btn:hover { border-color:#0061ff; color:#0061ff; }
+.pager-btn.active { background:#0061ff; border-color:#0061ff; color:#fff; }
+
+/* Tab bar for modal */
+.modal-tabs { display:flex; border-bottom:1px solid #e9ecef; margin:-8px -24px 20px; padding:0 24px; gap:0; }
+.modal-tab { padding:10px 18px; font-size:.83rem; font-weight:600; color:#6c757d; border-bottom:2.5px solid transparent; cursor:pointer; margin-bottom:-1px; }
+.modal-tab.active { color:#0061ff; border-bottom-color:#0061ff; }
+</style>
+
+<!-- Page Header -->
+<div class="admin-page-header">
+    <div>
+        <h4><i class="fas fa-calendar-alt" style="color:#0061ff;margin-right:8px;"></i>Quản lý Sự kiện &amp; Chiến dịch</h4>
+        <p>Quản lý toàn bộ chiến dịch, phiên sự kiện, địa điểm và đăng ký tham gia</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <button class="ev-btn ev-btn-ghost" onclick="openModal('locationModal')">
+            <i class="fas fa-map-marker-alt"></i> Địa điểm
+        </button>
+        <button class="ev-btn ev-btn-ghost" onclick="openModal('typeModal')">
+            <i class="fas fa-tags"></i> Loại sự kiện
+        </button>
+        <button class="ev-btn ev-btn-primary" onclick="openModal('createCampaignModal')">
+            <i class="fas fa-plus"></i> Tạo Chiến dịch
+        </button>
+    </div>
+</div>
+
+<!-- Stat Row — EVENTS + CT_EVENTS + CT_EVENT_REGISTRATIONS -->
+<div class="ev-stat-row">
+    <div class="ev-stat">
+        <div class="ev-stat-icon" style="background:#e8f0ff;">
+            <i class="fas fa-calendar" style="color:#0061ff;"></i>
+        </div>
+        <div>
+            <div class="ev-stat-num" style="color:#0061ff;">24</div>
+            <div class="ev-stat-label">Chiến dịch</div>
+            <div class="ev-stat-sub">3 đang diễn ra</div>
+        </div>
+    </div>
+    <div class="ev-stat">
+        <div class="ev-stat-icon" style="background:#e3fcf7;">
+            <i class="fas fa-layer-group" style="color:#00875a;"></i>
+        </div>
+        <div>
+            <div class="ev-stat-num" style="color:#00875a;">87</div>
+            <div class="ev-stat-label">Phiên sự kiện</div>
+            <div class="ev-stat-sub">12 sắp diễn ra</div>
+        </div>
+    </div>
+    <div class="ev-stat">
+        <div class="ev-stat-icon" style="background:#fff8e1;">
+            <i class="fas fa-ticket-alt" style="color:#f9a825;"></i>
+        </div>
+        <div>
+            <div class="ev-stat-num" style="color:#f9a825;">1,284</div>
+            <div class="ev-stat-label">Đăng ký</div>
+            <div class="ev-stat-sub">+48 hôm nay</div>
+        </div>
+    </div>
+    <div class="ev-stat">
+        <div class="ev-stat-icon" style="background:#e3fcf7;">
+            <i class="fas fa-user-check" style="color:#00875a;"></i>
+        </div>
+        <div>
+            <div class="ev-stat-num" style="color:#00875a;">934</div>
+            <div class="ev-stat-label">Đã tham dự</div>
+            <div class="ev-stat-sub">72.7% attendance</div>
+        </div>
+    </div>
+    <div class="ev-stat">
+        <div class="ev-stat-icon" style="background:#f0f2fa;">
+            <i class="fas fa-map-marker-alt" style="color:#6c757d;"></i>
+        </div>
+        <div>
+            <div class="ev-stat-num" style="color:#6c757d;">19</div>
+            <div class="ev-stat-label">Địa điểm</div>
+            <div class="ev-stat-sub">6 trực tuyến</div>
+        </div>
+    </div>
+</div>
+
+<!-- Toolbar -->
+<div class="ev-toolbar">
+    <div class="ev-search">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Tìm chiến dịch, phiên sự kiện...">
+    </div>
+    <select class="ev-filter">
+        <option>Tất cả loại</option>
+        <option>Hội thảo khoa học</option>
+        <option>Đào tạo dược</option>
+        <option>Ra mắt sản phẩm</option>
+        <option>Hội nghị ngành</option>
+    </select>
+    <select class="ev-filter">
+        <option>Tất cả trạng thái</option>
+        <option>Sắp diễn ra</option>
+        <option>Đang diễn ra</option>
+        <option>Đã kết thúc</option>
+        <option>Đã hủy</option>
+    </select>
+    <select class="ev-filter">
+        <option>Tất cả địa điểm</option>
+        <option>Hà Nội</option>
+        <option>TP. Hồ Chí Minh</option>
+        <option>Trực tuyến</option>
+    </select>
+    <input type="date" class="ev-filter" style="cursor:pointer;" title="Từ ngày">
+    <input type="date" class="ev-filter" style="cursor:pointer;" title="Đến ngày">
+    <button class="ev-btn ev-btn-ghost"><i class="fas fa-download"></i> Xuất Excel</button>
+</div>
+
+<!-- Bulk Action Bar -->
+<div class="bulk-bar" id="bulkBar">
+    <i class="fas fa-check-square"></i>
+    <span class="bulk-count" id="bulkCount">0 chiến dịch được chọn</span>
+    <div class="bulk-actions">
+        <button class="bulk-btn bulk-btn-white"><i class="fas fa-check"></i> Kích hoạt</button>
+        <button class="bulk-btn bulk-btn-white" style="color:#ff8b00;"><i class="fas fa-pause"></i> Tạm dừng</button>
+        <button class="bulk-btn bulk-btn-red"><i class="fas fa-ban"></i> Hủy</button>
+        <button class="bulk-btn bulk-btn-clear" onclick="clearBulk()"><i class="fas fa-times"></i> Bỏ chọn</button>
+    </div>
+</div>
+
+<!-- Campaign Cards — EVENTS + CT_EVENTS + LOCATIONS + EVENT_TYPES + CT_EVENT_STATUS_HISTORY + CT_EVENT_REGISTRATIONS -->
+<div class="campaigns-wrapper">
+
+    <!-- Campaign 1: Ongoing -->
+    <div class="campaign-card">
+        <div class="campaign-header">
+            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:4px;cursor:pointer;">
+            <div class="campaign-cover">
+                <i class="fas fa-flask"></i>
+            </div>
+            <div class="campaign-meta">
+                <div class="campaign-title" onclick="openModal('detailCampaignModal')">
+                    Hội nghị Dược phẩm Quốc tế Việt Nam 2025
+                </div>
+                <div class="campaign-slug">/events/hdpqt-vn-2025</div>
+                <div class="campaign-tags">
+                    <span class="camp-tag camp-tag-type">Hội nghị ngành</span>
+                    <span class="camp-tag camp-tag-status-ongoing">Đang diễn ra</span>
+                    <span class="camp-tag" style="background:#e3fcf7;color:#00875a;">Công khai</span>
+                </div>
+            </div>
+            <div class="campaign-actions">
+                <button class="btn-tbl btn-tbl-view" onclick="openModal('regListModal')"><i class="fas fa-users"></i> Đăng ký</button>
+                <button class="btn-tbl btn-tbl-edit" onclick="openModal('editCampaignModal')"><i class="fas fa-edit"></i></button>
+                <button class="btn-tbl" style="color:#ff8b00;border-color:#ff8b00;background:#fff8e1;" onclick="openModal('statusModal')"><i class="fas fa-exchange-alt"></i></button>
+                <button class="btn-tbl btn-tbl-delete"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div class="campaign-info-row">
+            <div class="camp-info-item"><i class="fas fa-calendar-day"></i> <strong>10/04/2025</strong> → <strong>12/04/2025</strong></div>
+            <div class="camp-info-item"><i class="fas fa-map-marker-alt"></i> Trung tâm Hội nghị GEM, TP.HCM</div>
+            <div class="camp-info-item"><i class="fas fa-layer-group"></i> <strong>4</strong> phiên</div>
+            <div class="camp-info-item"><i class="fas fa-ticket-alt"></i> <strong>342 / 500</strong> đăng ký</div>
+            <div class="camp-info-item"><i class="fas fa-user"></i> Admin Pharma</div>
+        </div>
+        <!-- Sessions toggle -->
+        <button class="sessions-toggle-btn" onclick="toggleSessions('s1')">
+            <i class="fas fa-layer-group"></i> Phiên sự kiện (CT_EVENTS)
+            <span class="sessions-count">4 phiên</span>
+            <i class="fas fa-chevron-down" id="s1-chevron" style="margin-left:4px;font-size:.7rem;"></i>
+        </button>
+        <div class="sessions-panel" id="s1-panel" style="display:none;">
+            <table class="sessions-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox"></th>
+                        <th>ID</th>
+                        <th>Tên phiên</th>
+                        <th>Địa điểm</th>
+                        <th>Bắt đầu</th>
+                        <th>Kết thúc</th>
+                        <th>Slots</th>
+                        <th>Đăng ký</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">#S001</td>
+                        <td style="font-weight:600;color:#1a2040;">Khai mạc &amp; Phát biểu chào mừng</td>
+                        <td><span class="loc-badge loc-physical"><i class="fas fa-building"></i> Hall A</span></td>
+                        <td style="font-size:.8rem;">10/04 08:00</td>
+                        <td style="font-size:.8rem;">10/04 10:00</td>
+                        <td style="font-size:.8rem;">500</td>
+                        <td>
+                            <span style="font-size:.8rem;font-weight:700;color:#00875a;">487</span>
+                            <span class="slot-bar-wrap"><span class="slot-bar-fill" style="width:97%;"></span></span>
+                        </td>
+                        <td><span class="session-status-badge ssb-ongoing">Đang diễn ra</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-view" style="font-size:.72rem;" onclick="openModal('regListModal')"><i class="fas fa-users"></i></button>
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;" onclick="openModal('editSessionModal')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">#S002</td>
+                        <td style="font-weight:600;color:#1a2040;">Chuyên đề: Chuỗi cung ứng lạnh</td>
+                        <td><span class="loc-badge loc-physical"><i class="fas fa-building"></i> Hall B</span></td>
+                        <td style="font-size:.8rem;">10/04 10:30</td>
+                        <td style="font-size:.8rem;">10/04 12:30</td>
+                        <td style="font-size:.8rem;">200</td>
+                        <td>
+                            <span style="font-size:.8rem;font-weight:700;color:#ff8b00;">156</span>
+                            <span class="slot-bar-wrap"><span class="slot-bar-fill half" style="width:78%;"></span></span>
+                        </td>
+                        <td><span class="session-status-badge ssb-upcoming">Sắp diễn ra</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-view" style="font-size:.72rem;" onclick="openModal('regListModal')"><i class="fas fa-users"></i></button>
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;" onclick="openModal('editSessionModal')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">#S003</td>
+                        <td style="font-weight:600;color:#1a2040;">Workshop: GMP &amp; Tiêu chuẩn quốc tế</td>
+                        <td><span class="loc-badge loc-online"><i class="fas fa-globe"></i> Trực tuyến</span></td>
+                        <td style="font-size:.8rem;">11/04 09:00</td>
+                        <td style="font-size:.8rem;">11/04 11:30</td>
+                        <td style="font-size:.8rem;">300</td>
+                        <td>
+                            <span style="font-size:.8rem;font-weight:700;color:#0061ff;">89</span>
+                            <span class="slot-bar-wrap"><span class="slot-bar-fill" style="width:30%;background:#0061ff;"></span></span>
+                        </td>
+                        <td><span class="session-status-badge ssb-upcoming">Sắp diễn ra</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-view" style="font-size:.72rem;" onclick="openModal('regListModal')"><i class="fas fa-users"></i></button>
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;" onclick="openModal('editSessionModal')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">#S004</td>
+                        <td style="font-weight:600;color:#1a2040;">Bế mạc &amp; Trao chứng nhận</td>
+                        <td><span class="loc-badge loc-physical"><i class="fas fa-building"></i> Hall A</span></td>
+                        <td style="font-size:.8rem;">12/04 15:00</td>
+                        <td style="font-size:.8rem;">12/04 17:00</td>
+                        <td style="font-size:.8rem;">500</td>
+                        <td>
+                            <span style="font-size:.8rem;font-weight:700;color:#6c757d;">210</span>
+                            <span class="slot-bar-wrap"><span class="slot-bar-fill" style="width:42%;"></span></span>
+                        </td>
+                        <td><span class="session-status-badge ssb-upcoming">Sắp diễn ra</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-view" style="font-size:.72rem;" onclick="openModal('regListModal')"><i class="fas fa-users"></i></button>
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;" onclick="openModal('editSessionModal')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr class="session-add-row">
+                        <td colspan="10">
+                            <button class="session-add-btn" onclick="openModal('createSessionModal')">
+                                <i class="fas fa-plus"></i> Thêm phiên mới cho chiến dịch này
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Campaign 2: Upcoming -->
+    <div class="campaign-card">
+        <div class="campaign-header">
+            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:4px;cursor:pointer;">
+            <div class="campaign-cover" style="background:linear-gradient(135deg,#ff8b0022,#f9a82522);">
+                <i class="fas fa-graduation-cap" style="color:#ff8b00;"></i>
+            </div>
+            <div class="campaign-meta">
+                <div class="campaign-title" onclick="openModal('detailCampaignModal')">
+                    Chương trình Đào tạo Trình dược viên Tháng 5/2025
+                </div>
+                <div class="campaign-slug">/events/dt-tdv-t5-2025</div>
+                <div class="campaign-tags">
+                    <span class="camp-tag camp-tag-type">Đào tạo dược</span>
+                    <span class="camp-tag camp-tag-status-upcoming">Sắp diễn ra</span>
+                    <span class="camp-tag" style="background:#e8f0ff;color:#0061ff;">Yêu cầu xác nhận</span>
+                </div>
+            </div>
+            <div class="campaign-actions">
+                <button class="btn-tbl btn-tbl-view" onclick="openModal('regListModal')"><i class="fas fa-users"></i> Đăng ký</button>
+                <button class="btn-tbl btn-tbl-edit" onclick="openModal('editCampaignModal')"><i class="fas fa-edit"></i></button>
+                <button class="btn-tbl" style="color:#ff8b00;border-color:#ff8b00;background:#fff8e1;" onclick="openModal('statusModal')"><i class="fas fa-exchange-alt"></i></button>
+                <button class="btn-tbl btn-tbl-delete"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div class="campaign-info-row">
+            <div class="camp-info-item"><i class="fas fa-calendar-day"></i> <strong>15/05/2025</strong> → <strong>17/05/2025</strong></div>
+            <div class="camp-info-item"><i class="fas fa-map-marker-alt"></i> Khách sạn Melia Hà Nội</div>
+            <div class="camp-info-item"><i class="fas fa-layer-group"></i> <strong>6</strong> phiên</div>
+            <div class="camp-info-item"><i class="fas fa-ticket-alt"></i> <strong>78 / 150</strong> đăng ký</div>
+            <div class="camp-info-item"><i class="fas fa-user"></i> Nguyễn Văn A</div>
+        </div>
+        <button class="sessions-toggle-btn" onclick="toggleSessions('s2')">
+            <i class="fas fa-layer-group"></i> Phiên sự kiện (CT_EVENTS)
+            <span class="sessions-count">6 phiên</span>
+            <i class="fas fa-chevron-down" id="s2-chevron" style="margin-left:4px;font-size:.7rem;"></i>
+        </button>
+        <div class="sessions-panel" id="s2-panel" style="display:none;">
+            <table class="sessions-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox"></th>
+                        <th>ID</th>
+                        <th>Tên phiên</th>
+                        <th>Địa điểm</th>
+                        <th>Bắt đầu</th>
+                        <th>Kết thúc</th>
+                        <th>Slots</th>
+                        <th>Đăng ký</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">#S010</td>
+                        <td style="font-weight:600;color:#1a2040;">Module 1: Kiến thức Dược cơ bản</td>
+                        <td><span class="loc-badge loc-physical"><i class="fas fa-building"></i> Phòng A101</span></td>
+                        <td style="font-size:.8rem;">15/05 08:30</td>
+                        <td style="font-size:.8rem;">15/05 11:30</td>
+                        <td style="font-size:.8rem;">150</td>
+                        <td>
+                            <span style="font-size:.8rem;font-weight:700;color:#ff8b00;">78</span>
+                            <span class="slot-bar-wrap"><span class="slot-bar-fill half" style="width:52%;"></span></span>
+                        </td>
+                        <td><span class="session-status-badge ssb-upcoming">Sắp diễn ra</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-view" style="font-size:.72rem;" onclick="openModal('regListModal')"><i class="fas fa-users"></i></button>
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;" onclick="openModal('editSessionModal')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="10" style="padding:8px 12px;">
+                            <span style="font-size:.75rem;color:#adb5bd;font-style:italic;">… 5 phiên khác (Module 2–6)</span>
+                        </td>
+                    </tr>
+                    <tr class="session-add-row">
+                        <td colspan="10">
+                            <button class="session-add-btn" onclick="openModal('createSessionModal')">
+                                <i class="fas fa-plus"></i> Thêm phiên mới cho chiến dịch này
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Campaign 3: Cancelled -->
+    <div class="campaign-card" style="opacity:.75;">
+        <div class="campaign-header">
+            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:4px;cursor:pointer;">
+            <div class="campaign-cover" style="background:#f0f2fa;">
+                <i class="fas fa-vial" style="color:#6c757d;"></i>
+            </div>
+            <div class="campaign-meta">
+                <div class="campaign-title">Hội thảo Nghiên cứu Lâm sàng Tháng 3/2025</div>
+                <div class="campaign-slug">/events/nc-ls-t3-2025</div>
+                <div class="campaign-tags">
+                    <span class="camp-tag camp-tag-type">Hội thảo khoa học</span>
+                    <span class="camp-tag camp-tag-status-cancelled">Đã hủy</span>
+                </div>
+            </div>
+            <div class="campaign-actions">
+                <button class="btn-tbl btn-tbl-view" onclick="openModal('statusModal')"><i class="fas fa-history"></i> Lịch sử</button>
+                <button class="btn-tbl btn-tbl-delete"><i class="fas fa-trash"></i> Xóa</button>
+            </div>
+        </div>
+        <div class="campaign-info-row">
+            <div class="camp-info-item"><i class="fas fa-calendar-day"></i> <span style="text-decoration:line-through;">20/03/2025 → 21/03/2025</span></div>
+            <div class="camp-info-item"><i class="fas fa-ban" style="color:#de350b;"></i> <span style="color:#de350b;font-weight:600;">Hủy do lịch trống phòng</span></div>
+            <div class="camp-info-item"><i class="fas fa-ticket-alt"></i> 45 đăng ký đã hoàn tiền</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Pagination -->
+<div class="pager">
+    <div class="pager-info">Hiển thị 1–3 / 24 chiến dịch</div>
+    <div class="pager-btns">
+        <button class="pager-btn" disabled><i class="fas fa-chevron-left" style="font-size:.7rem;"></i></button>
+        <button class="pager-btn active">1</button>
+        <button class="pager-btn">2</button>
+        <button class="pager-btn">3</button>
+        <span style="display:flex;align-items:center;padding:0 4px;color:#adb5bd;font-size:.8rem;">...</span>
+        <button class="pager-btn">8</button>
+        <button class="pager-btn"><i class="fas fa-chevron-right" style="font-size:.7rem;"></i></button>
+    </div>
+</div>
+
+
+<!-- ======================== MODALS ======================== -->
+
+<!-- Create Campaign Modal — EVENTS table -->
+<div class="modal-overlay" id="createCampaignModal" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-plus" style="color:#0061ff;margin-right:8px;"></i>Tạo Chiến dịch Mới</span>
+            <button class="modal-close" onclick="closeModal('createCampaignModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="mf-section-label">Thông tin cơ bản (EVENTS)</p>
+            <div class="mf-row cols-2">
+                <div class="mf-group" style="grid-column:1/-1;">
+                    <label class="mf-label">Tên chiến dịch <span class="req">*</span></label>
+                    <input class="mf-input" type="text" placeholder="VD: Hội nghị Dược phẩm Quốc tế 2025">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Slug URL <span class="req">*</span></label>
+                    <input class="mf-input" type="text" placeholder="hoi-nghi-dp-qt-2025">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Loại sự kiện <span class="req">*</span></label>
+                    <select class="mf-select">
+                        <option>-- Chọn loại --</option>
+                        <option>Hội thảo khoa học</option>
+                        <option>Đào tạo dược</option>
+                        <option>Ra mắt sản phẩm</option>
+                        <option>Hội nghị ngành</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Mô tả ngắn</label>
+                <textarea class="mf-textarea" placeholder="Mô tả tóm tắt về chiến dịch..."></textarea>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Nội dung chi tiết (HTML)</label>
+                <textarea class="mf-textarea" style="min-height:120px;" placeholder="&lt;p&gt;Nội dung đầy đủ...&lt;/p&gt;"></textarea>
+            </div>
+            <div class="mf-row cols-3">
+                <div class="mf-group">
+                    <label class="mf-label">Ngày bắt đầu <span class="req">*</span></label>
+                    <input class="mf-input" type="date">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Ngày kết thúc <span class="req">*</span></label>
+                    <input class="mf-input" type="date">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Trạng thái</label>
+                    <select class="mf-select">
+                        <option>Bản nháp</option>
+                        <option>Công bố</option>
+                        <option>Đã hủy</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Banner / Poster (URL)</label>
+                <div style="display:flex;gap:10px;">
+                    <input class="mf-input" type="text" placeholder="https://...">
+                    <button class="ev-btn ev-btn-ghost" style="white-space:nowrap;"><i class="fas fa-upload"></i> Tải lên</button>
+                </div>
+            </div>
+
+            <hr class="mf-section-divider">
+            <p class="mf-section-label">Phiên đầu tiên (CT_EVENTS)</p>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Tên phiên <span class="req">*</span></label>
+                    <input class="mf-input" type="text" placeholder="VD: Khai mạc">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Địa điểm (LOCATIONS) <span class="req">*</span></label>
+                    <select class="mf-select">
+                        <option>-- Chọn địa điểm --</option>
+                        <option>Trung tâm Hội nghị GEM, TP.HCM</option>
+                        <option>Khách sạn Melia Hà Nội</option>
+                        <option>Trực tuyến (Zoom)</option>
+                        <option>+ Thêm địa điểm mới</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Thời gian bắt đầu</label>
+                    <input class="mf-input" type="datetime-local">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Thời gian kết thúc</label>
+                    <input class="mf-input" type="datetime-local">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Tổng số slot (max_registrations)</label>
+                    <input class="mf-input" type="number" placeholder="VD: 200">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Đường dẫn trực tuyến</label>
+                    <input class="mf-input" type="url" placeholder="https://zoom.us/j/...">
+                </div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Tags sự kiện (CT_EVENT_TAGS)</label>
+                <input class="mf-input" type="text" placeholder="dược-phẩm, hội-nghị, gmp (phân cách bằng dấu phẩy)">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('createCampaignModal')">Hủy</button>
+            <button class="mf-btn mf-btn-primary"><i class="fas fa-save" style="margin-right:5px;"></i>Tạo chiến dịch</button>
+        </div>
+    </div>
+</div>
+
+<!-- Create Session Modal — CT_EVENTS + LOCATIONS -->
+<div class="modal-overlay" id="createSessionModal" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-plus" style="color:#00875a;margin-right:8px;"></i>Thêm Phiên Sự kiện (CT_EVENTS)</span>
+            <button class="modal-close" onclick="closeModal('createSessionModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="mf-group">
+                <label class="mf-label">Chiến dịch cha (EVENTS)</label>
+                <select class="mf-select">
+                    <option>Hội nghị Dược phẩm Quốc tế VN 2025</option>
+                </select>
+            </div>
+            <div class="mf-row cols-2">
+                <div class="mf-group" style="grid-column:1/-1;">
+                    <label class="mf-label">Tên phiên <span class="req">*</span></label>
+                    <input class="mf-input" type="text">
+                </div>
+                <div class="mf-group" style="grid-column:1/-1;">
+                    <label class="mf-label">Mô tả phiên</label>
+                    <textarea class="mf-textarea"></textarea>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Địa điểm (LOCATIONS) <span class="req">*</span></label>
+                    <select class="mf-select">
+                        <option>Hall A — GEM Center</option>
+                        <option>Hall B — GEM Center</option>
+                        <option>Trực tuyến (Zoom)</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Đường dẫn trực tuyến</label>
+                    <input class="mf-input" type="url" placeholder="https://...">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Thời gian bắt đầu <span class="req">*</span></label>
+                    <input class="mf-input" type="datetime-local">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Thời gian kết thúc <span class="req">*</span></label>
+                    <input class="mf-input" type="datetime-local">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Tổng slots <span class="req">*</span></label>
+                    <input class="mf-input" type="number" placeholder="0 = không giới hạn">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Trạng thái</label>
+                    <select class="mf-select">
+                        <option>Sắp diễn ra</option>
+                        <option>Đang diễn ra</option>
+                        <option>Đã kết thúc</option>
+                        <option>Đã hủy</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('createSessionModal')">Hủy</button>
+            <button class="mf-btn mf-btn-primary"><i class="fas fa-save" style="margin-right:5px;"></i>Lưu phiên</button>
+        </div>
+    </div>
+</div>
+
+<!-- Status History Modal — CT_EVENT_STATUS_HISTORY -->
+<div class="modal-overlay" id="statusModal" style="display:none;">
+    <div class="modal-box" style="max-width:540px;">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-history" style="color:#ff8b00;margin-right:8px;"></i>Lịch sử Trạng thái &amp; Đổi trạng thái</span>
+            <button class="modal-close" onclick="closeModal('statusModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="mf-section-label">Lịch sử (CT_EVENT_STATUS_HISTORY)</p>
+            <div class="sh-timeline">
+                <div class="sh-item">
+                    <div class="sh-dot approved"></div>
+                    <div class="sh-content">
+                        <div class="sh-content-top">
+                            <span class="sh-status-label">ONGOING — Đang diễn ra</span>
+                            <span class="sh-time">10/04/2025 08:05</span>
+                        </div>
+                        <div class="sh-note">Sự kiện bắt đầu, hệ thống tự động chuyển trạng thái</div>
+                        <div class="sh-actor"><i class="fas fa-robot"></i> Hệ thống</div>
+                    </div>
+                </div>
+                <div class="sh-item">
+                    <div class="sh-dot approved"></div>
+                    <div class="sh-content">
+                        <div class="sh-content-top">
+                            <span class="sh-status-label">PUBLISHED — Công bố</span>
+                            <span class="sh-time">01/04/2025 09:00</span>
+                        </div>
+                        <div class="sh-note">Chiến dịch đã được duyệt và công bố công khai</div>
+                        <div class="sh-actor"><i class="fas fa-user"></i> admin@pharma.vn</div>
+                    </div>
+                </div>
+                <div class="sh-item">
+                    <div class="sh-dot pending"></div>
+                    <div class="sh-content">
+                        <div class="sh-content-top">
+                            <span class="sh-status-label">DRAFT — Bản nháp</span>
+                            <span class="sh-time">20/03/2025 14:30</span>
+                        </div>
+                        <div class="sh-note">Tạo chiến dịch</div>
+                        <div class="sh-actor"><i class="fas fa-user"></i> nguyenvana@pharma.vn</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="mf-section-divider">
+            <p class="mf-section-label">Đổi trạng thái</p>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Trạng thái mới <span class="req">*</span></label>
+                    <select class="mf-select">
+                        <option>UPCOMING — Sắp diễn ra</option>
+                        <option selected>ONGOING — Đang diễn ra</option>
+                        <option>ENDED — Đã kết thúc</option>
+                        <option>CANCELLED — Hủy</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Áp dụng từ</label>
+                    <input class="mf-input" type="datetime-local">
+                </div>
+            </div>
+            <div class="mf-group">
+                <label class="mf-label">Ghi chú lý do</label>
+                <textarea class="mf-textarea" placeholder="Lý do thay đổi trạng thái..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('statusModal')">Đóng</button>
+            <button class="mf-btn mf-btn-primary"><i class="fas fa-exchange-alt" style="margin-right:5px;"></i>Cập nhật trạng thái</button>
+        </div>
+    </div>
+</div>
+
+<!-- Registrations List Modal — CT_EVENT_REGISTRATIONS -->
+<div class="modal-overlay" id="regListModal" style="display:none;">
+    <div class="modal-box modal-box-wide">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-users" style="color:#0061ff;margin-right:8px;"></i>Danh sách Đăng ký (CT_EVENT_REGISTRATIONS)</span>
+            <button class="modal-close" onclick="closeModal('regListModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <!-- Slot progress -->
+            <div style="display:flex;align-items:center;gap:16px;background:#f8f9ff;border-radius:12px;padding:12px 16px;margin-bottom:16px;">
+                <div style="flex:1;">
+                    <div style="display:flex;justify-content:space-between;font-size:.78rem;font-weight:600;color:#495057;margin-bottom:5px;">
+                        <span>Khai mạc &amp; Phát biểu chào mừng — Hall A</span>
+                        <span style="color:#0061ff;font-weight:800;">487 / 500</span>
+                    </div>
+                    <div style="background:#e9ecef;border-radius:10px;height:8px;overflow:hidden;">
+                        <div style="width:97.4%;height:8px;border-radius:10px;background:linear-gradient(90deg,#00875a,#2d8cf0);"></div>
+                    </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                    <span style="font-size:.72rem;color:#6c757d;">Còn trống</span><br>
+                    <span style="font-size:1.1rem;font-weight:800;color:#de350b;">13</span>
+                </div>
+            </div>
+
+            <!-- Filter row -->
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                <div class="ev-search" style="flex:2;min-width:180px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Tìm tên, email, điện thoại...">
+                </div>
+                <select class="ev-filter">
+                    <option>Tất cả trạng thái</option>
+                    <option>Đã xác nhận</option>
+                    <option>Chờ xác nhận</option>
+                    <option>Đã tham dự</option>
+                    <option>Đã hủy</option>
+                </select>
+                <button class="ev-btn ev-btn-ghost" style="font-size:.8rem;"><i class="fas fa-download"></i> Xuất danh sách</button>
+                <button class="ev-btn ev-btn-success" style="font-size:.8rem;"><i class="fas fa-plus"></i> Thêm thủ công</button>
+            </div>
+
+            <table class="reg-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox"></th>
+                        <th>#</th>
+                        <th>Người đăng ký</th>
+                        <th>Email</th>
+                        <th>Điện thoại</th>
+                        <th>Đơn vị</th>
+                        <th>Đăng ký lúc</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">001</td>
+                        <td style="font-weight:600;font-size:.85rem;">Trần Thị Hoa</td>
+                        <td style="font-size:.8rem;color:#6c757d;">hoa.tran@abc.vn</td>
+                        <td style="font-size:.8rem;color:#6c757d;">0901 234 567</td>
+                        <td style="font-size:.8rem;">Công ty CP Dược ABC</td>
+                        <td style="font-size:.78rem;color:#6c757d;">09/04 14:32</td>
+                        <td><span class="reg-status reg-attended">Đã tham dự</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">002</td>
+                        <td style="font-weight:600;font-size:.85rem;">Nguyễn Minh Tuấn</td>
+                        <td style="font-size:.8rem;color:#6c757d;">tuan.nm@xyz.com</td>
+                        <td style="font-size:.8rem;color:#6c757d;">0912 345 678</td>
+                        <td style="font-size:.8rem;">Bệnh viện Đa khoa XYZ</td>
+                        <td style="font-size:.78rem;color:#6c757d;">08/04 09:15</td>
+                        <td><span class="reg-status reg-confirmed">Đã xác nhận</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">003</td>
+                        <td style="font-weight:600;font-size:.85rem;color:#6c757d;">Lê Phương Thảo</td>
+                        <td style="font-size:.8rem;color:#6c757d;">thao.lp@guest.com</td>
+                        <td style="font-size:.8rem;color:#6c757d;">0923 456 789</td>
+                        <td style="font-size:.8rem;color:#adb5bd;">Khách vãng lai</td>
+                        <td style="font-size:.78rem;color:#6c757d;">09/04 18:44</td>
+                        <td><span class="reg-status reg-cancelled">Đã hủy</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td style="font-size:.72rem;color:#adb5bd;font-family:monospace;">004</td>
+                        <td style="font-weight:600;font-size:.85rem;">Phạm Đức Thành</td>
+                        <td style="font-size:.8rem;color:#6c757d;">thanh.pd@pharma.vn</td>
+                        <td style="font-size:.8rem;color:#6c757d;">0934 567 890</td>
+                        <td style="font-size:.8rem;">Pharma Portal (nhân viên)</td>
+                        <td style="font-size:.78rem;color:#6c757d;">07/04 11:20</td>
+                        <td><span class="reg-status reg-pending">Chờ xác nhận</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+                <span style="font-size:.78rem;color:#6c757d;">Hiển thị 1–4 / 487 đăng ký</span>
+                <div class="pager-btns">
+                    <button class="pager-btn active" style="width:28px;height:28px;font-size:.75rem;">1</button>
+                    <button class="pager-btn" style="width:28px;height:28px;font-size:.75rem;">2</button>
+                    <button class="pager-btn" style="width:28px;height:28px;font-size:.75rem;">→</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Management Modal — LOCATIONS + PROVINCES + DISTRICTS + WARDS -->
+<div class="modal-overlay" id="locationModal" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-map-marked-alt" style="color:#0061ff;margin-right:8px;"></i>Quản lý Địa điểm (LOCATIONS)</span>
+            <button class="modal-close" onclick="closeModal('locationModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+                <button class="ev-btn ev-btn-primary" style="font-size:.82rem;"><i class="fas fa-plus"></i> Thêm địa điểm</button>
+            </div>
+            <table class="reg-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Tên địa điểm</th>
+                        <th>Địa chỉ (PROVINCES/DISTRICTS/WARDS)</th>
+                        <th>Loại</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-size:.72rem;color:#adb5bd;">1</td>
+                        <td style="font-weight:600;font-size:.85rem;">Trung tâm Hội nghị GEM</td>
+                        <td style="font-size:.8rem;color:#6c757d;">8 Nguyễn Bỉnh Khiêm, Phường Đa Kao, Q.1, TP.HCM</td>
+                        <td><span class="loc-badge loc-physical"><i class="fas fa-building"></i> Thực địa</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:.72rem;color:#adb5bd;">2</td>
+                        <td style="font-weight:600;font-size:.85rem;">Khách sạn Melia Hà Nội</td>
+                        <td style="font-size:.8rem;color:#6c757d;">44B Lý Thường Kiệt, Hoàn Kiếm, Hà Nội</td>
+                        <td><span class="loc-badge loc-physical"><i class="fas fa-building"></i> Thực địa</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:.72rem;color:#adb5bd;">3</td>
+                        <td style="font-weight:600;font-size:.85rem;">Zoom Webinar</td>
+                        <td style="font-size:.8rem;color:#adb5bd;">zoom.us/j/pharmaroom</td>
+                        <td><span class="loc-badge loc-online"><i class="fas fa-globe"></i> Trực tuyến</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <hr class="mf-section-divider">
+            <p class="mf-section-label">Thêm địa điểm mới</p>
+            <div class="mf-row cols-2">
+                <div class="mf-group" style="grid-column:1/-1;">
+                    <label class="mf-label">Tên địa điểm <span class="req">*</span></label>
+                    <input class="mf-input" type="text" placeholder="VD: Hội trường B - Đại học Y Hà Nội">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Tỉnh / Thành phố (PROVINCES)</label>
+                    <select class="mf-select">
+                        <option>Hà Nội</option>
+                        <option>TP. Hồ Chí Minh</option>
+                        <option>Đà Nẵng</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Quận / Huyện (DISTRICTS)</label>
+                    <select class="mf-select">
+                        <option>-- Chọn Tỉnh/TP trước --</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Phường / Xã (WARDS)</label>
+                    <select class="mf-select">
+                        <option>-- Chọn Quận/Huyện trước --</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Số nhà, tên đường</label>
+                    <input class="mf-input" type="text" placeholder="VD: 44B Lý Thường Kiệt">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">URL Google Maps</label>
+                    <input class="mf-input" type="url" placeholder="https://maps.google.com/...">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Loại địa điểm</label>
+                    <select class="mf-select">
+                        <option>Thực địa</option>
+                        <option>Trực tuyến</option>
+                        <option>Kết hợp</option>
+                    </select>
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Đường dẫn trực tuyến</label>
+                    <input class="mf-input" type="url" placeholder="https://...">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('locationModal')">Đóng</button>
+            <button class="mf-btn mf-btn-primary"><i class="fas fa-save" style="margin-right:5px;"></i>Lưu địa điểm</button>
+        </div>
+    </div>
+</div>
+
+<!-- Event Type Modal — EVENT_TYPES -->
+<div class="modal-overlay" id="typeModal" style="display:none;">
+    <div class="modal-box" style="max-width:500px;">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-tags" style="color:#0061ff;margin-right:8px;"></i>Quản lý Loại Sự kiện (EVENT_TYPES)</span>
+            <button class="modal-close" onclick="closeModal('typeModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <table class="reg-table" style="margin-bottom:16px;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên loại</th>
+                        <th>Slug</th>
+                        <th>Số CĐ</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-size:.72rem;color:#adb5bd;">1</td>
+                        <td style="font-weight:600;font-size:.85rem;">Hội thảo khoa học</td>
+                        <td style="font-size:.75rem;color:#adb5bd;font-family:monospace;">hoi-thao-kh</td>
+                        <td style="font-weight:700;color:#0061ff;">8</td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:.72rem;color:#adb5bd;">2</td>
+                        <td style="font-weight:600;font-size:.85rem;">Đào tạo dược</td>
+                        <td style="font-size:.75rem;color:#adb5bd;font-family:monospace;">dao-tao-duoc</td>
+                        <td style="font-weight:700;color:#0061ff;">5</td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:.72rem;color:#adb5bd;">3</td>
+                        <td style="font-weight:600;font-size:.85rem;">Ra mắt sản phẩm</td>
+                        <td style="font-size:.75rem;color:#adb5bd;font-family:monospace;">ra-mat-sp</td>
+                        <td style="font-weight:700;color:#0061ff;">4</td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-tbl btn-tbl-edit" style="font-size:.72rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-tbl btn-tbl-delete" style="font-size:.72rem;"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="mf-row cols-2">
+                <div class="mf-group">
+                    <label class="mf-label">Tên loại mới <span class="req">*</span></label>
+                    <input class="mf-input" type="text" placeholder="VD: Hội nghị ngành">
+                </div>
+                <div class="mf-group">
+                    <label class="mf-label">Slug</label>
+                    <input class="mf-input" type="text" placeholder="hoi-nghi-nganh">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('typeModal')">Đóng</button>
+            <button class="mf-btn mf-btn-primary"><i class="fas fa-plus" style="margin-right:5px;"></i>Thêm loại</button>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Campaign Modal — read-only overview -->
+<div class="modal-overlay" id="detailCampaignModal" style="display:none;">
+    <div class="modal-box modal-box-wide">
+        <div class="modal-head">
+            <span class="modal-title"><i class="fas fa-calendar-check" style="color:#0061ff;margin-right:8px;"></i>Chi tiết: Hội nghị Dược phẩm Quốc tế VN 2025</span>
+            <button class="modal-close" onclick="closeModal('detailCampaignModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-tabs">
+                <div class="modal-tab active">Thông tin chung</div>
+                <div class="modal-tab">Phiên (4)</div>
+                <div class="modal-tab">Đăng ký (342)</div>
+                <div class="modal-tab">Lịch sử trạng thái</div>
+                <div class="modal-tab">Bình luận (CT_EVENT_CMT)</div>
+            </div>
+            <div class="mf-row cols-2">
+                <div>
+                    <div style="background:#f8f9ff;border-radius:12px;padding:14px;margin-bottom:14px;">
+                        <div style="font-size:.7rem;font-weight:700;color:#adb5bd;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">EVENTS</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Loại:</span><span style="font-weight:600;">Hội nghị ngành</span></div>
+                            <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Trạng thái:</span><span class="camp-tag camp-tag-status-ongoing">Đang diễn ra</span></div>
+                            <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Ngày bắt đầu:</span><span style="font-weight:600;">10/04/2025</span></div>
+                            <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Ngày kết thúc:</span><span style="font-weight:600;">12/04/2025</span></div>
+                            <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Người tạo:</span><span style="font-weight:600;">admin@pharma.vn</span></div>
+                            <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Tổng phiên:</span><span style="font-weight:700;color:#0061ff;">4</span></div>
+                            <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Tổng đăng ký:</span><span style="font-weight:700;color:#00875a;">342</span></div>
+                        </div>
+                    </div>
+                    <div style="background:#f8f9ff;border-radius:12px;padding:14px;">
+                        <div style="font-size:.7rem;font-weight:700;color:#adb5bd;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">CT_EVENT_TAGS</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <span class="camp-tag camp-tag-type">dược-phẩm</span>
+                            <span class="camp-tag camp-tag-type">hội-nghị-quốc-tế</span>
+                            <span class="camp-tag camp-tag-type">gmp</span>
+                            <span class="camp-tag camp-tag-type">chuỗi-cung-ứng</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div style="background:#f8f9ff;border-radius:12px;padding:14px;">
+                        <div style="font-size:.7rem;font-weight:700;color:#adb5bd;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">CT_POST_EVENTS — Bài viết liên quan</div>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border-radius:8px;border:1px solid #f0f2fa;">
+                                <i class="fas fa-file-alt" style="color:#0061ff;font-size:.85rem;"></i>
+                                <span style="font-size:.82rem;font-weight:600;color:#1a2040;">GMP 2025: Tiêu chuẩn mới nhất</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border-radius:8px;border:1px solid #f0f2fa;">
+                                <i class="fas fa-file-alt" style="color:#0061ff;font-size:.85rem;"></i>
+                                <span style="font-size:.82rem;font-weight:600;color:#1a2040;">Chuỗi cung ứng lạnh: Thách thức 2025</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mf-btn mf-btn-cancel" onclick="closeModal('detailCampaignModal')">Đóng</button>
+            <button class="mf-btn mf-btn-primary" onclick="closeModal('detailCampaignModal');openModal('editCampaignModal')"><i class="fas fa-edit" style="margin-right:5px;"></i>Chỉnh sửa</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+function openModal(id){ document.getElementById(id).style.display='flex'; }
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+    m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; });
+});
+
+let bulkCount=0;
+function toggleBulk(cb){
+    bulkCount += cb.checked ? 1 : -1;
+    bulkCount = Math.max(0,bulkCount);
+    document.getElementById('bulkCount').textContent = bulkCount + ' chiến dịch được chọn';
+    document.getElementById('bulkBar').classList.toggle('visible', bulkCount>0);
+}
+function clearBulk(){
+    document.querySelectorAll('input[type=checkbox][onchange]').forEach(c=>c.checked=false);
+    bulkCount=0;
+    document.getElementById('bulkBar').classList.remove('visible');
+}
+
+function toggleSessions(id){
+    const panel = document.getElementById(id+'-panel');
+    const chevron = document.getElementById(id+'-chevron');
+    const visible = panel.style.display!=='none';
+    panel.style.display = visible ? 'none' : 'block';
+    chevron.style.transform = visible ? '' : 'rotate(180deg)';
+}
+</script>
+
+</div>
+</th:block>
+</html>

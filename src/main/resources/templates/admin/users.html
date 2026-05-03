@@ -1,0 +1,1059 @@
+
+<!--src/main/resources/templates/admin/users.html-->
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{admin_layout::admin-head('Quản lý Định danh (IAM)')}"></head>
+
+<th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
+    <div id="admin-content-wrapper">
+
+        <style>
+            /* ==========================================================
+               DESIGN SYSTEM CỤC BỘ (IAM DASHBOARD)
+            ========================================================== */
+            .iam-header {
+                margin-bottom: 24px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+            }
+
+            .iam-title {
+                font-size: 1.35rem;
+                font-weight: 800;
+                color: #0f172a;
+                margin: 0 0 4px 0;
+                letter-spacing: -0.5px;
+            }
+
+            .iam-subtitle {
+                font-size: .85rem;
+                color: #64748b;
+                margin: 0;
+            }
+
+            /* Thống kê nhanh */
+            .iam-stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 16px;
+                margin-bottom: 24px;
+            }
+
+            .iam-stat-card {
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 16px 20px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+
+            .iam-stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+                border-color: #cbd5e1;
+            }
+
+            .iam-stat-icon {
+                width: 46px;
+                height: 46px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+                flex-shrink: 0;
+            }
+
+            .iam-stat-icon.total {
+                background: #eff6ff;
+                color: #2563eb;
+            }
+
+            .iam-stat-icon.active {
+                background: #f0fdf4;
+                color: #16a34a;
+            }
+
+            .iam-stat-icon.locked {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+            .iam-stat-icon.online {
+                background: #fffbeb;
+                color: #d97706;
+            }
+
+            .iam-stat-val {
+                font-size: 1.4rem;
+                font-weight: 800;
+                color: #0f172a;
+                line-height: 1.1;
+                margin-bottom: 2px;
+            }
+
+            .iam-stat-lbl {
+                font-size: .75rem;
+                font-weight: 600;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            /* Lưới dữ liệu (Data Grid) */
+            .iam-grid-container {
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+                overflow: hidden;
+                position: relative;
+            }
+
+            /* Khu vực Bộ lọc */
+            .iam-filter-bar {
+                padding: 16px 20px;
+                border-bottom: 1px solid #e2e8f0;
+                background: #f8fafc;
+            }
+
+            .filter-lbl {
+                font-size: .72rem;
+                font-weight: 700;
+                color: #475569;
+                text-transform: uppercase;
+                margin-bottom: 6px;
+                display: block;
+                letter-spacing: 0.5px;
+            }
+
+            .iam-input {
+                border: 1px solid #cbd5e1;
+                border-radius: 6px;
+                padding: 8px 12px;
+                font-size: .85rem;
+                color: #334155;
+                transition: border-color 0.2s;
+                box-shadow: none;
+            }
+
+            .iam-input:focus {
+                border-color: #2563eb;
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+            /* FIX BUG: THANH THAO TÁC HÀNG LOẠT ĐÃ SỬA CHIỀU CAO (HEIGHT: 52PX) */
+            .bulk-action-wrapper {
+                position: relative;
+            }
+
+            .bulk-action-bar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 52px;
+                /* Chỉ cao bằng thanh thead */
+                background: #ebf5ff;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 20px;
+                z-index: 10;
+                opacity: 0;
+                transform: translateY(-10px);
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                pointer-events: none;
+                border-bottom: 1px solid #bfdbfe;
+            }
+
+            .bulk-action-bar.is-active {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+
+            .bulk-selected-text {
+                font-size: .85rem;
+                font-weight: 700;
+                color: #1e3a8a;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .bulk-badge {
+                background: #2563eb;
+                color: white;
+                padding: 2px 8px;
+                border-radius: 20px;
+                font-size: .75rem;
+            }
+
+            .bulk-btn-group {
+                display: flex;
+                gap: 10px;
+            }
+
+            .btn-bulk {
+                padding: 6px 14px;
+                border-radius: 6px;
+                font-size: .8rem;
+                font-weight: 600;
+                border: none;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .btn-bulk.lock {
+                background: #fee2e2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+
+            .btn-bulk.lock:hover {
+                background: #fecaca;
+            }
+
+            .btn-bulk.unlock {
+                background: #dcfce7;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+
+            .btn-bulk.unlock:hover {
+                background: #bbf7d0;
+            }
+
+            .btn-bulk-cancel {
+                background: transparent;
+                color: #64748b;
+            }
+
+            .btn-bulk-cancel:hover {
+                color: #0f172a;
+                text-decoration: underline;
+            }
+
+            /* Bảng dữ liệu */
+            .iam-table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 900px;
+            }
+
+            .iam-table th {
+                padding: 14px 20px;
+                font-size: .72rem;
+                font-weight: 700;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                background: #fff;
+                border-bottom: 1px solid #e2e8f0;
+                text-align: left;
+                height: 52px;
+            }
+
+            .iam-table td {
+                padding: 14px 20px;
+                border-bottom: 1px solid #f1f5f9;
+                vertical-align: middle;
+            }
+
+            .iam-table tr:hover td {
+                background: #f8fafc;
+            }
+
+            .iam-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            /* Thành phần trong Bảng */
+            .iam-checkbox {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+                accent-color: #2563eb;
+            }
+
+            .user-avatar {
+                width: 38px;
+                height: 38px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: .9rem;
+                flex-shrink: 0;
+                box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+            }
+
+            .user-name {
+                font-weight: 700;
+                font-size: .9rem;
+                color: #0f172a;
+                margin-bottom: 2px;
+                line-height: 1.2;
+            }
+
+            .user-id {
+                font-size: .7rem;
+                color: #94a3b8;
+                font-weight: 600;
+                font-family: monospace;
+            }
+
+            .user-contact {
+                font-size: .8rem;
+                color: #475569;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 3px;
+            }
+
+            /* Role Tags */
+            .role-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .role-tag {
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-size: .7rem;
+                font-weight: 700;
+                border: 1px solid;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .role-tag.admin {
+                background: #e0e7ff;
+                color: #4338ca;
+                border-color: #c7d2fe;
+            }
+
+            .role-tag.normal {
+                background: #f1f5f9;
+                color: #475569;
+                border-color: #e2e8f0;
+            }
+
+            .role-tag.more {
+                border-style: dashed;
+                cursor: help;
+            }
+
+            /* Status Badges */
+            .stt-badge {
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: .7rem;
+                font-weight: 700;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                border: 1px solid;
+            }
+
+            .stt-active {
+                background: #f0fdf4;
+                color: #16a34a;
+                border-color: #bbf7d0;
+            }
+
+            .stt-locked {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .stt-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+            }
+
+            .stt-active .stt-dot {
+                background: #16a34a;
+                box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+            }
+
+            .stt-locked .stt-dot {
+                background: #dc2626;
+            }
+
+            /* Nút Thao tác (Action Buttons) */
+            .action-group {
+                display: flex;
+                gap: 6px;
+                justify-content: flex-end;
+            }
+
+            .btn-act {
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid;
+                font-size: .85rem;
+                cursor: pointer;
+                transition: all 0.2s;
+                background: #fff;
+                text-decoration: none;
+            }
+
+            .btn-act.view {
+                color: #2563eb;
+                border-color: #bfdbfe;
+            }
+
+            .btn-act.view:hover {
+                background: #eff6ff;
+                border-color: #2563eb;
+                transform: translateY(-1px);
+            }
+
+            .btn-act.lock {
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .btn-act.lock:hover {
+                background: #fef2f2;
+                border-color: #dc2626;
+                transform: translateY(-1px);
+            }
+
+            .btn-act.unlock {
+                color: #16a34a;
+                border-color: #bbf7d0;
+            }
+
+            .btn-act.unlock:hover {
+                background: #f0fdf4;
+                border-color: #16a34a;
+                transform: translateY(-1px);
+            }
+
+            /* Pagination */
+            .iam-pagination {
+                padding: 16px 20px;
+                border-top: 1px solid #e2e8f0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: #fff;
+            }
+
+            .pg-info {
+                font-size: .8rem;
+                color: #64748b;
+                font-weight: 500;
+            }
+
+            .pg-controls {
+                display: flex;
+                gap: 4px;
+            }
+
+            .pg-btn {
+                min-width: 32px;
+                height: 32px;
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+                background: #fff;
+                color: #475569;
+                font-size: .8rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .pg-btn:hover:not(:disabled) {
+                border-color: #cbd5e1;
+                background: #f8fafc;
+                color: #0f172a;
+            }
+
+            .pg-btn.active {
+                background: #2563eb;
+                color: #fff;
+                border-color: #2563eb;
+            }
+
+            .pg-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        </style>
+
+        <div class="iam-header">
+            <div>
+                <h4 class="iam-title">Trung tâm Quản trị Định danh (IAM)</h4>
+                <p class="iam-subtitle">Kiểm soát hệ thống tài khoản, phân quyền truy cập và kiểm toán bảo mật B2B</p>
+            </div>
+            <div>
+                <a href="/admin/role-management" class="btn-hc-primary"
+                    style="padding: 10px 20px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-shield-alt"></i> Cấu hình RBAC Core
+                </a>
+            </div>
+        </div>
+
+        <div class="iam-stats-grid" id="statsRow" style="display:none;">
+            <div class="iam-stat-card">
+                <div class="iam-stat-icon total"><i class="fas fa-users"></i></div>
+                <div>
+                    <div class="iam-stat-val" id="stTotal">0</div>
+                    <div class="iam-stat-lbl">Tổng Hồ Sơ</div>
+                </div>
+            </div>
+            <div class="iam-stat-card">
+                <div class="iam-stat-icon active"><i class="fas fa-user-check"></i></div>
+                <div>
+                    <div class="iam-stat-val" id="stActive">0</div>
+                    <div class="iam-stat-lbl">Đang Hoạt Động</div>
+                </div>
+            </div>
+            <div class="iam-stat-card">
+                <div class="iam-stat-icon locked"><i class="fas fa-user-lock"></i></div>
+                <div>
+                    <div class="iam-stat-val" id="stLocked">0</div>
+                    <div class="iam-stat-lbl">Bị Khóa / Vi Phạm</div>
+                </div>
+            </div>
+            <div class="iam-stat-card">
+                <div class="iam-stat-icon online"><i class="fas fa-wifi"></i></div>
+                <div>
+                    <div class="iam-stat-val" id="stOnline">0</div>
+                    <div class="iam-stat-lbl">Truy cập 24h qua</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="iam-grid-container">
+
+            <div class="iam-filter-bar">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="filter-lbl">Từ khóa tra cứu</label>
+                        <div class="position-relative">
+                            <i class="fas fa-search position-absolute text-muted"
+                                style="left:12px; top:50%; transform:translateY(-50%); font-size:.85rem;"></i>
+                            <input type="text" id="filterKeyword" class="form-control iam-input w-100"
+                                style="padding-left:32px;" placeholder="Tên, Email hoặc Số điện thoại...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="filter-lbl">Trạng thái bảo mật</label>
+                        <select id="filterStatus" class="form-select iam-input w-100">
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="ACTIVE">Đang hoạt động (Safe)</option>
+                            <option value="LOCKED">Đang bị khóa (Blocked)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="filter-lbl">Nhóm chức vụ (Role)</label>
+                        <select id="filterRole" class="form-select iam-input w-100">
+                            <option value="ALL">Tất cả chức vụ</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button id="btnResetFilter" class="btn-ghost w-100"
+                            style="padding:8px 0; border:1px solid #cbd5e1;"><i class="fas fa-sync-alt me-2"></i>Tải
+                            lại</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bulk-action-wrapper">
+                <div id="bulkActionBar" class="bulk-action-bar">
+                    <div class="bulk-selected-text">
+                        <span class="bulk-badge" id="selectedCount">0</span> tài khoản đang được chọn
+                    </div>
+                    <div class="bulk-btn-group">
+                        <button class="btn-bulk unlock" onclick="executeBulkAction(false)"><i class="fas fa-unlock"></i>
+                            Mở khóa</button>
+                        <button class="btn-bulk lock" onclick="executeBulkAction(true)"><i class="fas fa-lock"></i> Khóa
+                            tài khoản</button>
+                        <div style="width:1px; background:#bfdbfe; margin:0 5px;"></div>
+                        <button class="btn-bulk btn-bulk-cancel" onclick="cancelBulkSelection()">Hủy chọn</button>
+                    </div>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="iam-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="checkAll" class="iam-checkbox">
+                                </th>
+                                <th style="width: 280px;">Hồ sơ Đối tác / Nhân viên</th>
+                                <th>Liên hệ</th>
+                                <th>Chức vụ bảo mật (Roles)</th>
+                                <th style="text-align: center; width: 140px;">Trạng thái</th>
+                                <th style="text-align: right; width: 120px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="6" style="padding:60px 20px;text-align:center;"><i
+                                        class="fas fa-circle-notch fa-spin fa-2x text-muted mb-3"></i><br><span
+                                        style="color:#64748b;font-weight:600;">Đang đồng bộ dữ liệu...</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="iam-pagination">
+                <div class="pg-info" id="paginationInfo">Đang tải dữ liệu...</div>
+                <div class="pg-controls" id="paginationArea"></div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="reasonModal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                    <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                        <h5 class="modal-title fw-bold" id="reasonModalTitle" style="font-size: 1.15rem;"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div
+                            style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+                            <p id="reasonModalText"
+                                style="color:#475569; font-size:.85rem; margin:0; font-weight: 500;"></p>
+                        </div>
+
+                        <input type="hidden" id="reasonActionType">
+                        <input type="hidden" id="reasonSingleTargetId">
+
+                        <label class="form-label fw-bold" style="font-size:.85rem; color:#0f172a;">Lý do kiểm duyệt
+                            <span class="text-danger">*</span></label>
+                        <textarea id="reasonInput" class="form-control iam-input w-100" rows="3"
+                            placeholder="Nhập lý do chi tiết (Bắt buộc)..."></textarea>
+                        <div class="form-text mt-2"
+                            style="font-size:.75rem; color:#dc2626; display:flex; gap:6px; align-items:flex-start;">
+                            <i class="fas fa-shield-alt mt-1"></i>
+                            <span>Hệ thống yêu cầu giải trình bắt buộc. Lý do này sẽ được lưu vĩnh viễn vào <strong>Sổ
+                                    tay Kiểm toán (Audit Log)</strong> để phục vụ công tác đối soát.</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="font-weight:600;">Hủy
+                            lệnh</button>
+                        <button type="button" class="btn-hc-primary" id="btnConfirmReason" style="padding: 8px 20px;">
+                            <i class="fas fa-check-circle me-2"></i> Xác nhận Thực thi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // =====================================================================
+            // LÕI JAVASCRIPT: TUÂN THỦ 100% VÒNG LẶP FOR TRUYỀN THỐNG, KHÔNG STREAM
+            // =====================================================================
+
+            var currentPage = 0;
+            var pageSize = 10;
+            var selectedUserIds = [];
+            var typingTimer; // Biến dùng cho tính năng Debounce (chống lag khi gõ)
+
+            // Hàm bổ trợ giao diện
+            function getInitials(name) {
+                if (name === undefined || name === null || name === '') return 'U';
+                var parts = name.trim().split(' ');
+                if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+                return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+            }
+
+            function getColor(name) {
+                var colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#0ea5e9', '#8b5cf6'];
+                var sum = 0;
+                if (name !== undefined && name !== null) {
+                    for (var i = 0; i < name.length; i = i + 1) { sum = sum + name.charCodeAt(i); }
+                }
+                return colors[sum % colors.length];
+            }
+
+            // 1. TẢI THỐNG KÊ (DASHBOARD)
+            function loadStats() {
+                callApi('/api/admin/users/stats', 'GET', null, "", function (response) {
+                    if (response.status === 200) {
+                        document.getElementById('statsRow').style.display = 'grid';
+                        document.getElementById('stTotal').innerText = response.data.total;
+                        document.getElementById('stActive').innerText = response.data.active;
+                        document.getElementById('stLocked').innerText = response.data.locked;
+                        document.getElementById('stOnline').innerText = response.data.online;
+                    }
+                });
+            }
+
+            // 2. TẢI DANH MỤC ROLE ĐỂ ĐỔ VÀO DROPDOWN LỌC
+            function loadRolesForFilter() {
+                callApi('/api/admin/role-management/roles', 'GET', null, "", function (response) {
+                    var roles = response.data;
+                    var selectObj = document.getElementById('filterRole');
+                    if (roles !== undefined && roles !== null) {
+                        for (var i = 0; i < roles.length; i = i + 1) {
+                            var r = roles[i];
+                            var option = document.createElement("option");
+                            option.text = r.roleName;
+                            option.value = r.roleName;
+                            selectObj.add(option);
+                        }
+                    }
+                });
+            }
+
+            // 3. TẢI DANH SÁCH NGƯỜI DÙNG (CÓ LỌC ĐA CHIỀU)
+            window.loadData = function (page) {
+                if (page !== undefined && page !== null) { currentPage = page; }
+
+                var keyword = document.getElementById('filterKeyword').value.trim();
+                var status = document.getElementById('filterStatus').value;
+                var roleName = document.getElementById('filterRole').value;
+
+                var url = '/api/admin/users/search-advanced?pageNo=' + currentPage + '&pageSize=' + pageSize +
+                    '&keyword=' + encodeURIComponent(keyword) +
+                    '&status=' + encodeURIComponent(status) +
+                    '&roleName=' + encodeURIComponent(roleName);
+
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" style="padding:60px 20px;text-align:center;"><i class="fas fa-circle-notch fa-spin fa-2x text-muted mb-3"></i><br><span style="color:#64748b;font-weight:600;">Đang lọc dữ liệu...</span></td></tr>';
+
+                // Hủy bộ chọn khi tải trang mới
+                cancelBulkSelection();
+
+                callApi(url, 'GET', null, "", function (response) {
+                    var users = response.data.users;
+                    var totalPages = response.data.totalPages;
+                    var totalElements = response.data.totalElements;
+
+                    var tbody = document.getElementById('tableBody');
+                    var html = '';
+
+                    // Cập nhật thông tin phân trang
+                    var pageStart = (currentPage * pageSize) + 1;
+                    var pageEnd = Math.min((currentPage + 1) * pageSize, totalElements);
+                    if (totalElements === 0) { pageStart = 0; pageEnd = 0; }
+                    document.getElementById('paginationInfo').innerHTML = 'Hiển thị <span style="font-weight:700;color:#0f172a;">' + pageStart + '-' + pageEnd + '</span> trong tổng số <span style="font-weight:700;color:#0f172a;">' + totalElements + '</span> bản ghi';
+
+                    if (users === undefined || users === null || users.length === 0) {
+                        html = '<tr><td colspan="6" style="padding:60px 20px;text-align:center;color:#64748b;"><i class="fas fa-folder-open fa-3x mb-3" style="color:#cbd5e1;"></i><br><span style="font-weight:600;font-size:1rem;">Không tìm thấy dữ liệu</span><br><span style="font-size:.8rem;margin-top:4px;display:block;">Vui lòng điều chỉnh lại bộ lọc</span></td></tr>';
+                    } else {
+                        // Lặp For nguyên thủy để vẽ UI
+                        for (var i = 0; i < users.length; i = i + 1) {
+                            var u = users[i];
+                            var nameDisplay = 'Vô Danh';
+                            if (u.fullName !== undefined && u.fullName !== null && u.fullName !== '') { nameDisplay = u.fullName; }
+                            else if (u.username !== undefined && u.username !== null && u.username !== '') { nameDisplay = u.username; }
+
+                            var color = getColor(nameDisplay);
+                            var initials = getInitials(nameDisplay);
+
+                            // Vẽ Roles (Giới hạn hiển thị 2)
+                            var rolesHtml = '<div class="role-tags">';
+                            if (u.roles !== undefined && u.roles !== null && u.roles.length > 0) {
+                                var roleArray = Array.from(u.roles);
+                                var limit = roleArray.length < 2 ? roleArray.length : 2;
+
+                                for (var j = 0; j < limit; j = j + 1) {
+                                    var rName = roleArray[j];
+                                    if (rName === 'SUPERADMIN' || rName === 'ADMIN') {
+                                        rolesHtml += '<span class="role-tag admin"><i class="fas fa-crown"></i> ' + rName + '</span>';
+                                    } else {
+                                        rolesHtml += '<span class="role-tag normal"><i class="fas fa-shield-alt text-muted"></i> ' + rName + '</span>';
+                                    }
+                                }
+
+                                if (roleArray.length > 2) {
+                                    rolesHtml += '<span class="role-tag normal more" title="' + roleArray.join(", ") + '">+' + (roleArray.length - 2) + '</span>';
+                                }
+                            } else {
+                                rolesHtml += '<span style="font-size:.75rem;color:#94a3b8;font-style:italic;">Chưa phân quyền</span>';
+                            }
+                            rolesHtml += '</div>';
+
+                            // Vẽ Status
+                            var isLocked = u.locked;
+                            var statusHtml = '';
+                            if (isLocked === true) {
+                                statusHtml = '<span class="stt-badge stt-locked"><span class="stt-dot"></span> Bị khóa</span>';
+                            } else {
+                                statusHtml = '<span class="stt-badge stt-active"><span class="stt-dot"></span> Hoạt động</span>';
+                            }
+
+                            var emailDisplay = (u.email !== undefined && u.email !== null) ? u.email : '—';
+                            var phoneDisplay = (u.phone !== undefined && u.phone !== null && u.phone !== '') ? u.phone : 'Chưa cập nhật';
+
+                            html += '<tr>';
+                            // Cột Checkbox
+                            html += '<td style="text-align:center;">';
+                            html += '  <input type="checkbox" class="iam-checkbox user-cb" value="' + u.id + '" onchange="handleCheckboxChange()">';
+                            html += '</td>';
+
+                            // Cột Định danh
+                            html += '<td>';
+                            html += '  <div style="display:flex;align-items:center;gap:12px;">';
+                            html += '    <div class="user-avatar" style="background:' + color + ';">' + initials + '</div>';
+                            html += '    <div>';
+                            html += '      <div class="user-name">' + nameDisplay + '</div>';
+                            html += '      <div class="user-id">UID: #' + u.id + '</div>';
+                            html += '    </div>';
+                            html += '  </div>';
+                            html += '</td>';
+
+                            // Cột Liên hệ
+                            html += '<td>';
+                            html += '  <div class="user-contact"><i class="fas fa-envelope text-muted" style="width:14px;"></i> ' + emailDisplay + '</div>';
+                            html += '  <div class="user-contact"><i class="fas fa-phone-alt text-muted" style="width:14px;"></i> ' + phoneDisplay + '</div>';
+                            html += '</td>';
+
+                            // Cột Roles
+                            html += '<td>' + rolesHtml + '</td>';
+
+                            // Cột Status
+                            html += '<td style="text-align:center;">' + statusHtml + '</td>';
+
+                            // Cột Action Buttons
+                            html += '<td>';
+                            html += '  <div class="action-group">';
+                            if (isLocked === true) {
+                                html += '    <button class="btn-act unlock" title="Mở khóa tài khoản" onclick="openReasonModal(' + u.id + ', false)"><i class="fas fa-unlock"></i></button>';
+                            } else {
+                                html += '    <button class="btn-act lock" title="Khóa tài khoản (Kèm lý do)" onclick="openReasonModal(' + u.id + ', true)"><i class="fas fa-lock"></i></button>';
+                            }
+                            html += '    <a href="/admin/users/phan-quyen/' + u.id + '" class="btn-act view" title="Hồ sơ Kiểm toán & Phân quyền"><i class="fas fa-user-cog"></i></a>';
+                            html += '  </div>';
+                            html += '</td>';
+                            html += '</tr>';
+                        }
+                    }
+
+                    tbody.innerHTML = html;
+                    renderPagination(totalPages);
+                });
+            };
+
+            function renderPagination(totalPages) {
+                var area = document.getElementById('paginationArea');
+
+                if (totalPages <= 1) {
+                    area.innerHTML = '';
+                    return;
+                }
+
+                var html = '';
+
+                // Nút Previous
+                var prevDisabled = (currentPage === 0) ? 'disabled' : '';
+                html += '<button class="pg-btn" onclick="if(!this.disabled) loadData(' + (currentPage - 1) + ')" ' + prevDisabled + '><i class="fas fa-chevron-left"></i></button>';
+
+                for (var i = 0; i < totalPages; i = i + 1) {
+                    var activeClass = (currentPage === i) ? 'active' : '';
+                    html += '<button onclick="loadData(' + i + ')" class="pg-btn ' + activeClass + '">' + (i + 1) + '</button>';
+                }
+
+                // Nút Next
+                var nextDisabled = (currentPage === totalPages - 1) ? 'disabled' : '';
+                html += '<button class="pg-btn" onclick="if(!this.disabled) loadData(' + (currentPage + 1) + ')" ' + nextDisabled + '><i class="fas fa-chevron-right"></i></button>';
+
+                area.innerHTML = html;
+            }
+
+            // =====================================================================
+            // 4. LOGIC XỬ LÝ THANH THAO TÁC HÀNG LOẠT (BULK ACTION BAR)
+            // =====================================================================
+            document.getElementById('checkAll').addEventListener('change', function (e) {
+                var isChecked = e.target.checked;
+                var checkboxes = document.getElementsByClassName('user-cb');
+
+                selectedUserIds = [];
+                for (var i = 0; i < checkboxes.length; i = i + 1) {
+                    checkboxes[i].checked = isChecked;
+                    if (isChecked === true) {
+                        selectedUserIds.push(checkboxes[i].value);
+                    }
+                }
+                toggleBulkBar();
+            });
+
+            window.handleCheckboxChange = function () {
+                var checkboxes = document.getElementsByClassName('user-cb');
+                var allChecked = true;
+
+                selectedUserIds = [];
+                for (var i = 0; i < checkboxes.length; i = i + 1) {
+                    if (checkboxes[i].checked === true) {
+                        selectedUserIds.push(checkboxes[i].value);
+                    } else {
+                        allChecked = false;
+                    }
+                }
+
+                document.getElementById('checkAll').checked = (checkboxes.length > 0 && allChecked === true);
+                toggleBulkBar();
+            };
+
+            function toggleBulkBar() {
+                var bar = document.getElementById('bulkActionBar');
+                document.getElementById('selectedCount').innerText = selectedUserIds.length;
+
+                if (selectedUserIds.length > 0) {
+                    bar.classList.add('is-active');
+                } else {
+                    bar.classList.remove('is-active');
+                }
+            }
+
+            window.cancelBulkSelection = function () {
+                selectedUserIds = [];
+                document.getElementById('checkAll').checked = false;
+                var checkboxes = document.getElementsByClassName('user-cb');
+                for (var i = 0; i < checkboxes.length; i = i + 1) {
+                    checkboxes[i].checked = false;
+                }
+                toggleBulkBar();
+            };
+
+            // =====================================================================
+            // 5. CƠ CHẾ BẮT BUỘC GIẢI TRÌNH LÝ DO (MANDATORY AUDIT REASON)
+            // =====================================================================
+
+            // Kích hoạt cho Cá nhân
+            window.openReasonModal = function (userId, isLocking) {
+                document.getElementById('reasonSingleTargetId').value = userId;
+                document.getElementById('reasonActionType').value = isLocking === true ? 'SINGLE_LOCK' : 'SINGLE_UNLOCK';
+
+                var title = isLocking === true ? 'Khóa Tài Khoản?' : 'Mở Khóa Tài Khoản?';
+                var text = isLocking === true ? 'Hồ sơ ID #' + userId + ' sẽ bị ngắt kết nối và không thể truy cập API. Xác nhận lệnh khóa?' : 'Hồ sơ ID #' + userId + ' sẽ được phục hồi quyền truy cập. Xác nhận lệnh mở khóa?';
+                var btnColor = isLocking === true ? '#dc2626' : '#16a34a';
+
+                document.getElementById('reasonModalTitle').innerText = title;
+                document.getElementById('reasonModalTitle').style.color = btnColor;
+                document.getElementById('reasonModalText').innerHTML = text;
+                document.getElementById('btnConfirmReason').style.backgroundColor = btnColor;
+                document.getElementById('btnConfirmReason').style.borderColor = btnColor;
+                document.getElementById('reasonInput').value = '';
+
+                $('#reasonModal').modal('show');
+            };
+
+            // Kích hoạt cho Hàng loạt
+            window.executeBulkAction = function (isLocking) {
+                if (selectedUserIds.length === 0) return;
+
+                document.getElementById('reasonSingleTargetId').value = '';
+                document.getElementById('reasonActionType').value = isLocking === true ? 'BULK_LOCK' : 'BULK_UNLOCK';
+
+                var title = isLocking === true ? 'Cảnh Báo: Khóa Hàng Loạt' : 'Xác Nhận: Mở Khóa Hàng Loạt';
+                var text = 'Lệnh này sẽ tác động đồng thời lên <strong>' + selectedUserIds.length + ' hồ sơ</strong> đã chọn. Thao tác này không thể hoàn tác một cách tự động.';
+                var btnColor = isLocking === true ? '#dc2626' : '#16a34a';
+
+                document.getElementById('reasonModalTitle').innerText = title;
+                document.getElementById('reasonModalTitle').style.color = btnColor;
+                document.getElementById('reasonModalText').innerHTML = text;
+                document.getElementById('btnConfirmReason').style.backgroundColor = btnColor;
+                document.getElementById('btnConfirmReason').style.borderColor = btnColor;
+                document.getElementById('reasonInput').value = '';
+
+                $('#reasonModal').modal('show');
+            };
+
+            // Nút Xác nhận gửi API
+            document.getElementById('btnConfirmReason').addEventListener('click', function () {
+                var reasonText = document.getElementById('reasonInput').value.trim();
+
+                if (reasonText === '') {
+                    Swal.fire('Lỗi bảo mật', 'Bắt buộc phải nhập Lý do giải trình để ghi vào Sổ tay Kiểm toán!', 'error');
+                    return;
+                }
+
+                var actionType = document.getElementById('reasonActionType').value;
+
+                if (actionType === 'SINGLE_LOCK' || actionType === 'SINGLE_UNLOCK') {
+                    var userId = document.getElementById('reasonSingleTargetId').value;
+                    var isLocking = (actionType === 'SINGLE_LOCK');
+                    var requestData = { lock: isLocking, reason: reasonText };
+
+                    callApi('/api/admin/users/' + userId + '/lock', 'POST', requestData, "#btnConfirmReason", function (response) {
+                        $('#reasonModal').modal('hide');
+                        showToast('success', response.message);
+                        loadData();
+                        loadStats();
+                    });
+
+                } else if (actionType === 'BULK_LOCK' || actionType === 'BULK_UNLOCK') {
+                    var isLockingBulk = (actionType === 'BULK_LOCK');
+                    var bulkRequestData = {
+                        userIds: selectedUserIds,
+                        lock: isLockingBulk,
+                        reason: reasonText
+                    };
+
+                    callApi('/api/admin/users/bulk-lock', 'POST', bulkRequestData, "#btnConfirmReason", function (response) {
+                        $('#reasonModal').modal('hide');
+                        showToast('success', response.message);
+                        loadData();
+                        loadStats();
+                    });
+                }
+            });
+
+            // =====================================================================
+            // KHỞI ĐỘNG (BOOTSTRAP)
+            // =====================================================================
+            document.addEventListener('DOMContentLoaded', function () {
+                loadStats();
+                loadRolesForFilter();
+                loadData(0);
+
+                // Lắng nghe sự kiện đổi combobox
+                document.getElementById('filterStatus').addEventListener('change', function () { loadData(0); });
+                document.getElementById('filterRole').addEventListener('change', function () { loadData(0); });
+
+                // Lắng nghe gõ phím với cơ chế Debounce chống lag
+                document.getElementById('filterKeyword').addEventListener('keyup', function () {
+                    clearTimeout(typingTimer);
+                    typingTimer = setTimeout(function () {
+                        loadData(0);
+                    }, 500); // Đợi 500ms sau khi ngừng gõ mới gọi API
+                });
+
+                document.getElementById('btnResetFilter').addEventListener('click', function () {
+                    document.getElementById('filterKeyword').value = '';
+                    document.getElementById('filterStatus').value = 'ALL';
+                    document.getElementById('filterRole').value = 'ALL';
+                    loadData(0);
+                });
+            });
+        </script>
+    </div>
+</th:block>
+
+</html>

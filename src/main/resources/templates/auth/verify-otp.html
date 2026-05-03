@@ -1,0 +1,104 @@
+<!-- src/main/resources/templates/auth/verify-otp.html -->
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <title>Xác Nhận OTP</title>
+    <th:block th:replace="~{auth_layout::link-css}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{auth_layout::header}"></th:block>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h2 class="text-center mb-4">Nhập Mã Xác Nhận</h2>
+                        <p class="text-center text-muted">Mã OTP đã được gửi đến email của bạn.</p>
+                        
+                        <div id="alertBox" class="alert d-none" role="alert"></div>
+
+                        <form id="otpForm">
+                            <div class="mb-3">
+                                <input type="text" name="code" class="form-control text-center text-uppercase" 
+                                       placeholder="------" maxlength="6" style="letter-spacing: 5px; font-size: 1.5rem;" required>
+                            </div>
+                            <button type="submit" id="btnSubmit" class="btn btn-primary w-100">
+                                <span class="btn-text">Xác nhận</span>
+                                <span class="spinner-border spinner-border-sm d-none"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:replace="~{auth_layout::footer}"></th:block>
+
+    <script>
+        function callApi(url, method, data, btnSelector, onSuccess) {
+            const $btn = $(btnSelector);
+            const $text = $btn.find('.btn-text');
+            const $spinner = $btn.find('.spinner-border');
+            const $alert = $('#alertBox');
+            const originalText = $text.text();
+
+            $.ajax({
+                url: url,
+                type: method,
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                beforeSend: function() {
+                    $btn.prop('disabled', true);
+                    $spinner.removeClass('d-none');
+                    $text.text("Đang xử lý...");
+                    $alert.addClass('d-none').removeClass('alert-danger alert-success');
+                },
+                success: function(response) {
+                    onSuccess(response);
+                },
+                error: function(xhr) {
+                    let msg = "Lỗi kết nối";
+                    if (xhr.responseJSON !== undefined && xhr.responseJSON !== null) {
+                        if (xhr.responseJSON.message !== undefined && xhr.responseJSON.message !== null) {
+                            msg = xhr.responseJSON.message;
+                        }
+                    }
+                    $alert.addClass('alert-danger').text(msg).removeClass('d-none');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false);
+                    $spinner.addClass('d-none');
+                    $text.text(originalText);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            $('#otpForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var code = $('input[name="code"]').val();
+                
+                var currentPath = window.location.pathname;
+                var apiUrl = "";
+                var redirectUrl = "";
+
+                if (currentPath.indexOf("/register/") !== -1) {
+                    apiUrl = "/api/auth/register/verify-otp";
+                    redirectUrl = "/login?registerSuccess=true";
+                } else {
+                    apiUrl = "/api/auth/forgot-password/verify-otp";
+                    redirectUrl = "/reset-password";
+                }
+
+                callApi(apiUrl, 'POST', { code: code }, '#btnSubmit', function(response) {
+                    alert("Xác thực thành công!");
+                    window.location.href = redirectUrl;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

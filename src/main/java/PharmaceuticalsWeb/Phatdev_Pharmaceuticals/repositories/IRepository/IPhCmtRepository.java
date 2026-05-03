@@ -1,0 +1,35 @@
+//src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/repositories/IRepository/IPhCmtRepository.java
+
+package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository;
+
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PhCmt;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+ * Repository phản hồi bình luận (reply).
+ */
+@Repository
+public interface IPhCmtRepository extends JpaRepository<PhCmt, Long> {
+
+    /**
+     * Lấy tất cả reply của một comment gốc.
+     * Sắp xếp theo CREATED_AT tăng dần (cũ nhất trước → đúng luồng hội thoại).
+     */
+    List<PhCmt> findByRootCmtIdOrderByCreatedAtAsc(Long rootCmtId);
+
+    /** Đếm tổng reply toàn hệ thống (cho admin stats) */
+    @Query("SELECT COUNT(p) FROM PhCmt p")
+    long demTongPhCmt();
+
+    /**
+     * Lấy reply chưa kiểm duyệt.
+     */
+    @Query("SELECT p FROM PhCmt p WHERE NOT EXISTS " +
+           "(SELECT 1 FROM CtPhCmtModerationLog l WHERE l.phCmt.id = p.id) " +
+           "ORDER BY p.createdAt ASC")
+    List<PhCmt> layPhCmtChuaDuyet();
+}
