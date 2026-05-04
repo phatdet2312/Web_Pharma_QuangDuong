@@ -36,6 +36,7 @@ public class EventRegistrationResponse {
     private String workplace;
 
     private String status;
+    private String displayStatus;
     private LocalDateTime registeredAt;
 
     /**

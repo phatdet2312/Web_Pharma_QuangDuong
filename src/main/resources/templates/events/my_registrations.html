@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{user_layout::user-head}"></head>
+
+<body>
+    <div th:replace="~{user_layout::user-nav}"></div>
+
+    <div th:replace="~{user_layout::layout(~{::#main-content})}">
+        <div id="main-content">
+
+            <style>
+                /* ============================================================
+                   E-TICKET PORTAL — GIAO DIỆN VÉ ĐIỆN TỬ B2B
+                ============================================================ */
+                .tk-layout {
+                    padding: 48px 0 80px;
+                    background: var(--gray-50);
+                    min-height: 80vh;
+                }
+
+                .tk-page-header {
+                    background: var(--ink-900);
+                    padding: 50px 0 40px;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .tk-page-header::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    background-image: radial-gradient(circle at 10% 50%, rgba(0, 152, 152, .15) 0%, transparent 60%);
+                }
+
+                .tk-header-title {
+                    font-size: clamp(1.5rem, 3vw, 2.2rem);
+                    font-weight: 800;
+                    color: white;
+                    letter-spacing: -0.5px;
+                    margin-bottom: 8px;
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .tk-header-desc {
+                    color: rgba(255, 255, 255, .6);
+                    font-size: .95rem;
+                    position: relative;
+                    z-index: 1;
+                }
+
+                /* Lọc và Tìm kiếm */
+                .tk-toolbar {
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-xl);
+                    padding: 18px 24px;
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    margin-top: -30px;
+                    position: relative;
+                    z-index: 10;
+                    box-shadow: var(--shadow-md);
+                    flex-wrap: wrap;
+                }
+
+                .tk-search {
+                    flex: 1;
+                    min-width: 280px;
+                    position: relative;
+                }
+
+                .tk-search i {
+                    position: absolute;
+                    left: 16px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: var(--gray-400);
+                }
+
+                .tk-search input {
+                    width: 100%;
+                    padding: 10px 16px 10px 42px;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: var(--r-md);
+                    font-size: .9rem;
+                    color: var(--ink-800);
+                    outline: none;
+                    transition: var(--t-fast);
+                }
+
+                .tk-search input:focus {
+                    border-color: var(--teal-500);
+                    box-shadow: 0 0 0 3px rgba(0, 152, 152, .1);
+                }
+
+                .tk-select {
+                    padding: 10px 16px;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: var(--r-md);
+                    font-size: .9rem;
+                    color: var(--gray-700);
+                    outline: none;
+                    background: white;
+                    cursor: pointer;
+                    min-width: 180px;
+                }
+
+                .tk-select:focus {
+                    border-color: var(--teal-500);
+                }
+
+                .tk-btn-search {
+                    padding: 10px 24px;
+                    background: var(--ink-800);
+                    color: white;
+                    border: none;
+                    border-radius: var(--r-md);
+                    font-weight: 700;
+                    font-size: .9rem;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                }
+
+                .tk-btn-search:hover {
+                    background: var(--teal-600);
+                }
+
+                /* Thẻ Vé Điện Tử (Boarding Pass Style) */
+                .tk-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+                    gap: 20px;
+                    margin-top: 30px;
+                }
+
+                .ticket-card {
+                    display: flex;
+                    flex-direction: column;
+                    background: white;
+                    border-radius: var(--r-lg);
+                    border: 1px solid var(--gray-200);
+                    overflow: hidden;
+                    box-shadow: var(--shadow-sm);
+                    transition: var(--t-base);
+                }
+
+                .ticket-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: var(--shadow-lg);
+                    border-color: var(--teal-300);
+                }
+
+                .tc-top {
+                    padding: 20px;
+                    border-bottom: 2px dashed var(--gray-200);
+                    position: relative;
+                }
+
+                .tc-top::before, .tc-top::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -10px;
+                    width: 20px;
+                    height: 20px;
+                    background: var(--gray-50);
+                    border-radius: 50%;
+                    border: 1px solid var(--gray-200);
+                }
+
+                .tc-top::before { left: -10px; border-right-color: transparent; border-top-color: transparent; transform: rotate(-45deg); }
+                .tc-top::after { right: -10px; border-left-color: transparent; border-bottom-color: transparent; transform: rotate(45deg); }
+
+                .tc-campaign {
+                    font-size: .75rem;
+                    font-weight: 800;
+                    color: var(--teal-600);
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    margin-bottom: 8px;
+                }
+
+                .tc-session {
+                    font-size: 1.1rem;
+                    font-weight: 800;
+                    color: var(--ink-800);
+                    line-height: 1.3;
+                    margin-bottom: 16px;
+                }
+
+                .tc-info-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: .85rem;
+                    color: var(--gray-600);
+                    margin-bottom: 6px;
+                }
+
+                .tc-info-row i {
+                    color: var(--teal-400);
+                    width: 16px;
+                    text-align: center;
+                }
+
+                .tc-bottom {
+                    padding: 16px 20px;
+                    background: #fdfdfd;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+
+                .tc-status {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 4px 12px;
+                    border-radius: 50px;
+                    font-size: .75rem;
+                    font-weight: 700;
+                }
+
+                .tc-status.pending { background: #fff8e1; color: #f9a825; border: 1px solid #fde047; }
+                .tc-status.confirmed { background: #e3fcf7; color: #00875a; border: 1px solid #a7f3d0; }
+                .tc-status.attended { background: #e8f0ff; color: #0061ff; border: 1px solid #bfdbfe; }
+                .tc-status.cancelled { background: #ffebe6; color: #de350b; border: 1px solid #fca5a5; }
+
+                .tc-btn-view {
+                    padding: 6px 16px;
+                    background: white;
+                    border: 1.5px solid var(--gray-300);
+                    color: var(--ink-800);
+                    border-radius: var(--r-md);
+                    font-size: .8rem;
+                    font-weight: 700;
+                    text-decoration: none;
+                    transition: var(--t-fast);
+                }
+
+                .tc-btn-view:hover {
+                    background: var(--ink-800);
+                    color: white;
+                    border-color: var(--ink-800);
+                }
+
+                /* Pagination (Sử dụng CSS có sẵn của hệ thống) */
+                .pharma-pagination {
+                    display: flex;
+                    justify-content: center;
+                    gap: 5px;
+                    margin-top: 40px;
+                }
+
+                @media (max-width: 768px) {
+                    .tk-toolbar { flex-direction: column; align-items: stretch; }
+                    .tk-search, .tk-select, .tk-btn-search { width: 100%; }
+                }
+            </style>
+
+            <section class="tk-page-header">
+                <div class="container">
+                    <h1 class="tk-header-title">Quản lý Vé Sự kiện</h1>
+                    <p class="tk-header-desc">Theo dõi trạng thái duyệt vé, lịch trình tham dự và tích lũy điểm CME.</p>
+                </div>
+            </section>
+
+            <div class="tk-layout">
+                <div class="container">
+                    
+                    <div class="tk-toolbar">
+                        <div class="tk-search">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="tkKeyword" placeholder="Tìm tên sự kiện hoặc phiên...">
+                        </div>
+                        <select class="tk-select" id="tkStatus">
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="PENDING">Đang chờ xác nhận</option>
+                            <option value="CONFIRMED">Đã xác nhận (Được tham dự)</option>
+                            <option value="APPROVED">Đã duyệt</option>
+                            <option value="ATTENDED">Đã tham dự (Hoàn tất)</option>
+                            <option value="CANCELLED">Đã hủy</option>
+                        </select>
+                        <button class="tk-btn-search" onclick="taiDanhSachVe(0)"><i class="fas fa-filter"></i> Lọc dữ liệu</button>
+                    </div>
+
+                    <div id="loadingIndicator" style="text-align: center; padding: 60px 0; display: none;">
+                        <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--teal-400);"></i>
+                        <p style="margin-top: 16px; color: var(--gray-500); font-weight: 600;">Đang tải dữ liệu từ trung tâm...</p>
+                    </div>
+
+                    <div id="ticketContainer" class="tk-grid">
+                        <!-- Dữ liệu được Javacript vẽ vào đây -->
+                    </div>
+
+                    <div id="emptyState" style="text-align: center; padding: 80px 0; display: none;">
+                        <div style="width: 80px; height: 80px; background: var(--gray-100); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <i class="fas fa-ticket-alt fa-2x" style="color: var(--gray-300);"></i>
+                        </div>
+                        <h4 style="color: var(--ink-800); font-weight: 800;">Không tìm thấy vé điện tử</h4>
+                        <p style="color: var(--gray-500);">Bạn chưa đăng ký sự kiện nào hoặc không có vé phù hợp với bộ lọc.</p>
+                        <a href="/hoi-thao" class="tk-btn-search" style="display: inline-block; text-decoration: none; margin-top: 10px;">Khám phá sự kiện</a>
+                    </div>
+
+                    <div id="pagination" class="pharma-pagination"></div>
+
+                </div>
+            </div>
+
+            <script>
+                // =========================================================================
+                // LÕI JAVASCRIPT NGUYÊN THỦY (KHÔNG DÙNG LAMBDA/STREAM)
+                // =========================================================================
+                (function () {
+                    'use strict';
+
+                    var trangHienTai = 0;
+                    var kichThuocTrang = 9;
+
+                    function dinhDangNgayGio(iso) {
+                        if (iso === null || iso === undefined || iso === '') return 'Chưa xác định';
+                        var d = new Date(iso);
+                        var thu = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+                        var day = String(d.getDate()).padStart(2, '0');
+                        var month = String(d.getMonth() + 1).padStart(2, '0');
+                        var gio = String(d.getHours()).padStart(2, '0');
+                        var phut = String(d.getMinutes()).padStart(2, '0');
+                        return thu[d.getDay()] + ', ' + day + '/' + month + '/' + d.getFullYear() + ' — ' + gio + ':' + phut;
+                    }
+
+                    function lamSachChuoiHTML(s) {
+                        if (s === null || s === undefined) return '';
+                        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    }
+
+                    window.taiDanhSachVe = function (trang) {
+                        var kw = document.getElementById('tkKeyword').value.trim();
+                        var st = document.getElementById('tkStatus').value;
+                        trangHienTai = trang;
+
+                        document.getElementById('loadingIndicator').style.display = 'block';
+                        document.getElementById('ticketContainer').style.display = 'none';
+                        document.getElementById('emptyState').style.display = 'none';
+                        document.getElementById('pagination').innerHTML = '';
+
+                        var url = '/api/events/my-registrations/advanced?page=' + trangHienTai + '&size=' + kichThuocTrang;
+                        if (kw !== '') url += '&keyword=' + encodeURIComponent(kw);
+                        if (st !== 'ALL') url += '&status=' + encodeURIComponent(st);
+
+                        callApi(url, 'GET', null, null, function (res) {
+                            document.getElementById('loadingIndicator').style.display = 'none';
+
+                            if (res.status === 200 && res.data && res.data.content.length > 0) {
+                                document.getElementById('ticketContainer').style.display = 'grid';
+                                veDanhSachVe(res.data.content);
+                                vePhanTrang(res.data.totalPages);
+                            } else {
+                                document.getElementById('emptyState').style.display = 'block';
+                            }
+                        }, function (err) {
+                            document.getElementById('loadingIndicator').style.display = 'none';
+                            showToast('error', 'Lỗi tải dữ liệu. Vui lòng đăng nhập lại.');
+                        });
+                    };
+
+                    function veDanhSachVe(danhSach) {
+                        var container = document.getElementById('ticketContainer');
+                        var html = '';
+
+                        for (var i = 0; i < danhSach.length; i = i + 1) {
+                            var ve = danhSach[i];
+                            var tenChienDich = ve.campaignTitle ? ve.campaignTitle : 'SỰ KIỆN HỌC THUẬT';
+                            var thoiGianPhien = dinhDangNgayGio(ve.sessionStartTime);
+                            
+                            var cssLop = 'pending';
+                            var iconTrangThai = 'fa-clock';
+                            var textTrangThai = 'Chờ xác nhận';
+
+                            if (ve.status === 'CONFIRMED' || ve.status === 'APPROVED') {
+                                cssLop = 'confirmed'; iconTrangThai = 'fa-check-circle'; textTrangThai = 'Đã xác nhận';
+                            } else if (ve.status === 'ATTENDED') {
+                                cssLop = 'attended'; iconTrangThai = 'fa-medal'; textTrangThai = 'Đã tham dự';
+                            } else if (ve.status === 'CANCELLED') {
+                                cssLop = 'cancelled'; iconTrangThai = 'fa-times-circle'; textTrangThai = 'Đã hủy';
+                            }
+
+                            html += '<div class="ticket-card">';
+                            html += '<div class="tc-top">';
+                            html += '<div class="tc-campaign">' + lamSachChuoiHTML(tenChienDich) + '</div>';
+                            html += '<div class="tc-session">Mã vé #' + ve.id + '</div>'; // Có thể ghép tên phiên nếu BE trả về
+                            html += '<div class="tc-info-row"><i class="fas fa-calendar-alt"></i> ' + thoiGianPhien + '</div>';
+                            html += '<div class="tc-info-row"><i class="fas fa-user"></i> Đăng ký cho: <strong>' + lamSachChuoiHTML(ve.guestName) + '</strong></div>';
+                            html += '</div>';
+                            html += '<div class="tc-bottom">';
+                            html += '<div class="tc-status ' + cssLop + '"><i class="fas ' + iconTrangThai + '"></i> ' + textTrangThai + '</div>';
+                            html += '<a href="/hoi-thao/buoi?session=' + ve.ctEventId + '" class="tc-btn-view">Xem sự kiện</a>';
+                            html += '</div></div>';
+                        }
+                        container.innerHTML = html;
+                    }
+
+                    function vePhanTrang(tongSoTrang) {
+                        var wrap = document.getElementById('pagination');
+                        if (tongSoTrang <= 1) { wrap.innerHTML = ''; return; }
+
+                        var html = '';
+                        var cssChuaChon = 'width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-md);border:1px solid var(--gray-200);background:white;color:var(--gray-600);cursor:pointer;text-decoration:none;font-weight:600;';
+                        var cssDaChon = 'width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-md);border:1px solid var(--ink-800);background:var(--ink-800);color:white;font-weight:700;';
+
+                        if (trangHienTai > 0) {
+                            html += '<button style="' + cssChuaChon + '" onclick="taiDanhSachVe(' + (trangHienTai - 1) + ')"><i class="fas fa-chevron-left fa-xs"></i></button>';
+                        }
+
+                        for (var i = 0; i < tongSoTrang; i = i + 1) {
+                            if (i === trangHienTai) {
+                                html += '<span style="' + cssDaChon + '">' + (i + 1) + '</span>';
+                            } else {
+                                html += '<button style="' + cssChuaChon + '" onclick="taiDanhSachVe(' + i + ')">' + (i + 1) + '</button>';
+                            }
+                        }
+
+                        if (trangHienTai < tongSoTrang - 1) {
+                            html += '<button style="' + cssChuaChon + '" onclick="taiDanhSachVe(' + (trangHienTai + 1) + ')"><i class="fas fa-chevron-right fa-xs"></i></button>';
+                        }
+
+                        wrap.innerHTML = html;
+                    }
+
+                    document.addEventListener('DOMContentLoaded', function () {
+                        // Bắt sự kiện Enter trên ô tìm kiếm
+                        var kwInput = document.getElementById('tkKeyword');
+                        if (kwInput) {
+                            kwInput.addEventListener('keypress', function (e) {
+                                if (e.key === 'Enter') taiDanhSachVe(0);
+                            });
+                        }
+                        taiDanhSachVe(0);
+                    });
+
+                })();
+            </script>
+        </div>
+    </div>
+
+    <div th:replace="~{user_layout::user-footer}"></div>
+    <div th:replace="~{user_layout::user-scripts}"></div>
+</body>
+
+</html>

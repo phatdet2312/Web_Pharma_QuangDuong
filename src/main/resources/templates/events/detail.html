@@ -1742,16 +1742,13 @@
         }
 
         function kiemTraDaDangKy() {
-            callApi('/api/events/my-registrations', 'GET', null, null, function (res) {
-                if (res.status !== 200 || !res.data) { return; }
-                var regs = res.data;
-                for (var i = 0; i < regs.length; i++) {
-                    if (regs[i].ctEventId === ctEventId) {
-                        hienDaDangKy(regs[i]);
-                        return;
-                    }
+            // ĐÃ SỬA: Gọi API truy vấn trực tiếp vé của session này (O(1)), thay vì gọi API danh sách
+            callApi('/api/events/sessions/' + ctEventId + '/my-ticket', 'GET', null, null, function (res) {
+                // Nếu res.data có tồn tại (tức là có vé)
+                if (res.status === 200 && res.data) {
+                    hienDaDangKy(res.data);
                 }
-            }, null);
+            }, null); // Bỏ qua lỗi âm thầm nếu khách chưa đăng nhập
         }
 
         function hienDaDangKy(reg) {
@@ -1760,15 +1757,17 @@
             var block = document.getElementById('already-reg-block');
             if (block) { block.style.display = 'block'; }
             document.getElementById('ar-ticket-code').innerHTML = 'Mã vé: <strong>#' + esc(String(reg.id || '—')) + '</strong>';
+            
             var statusLabel = '';
-            if (reg.status === 'CONFIRMED') {
-                statusLabel = '<span style="color:var(--success);font-weight:700;">✓ Đã xác nhận</span>';
+            // ĐÃ SỬA: Chỉ dùng status để đổi màu HTML, nội dung lấy từ reg.displayStatus
+            if (reg.status === 'CONFIRMED' || reg.status === 'APPROVED') {
+                statusLabel = '<span style="color:var(--success);font-weight:700;">✓ ' + esc(reg.displayStatus) + '</span>';
             } else if (reg.status === 'PENDING') {
-                statusLabel = '<span style="color:var(--gold-600);font-weight:700;">⏳ Đang chờ</span>';
+                statusLabel = '<span style="color:var(--gold-600);font-weight:700;">⏳ ' + esc(reg.displayStatus) + '</span>';
             } else if (reg.status === 'CANCELLED') {
-                statusLabel = '<span style="color:var(--danger);font-weight:700;">✕ Đã hủy</span>';
+                statusLabel = '<span style="color:var(--danger);font-weight:700;">✕ ' + esc(reg.displayStatus) + '</span>';
             } else {
-                statusLabel = '<span style="font-weight:700;">' + esc(reg.status || '') + '</span>';
+                statusLabel = '<span style="font-weight:700;">' + esc(reg.displayStatus || '') + '</span>';
             }
             document.getElementById('ar-ticket-status').innerHTML = 'Trạng thái: ' + statusLabel;
         }

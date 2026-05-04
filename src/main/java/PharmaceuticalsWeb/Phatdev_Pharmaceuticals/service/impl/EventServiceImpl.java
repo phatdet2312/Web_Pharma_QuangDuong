@@ -52,12 +52,14 @@ public class EventServiceImpl implements IEventService {
      * Frontend.
      */
     /**
-     * Báo cáo sơ bộ bức tranh toàn cảnh về sự kiện để phục vụ Hero Stats trên Frontend.
-     * Tích hợp Engine Phân giải Thời gian để đảm bảo số liệu đồng bộ 100% với danh sách hiển thị.
+     * Báo cáo sơ bộ bức tranh toàn cảnh về sự kiện để phục vụ Hero Stats trên
+     * Frontend.
+     * Tích hợp Engine Phân giải Thời gian để đảm bảo số liệu đồng bộ 100% với danh
+     * sách hiển thị.
      */
     @Override
     public EventStatsResponse layThongKeTrangSuKien(Integer type, String time) {
-        
+
         // 1. KHỞI TẠO MỐC THỜI GIAN AN TOÀN (Bao phủ toàn bộ Kỷ nguyên)
         LocalDateTime startDate = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
         LocalDateTime endDate = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
@@ -66,7 +68,8 @@ public class EventServiceImpl implements IEventService {
         if ("THIS_MONTH".equals(time) == true) {
             LocalDateTime now = LocalDateTime.now();
             startDate = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDate = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).withNano(0);
+            endDate = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59)
+                    .withNano(0);
         } else if ("UPCOMING".equals(time) == true) {
             startDate = LocalDateTime.now();
         } else if ("THIS_WEEK".equals(time) == true) {
@@ -78,13 +81,14 @@ public class EventServiceImpl implements IEventService {
             YearMonth thangSau = YearMonth.now().plusMonths(1);
             startDate = thangSau.atDay(1).atStartOfDay();
             endDate = thangSau.atEndOfMonth().atTime(23, 59, 59);
-        } 
-        // [QUAN TRỌNG] Nhánh này bắt chuỗi ngày YYYY-MM-DD từ sự kiện Click Lịch Mini của Frontend
+        }
+        // [QUAN TRỌNG] Nhánh này bắt chuỗi ngày YYYY-MM-DD từ sự kiện Click Lịch Mini
+        // của Frontend
         else if (time != null && time.contains("-") == true) {
             String[] cacPhan = time.split("-");
             int nam = Integer.parseInt(cacPhan[0]);
             int thang = Integer.parseInt(cacPhan[1]);
-            
+
             if (cacPhan.length == 3) {
                 // Xử lý Ngày cụ thể
                 int ngay = Integer.parseInt(cacPhan[2]);
@@ -100,7 +104,7 @@ public class EventServiceImpl implements IEventService {
 
         // 3. TỔNG HỢP DỮ LIỆU
         EventStatsResponse stats = new EventStatsResponse();
-        
+
         // Chỉ số 1: Số buổi sự kiện nằm trong Khung thời gian VÀ Loại sự kiện đã chọn
         long soBuoiCoLoc = ctEventRepository.demTongBuoiPublicCoLoc(type, startDate, endDate);
         stats.setEventsThisMonth(soBuoiCoLoc);
@@ -109,13 +113,15 @@ public class EventServiceImpl implements IEventService {
         long soDangKyCoLoc = registrationRepository.demTongDangKyPublicCoLoc(type, startDate, endDate);
         stats.setTotalRegistrations(soDangKyCoLoc);
 
-        // Chỉ số 3: Tổng số buổi (Chỉ lọc theo Loại sự kiện, mở rộng thời gian về Vô Cực để thấy quy mô tổng thể của nhánh đó)
+        // Chỉ số 3: Tổng số buổi (Chỉ lọc theo Loại sự kiện, mở rộng thời gian về Vô
+        // Cực để thấy quy mô tổng thể của nhánh đó)
         LocalDateTime thoiGianVoCucStart = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
         LocalDateTime thoiGianVoCucEnd = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
         long tongSoBuoiTheoLoai = ctEventRepository.demTongBuoiPublicCoLoc(type, thoiGianVoCucStart, thoiGianVoCucEnd);
         stats.setTotalSessions(tongSoBuoiTheoLoai);
 
-        // Chỉ số 4: Số Loại Sự Kiện (Luôn là con số Toàn cục để Sidebar giữ được định dạng)
+        // Chỉ số 4: Số Loại Sự Kiện (Luôn là con số Toàn cục để Sidebar giữ được định
+        // dạng)
         stats.setTotalEventTypes(eventTypeRepository.count());
 
         return stats;
@@ -226,11 +232,11 @@ public class EventServiceImpl implements IEventService {
             YearMonth thangSau = YearMonth.now().plusMonths(1);
             startDate = thangSau.atDay(1).atStartOfDay();
             endDate = thangSau.atEndOfMonth().atTime(23, 59, 59);
-        }  else if (time != null && time.contains("-") == true) {
+        } else if (time != null && time.contains("-") == true) {
             String[] cacPhan = time.split("-");
             int nam = Integer.parseInt(cacPhan[0]);
             int thang = Integer.parseInt(cacPhan[1]);
-            
+
             if (cacPhan.length == 3) {
                 // Xử lý Ngày cụ thể
                 int ngay = Integer.parseInt(cacPhan[2]);
@@ -250,7 +256,8 @@ public class EventServiceImpl implements IEventService {
             kw = keyword.trim();
         }
 
-        Page<Event> eventsPage = eventRepository.timKiemChienDichPublic(kw, type, startDate, endDate, locationId, pageable);
+        Page<Event> eventsPage = eventRepository.timKiemChienDichPublic(kw, type, startDate, endDate, locationId,
+                pageable);
 
         // 3. Đóng gói DTO (Sử dụng Object[] thay vì Stream API)
         List<Event> eventList = eventsPage.getContent();
@@ -317,17 +324,21 @@ public class EventServiceImpl implements IEventService {
     }
 
     /**
-     * G6: Lấy dữ liệu hồ sơ cá nhân để hiển thị vào khu vực "Vé sự kiện của tôi".
+     * G6: Lấy dữ liệu hồ sơ cá nhân để hiển thị vào khu vực "Vé sự kiện của tôi" CÓ
+     * PHÂN TRANG.
      * Context-aware: populate campaignTitle vì user cần biết vé này thuộc chiến
      * dịch nào.
      */
     @Override
     @Transactional
-    public List<EventRegistrationResponse> layDangKyCuaToi(Long userId) {
-        List<CtEventRegistration> danhSach = registrationRepository.findByUserIdOrderByRegisteredAtDesc(userId);
-        List<EventRegistrationResponse> result = new ArrayList<>();
+    public Page<EventRegistrationResponse> layDangKyCuaToi(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CtEventRegistration> trangDuLieu = registrationRepository.findByUserIdOrderByRegisteredAtDesc(userId,
+                pageable);
 
-        Object[] arr = danhSach.toArray();
+        List<EventRegistrationResponse> result = new ArrayList<>();
+        Object[] arr = trangDuLieu.getContent().toArray();
+
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEventRegistration reg = (CtEventRegistration) arr[i];
             EventRegistrationResponse resp = chuyenDoiRegistrationResponse(reg);
@@ -338,7 +349,36 @@ public class EventServiceImpl implements IEventService {
             }
             result.add(resp);
         }
-        return result;
+
+        return new PageImpl<>(result, pageable, trangDuLieu.getTotalElements());
+    }
+
+    /**
+     * Lấy đích danh vé của một người dùng tại một phiên cụ thể (O(1) cho Detail).
+     * Dùng để hiển thị thông tin vé ngay trên trang chi tiết buổi sự kiện, giúp
+     * user dễ dàng kiểm tra xem họ đã sở hữu vé chưa.
+     */
+
+    @Override
+    public EventRegistrationResponse layVeCuaToiTaiBuoiNay(Long ctEventId, Long userId) {
+        // Lấy tấm vé thao tác gần đây nhất của user này
+        Optional<CtEventRegistration> optReg = registrationRepository
+                .findFirstByCtEventIdAndUserIdOrderByRegisteredAtDesc(ctEventId, userId);
+
+        if (optReg.isPresent() == false) {
+            return null; // Khách chưa từng có tương tác gì
+        }
+
+        CtEventRegistration reg = optReg.get();
+
+        // Nếu tấm vé mới nhất là vé Hủy, báo cho Frontend biết là "Chưa có vé hợp lệ"
+        // để hiện Form
+        // Lịch sử hủy vẫn nằm an toàn trong DB
+        if (reg.getStatus().equals("CANCELLED") == true) {
+            return null;
+        }
+
+        return chuyenDoiRegistrationResponse(reg);
     }
 
     /**
@@ -359,11 +399,11 @@ public class EventServiceImpl implements IEventService {
 
         CtEvent ctEvent = optCtEvent.get();
 
-        // 1. Phân tích Cổng chặn: Phiên sự kiện này có đang thực sự mở bán vé?
+        // 1. Phân tích Cổng chặn
         Optional<CtEventStatusHistory> optStatus = statusHistoryRepository.layTrangThaiHienTai(ctEvent.getId());
         if (optStatus.isPresent() == true) {
             String status = optStatus.get().getStatusCode();
-            if (status.equals("OPEN") == false) {
+            if (status.equals("OPEN") == false && status.equals("UPCOMING") == false) {
                 throw new AppException(400,
                         "Xin lỗi, hiện tại sự kiện này không mở cổng đăng ký (Trạng thái: " + status + ").");
             }
@@ -371,7 +411,7 @@ public class EventServiceImpl implements IEventService {
             throw new AppException(400, "Sự kiện này chưa được công bố hợp lệ.");
         }
 
-        // 2. Thuật toán Đối soát Cung Cầu: Sức chứa hiện tại có cho phép nhận thêm?
+        // 2. Thuật toán Đối soát Cung Cầu
         if (ctEvent.getTotalSlots() > 0) {
             long registered = ctEventRepository.demSlotDaDangKy(ctEvent.getId());
             if (registered >= ctEvent.getTotalSlots()) {
@@ -379,7 +419,25 @@ public class EventServiceImpl implements IEventService {
             }
         }
 
-        // 3. Khởi tạo đối tượng định danh Khách mời
+        // 3. ĐỐI SOÁT VÉ CÁ NHÂN (CHUẨN APPEND-ONLY)
+        if (userId != null) {
+            // Chỉ kiểm tra vé mới nhất
+            Optional<CtEventRegistration> optReg = registrationRepository
+                    .findFirstByCtEventIdAndUserIdOrderByRegisteredAtDesc(ctEvent.getId(), userId);
+
+            if (optReg.isPresent() == true) {
+                CtEventRegistration latestReg = optReg.get();
+                // Nếu vé mới nhất KHÔNG PHẢI là vé hủy -> Báo lỗi đang sở hữu vé
+                if (latestReg.getStatus().equals("CANCELLED") == false) {
+                    throw new AppException(400,
+                            "Hệ thống ghi nhận tài khoản của bạn đang sở hữu một vé tham dự có hiệu lực tại phiên này.");
+                }
+                // NẾU LÀ VÉ HỦY -> Đi tiếp xuống dưới để đẻ ra 1 dòng vé MỚI.
+                // Dòng Cancelled cũ bị đẩy lùi xuống thành lịch sử.
+            }
+        }
+
+        // 4. KIẾN TẠO BẢN GHI MỚI TOANH (Bất chấp trước đó có bao nhiêu vé hủy)
         CtEventRegistration reg = new CtEventRegistration();
         reg.setCtEvent(ctEvent);
         reg.setGuestName(request.getGuestName());
@@ -389,13 +447,7 @@ public class EventServiceImpl implements IEventService {
         reg.setStatus("PENDING");
         reg.setRegisteredAt(LocalDateTime.now());
 
-        // 4. Giải mã Đối tác Nội bộ (B2B User) - Nếu đã đăng nhập
         if (userId != null) {
-            // Chặn đúp vé: Ngăn chặn một User spam form đăng ký cho cùng một phiên
-            if (registrationRepository.existsByCtEventIdAndUserId(ctEvent.getId(), userId) == true) {
-                throw new AppException(400, "Hệ thống ghi nhận tài khoản của bạn đã sở hữu vé tham dự phiên này rồi.");
-            }
-
             Optional<User> optUser = userRepository.findById(userId);
             if (optUser.isPresent() == true) {
                 reg.setUser(optUser.get());
@@ -466,13 +518,14 @@ public class EventServiceImpl implements IEventService {
      * Thuật toán trích xuất tóm tắt khách mời phục vụ Social Proof tại Frontend.
      * Áp dụng cơ chế che giấu dữ liệu (Masking) bằng vòng lặp For truyền thống.
      */
-    @Override
     public EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId) {
-        // 1. Đếm tổng số lượng (Phép toán aggregate tại DB)
-        long total = registrationRepository.countByCtEventIdAndStatus(ctEventId, "APPROVED");
+        // 1. Đếm tổng số lượng (Tái sử dụng hàm đếm Slot để đồng bộ 100% với
+        // thanh Tiến độ)
+        long total = ctEventRepository.demSlotDaDangKy(ctEventId);
 
-        // 2. Lấy danh sách 5 người đăng ký mới nhất để hiển thị mẫu
-        List<CtEventRegistration> latestRegs = registrationRepository.findByCtEventIdOrderByRegisteredAtDesc(ctEventId);
+        // 2. Lấy danh sách 5 người đăng ký mới nhất (ĐÃ SỬA: Dùng hàm mới để loại bỏ vé
+        // Cancelled)
+        List<CtEventRegistration> latestRegs = registrationRepository.layDanhSachKhachMoiHopLe(ctEventId);
         List<EventAttendeePublicResponse.AttendeeMaskedInfo> maskedList = new ArrayList<>();
 
         Object[] regArray = latestRegs.toArray();
@@ -563,7 +616,7 @@ public class EventServiceImpl implements IEventService {
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEvent ce = (CtEvent) arr[i];
             sessionResponses.add(xayDungCtEventResponse(ce));
-            
+
         }
         resp.setSessions(sessionResponses);
 
@@ -576,7 +629,7 @@ public class EventServiceImpl implements IEventService {
      */
     private CtEventResponse xayDungCtEventResponse(CtEvent ctEvent) {
         CtEventResponse resp = new CtEventResponse();
-        
+
         // 1. Ánh xạ các thông tin định danh và thời gian cơ bản
         resp.setId(ctEvent.getId());
         resp.setTitle(ctEvent.getTitle());
@@ -613,17 +666,17 @@ public class EventServiceImpl implements IEventService {
         // 5. THUẬT TOÁN ĐỐI SOÁT CUNG - CẦU VÀ TÍNH TOÁN "CHUẨN MÙ" CHO FRONTEND
         long soVeDaDangKy = ctEventRepository.demSlotDaDangKy(ctEvent.getId());
         long soVeConTrong = 0;
-        
+
         if (ctEvent.getTotalSlots() > 0) {
             soVeConTrong = ctEvent.getTotalSlots() - soVeDaDangKy;
         }
-        
+
         resp.setRegisteredCount(soVeDaDangKy);
         resp.setAvailableSlots(soVeConTrong);
 
         // --- BƯỚC A: TÍNH TOÁN CHUỖI HIỂN THỊ TRẠNG THÁI (DISPLAY STATUS) ---
         String chuoiHienThi = "Không xác định";
-        
+
         if (maTrangThaiGoc.equals("CANCELLED") == true) {
             chuoiHienThi = "Đã hủy";
         } else if (maTrangThaiGoc.equals("FINISHED") == true || maTrangThaiGoc.equals("ENDED") == true) {
@@ -631,7 +684,8 @@ public class EventServiceImpl implements IEventService {
         } else if (maTrangThaiGoc.equals("ONGOING") == true) {
             chuoiHienThi = "Đang diễn ra";
         } else if (maTrangThaiGoc.equals("OPEN") == true || maTrangThaiGoc.equals("UPCOMING") == true) {
-            // Logic quan trọng: Nếu Backend thấy hết chỗ, ép trạng thái hiển thị thành "Hết chỗ"
+            // Logic quan trọng: Nếu Backend thấy hết chỗ, ép trạng thái hiển thị thành "Hết
+            // chỗ"
             if (ctEvent.getTotalSlots() > 0 && soVeConTrong <= 0) {
                 chuoiHienThi = "Hết chỗ";
             } else {
@@ -641,7 +695,8 @@ public class EventServiceImpl implements IEventService {
         resp.setDisplayStatus(chuoiHienThi);
 
         // --- BƯỚC B: THIẾT LẬP CỜ BÁO ĐỘNG ĐỎ (CRITICAL FLAG) ---
-        // Thuật toán: Nếu số vé còn lại ít hơn hoặc bằng 20% tổng dung lượng -> Bật cờ đỏ.
+        // Thuật toán: Nếu số vé còn lại ít hơn hoặc bằng 20% tổng dung lượng -> Bật cờ
+        // đỏ.
         boolean laToiHan = false;
         if (ctEvent.getTotalSlots() > 0) {
             double nguongToiHan = ctEvent.getTotalSlots() * 0.2;
@@ -683,7 +738,7 @@ public class EventServiceImpl implements IEventService {
                 pr.setSummary(p.getSummary());
                 pr.setThumbnailUrl(p.getThumbnailUrl());
                 pr.setAccessLevel(p.getAccessLevel());
-                
+
                 if (p.getCategory() != null) {
                     pr.setCategoryName(p.getCategory().getName());
                 }
@@ -707,13 +762,33 @@ public class EventServiceImpl implements IEventService {
         resp.setGuestEmail(reg.getGuestEmail());
         resp.setGuestPhone(reg.getGuestPhone());
         resp.setWorkplace(reg.getWorkplace());
-        resp.setStatus(reg.getStatus());
         resp.setRegisteredAt(reg.getRegisteredAt());
 
         if (reg.getUser() != null) {
             resp.setUserId(reg.getUser().getId());
             resp.setUserName(reg.getUser().getFullName());
         }
+
+        // [TÍCH HỢP CHUẨN MÙ] - Backend dịch mã trạng thái
+        String maTrangThai = reg.getStatus();
+        String chuHienThi = "Không xác định";
+
+        if (maTrangThai != null) {
+            if (maTrangThai.equals("CONFIRMED") || maTrangThai.equals("APPROVED")) {
+                chuHienThi = "Đã duyệt";
+            } else if (maTrangThai.equals("PENDING")) {
+                chuHienThi = "Chờ xác nhận";
+            } else if (maTrangThai.equals("ATTENDED")) {
+                chuHienThi = "Đã tham dự";
+            } else if (maTrangThai.equals("CANCELLED")) {
+                chuHienThi = "Đã hủy";
+            } else {
+                chuHienThi = maTrangThai; // Fallback
+            }
+        }
+
+        resp.setStatus(maTrangThai);
+        resp.setDisplayStatus(chuHienThi); // Đẩy chuỗi đã dịch ra Frontend
 
         return resp;
     }

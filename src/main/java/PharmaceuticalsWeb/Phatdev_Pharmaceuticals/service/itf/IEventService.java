@@ -48,8 +48,11 @@ public interface IEventService {
     List<CtEventResponse> layBuoiSapToi(int limit);
 
     /** Lấy các buổi user đã đăng ký (cho sidebar "Đăng ký của tôi") */
-    List<EventRegistrationResponse> layDangKyCuaToi(Long userId);
+    Page<EventRegistrationResponse> layDangKyCuaToi(Long userId, int page, int size);
 
+    /** Lấy đích danh vé tại một buổi cụ thể (O(1)) */
+    EventRegistrationResponse layVeCuaToiTaiBuoiNay(Long ctEventId, Long userId);
+    
     /** Đăng ký tham dự buổi sự kiện */
     EventRegistrationResponse dangKyThamDu(EventRegistrationRequest request, Long userId);
 

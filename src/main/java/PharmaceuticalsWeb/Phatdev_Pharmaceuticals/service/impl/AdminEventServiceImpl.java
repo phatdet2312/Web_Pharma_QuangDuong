@@ -60,9 +60,12 @@ import java.util.regex.Pattern;
  * =========================================================================
  * TỔNG QUAN NHIỆM VỤ FILE: THỰC THI NGHIỆP VỤ QUẢN TRỊ SỰ KIỆN & CHIẾN DỊCH
  * =========================================================================
- * Quản lý toàn bộ vòng đời của cấu trúc phân tầng: Chiến dịch (Events) -> Phiên (CtEvents).
- * Theo dõi hồ sơ đăng ký tham dự của đối tác B2B và kiểm soát Vết trạng thái (Audit History).
- * Thiết kế tuân thủ nghiêm ngặt kỹ thuật lập trình nguyên thủy, không sử dụng Stream API.
+ * Quản lý toàn bộ vòng đời của cấu trúc phân tầng: Chiến dịch (Events) -> Phiên
+ * (CtEvents).
+ * Theo dõi hồ sơ đăng ký tham dự của đối tác B2B và kiểm soát Vết trạng thái
+ * (Audit History).
+ * Thiết kế tuân thủ nghiêm ngặt kỹ thuật lập trình nguyên thủy, không sử dụng
+ * Stream API.
  */
 @Service
 @RequiredArgsConstructor
@@ -81,12 +84,13 @@ public class AdminEventServiceImpl implements IAdminEventService {
 
     /**
      * Đo lường sức khỏe toàn diện của Hệ sinh thái Sự kiện trong tháng hiện tại.
-     * * @return EventStatsResponse DTO chứa các số liệu tổng hợp (Số lượng phiên, lượt đăng ký, lượt tham dự).
+     * * @return EventStatsResponse DTO chứa các số liệu tổng hợp (Số lượng phiên,
+     * lượt đăng ký, lượt tham dự).
      */
-    @Override 
+    @Override
     public EventStatsResponse layThongKeAdmin() {
         ZoneId businessZone = ZoneId.of("Asia/Ho_Chi_Minh");
-        
+
         YearMonth thangNay = YearMonth.now();
         LocalDateTime dauThang = thangNay.atDay(1).atStartOfDay();
         LocalDateTime cuoiThang = thangNay.atEndOfMonth().atTime(23, 59, 59);
@@ -125,43 +129,48 @@ public class AdminEventServiceImpl implements IAdminEventService {
     }
 
     /**
-     * Truy xuất danh sách Chiến dịch Marketing (Events) kết hợp bộ lọc và phân trang.
-     * Cấu trúc lồng nhau: Mỗi Chiến dịch sẽ tự động quét và đính kèm các Phiên con (CtEvents).
+     * Truy xuất danh sách Chiến dịch Marketing (Events) kết hợp bộ lọc và phân
+     * trang.
+     * Cấu trúc lồng nhau: Mỗi Chiến dịch sẽ tự động quét và đính kèm các Phiên con
+     * (CtEvents).
      * * @param keyword Từ khóa tìm kiếm theo tên chiến dịch.
+     * 
      * @param eventTypeId Phân loại chiến dịch (Ví dụ: Hội thảo, Đào tạo).
-     * @param page Trang hiện tại (0-indexed).
-     * @param size Số lượng bản ghi trên mỗi trang.
+     * @param page        Trang hiện tại (0-indexed).
+     * @param size        Số lượng bản ghi trên mỗi trang.
      * @return Page<EventResponse> Trang dữ liệu đã được ánh xạ hoàn chỉnh.
      */
-   @Override
+    @Override
     public Page<EventResponse> layDanhSachChienDich(
-            String keyword, Integer eventTypeId, 
-            LocalDateTime startDate, LocalDateTime endDate, 
+            String keyword, Integer eventTypeId,
+            LocalDateTime startDate, LocalDateTime endDate,
             Integer locationId, int page, int size) {
-                
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        
+
         String kw = null;
         if (keyword != null && keyword.trim().isEmpty() == false) {
             kw = keyword.trim();
         }
-        
-        Page<Event> eventsPage = eventRepository.timKiemChienDich(kw, eventTypeId, startDate, endDate, locationId, pageable);
+
+        Page<Event> eventsPage = eventRepository.timKiemChienDich(kw, eventTypeId, startDate, endDate, locationId,
+                pageable);
         List<Event> eventList = eventsPage.getContent();
         List<EventResponse> responseList = new ArrayList<>();
-        
+
         Object[] eventArray = eventList.toArray();
         for (int i = 0; i < eventArray.length; i = i + 1) {
             Event eventEntity = (Event) eventArray[i];
             responseList.add(xayDungEventResponse(eventEntity));
         }
-        
+
         return new PageImpl<>(responseList, pageable, eventsPage.getTotalElements());
     }
- 
+
     /**
      * Khởi tạo một Chiến dịch Marketing mới.
-     * Xử lý chuẩn hóa tên chiến dịch thành đường dẫn tĩnh (Slug) phục vụ chiến lược SEO.
+     * Xử lý chuẩn hóa tên chiến dịch thành đường dẫn tĩnh (Slug) phục vụ chiến lược
+     * SEO.
      */
     @Override
     @Transactional
@@ -215,7 +224,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
             }
         }
 
-        // Logic bảo vệ tính toàn vẹn của Slug: Chỉ kiểm tra trùng lặp nếu có sự thay đổi
+        // Logic bảo vệ tính toàn vẹn của Slug: Chỉ kiểm tra trùng lặp nếu có sự thay
+        // đổi
         if (request.getSlug() != null && request.getSlug().equals(event.getSlug()) == false) {
             if (eventRepository.existsBySlug(request.getSlug()) == true) {
                 throw new AppException(400, "Đường dẫn (Slug) cập nhật đã bị trùng với chiến dịch khác.");
@@ -229,7 +239,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
 
     /**
      * Gỡ bỏ một Chiến dịch khỏi hệ thống.
-     * (Cảnh báo: Tầng Controller cần xác nhận các ràng buộc dữ liệu con trước khi gọi hàm này).
+     * (Cảnh báo: Tầng Controller cần xác nhận các ràng buộc dữ liệu con trước khi
+     * gọi hàm này).
      */
     @Override
     @Transactional
@@ -242,7 +253,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
 
     /**
      * Thiết lập một Phiên sự kiện (Session) trực thuộc một Chiến dịch.
-     * Đồng thời, khởi tạo bản ghi Vết trạng thái (Event Sourcing) đầu tiên là DRAFT.
+     * Đồng thời, khởi tạo bản ghi Vết trạng thái (Event Sourcing) đầu tiên là
+     * DRAFT.
      */
     @Override
     @Transactional
@@ -253,7 +265,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
         }
 
         // Ràng buộc tính hợp lý của không gian thời gian
-        if (request.getEndTime().isBefore(request.getStartTime()) == true || request.getEndTime().isEqual(request.getStartTime()) == true) {
+        if (request.getEndTime().isBefore(request.getStartTime()) == true
+                || request.getEndTime().isEqual(request.getStartTime()) == true) {
             throw new AppException(400, "Xung đột thời gian: Giờ bế mạc phải diễn ra sau giờ khai mạc.");
         }
 
@@ -284,7 +297,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         history.setStatusCode("DRAFT");
         history.setChangedAt(LocalDateTime.now());
         history.setNote("Khởi tạo cấu trúc phiên sự kiện mới.");
-        
+
         if (optModerator.isPresent() == true) {
             history.setChangedByUser(optModerator.get());
         }
@@ -338,7 +351,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
     }
 
     /**
-     * Loại bỏ một Phiên sự kiện khỏi hệ thống, kèm theo việc dọn dẹp các liên kết ngoại.
+     * Loại bỏ một Phiên sự kiện khỏi hệ thống, kèm theo việc dọn dẹp các liên kết
+     * ngoại.
      */
     @Override
     @Transactional
@@ -351,13 +365,14 @@ public class AdminEventServiceImpl implements IAdminEventService {
     }
 
     /**
-     * Khai thác dữ liệu từ Sổ tay trạng thái để dựng lại toàn bộ vòng đời của Phiên sự kiện.
+     * Khai thác dữ liệu từ Sổ tay trạng thái để dựng lại toàn bộ vòng đời của Phiên
+     * sự kiện.
      */
     @Override
     public List<EventStatusHistoryResponse> layLichSuTrangThai(Long ctEventId) {
         List<CtEventStatusHistory> danhSach = statusHistoryRepository.findByCtEventIdOrderByChangedAtDesc(ctEventId);
         List<EventStatusHistoryResponse> result = new ArrayList<>();
-        
+
         Object[] arr = danhSach.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEventStatusHistory h = (CtEventStatusHistory) arr[i];
@@ -367,7 +382,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
             resp.setStatusCode(h.getStatusCode());
             resp.setChangedAt(h.getChangedAt());
             resp.setNote(h.getNote());
-            
+
             if (h.getChangedByUser() != null) {
                 resp.setChangedByUserId(h.getChangedByUser().getId());
                 resp.setChangedByUserName(h.getChangedByUser().getFullName());
@@ -379,7 +394,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
 
     /**
      * Bổ sung một bản ghi vào Sổ tay trạng thái (Event Sourcing Pattern).
-     * Trạng thái của Phiên sự kiện KHÔNG bao giờ bị cập nhật đè (Update), 
+     * Trạng thái của Phiên sự kiện KHÔNG bao giờ bị cập nhật đè (Update),
      * mà luôn được tính toán dựa trên bản ghi mới nhất được Insert vào đây.
      */
     @Override
@@ -404,10 +419,9 @@ public class AdminEventServiceImpl implements IAdminEventService {
         statusHistoryRepository.save(history);
     }
 
-
     /**
      * Vận hành Cỗ máy xử lý hàng loạt.
-     * Quét qua danh sách các Chiến dịch, khai thác các Trạm con trực thuộc và 
+     * Quét qua danh sách các Chiến dịch, khai thác các Trạm con trực thuộc và
      * đóng dấu đồng loạt vào Sổ tay trạng thái.
      */
     @Override
@@ -423,12 +437,12 @@ public class AdminEventServiceImpl implements IAdminEventService {
         for (int i = 0; i < arr.length; i = i + 1) {
             Long eventId = (Long) arr[i];
             Optional<Event> optEvent = eventRepository.findById(eventId);
-            
+
             if (optEvent.isPresent() == true) {
                 Event event = optEvent.get();
                 List<CtEvent> sessions = ctEventRepository.findByEventIdOrderByStartTimeAsc(event.getId());
                 Object[] sessionArr = sessions.toArray();
-                
+
                 for (int j = 0; j < sessionArr.length; j = j + 1) {
                     CtEvent ctEvent = (CtEvent) sessionArr[j];
                     CtEventStatusHistory history = new CtEventStatusHistory();
@@ -443,9 +457,6 @@ public class AdminEventServiceImpl implements IAdminEventService {
         }
     }
 
-
-    
-
     /**
      * Truy xuất danh sách hồ sơ đăng ký tham dự của một Phiên sự kiện.
      */
@@ -453,7 +464,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
     public List<EventRegistrationResponse> layDanhSachDangKy(Long ctEventId) {
         List<CtEventRegistration> danhSach = registrationRepository.findByCtEventIdOrderByRegisteredAtDesc(ctEventId);
         List<EventRegistrationResponse> result = new ArrayList<>();
-        
+
         Object[] arr = danhSach.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEventRegistration reg = (CtEventRegistration) arr[i];
@@ -467,11 +478,32 @@ public class AdminEventServiceImpl implements IAdminEventService {
             resp.setWorkplace(reg.getWorkplace());
             resp.setStatus(reg.getStatus());
             resp.setRegisteredAt(reg.getRegisteredAt());
-            
+
             if (reg.getUser() != null) {
                 resp.setUserId(reg.getUser().getId());
                 resp.setUserName(reg.getUser().getFullName());
             }
+
+            String maTrangThai = reg.getStatus();
+            String chuHienThi = "Không xác định";
+
+            if (maTrangThai != null) {
+                if (maTrangThai.equals("CONFIRMED") || maTrangThai.equals("APPROVED")) {
+                    chuHienThi = "Đã duyệt";
+                } else if (maTrangThai.equals("PENDING")) {
+                    chuHienThi = "Chờ xác nhận";
+                } else if (maTrangThai.equals("ATTENDED")) {
+                    chuHienThi = "Đã tham dự";
+                } else if (maTrangThai.equals("CANCELLED")) {
+                    chuHienThi = "Đã hủy";
+                } else {
+                    chuHienThi = maTrangThai;
+                }
+            }
+
+            resp.setStatus(maTrangThai);
+            resp.setDisplayStatus(chuHienThi);
+
             result.add(resp);
         }
         return result;
@@ -500,7 +532,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
     public List<EventTypeResponse> layTatCaLoaiSuKien() {
         List<EventType> danhSach = eventTypeRepository.findAllByOrderByNameAsc();
         List<EventTypeResponse> result = new ArrayList<>();
-        
+
         Object[] arr = danhSach.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             EventType et = (EventType) arr[i];
@@ -519,9 +551,9 @@ public class AdminEventServiceImpl implements IAdminEventService {
         EventType et = new EventType();
         et.setName(request.getName());
         et.setDescription(request.getDescription());
-        
+
         EventType saved = eventTypeRepository.save(et);
-        
+
         EventTypeResponse resp = new EventTypeResponse();
         resp.setId(saved.getId());
         resp.setName(saved.getName());
@@ -539,9 +571,9 @@ public class AdminEventServiceImpl implements IAdminEventService {
         EventType et = opt.get();
         et.setName(request.getName());
         et.setDescription(request.getDescription());
-        
+
         EventType saved = eventTypeRepository.save(et);
-        
+
         EventTypeResponse resp = new EventTypeResponse();
         resp.setId(saved.getId());
         resp.setName(saved.getName());
@@ -562,7 +594,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
     public List<LocationResponse> layTatCaDiaDiem() {
         List<Location> danhSach = locationRepository.findAllByOrderByNameAsc();
         List<LocationResponse> result = new ArrayList<>();
-        
+
         Object[] arr = danhSach.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             Location loc = (Location) arr[i];
@@ -619,19 +651,19 @@ public class AdminEventServiceImpl implements IAdminEventService {
         if (tagIds == null || tagIds.isEmpty() == true) {
             return;
         }
-        
+
         Object[] arr = tagIds.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             Long tagId = (Long) arr[i];
             Optional<Tag> optTag = tagRepository.findById(tagId);
-            
+
             if (optTag.isPresent() == true) {
                 CtEventTag.CtEventTagId pkId = new CtEventTag.CtEventTagId(ctEvent.getId(), tagId);
                 CtEventTag bridge = new CtEventTag();
                 bridge.setId(pkId);
                 bridge.setCtEvent(ctEvent);
                 bridge.setTag(optTag.get());
-                
+
                 ctEventTagRepository.save(bridge);
             }
         }
@@ -658,7 +690,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
 
         List<CtEvent> sessions = ctEventRepository.findByEventIdOrderByStartTimeAsc(event.getId());
         List<CtEventResponse> sessionResponses = new ArrayList<>();
-        
+
         Object[] arr = sessions.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEvent ce = (CtEvent) arr[i];
@@ -671,7 +703,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
 
     /**
      * Khai thác toàn diện dữ liệu của một Phiên sự kiện.
-     * Xử lý thuật toán Cung-Cầu (Sức chứa - Số vé đã xuất) để tính toán Không gian trống.
+     * Xử lý thuật toán Cung-Cầu (Sức chứa - Số vé đã xuất) để tính toán Không gian
+     * trống.
      */
     private CtEventResponse xayDungCtEventResponse(CtEvent ctEvent) {
         CtEventResponse resp = new CtEventResponse();
@@ -701,7 +734,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         // Ghế trống khả dụng = Tổng Slot - (Đã đăng ký PENDING/CONFIRMED)
         long registered = ctEventRepository.demSlotDaDangKy(ctEvent.getId());
         resp.setRegisteredCount(registered);
-        
+
         if (ctEvent.getTotalSlots() > 0) {
             resp.setAvailableSlots(ctEvent.getTotalSlots() - registered);
         } else {
@@ -720,7 +753,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         List<Tag> tags = ctEventTagRepository.layTagCuaBuoi(ctEvent.getId());
         List<TagResponse> tagResponses = new ArrayList<>();
         Object[] tagArr = tags.toArray();
-        
+
         for (int i = 0; i < tagArr.length; i = i + 1) {
             Tag tag = (Tag) tagArr[i];
             TagResponse tagResp = new TagResponse();
@@ -735,7 +768,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         List<Post> relatedPosts = ctPostEventRepository.layBaiVietLienQuan(ctEvent.getId());
         List<PostResponse> relatedPostResponses = new ArrayList<>();
         Object[] postArr = relatedPosts.toArray();
-        
+
         for (int i = 0; i < postArr.length; i = i + 1) {
             Post post = (Post) postArr[i];
             PostResponse postResp = new PostResponse();
@@ -745,7 +778,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
             postResp.setSummary(post.getSummary());
             postResp.setThumbnailUrl(post.getThumbnailUrl());
             postResp.setAccessLevel(post.getAccessLevel());
-            
+
             if (post.getCategory() != null) {
                 postResp.setCategoryName(post.getCategory().getName());
             }

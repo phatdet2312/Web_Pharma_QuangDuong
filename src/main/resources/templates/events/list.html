@@ -893,6 +893,11 @@
                     color: var(--teal-600);
                 }
 
+                .mri-status.cancelled {
+                    background: rgba(220, 38, 38, .1);
+                    color: var(--danger);
+                }
+
                 @media (max-width: 991px) {
                     .ecc-poster {
                         width: 100%;
@@ -1173,6 +1178,7 @@
             };
 
             var tongSoTrang = 0;
+            var trangDangKyCuaToi = 0;
             var ngayHienTai = new Date();
             var lichMiniNam = ngayHienTai.getFullYear();
             var lichMiniThang = ngayHienTai.getMonth() + 1;
@@ -2136,34 +2142,44 @@
                 });
             }
 
-            function taiDangKyCuaToi() {
+            function taiDangKyCuaToi(trangHienTai) {
+                if (trangHienTai !== undefined && trangHienTai !== null) {
+                    trangDangKyCuaToi = trangHienTai;
+                }
+                
                 var vungChua = document.getElementById('my-registrations-container');
                 if (vungChua === null) return;
 
-                callApi('/api/events/my-registrations', 'GET', null, null, function (res) {
-                    if (res.status !== 200 || res.data === null || res.data === undefined || res.data.length === 0) {
+                // Thêm hiệu ứng load khi chuyển trang
+                vungChua.innerHTML = '<div style="text-align:center;padding:16px 0;"><i class="fas fa-spinner fa-spin" style="color:var(--teal-400);"></i></div>';
+
+                callApi('/api/events/my-registrations?page=' + trangDangKyCuaToi + '&size=3', 'GET', null, null, function (res) {
+                    if (res.status !== 200 || res.data === null || res.data === undefined || res.data.content.length === 0) {
                         vungChua.innerHTML = '<div style="font-size:.82rem;color:var(--gray-400);padding:8px 0;">Bạn chưa đăng ký sự kiện nào.</div>';
                         return;
                     }
 
-                    var html = '';
-                    var soLuongHienThi = 3;
-                    if (res.data.length < 3) {
-                        soLuongHienThi = res.data.length;
-                    }
+                    var mangVe = res.data.content;
+                    var coTrangTruoc = !res.data.first;
+                    var coTrangSau = !res.data.last;
 
-                    for (var i = 0; i < soLuongHienThi; i = i + 1) {
-                        var ve = res.data[i];
+                    var html = '';
+
+                    for (var i = 0; i < mangVe.length; i = i + 1) {
+                        var ve = mangVe[i];
+                        
+                        // FRONTEND MÙ: Chỉ gán màu sắc/CSS dựa theo mã gốc
                         var mauCham = 'var(--gray-300)';
                         var lopCSS = 'pending';
-                        var chuHienThi = lamSachChuoiHTML(ve.status);
 
                         if (ve.status === 'CONFIRMED' || ve.status === 'APPROVED') {
-                            mauCham = 'var(--teal-500)'; lopCSS = 'approved'; chuHienThi = 'Đã duyệt';
+                            mauCham = 'var(--teal-500)'; lopCSS = 'approved';
                         } else if (ve.status === 'PENDING') {
-                            mauCham = 'var(--warning)'; lopCSS = 'pending'; chuHienThi = 'Chờ xác nhận';
+                            mauCham = 'var(--warning)'; lopCSS = 'pending';
                         } else if (ve.status === 'ATTENDED') {
-                            mauCham = 'var(--teal-400)'; lopCSS = 'attended'; chuHienThi = 'Đã tham dự';
+                            mauCham = 'var(--teal-400)'; lopCSS = 'attended';
+                        } else if (ve.status === 'CANCELLED') {
+                            mauCham = 'var(--danger)'; lopCSS = 'cancelled';
                         }
 
                         var tenChienDich = 'Sự kiện y khoa';
@@ -2171,12 +2187,23 @@
                             tenChienDich = ve.campaignTitle;
                         }
 
-                        html += '<div class="my-reg-item"><div class="mri-dot" style="background:' + mauCham + ';"></div><div class="mri-title">' + lamSachChuoiHTML(tenChienDich) + '</div><span class="mri-status ' + lopCSS + '">' + chuHienThi + '</span></div>';
+                        // FRONTEND MÙ: In trực tiếp chuỗi 'displayStatus' từ Backend đưa sang
+                        html += '<div class="my-reg-item"><div class="mri-dot" style="background:' + mauCham + ';"></div><div class="mri-title">' + lamSachChuoiHTML(tenChienDich) + '</div><span class="mri-status ' + lopCSS + '">' + lamSachChuoiHTML(ve.displayStatus) + '</span></div>';
                     }
-                    html += '<a href="/su-kien-cua-toi" style="display:block;text-align:center;font-size:.8rem;color:var(--teal-600);font-weight:600;padding:8px;border:1px dashed var(--teal-300);border-radius:var(--r-md);margin-top:10px;text-decoration:none;">Xem tất cả lịch sử đăng ký →</a>';
+
+                    // VẼ BỘ ĐIỀU HƯỚNG PHÂN TRANG (CƠ CHẾ MỚI BẰNG NÚT < VÀ >)
+                    var theTrangTruoc = coTrangTruoc ? '<button onclick="taiDangKyCuaToi(' + (trangDangKyCuaToi - 1) + ')" style="background:transparent;border:none;color:var(--teal-600);cursor:pointer;font-weight:700;font-size:1rem;"><i class="fas fa-angle-left"></i></button>' : '<button disabled style="background:transparent;border:none;color:var(--gray-300);cursor:not-allowed;font-weight:700;font-size:1rem;"><i class="fas fa-angle-left"></i></button>';
+                    
+                    var theTrangSau = coTrangSau ? '<button onclick="taiDangKyCuaToi(' + (trangDangKyCuaToi + 1) + ')" style="background:transparent;border:none;color:var(--teal-600);cursor:pointer;font-weight:700;font-size:1rem;"><i class="fas fa-angle-right"></i></button>' : '<button disabled style="background:transparent;border:none;color:var(--gray-300);cursor:not-allowed;font-weight:700;font-size:1rem;"><i class="fas fa-angle-right"></i></button>';
+                    
+                    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px dashed var(--gray-200);">';
+                    html += '<a href="/su-kien-cua-toi" style="font-size:.8rem;color:var(--teal-600);font-weight:600;text-decoration:none;">Xem tất cả</a>';
+                    html += '<div style="display:flex;gap:16px;">' + theTrangTruoc + theTrangSau + '</div>';
+                    html += '</div>';
+
                     vungChua.innerHTML = html;
                 }, function () {
-                    vungChua.innerHTML = '<div style="font-size:.82rem;color:var(--gray-400);">Hệ thống từ chối tải danh sách vé do thiếu định danh hợp lệ.</div>';
+                    vungChua.innerHTML = '<div style="font-size:.82rem;color:var(--danger);">Lỗi tải danh sách vé.</div>';
                 });
             }
 

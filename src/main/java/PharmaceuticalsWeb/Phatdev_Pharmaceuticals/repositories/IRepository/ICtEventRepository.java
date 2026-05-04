@@ -22,11 +22,11 @@ public interface ICtEventRepository extends JpaRepository<CtEvent, Long> {
         List<CtEvent> findByEventIdOrderByStartTimeAsc(Long eventId);
 
         /**
-         * Đếm số slot đã đăng ký (trạng thái PENDING hoặc CONFIRMED).
+         * Đếm số slot đã đăng ký (trạng thái PENDING, CONFIRMED, APPROVED hoặc ATTENDED).
          * Slot trống = TOTAL_SLOTS - số đăng ký này.
          */
         @Query("SELECT COUNT(r) FROM CtEventRegistration r WHERE r.ctEvent.id = :ctEventId " +
-                        "AND r.status IN ('PENDING', 'CONFIRMED')")
+               "AND r.status IN ('PENDING', 'CONFIRMED', 'APPROVED', 'ATTENDED')")
         long demSlotDaDangKy(@Param("ctEventId") Long ctEventId);
 
         /**

@@ -2,6 +2,9 @@
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventRegistration;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * =========================================================================
@@ -22,7 +26,16 @@ public interface ICtEventRegistrationRepository extends JpaRepository<CtEventReg
        List<CtEventRegistration> findByCtEventIdOrderByRegisteredAtDesc(Long ctEventId);
 
        /** Trích xuất lịch sử tham gia sự kiện của một Tài khoản */
-       List<CtEventRegistration> findByUserIdOrderByRegisteredAtDesc(Long userId);
+       //List<CtEventRegistration> findByUserIdOrderByRegisteredAtDesc(Long userId);
+
+       /** Khai thác lịch sử tham gia sự kiện có Phân trang (Bảo vệ RAM) */
+       Page<CtEventRegistration> findByUserIdOrderByRegisteredAtDesc(Long userId, Pageable pageable);
+
+       /** 
+        * Thay vì lấy duy nhất, ta lấy vé MỚI NHẤT của người dùng tại phiên này.
+        * Cho phép 1 người dùng có nhiều vé (1 vé thật, nhiều vé hủy lịch sử).
+        */
+       Optional<CtEventRegistration> findFirstByCtEventIdAndUserIdOrderByRegisteredAtDesc(Long ctEventId, Long userId);
 
        /** Đo lường tổng lưu lượng vé đã phát hành trên toàn hệ thống */
        @Query("SELECT COUNT(r) FROM CtEventRegistration r")
@@ -36,6 +49,16 @@ public interface ICtEventRegistrationRepository extends JpaRepository<CtEventReg
 
        /** Đo lường lượng khách thực tế tham dự của một Phiên sự kiện */
        long countByCtEventIdAndStatus(Long ctEventId, String status);
+
+       /** 
+        * Trích xuất danh sách khách mời CÓ HIỆU LỰC (Bỏ qua CANCELLED).
+        * Phục vụ vẽ Avatar Social Proof trên trang chi tiết.
+        */
+       @Query("SELECT r FROM CtEventRegistration r WHERE r.ctEvent.id = :ctEventId " +
+              "AND r.status IN ('PENDING', 'CONFIRMED', 'APPROVED', 'ATTENDED') " +
+              "ORDER BY r.registeredAt DESC")
+       List<CtEventRegistration> layDanhSachKhachMoiHopLe(@Param("ctEventId") Long ctEventId);
+
 
        /**
         * Đo lường lượng vé phát hành trong một khung thời gian tuyến tính.

@@ -108,13 +108,34 @@ public class ApiEventController {
     }
 
     /** Đăng ký của tôi (sidebar "My registrations") */
-    @GetMapping("/my-registrations")
-    public ApiResponse<List<EventRegistrationResponse>> layDangKyCuaToi(Authentication authentication) {
+   @GetMapping("/my-registrations")
+    public ApiResponse<Page<EventRegistrationResponse>> layDangKyCuaToi(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "3") int size,
+            Authentication authentication) {
+        
         Long userId = layUserIdTuAuthentication(authentication);
         if (userId == null) {
             return ApiResponse.loi(401, "Vui lòng đăng nhập để xem đăng ký");
         }
-        return ApiResponse.thanhCong(eventService.layDangKyCuaToi(userId), "Lấy đăng ký thành công");
+        Page<EventRegistrationResponse> result = eventService.layDangKyCuaToi(userId, page, size);
+        return ApiResponse.thanhCong(result, "Lấy đăng ký thành công");
+    }
+
+    /**  Kiểm tra vé của tôi tại một buổi cụ thể*/
+    @GetMapping("/sessions/{ctEventId}/my-ticket")
+    public ApiResponse<EventRegistrationResponse> kiemTraVeCuaToi(
+            @PathVariable Long ctEventId,
+            Authentication authentication) {
+
+        Long userId = layUserIdTuAuthentication(authentication);
+        if (userId == null) {
+            // Không throw 401 để tránh rác Console của khách vãng lai
+            return ApiResponse.thanhCong(null, "Khách vãng lai"); 
+        }
+
+        EventRegistrationResponse ticket = eventService.layVeCuaToiTaiBuoiNay(ctEventId, userId);
+        return ApiResponse.thanhCong(ticket, "Kiểm tra vé thành công");
     }
 
     /** Đăng ký tham dự buổi sự kiện */
