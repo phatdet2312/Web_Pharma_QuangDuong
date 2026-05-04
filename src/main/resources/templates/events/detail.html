@@ -891,7 +891,7 @@
                                             placeholder="Đặt câu hỏi cho diễn giả hoặc chia sẻ kỳ vọng của bạn về buổi hội thảo..."></textarea>
                                         <div style="display:flex;justify-content:flex-end;margin-top:8px;">
                                             <button id="btn-gui-cmt" class="submit-btn"
-                                                style="width:auto;padding:7px 18px;font-size:.84rem;background:var(--ink-800);"
+                                                style="width:auto;padding:7px 18px;font-size:.84rem;background:var(--ink-800);color:white;"
                                                 onclick="guiBinhLuan()">
                                                 <i class="fas fa-paper-plane fa-xs"></i> Gửi bình luận
                                             </button>
@@ -1757,7 +1757,7 @@
             var block = document.getElementById('already-reg-block');
             if (block) { block.style.display = 'block'; }
             document.getElementById('ar-ticket-code').innerHTML = 'Mã vé: <strong>#' + esc(String(reg.id || '—')) + '</strong>';
-            
+
             var statusLabel = '';
             // ĐÃ SỬA: Chỉ dùng status để đổi màu HTML, nội dung lấy từ reg.displayStatus
             if (reg.status === 'CONFIRMED' || reg.status === 'APPROVED') {

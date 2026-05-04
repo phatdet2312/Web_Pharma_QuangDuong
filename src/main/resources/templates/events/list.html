@@ -173,6 +173,36 @@
                     font-size: .7rem;
                 }
 
+                /* Dropdown Select cho thanh lọc ngang */
+                .efb-select {
+                    padding: 5px 14px 5px 10px;
+                    background: rgba(255, 255, 255, .05);
+                    border: 1px solid rgba(255, 255, 255, .1);
+                    border-radius: 50px;
+                    font-size: .78rem;
+                    font-weight: 600;
+                    color: rgba(255, 255, 255, .9);
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    outline: none;
+                    font-family: inherit;
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                }
+
+                .efb-select:hover, .efb-select:focus {
+                    border-color: var(--gold-500);
+                    color: var(--gold-400);
+                }
+
+                /* Ép nền đen cho thẻ option bên trong để tránh trắng xóa làm chữ không đọc được */
+                .efb-select option {
+                    background: var(--ink-900);
+                    color: white;
+                    font-weight: 600;
+                }
+
                 /* Main Layout */
                 .events-layout {
                     padding: 48px 0 80px;
@@ -692,6 +722,23 @@
                     padding: 14px 16px;
                 }
 
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: var(--gray-200);
+                    border-radius: 4px;
+                }
+
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: var(--gray-300);
+                }
+
                 /* Calendar mini */
                 .mini-calendar {
                     width: 100%;
@@ -898,6 +945,9 @@
                     color: var(--danger);
                 }
 
+
+                
+
                 @media (max-width: 991px) {
                     .ecc-poster {
                         width: 100%;
@@ -990,15 +1040,20 @@
                         <button class="efb-btn" data-time="THIS_MONTH">Tháng này</button>
                         <button class="efb-btn" data-time="THIS_WEEK">Tuần này</button>
                         <button class="efb-btn" data-time="NEXT_MONTH">Tháng sau</button>
-                        <div class="efb-divider"></div>
+                        
+                        <div class="efb-divider" style="margin-left: 10px;"></div>
+                        
+                        <!-- CHUYỂN ĐỔI SANG SELECT BOX CHO LOẠI SỰ KIỆN -->
                         <span class="efb-label">Loại:</span>
-                        <!-- display:contents biến span thành "transparent wrapper" — buttons là flex children trực tiếp -->
-                        <span id="efb-types-container" style="display:contents;">
-                            <button class="efb-type-btn active" data-type-id="" onclick="chonLoaiSuKien(this,null)"><i
-                                    class="fas fa-globe"></i> Tất cả</button>
-                        </span>
-                        <!-- Divider + location buttons được JS thêm vào khi có dữ liệu -->
-                        <span id="efb-locations-container" style="display:contents;"></span>
+                        <select id="efb-types-select" class="efb-select">
+                            <option value="">Tất cả loại sự kiện</option>
+                        </select>
+                        
+                        <!-- CHUYỂN ĐỔI SANG SELECT BOX CHO ĐỊA ĐIỂM -->
+                        <span class="efb-label" style="margin-left: 10px;">Địa điểm:</span>
+                        <select id="efb-locations-select" class="efb-select">
+                            <option value="">Tất cả địa điểm</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -1189,6 +1244,23 @@
             // =========================================================================
 
             /**
+             * Nhiệm vụ: Tẩy sạch mọi thẻ HTML từ Rich-Text Editor để lấy text thuần túy
+             * Tránh làm vỡ cấu trúc Card trên giao diện Danh sách.
+             */
+            function tayTheHTML(chuoiHTML) {
+                if (chuoiHTML === null || chuoiHTML === undefined || chuoiHTML === '') {
+                    return '';
+                }
+                // Dùng Regex quét mọi cụm bắt đầu bằng < và kết thúc bằng > rồi xóa chúng đi
+                var textThuan = String(chuoiHTML).replace(/<[^>]*>?/gm, '');
+
+                // Giải mã các ký tự đặc biệt của HTML (như &nbsp;, &amp;)
+                var theAo = document.createElement("textarea");
+                theAo.innerHTML = textThuan;
+                return theAo.value.trim();
+            }
+
+            /**
              * Nhiệm vụ: Chuyển đổi chuỗi ISO thời gian thành định dạng ngày/tháng/năm.
              */
             function dinhDangNgay(iso) {
@@ -1278,12 +1350,12 @@
                     var theTongBuoi = document.getElementById('kpi-sessions');
                     var theLoaiSuKien = document.getElementById('kpi-types');
 
-                   if (theThangHienTai !== null) {
+                    if (theThangHienTai !== null) {
                         theThangHienTai.textContent = dinhDangSo(thongKe.eventsThisMonth);
                     }
                     if (theNhanThangHienTai !== null) {
                         var nhanMoi = 'Tổng sự kiện'; // Mặc định khi time = null (Tất cả)
-                        
+
                         if (boLocHienTai.time === 'THIS_MONTH') {
                             nhanMoi = 'Sự kiện tháng này';
                         } else if (boLocHienTai.time === 'NEXT_MONTH') {
@@ -1299,7 +1371,7 @@
                             var mangNgay = boLocHienTai.time.split('-');
                             nhanMoi = 'Sự kiện ngày ' + parseInt(mangNgay[2]) + '/' + parseInt(mangNgay[1]);
                         }
-                        
+
                         theNhanThangHienTai.textContent = nhanMoi;
                     }
                     if (theDaDangKy !== null) {
@@ -1319,54 +1391,36 @@
              */
             function taiLoaiSuKienChoFilter() {
                 callApi('/api/events/types', 'GET', null, null, function (res) {
-                    if (res.status !== 200) {
-                        return;
-                    }
+                    if (res.status !== 200 || !res.data) return;
+                    
                     var danhSach = res.data;
-                    if (danhSach === null || danhSach === undefined) {
-                        return;
-                    }
-
-                    var htmlBoLoc = '<button class="efb-type-btn active" data-type-id="" id="btn-type-all"><i class="fas fa-globe"></i> Tất cả</button>';
-                    for (var i = 0; i < danhSach.length; i = i + 1) {
-                        htmlBoLoc += '<button class="efb-type-btn" data-type-id="' + danhSach[i].id + '"><i class="fas fa-tag fa-xs"></i> ' + lamSachChuoiHTML(danhSach[i].name) + '</button>';
-                    }
-
-                    var vungBoLoc = document.getElementById('efb-types-container');
-                    if (vungBoLoc !== null) {
-                        vungBoLoc.innerHTML = htmlBoLoc;
-
-                        // Gắn sự kiện click cho các nút lọc vừa tạo
-                        var cacNutLoc = vungBoLoc.querySelectorAll('.efb-type-btn');
-                        for (var btnIndex = 0; btnIndex < cacNutLoc.length; btnIndex = btnIndex + 1) {
-                            cacNutLoc[btnIndex].addEventListener('click', function () {
-                                var idLoai = this.getAttribute('data-type-id');
-
-                                // Xóa class active của tất cả các nút
-                                var tatCaNut = vungBoLoc.querySelectorAll('.efb-type-btn');
-                                for (var a = 0; a < tatCaNut.length; a = a + 1) {
-                                    tatCaNut[a].classList.remove('active');
-                                }
-
-                                this.classList.add('active');
-
-                                if (idLoai === '') {
-                                    boLocHienTai.type = null;
-                                } else {
-                                    boLocHienTai.type = parseInt(idLoai);
-                                }
-                                boLocHienTai.page = 0;
-                                taiDanhSachChienDich(0);
-                                taiThongKe();
-                            });
+                    
+                    // 1. ĐỔ DỮ LIỆU VÀO THANH SELECT BÊN TRÊN
+                    var selectEl = document.getElementById('efb-types-select');
+                    if (selectEl !== null) {
+                        var htmlOpt = '<option value="">Tất cả loại sự kiện</option>';
+                        for (var i = 0; i < danhSach.length; i = i + 1) {
+                            htmlOpt += '<option value="' + danhSach[i].id + '">&#9679; ' + lamSachChuoiHTML(danhSach[i].name) + '</option>';
                         }
+                        selectEl.innerHTML = htmlOpt;
+
+                        // Lắng nghe sự kiện người dùng chọn Dropdown
+                        selectEl.addEventListener('change', function() {
+                            var val = this.value;
+                            if (val === '') {
+                                boLocHienTai.type = null;
+                            } else {
+                                boLocHienTai.type = parseInt(val);
+                            }
+                            boLocHienTai.page = 0;
+                            taiDanhSachChienDich(0);
+                            taiThongKe();
+                        });
                     }
 
-                    // Vẽ giao diện Sidebar
-                    // Vẽ giao diện Sidebar 
-                    var htmlSidebar = '<div style="display:flex;flex-direction:column;gap:6px;">';
+                    // 2. VẼ GIAO DIỆN SIDEBAR BÊN PHẢI
+                    var htmlSidebar = '<div style="display:flex;flex-direction:column;gap:6px;max-height:250px;overflow-y:auto;padding-right:5px;" class="custom-scrollbar">';
                     for (var j = 0; j < danhSach.length; j = j + 1) {
-                        // Chỉ sử dụng data-cat-id, KHÔNG DÙNG ONCLICK
                         htmlSidebar += '<div class="sb-type-item" data-type-id="' + danhSach[j].id + '" ' +
                             'style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;cursor:pointer;border-radius:var(--r-sm);transition:var(--t-fast);">' +
                             '<span style="display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--gray-700);">' +
@@ -1381,26 +1435,24 @@
                     if (vungSidebar !== null) {
                         vungSidebar.innerHTML = htmlSidebar;
 
-                        // Gắn Event Listener độc lập
+                        // Đồng bộ: Khi click ở Sidebar -> Ép thẻ Select ở trên cùng tự đổi Value
                         var cacMucLoai = vungSidebar.querySelectorAll('.sb-type-item');
                         for (var m = 0; m < cacMucLoai.length; m = m + 1) {
-
                             cacMucLoai[m].addEventListener('mouseover', function () {
                                 this.style.background = 'var(--gray-100)';
                             });
-
                             cacMucLoai[m].addEventListener('mouseout', function () {
                                 this.style.background = 'transparent';
                             });
 
                             cacMucLoai[m].addEventListener('click', function () {
                                 var idLoai = this.getAttribute('data-type-id');
-                                var vungBoLocNgang = document.getElementById('efb-types-container');
-                                if (vungBoLocNgang !== null) {
-                                    var nutCanClick = vungBoLocNgang.querySelector('.efb-type-btn[data-type-id="' + idLoai + '"]');
-                                    if (nutCanClick !== null) {
-                                        nutCanClick.click();
-                                    }
+                                var theSelect = document.getElementById('efb-types-select');
+                                if (theSelect !== null) {
+                                    theSelect.value = idLoai;
+                                    // Tạo và bắn sự kiện 'change' để kích hoạt Load danh sách
+                                    var event = new Event('change');
+                                    theSelect.dispatchEvent(event);
                                 }
                             });
                         }
@@ -1413,56 +1465,31 @@
              */
             function taiDiaDiemChoFilter() {
                 callApi('/api/events/locations', 'GET', null, null, function (res) {
-                    if (res.status !== 200) {
-                        return;
-                    }
+                    if (res.status !== 200 || !res.data) return;
+                    
                     var danhSach = res.data;
-                    if (danhSach === null || danhSach === undefined || danhSach.length === 0) {
-                        return;
-                    }
-
-                    var htmlDiaDiem = '<div class="efb-divider"></div>';
-                    for (var i = 0; i < danhSach.length; i = i + 1) {
-                        var diaDiem = danhSach[i];
-                        var icon = 'fa-map-marker-alt';
-                        if (diaDiem.online === true) {
-                            icon = 'fa-video';
+                    var selectEl = document.getElementById('efb-locations-select');
+                    
+                    if (selectEl !== null) {
+                        var htmlOpt = '<option value="">Tất cả địa điểm</option>';
+                        for (var i = 0; i < danhSach.length; i = i + 1) {
+                            // Định danh rõ ràng Trực tuyến hay Thực địa
+                            var tienTo = danhSach[i].online ? "[Online 🌐] " : "[📍 offline] ";
+                            htmlOpt += '<option value="' + danhSach[i].id + '">' + tienTo + lamSachChuoiHTML(danhSach[i].name) + '</option>';
                         }
-                        htmlDiaDiem += '<button class="efb-type-btn btn-location" data-location-id="' + diaDiem.id + '"><i class="fas ' + icon + '"></i> ' + lamSachChuoiHTML(diaDiem.name) + '</button>';
-                    }
+                        selectEl.innerHTML = htmlOpt;
 
-                    var vungDiaDiem = document.getElementById('efb-locations-container');
-                    if (vungDiaDiem !== null) {
-                        vungDiaDiem.innerHTML = htmlDiaDiem;
-
-                        // Gắn sự kiện click
-                        var cacNutDiaDiem = vungDiaDiem.querySelectorAll('.btn-location');
-                        for (var k = 0; k < cacNutDiaDiem.length; k = k + 1) {
-                            cacNutDiaDiem[k].addEventListener('click', function () {
-                                var idDiaDiem = parseInt(this.getAttribute('data-location-id'));
-                                var dangActive = false;
-                                if (this.classList.contains('active') === true) {
-                                    dangActive = true;
-                                }
-
-                                var tatCaNut = vungDiaDiem.querySelectorAll('.btn-location');
-                                for (var n = 0; n < tatCaNut.length; n = n + 1) {
-                                    tatCaNut[n].classList.remove('active');
-                                }
-
-                                if (dangActive === true) {
-                                    // Hủy chọn
-                                    boLocHienTai.locationId = null;
-                                } else {
-                                    // Chọn mới
-                                    this.classList.add('active');
-                                    boLocHienTai.locationId = idDiaDiem;
-                                }
-
-                                boLocHienTai.page = 0;
-                                taiDanhSachChienDich(0);
-                            });
-                        }
+                        // Lắng nghe thao tác
+                        selectEl.addEventListener('change', function() {
+                            var val = this.value;
+                            if (val === '') {
+                                boLocHienTai.locationId = null;
+                            } else {
+                                boLocHienTai.locationId = parseInt(val);
+                            }
+                            boLocHienTai.page = 0;
+                            taiDanhSachChienDich(0);
+                        });
                     }
                 });
             }
@@ -1676,11 +1703,22 @@
                     html += '<a href="/hoi-thao/' + lamSachChuoiHTML(chienDich.slug) + '" class="ecc-campaign-title">' + lamSachChuoiHTML(chienDich.title) + '</a>';
                 }
 
+                // Tẩy thẻ HTML, lấy text thuần và cắt gọn
                 if (chienDich.description !== null && chienDich.description !== undefined && chienDich.description !== '') {
+
+                    // Bước 1: Tẩy sạch thẻ HTML chỉ giữ lại Text
+                    var textTieuTiet = tayTheHTML(chienDich.description);
+
+                    // Bước 2: Cắt ngắn chuỗi nếu quá dài (Tránh làm thẻ Card bị dài sọc)
+                    if (textTieuTiet.length > 150) {
+                        textTieuTiet = textTieuTiet.substring(0, 150) + '...';
+                    }
+
+                    // Bước 3: Vẫn phải bọc lamSachChuoiHTML để chặn XSS nếu Admin vô tình gõ mã độc dạng Text
                     if (laBiHuyToanBo === true) {
-                        html += '<div class="ecc-desc" style="text-decoration:line-through;">' + lamSachChuoiHTML(chienDich.description) + '</div>';
+                        html += '<div class="ecc-desc" style="text-decoration:line-through;">' + lamSachChuoiHTML(textTieuTiet) + '</div>';
                     } else {
-                        html += '<div class="ecc-desc">' + lamSachChuoiHTML(chienDich.description) + '</div>';
+                        html += '<div class="ecc-desc">' + lamSachChuoiHTML(textTieuTiet) + '</div>';
                     }
                 }
 
@@ -2077,13 +2115,13 @@
                 // Set định dạng YYYY-MM
                 boLocHienTai.time = nam + '-' + themSo0PhiaTruoc(thang);
                 boLocHienTai.page = 0;
-                
+
                 // Tẩy xóa trạng thái "Active" của các nút trên thanh lọc thời gian
                 var cacNutThoiGian = document.querySelectorAll('[data-time]');
                 for (var j = 0; j < cacNutThoiGian.length; j = j + 1) {
                     cacNutThoiGian[j].classList.remove('active');
                 }
-                
+
                 // Kích hoạt nạp lại dữ liệu
                 taiDanhSachChienDich(0);
                 taiThongKe();
@@ -2142,11 +2180,11 @@
                 });
             }
 
-            function taiDangKyCuaToi(trangHienTai) {
+            window.taiDangKyCuaToi = function (trangHienTai) {
                 if (trangHienTai !== undefined && trangHienTai !== null) {
                     trangDangKyCuaToi = trangHienTai;
                 }
-                
+
                 var vungChua = document.getElementById('my-registrations-container');
                 if (vungChua === null) return;
 
@@ -2167,7 +2205,7 @@
 
                     for (var i = 0; i < mangVe.length; i = i + 1) {
                         var ve = mangVe[i];
-                        
+
                         // FRONTEND MÙ: Chỉ gán màu sắc/CSS dựa theo mã gốc
                         var mauCham = 'var(--gray-300)';
                         var lopCSS = 'pending';
@@ -2193,9 +2231,9 @@
 
                     // VẼ BỘ ĐIỀU HƯỚNG PHÂN TRANG (CƠ CHẾ MỚI BẰNG NÚT < VÀ >)
                     var theTrangTruoc = coTrangTruoc ? '<button onclick="taiDangKyCuaToi(' + (trangDangKyCuaToi - 1) + ')" style="background:transparent;border:none;color:var(--teal-600);cursor:pointer;font-weight:700;font-size:1rem;"><i class="fas fa-angle-left"></i></button>' : '<button disabled style="background:transparent;border:none;color:var(--gray-300);cursor:not-allowed;font-weight:700;font-size:1rem;"><i class="fas fa-angle-left"></i></button>';
-                    
+
                     var theTrangSau = coTrangSau ? '<button onclick="taiDangKyCuaToi(' + (trangDangKyCuaToi + 1) + ')" style="background:transparent;border:none;color:var(--teal-600);cursor:pointer;font-weight:700;font-size:1rem;"><i class="fas fa-angle-right"></i></button>' : '<button disabled style="background:transparent;border:none;color:var(--gray-300);cursor:not-allowed;font-weight:700;font-size:1rem;"><i class="fas fa-angle-right"></i></button>';
-                    
+
                     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px dashed var(--gray-200);">';
                     html += '<a href="/su-kien-cua-toi" style="font-size:.8rem;color:var(--teal-600);font-weight:600;text-decoration:none;">Xem tất cả</a>';
                     html += '<div style="display:flex;gap:16px;">' + theTrangTruoc + theTrangSau + '</div>';
