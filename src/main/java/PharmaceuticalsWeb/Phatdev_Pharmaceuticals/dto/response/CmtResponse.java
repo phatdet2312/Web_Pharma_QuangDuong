@@ -66,6 +66,9 @@ public class CmtResponse {
     /** Danh sách phản hồi thứ cấp trực thuộc bình luận gốc, sắp xếp theo CREATED_AT tăng dần */
     private List<PhCmtResponse> replies;
 
+    /** Cờ phán quyết từ Backend: Người đang xem có phải là tác giả của bình luận này không? */
+    private boolean isAuthor;
+
     /** Thời điểm khởi tạo bình luận lần đầu tiên */
     private LocalDateTime createdAt;
 

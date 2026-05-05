@@ -11,9 +11,10 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PostResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PostStatsResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PublicProfileResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.TagResponse;
-
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtFileDownload;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtLikePost;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.LoaiLike;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PartnerProfile;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Post;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PostFile;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PostImage;
@@ -36,6 +37,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPubl
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ITagRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ILoaiLikeRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPartnerProfileRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IPostService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +83,7 @@ public class PostServiceImpl implements IPostService {
     private final ICtLikePostRepository ctLikePostRepository;
     private final IUserRepository userRepository;
     private final IPublicProfileRepository publicProfileRepository;
+    private final IPartnerProfileRepository partnerProfileRepository;
 
     // Inject UserService để tận dụng hàm nạp quyền (napQuyenChoNguoiDung)
     private final IUserService userService;
@@ -331,6 +334,43 @@ public class PostServiceImpl implements IPostService {
         return resp;
     }
 
+
+    /**
+     * =========================================================================
+     * CỖ MÁY THU THẬP DỮ LIỆU LEAD SCORING (TẢI TÀI LIỆU)
+     * =========================================================================
+     */
+    @Override
+    @Transactional
+    public void ghiNhanTaiTaiLieu(Long fileId, Long userId) {
+        // [CHUẨN MÙ] - Nếu là khách vãng lai, từ chối ghi log để giữ sạch Data Lead
+        if (userId == null) {
+            return;
+        }
+
+        Optional<PostFile> optFile = postFileRepository.findById(fileId);
+        if (optFile.isPresent() == false) {
+            return; 
+        }
+
+        Optional<User> optUser = userRepository.findById(userId);
+        if (optUser.isPresent() == false) {
+            return;
+        }
+
+        // BĂM TRỰC TIẾP VÀO CSDL MỖI LẦN CLICK MÀ KHÔNG CẦN CHECK TỒN TẠI!
+        // 1 Người tải 100 lần, ghi nhận 100 dòng Lead Scoring để tính độ "Nóng" của khách
+        CtFileDownload logTaiFile = new CtFileDownload();
+        logTaiFile.setPostFile(optFile.get());
+        logTaiFile.setUser(optUser.get());
+        logTaiFile.setDownloadedAt(LocalDateTime.now());
+        
+        ctFileDownloadRepository.save(logTaiFile);
+    }
+
+
+
+
     /**
      * =========================================================================
      * THUẬT TOÁN ĐÓNG GÓI CHI TIẾT BÀI VIẾT (MASTER MAPPING ENGINE)
@@ -410,44 +450,59 @@ public class PostServiceImpl implements IPostService {
         }
 
         // =========================================================================
-        // 2. LÁ CHẮN QUYỀN RIÊNG TƯ TÁC GIẢ (AUTHOR PRIVACY SHIELD)
+        // 2. LÁ CHẮN QUYỀN RIÊNG TƯ TÁC GIẢ (AUTHOR PRIVACY SHIELD & MULTI-PROFILE)
         // =========================================================================
-        // Khai thác dữ liệu Hồ sơ công khai. Áp dụng Màng lọc Quyền riêng tư
-        // để bảo vệ thông tin Tác giả theo thiết lập cá nhân của họ.
-
         PublicProfileResponse authorProfileDto = new PublicProfileResponse();
         User author = post.getAuthor();
 
         if (author != null) {
             authorProfileDto.setUserId(author.getId());
 
-            // Đếm tổng sản lượng nội dung Y khoa đã xuất bản (Đo lường sức ảnh hưởng)
+            // Đếm tổng sản lượng nội dung Y khoa đã xuất bản
             long totalPosts = postRepository.countByAuthorIdAndIsPublishedTrue(author.getId());
             authorProfileDto.setTotalPublishedPosts(totalPosts);
 
-            Optional<PublicProfile> optProfile = publicProfileRepository.findByUserId(author.getId());
+            Optional<PublicProfile> optPublic = publicProfileRepository.findByUserId(author.getId());
+            Optional<PartnerProfile> optPartner = partnerProfileRepository.findByUserId(author.getId());
 
-            // Kiểm chứng: Tác giả CÓ hồ sơ VÀ đang BẬT cờ cho phép hiển thị (IS_VISIBLE =
-            // 1)
-            if (optProfile.isPresent() == true && optProfile.get().isVisible() == true) {
-                PublicProfile p = optProfile.get();
-                authorProfileDto
-                        .setFullName(author.getFullName() != null ? author.getFullName() : author.getUsername());
-                authorProfileDto.setProfessionalTitle(p.getProfessionalTitle());
-                authorProfileDto.setWorkplace(p.getWorkplace());
-                authorProfileDto.setBio(p.getBio());
+            // TẦNG 1: KIỂM TRA HỒ SƠ CHUYÊN GIA (PUBLIC PROFILE)
+            if (optPublic.isPresent() == true) {
+                PublicProfile p = optPublic.get();
+                if (p.isVisible() == true) {
+                    authorProfileDto.setFullName(author.getFullName() != null ? author.getFullName() : author.getUsername());
+                    authorProfileDto.setProfessionalTitle(p.getProfessionalTitle());
+                    authorProfileDto.setWorkplace(p.getWorkplace());
+                    authorProfileDto.setBio(p.getBio());
+                    authorProfileDto.setAvatarUrl(p.getAvatarUrl());
+                    authorProfileDto.setVisible(true);
+                } else {
+                    // KÍCH HOẠT CƠ CHẾ ẨN DANH CHỦ ĐỘNG
+                    authorProfileDto.setFullName("Tác giả ẩn danh");
+                    authorProfileDto.setProfessionalTitle(null);
+                    authorProfileDto.setWorkplace(null);
+                    authorProfileDto.setBio("Tác giả đã giới hạn quyền riêng tư đối với hồ sơ này.");
+                    authorProfileDto.setAvatarUrl(null);
+                    authorProfileDto.setVisible(false);
+                }
+            } 
+            // TẦNG 2: KIỂM TRA HỒ SƠ DOANH NGHIỆP (B2B PARTNER) - Dành cho Nhà Thuốc / NSX viết bài
+            else if (optPartner.isPresent() == true) {
+                PartnerProfile p = optPartner.get();
+                authorProfileDto.setFullName(p.getBusinessName());
+                authorProfileDto.setProfessionalTitle("Đối tác Doanh nghiệp B2B");
+                authorProfileDto.setWorkplace("Mã số thuế: " + (p.getTaxCode() != null ? p.getTaxCode() : "Đang cập nhật"));
+                authorProfileDto.setBio("Đơn vị đối tác phân phối chính thức thuộc hệ sinh thái PharmaCorp.");
                 authorProfileDto.setAvatarUrl(p.getAvatarUrl());
                 authorProfileDto.setVisible(true);
-            } else {
-                // KÍCH HOẠT CƠ CHẾ ẨN DANH (ANONYMOUS MODE)
-                // Ghi đè toàn bộ dữ liệu thật bằng dữ liệu ảo để chặn đứng việc lộ lọt thông
-                // tin.
-                authorProfileDto.setFullName("Tác giả ẩn danh");
-                authorProfileDto.setProfessionalTitle(null);
+            } 
+            // TẦNG 3: NGƯỜI DÙNG CỐT LÕI MẶC ĐỊNH
+            else {
+                authorProfileDto.setFullName(author.getFullName() != null ? author.getFullName() : author.getUsername());
+                authorProfileDto.setProfessionalTitle("Thành viên hệ thống");
                 authorProfileDto.setWorkplace(null);
-                authorProfileDto.setBio("Tác giả đã giới hạn quyền riêng tư đối với hồ sơ này.");
+                authorProfileDto.setBio("Thành viên chưa cập nhật tiểu sử chuyên môn.");
                 authorProfileDto.setAvatarUrl(null);
-                authorProfileDto.setVisible(false);
+                authorProfileDto.setVisible(true); 
             }
         }
 
@@ -508,7 +563,7 @@ public class PostServiceImpl implements IPostService {
             fileResp.setFileUrl(pf.getFileUrl());
             fileResp.setFileType(pf.getFileType());
             fileResp.setFileSize(pf.getFileSize());
-            fileResp.setDownloadCount(ctFileDownloadRepository.countById_FileId(pf.getId()));
+            fileResp.setDownloadCount(ctFileDownloadRepository.countByPostFileId(pf.getId()));
             fileResponses.add(fileResp);
         }
         resp.setFiles(fileResponses);

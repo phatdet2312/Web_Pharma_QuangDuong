@@ -1,3 +1,5 @@
+<!--src/main/resources/templates/posts/detail.html-->
+
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
@@ -1307,6 +1309,96 @@
                     margin: 24px 0;
                 }
 
+                /* Menu Tác Giả (3 chấm) */
+                .ci-author-menu-wrap { position: relative; display: inline-block; margin-left: auto; }
+                .ci-author-menu-btn { background: transparent; border: none; color: var(--gray-400); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: var(--t-fast); }
+                .ci-author-menu-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+                .ci-author-dropdown { position: absolute; right: 0; top: 100%; background: white; border: 1px solid var(--gray-200); border-radius: var(--r-md); box-shadow: var(--shadow-md); width: 160px; z-index: 50; display: none; overflow: hidden; }
+                .ci-author-dropdown.show { display: block; }
+                .ci-author-action { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border: none; background: transparent; text-align: left; font-size: .8rem; font-weight: 600; color: var(--gray-700); cursor: pointer; transition: var(--t-fast); }
+                .ci-author-action:hover { background: var(--gray-50); color: var(--teal-600); }
+                .ci-author-action.danger { color: var(--danger); }
+                .ci-author-action.danger:hover { background: #fef2f2; }
+                .ci-header-main { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+                
+                /* Khối chứa Tên và Thời gian: Tự động dạt ra 2 bên, tự động rớt dòng */
+                .ci-header-content { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; flex: 1; min-width: 0; row-gap: 4px; column-gap: 12px; }
+                
+                .ci-name-group { display: flex; align-items: center; gap: 6px; min-width: 0; flex-shrink: 1; }
+                .ci-name { font-size: .84rem; font-weight: 700; color: var(--ink-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; cursor: default; }
+                
+                .ci-date-group { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+                
+                @media (max-width: 576px) { 
+                    .ci-name { max-width: 130px; } 
+                }
+
+                /* Inline Edit Box */
+                .inline-edit-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+                .inline-edit-textarea { width: 100%; background: white; border: 1.5px solid var(--teal-400); border-radius: var(--r-md); padding: 10px 14px; font-size: .87rem; color: var(--gray-800); outline: none; resize: vertical; min-height: 60px; font-family: inherit; }
+                .inline-edit-actions { display: flex; justify-content: flex-end; gap: 6px; }
+                .ie-btn { padding: 4px 12px; border-radius: 50px; font-size: .78rem; font-weight: 600; cursor: pointer; transition: var(--t-fast); border: 1px solid transparent; }
+                .ie-btn-cancel { background: var(--gray-100); color: var(--gray-600); border-color: var(--gray-200); }
+                .ie-btn-cancel:hover { background: var(--gray-200); }
+                .ie-btn-save { background: var(--ink-800); color: white; }
+                .ie-btn-save:hover { background: var(--teal-600); }
+                .cmt-edited-badge { font-size: .65rem; color: var(--gray-400); font-style: italic; margin-left: 6px; cursor: pointer; }
+                .cmt-edited-badge:hover { text-decoration: underline; color: var(--teal-600); }
+
+                /* ============================================================
+                   MODAL BÁO CÁO VI PHẠM (REPORT SYSTEM)
+                ============================================================ */
+                .report-modal-content {
+                    border-radius: 16px;
+                    border: none;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                }
+                .report-modal-header {
+                    border-bottom: 1px solid var(--gray-100);
+                    padding: 16px 20px;
+                }
+                .report-modal-title {
+                    font-size: 1.05rem;
+                    font-weight: 800;
+                    color: var(--ink-800);
+                }
+                .report-modal-title i {
+                    color: var(--warning);
+                    margin-right: 8px;
+                }
+                .report-modal-body {
+                    padding: 20px;
+                }
+                .report-modal-desc {
+                    font-size: .85rem;
+                    color: var(--gray-600);
+                    margin-bottom: 16px;
+                }
+                .report-modal-label {
+                    font-weight: 600;
+                    font-size: .85rem;
+                    margin-bottom: 8px;
+                    display: block;
+                    color: var(--gray-800);
+                }
+                .report-modal-req {
+                    color: var(--danger);
+                }
+                .report-modal-select {
+                    min-height: 44px;
+                    padding: 10px 14px;
+                    cursor: pointer;
+                }
+                .report-modal-footer {
+                    border-top: 1px solid var(--gray-100);
+                    padding: 16px 20px;
+                    background: var(--gray-50);
+                    border-radius: 0 0 16px 16px;
+                    display: flex;
+                    gap: 8px;
+                }
+
+
                 @media (max-width: 991px) {
 
                     .article-body-inner,
@@ -1552,18 +1644,22 @@
                         <div class="col-lg-4">
                             <div class="post-sidebar">
 
+                                <!-- Author Profile Card -->
                                 <div class="author-card reveal">
-                                    <div
-                                        style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray-400);margin-bottom:12px;">
-                                        Tác giả</div>
+                                    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray-400);margin-bottom:12px;">Tác giả</div>
                                     <div class="author-card-inner">
-                                        <div class="author-card-avatar" id="sb-author-avatar"><i
-                                                class="fas fa-user"></i></div>
+                                        <div class="author-card-avatar" id="sb-author-avatar"><i class="fas fa-user"></i></div>
                                         <div>
                                             <div class="author-card-name" id="sb-author-name">Đang tải...</div>
                                             <div class="author-card-title" id="sb-author-role">Chuyên gia Y tế</div>
                                         </div>
                                     </div>
+                                    <div class="author-card-bio" id="sb-author-bio" style="margin-top:10px;">
+                                        Đang tải thông tin...
+                                    </div>
+                                    
+                                    <!-- Khối Liên kết sẽ bị làm rỗng, JS sẽ dựa vào cờ isVisible để quyết định có vẽ hay không -->
+                                    <div id="sb-author-links" style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;"></div>
                                 </div>
 
                                 <div class="toc-card reveal reveal-d1" id="toc-container" style="display: none;">
@@ -1639,6 +1735,53 @@
                             </div>
                         </div>
 
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Báo Cáo Vi Phạm (Report System) -->
+            <div class="modal fade" id="modalBaoCao" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content report-modal-content">
+                        
+                        <div class="modal-header report-modal-header">
+                            <h5 class="modal-title report-modal-title">
+                                <i class="fas fa-flag"></i> Báo cáo vi phạm
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        
+                        <div class="modal-body report-modal-body">
+                            <input type="hidden" id="reportTargetId">
+                            <input type="hidden" id="reportTargetType">
+                            
+                            <p class="report-modal-desc">
+                                Vui lòng cho Quản trị viên biết nội dung này đang gặp vấn đề gì?
+                            </p>
+                            
+                            <div class="mf-group" style="margin-bottom: 12px;">
+                                <label class="report-modal-label">Lý do vi phạm <span class="report-modal-req">*</span></label>
+                                <select id="reportReasonSelect" class="cf-textarea report-modal-select">
+                                    <option value="">-- Chọn lý do --</option>
+                                    <option value="Ngôn từ đả kích, gây hấn, thiếu văn hóa">Ngôn từ đả kích, gây hấn, thiếu văn hóa</option>
+                                    <option value="Thông tin y khoa sai lệch, chưa kiểm chứng">Thông tin y khoa sai lệch, chưa kiểm chứng</option>
+                                    <option value="Spam, quảng cáo bán hàng trái phép">Spam, quảng cáo bán hàng trái phép</option>
+                                    <option value="Vi phạm quyền riêng tư bệnh nhân">Vi phạm quyền riêng tư bệnh nhân</option>
+                                    <option value="Khác">Lý do khác...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mf-group" id="reportReasonDetailGroup" style="display: none; margin-bottom: 0;">
+                                <label class="report-modal-label">Chi tiết lý do <span class="report-modal-req">*</span></label>
+                                <textarea id="reportReasonDetail" class="cf-textarea" placeholder="Mô tả cụ thể vấn đề bạn gặp phải..." style="min-height: 80px;"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer report-modal-footer">
+                            <button type="button" class="cf-cancel-btn" data-bs-dismiss="modal">Hủy bỏ</button>
+                            <button type="button" class="cf-submit-btn" id="btnSubmitReport" onclick="guiBaoCaoViPham()"><i class="fas fa-paper-plane fa-xs"></i> Gửi báo cáo</button>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -1889,13 +2032,15 @@
                         else if (loaiTepThap.indexOf('xls') !== -1) { lopIcon = 'xlsx'; iconFontAwesome = 'fa-file-excel'; }
                         else if (loaiTepThap.indexOf('doc') !== -1) { lopIcon = 'docx'; iconFontAwesome = 'fa-file-word'; }
 
-                        theHTMLFiles += '<a href="' + lamSachChuoiHTML(tep.fileUrl) + '" target="_blank" class="file-card">' +
+                        // LÁ CHẮN BẢO MẬT: Bẻ hướng thẻ a thành javascript:void(0) để chặn tải trực tiếp
+                        theHTMLFiles += '<a href="javascript:void(0);" onclick="ghiNhanTruyVetTaiFile(' + tep.id + ', \'' + lamSachChuoiHTML(tep.fileUrl) + '\')" class="file-card">' +
                             '<div class="file-icon ' + lopIcon + '"><i class="fas ' + iconFontAwesome + '"></i></div>' +
                             '<div class="file-info">' +
                             '<div class="file-name">' + lamSachChuoiHTML(tep.fileName) + '</div>' +
                             '<div class="file-meta">' + (tep.fileType ? tep.fileType.toUpperCase() : 'FILE') + ' • ' + chuyenDoiKichThuocTep(tep.fileSize) + '</div>' +
                             '</div>' +
-                            '<div class="file-dl-count"><i class="fas fa-download"></i> ' + dinhDangSoNganCach(tep.downloadCount) + ' lượt</div>' +
+                            // Bổ sung ID và Data-count để Javascript có thể chọc vào cộng dồn Real-time
+                            '<div class="file-dl-count" id="dl-count-file-' + tep.id + '" data-count="' + tep.downloadCount + '"><i class="fas fa-download"></i> ' + dinhDangSoNganCach(tep.downloadCount) + ' lượt</div>' +
                             '<div class="file-dl-btn"><i class="fas fa-download fa-xs"></i> Tải về</div>' +
                             '</a>';
                     }
@@ -1906,11 +2051,58 @@
 
             function veKhuVucCotPhu(baiViet) {
                 var tenTacGia = 'Ẩn danh';
-                if (baiViet.authorProfile && baiViet.authorProfile.fullName) {
-                    tenTacGia = baiViet.authorProfile.fullName;
+                var chuCaiDau = '?';
+                var theTieuSu = document.getElementById('sb-author-bio');
+                var theChucDanh = document.getElementById('sb-author-role');
+                var theLienKet = document.getElementById('sb-author-links');
+
+                if (baiViet.authorProfile !== null && baiViet.authorProfile !== undefined) {
+                    var ap = baiViet.authorProfile;
+                    tenTacGia = ap.fullName || 'Ẩn danh';
+                    chuCaiDau = layChuCaiDauTien(tenTacGia);
+
+                    // 1. Cập nhật Tên & Avatar
+                    document.getElementById('sb-author-name').textContent = tenTacGia;
+                    if (ap.avatarUrl !== null && ap.avatarUrl !== undefined && ap.avatarUrl !== '') {
+                        document.getElementById('sb-author-avatar').innerHTML = '<img src="' + lamSachChuoiHTML(ap.avatarUrl) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">';
+                    } else {
+                        document.getElementById('sb-author-avatar').textContent = chuCaiDau;
+                    }
+
+                    // 2. Cập nhật Chức danh & Nơi công tác
+                    var chucDanhFull = '';
+                    if (ap.professionalTitle) chucDanhFull += ap.professionalTitle;
+                    if (ap.workplace) {
+                        chucDanhFull += (chucDanhFull !== '' ? ' • ' : '') + ap.workplace;
+                    }
+                    if (theChucDanh !== null) {
+                        theChucDanh.textContent = chucDanhFull !== '' ? chucDanhFull : 'Chuyên gia Y tế';
+                    }
+
+                    // 3. Cập nhật Tiểu sử (Bio)
+                    if (theTieuSu !== null) {
+                        theTieuSu.textContent = ap.bio || 'Chưa cập nhật tiểu sử.';
+                    }
+
+                    // 4. KIỂM DUYỆT RENDER LIÊN KẾT (BẢO MẬT)
+                    if (theLienKet !== null) {
+                        theLienKet.innerHTML = ''; // Dọn dẹp
+
+                        if (ap.visible === true) {
+                            // Công khai -> Vẽ số lượng bài viết và Nút liên kết
+                            var htmlNuts = '';
+                            if (ap.totalPublishedPosts !== undefined && ap.totalPublishedPosts !== null) {
+                                htmlNuts += '<span style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:var(--gray-100);border-radius:50px;font-size:.73rem;color:var(--gray-600);font-weight:600;"><i class="fas fa-file-alt fa-xs" style="color:var(--teal-500);"></i> ' + ap.totalPublishedPosts + ' bài viết</span>';
+                            }
+                            htmlNuts += '<a href="#" style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:var(--gray-100);border-radius:50px;font-size:.73rem;color:var(--gray-600);text-decoration:none;font-weight:600;"><i class="fas fa-link fa-xs" style="color:var(--gray-500);"></i> Trang tác giả</a>';
+                            
+                            theLienKet.innerHTML = htmlNuts;
+                        } else {
+                            // Ẩn Danh -> Tẩy trắng toàn bộ thẻ Liên kết, thay bằng khiên bảo vệ
+                            theLienKet.innerHTML = '<span style="font-size:.7rem; color:var(--danger); font-style:italic;"><i class="fas fa-shield-alt"></i> Tác giả đã giới hạn quyền riêng tư</span>';
+                        }
+                    }
                 }
-                document.getElementById('sb-author-name').textContent = tenTacGia;
-                document.getElementById('sb-author-avatar').textContent = layChuCaiDauTien(tenTacGia);
 
                 document.getElementById('sb-views').textContent = dinhDangSoNganCach(baiViet.viewCount);
                 document.getElementById('sb-downloads').textContent = dinhDangSoNganCach(baiViet.downloadCount);
@@ -2202,12 +2394,36 @@
                         var idVungCamXucRp = 'react-wrap-reply-' + rp.id;
                         var rpCamXuc = '<div id="' + idVungCamXucRp + '" style="display:inline-block;">' + xdKhungCamXucThongMinh('reply', rp.id) + '</div>';
 
-                        theHTMLPhanHoiCap2 += '<div class="reply-item">' +
+                        var rpMenuTacGia = '<div class="ci-author-menu-wrap">' +
+                            '<button class="ci-author-menu-btn" onclick="toggleAuthorMenu(this)"><i class="fas fa-ellipsis-v"></i></button>' +
+                            '<div class="ci-author-dropdown">';
+                            
+                        if (rp.author === true) {
+                            // Tác giả -> Sửa, Lịch sử, Xóa
+                            rpMenuTacGia += '<button class="ci-author-action" onclick="kichHoatSua(\'reply\', ' + rp.id + ')"><i class="fas fa-pen fa-fw"></i> Chỉnh sửa</button>' +
+                                '<button class="ci-author-action" onclick="xemLichSu(\'reply\', ' + rp.id + ')"><i class="fas fa-history fa-fw"></i> Lịch sử sửa</button>' +
+                                '<button class="ci-author-action danger" onclick="xoaBinhLuan(\'reply\', ' + rp.id + ')"><i class="fas fa-trash fa-fw"></i> Xóa phản hồi</button>';
+                        } else {
+                            // Người khác -> Báo cáo vi phạm (Đẩy mã 'PH_CMT' chuẩn DB)
+                            rpMenuTacGia += '<button class="ci-author-action" onclick="moFormBaoCao(\'PH_CMT\', ' + rp.id + ')"><i class="fas fa-flag fa-fw"></i> Báo cáo vi phạm</button>';
+                        }
+                        rpMenuTacGia += '</div></div>';
+
+                        var rpDaSua = (rp.createdAt !== rp.updatedAt) ? '<span class="cmt-edited-badge" onclick="xemLichSu(\'reply\', ' + rp.id + ')">(đã chỉnh sửa)</span>' : '';
+
+                        theHTMLPhanHoiCap2 += '<div class="reply-item" id="reply-item-' + rp.id + '">' +
                             '<div class="ri-avatar">' + layChuCaiDauTien(rp.userFullName) + '</div>' +
                             '<div class="ri-bubble-wrapper">' +
                             '<div class="ri-bubble">' +
-                            '<div class="ri-header"><div class="d-flex align-items-center gap-2"><span class="ri-name">' + lamSachChuoiHTML(rp.userFullName) + '</span>' + rpHtmlChucVu + '</div><span class="ri-date">' + dinhDangThoiGianChiTiet(rp.createdAt) + '</span></div>' +
-                            '<div class="ri-content">' + lamSachChuoiHTML(rp.content) + '</div>' +
+                            // KHỐI HEADER BẢO VỆ 3 CHẤM
+                            '<div class="ci-header-main">' +
+                                '<div class="ci-header-content">' +
+                                    '<div class="ci-name-group"><span class="ri-name ci-name" title="' + lamSachChuoiHTML(rp.userFullName) + '">' + lamSachChuoiHTML(rp.userFullName) + '</span>' + rpHtmlChucVu + '</div>' +
+                                    '<div class="ci-date-group"><span class="ri-date">' + dinhDangThoiGianChiTiet(rp.createdAt) + '</span>' + rpDaSua + '</div>' +
+                                '</div>' +
+                                rpMenuTacGia +
+                            '</div>' +
+                            '<div class="ri-content" id="content-reply-' + rp.id + '" data-raw="' + lamSachChuoiHTML(rp.content) + '">' + lamSachChuoiHTML(rp.content) + '</div>' +
                             '<div class="ri-actions">' + rpCamXuc + '<button class="ria-btn" onclick="hienThiFormPhanHoi(\'reply\', ' + cmt.id + ', ' + rp.id + ', \'' + lamSachChuoiHTML(rp.userFullName) + '\')"><i class="fas fa-reply fa-xs"></i> Trả lời</button></div>' +
                             '</div>' +
                             '<div id="reply-container-phcmt-' + rp.id + '"></div>' +
@@ -2216,12 +2432,36 @@
                     theHTMLPhanHoiCap2 += '</div>';
                 }
 
+                var cmtMenuTacGia = '<div class="ci-author-menu-wrap">' +
+                    '<button class="ci-author-menu-btn" onclick="toggleAuthorMenu(this)"><i class="fas fa-ellipsis-h"></i></button>' +
+                    '<div class="ci-author-dropdown">';
+                    
+                if (cmt.author === true) {
+                    // Tác giả -> Sửa, Lịch sử, Xóa
+                    cmtMenuTacGia += '<button class="ci-author-action" onclick="kichHoatSua(\'cmt\', ' + cmt.id + ')"><i class="fas fa-pen fa-fw"></i> Chỉnh sửa</button>' +
+                        '<button class="ci-author-action" onclick="xemLichSu(\'cmt\', ' + cmt.id + ')"><i class="fas fa-history fa-fw"></i> Lịch sử sửa</button>' +
+                        '<button class="ci-author-action danger" onclick="xoaBinhLuan(\'cmt\', ' + cmt.id + ')"><i class="fas fa-trash fa-fw"></i> Xóa bình luận</button>';
+                } else {
+                    // Người khác -> Báo cáo vi phạm (Đẩy mã 'CMT' chuẩn DB)
+                    cmtMenuTacGia += '<button class="ci-author-action" onclick="moFormBaoCao(\'CMT\', ' + cmt.id + ')"><i class="fas fa-flag fa-fw"></i> Báo cáo vi phạm</button>';
+                }
+                cmtMenuTacGia += '</div></div>';
+
+                var cmtDaSua = (cmt.createdAt !== cmt.updatedAt) ? '<span class="cmt-edited-badge" onclick="xemLichSu(\'cmt\', ' + cmt.id + ')">(đã chỉnh sửa)</span>' : '';
+
                 return '<div class="comment-item" id="cmt-' + cmt.id + '">' +
                     '<div class="ci-avatar">' + layChuCaiDauTien(cmt.userFullName) + '</div>' +
                     '<div class="ci-bubble-wrapper">' +
                     '<div class="ci-bubble' + theHTMLLopMau + '">' + theHTMLCanhBao +
-                    '<div class="ci-header"><div class="d-flex align-items-center gap-2"><span class="ci-name">' + lamSachChuoiHTML(cmt.userFullName) + '</span>' + theHTMLChucVu + '</div><span class="ci-date">' + dinhDangThoiGianChiTiet(cmt.createdAt) + '</span></div>' +
-                    '<div class="ci-content">' + lamSachChuoiHTML(cmt.content) + '</div>' +
+                    // KHỐI HEADER BẢO VỆ 3 CHẤM
+                    '<div class="ci-header-main">' +
+                        '<div class="ci-header-content">' +
+                            '<div class="ci-name-group"><span class="ci-name" title="' + lamSachChuoiHTML(cmt.userFullName) + '">' + lamSachChuoiHTML(cmt.userFullName) + '</span>' + theHTMLChucVu + '</div>' +
+                            '<div class="ci-date-group"><span class="ci-date">' + dinhDangThoiGianChiTiet(cmt.createdAt) + '</span>' + cmtDaSua + '</div>' +
+                        '</div>' +
+                        cmtMenuTacGia +
+                    '</div>' +
+                    '<div class="ci-content" id="content-cmt-' + cmt.id + '" data-raw="' + lamSachChuoiHTML(cmt.content) + '">' + lamSachChuoiHTML(cmt.content) + '</div>' +
                     '<div class="ci-actions">' + theHTMLCamXucCuaCmt + '<button class="cia-btn cia-reply" onclick="hienThiFormPhanHoi(\'cmt\', ' + cmt.id + ', null, \'' + lamSachChuoiHTML(cmt.userFullName) + '\')"><i class="fas fa-reply fa-xs"></i> Phản hồi</button></div>' +
                     '</div>' +
                     '<div id="reply-container-cmt-' + cmt.id + '"></div>' +
@@ -2230,8 +2470,271 @@
             }
 
             // =========================================================================
+            // HỆ THỐNG BÁO CÁO VI PHẠM (REPORT SYSTEM)
+            // =========================================================================
+
+            // Hàm mở Modal và lưu trữ tọa độ ID
+            window.moFormBaoCao = function(loaiTarget, targetId) {
+                // Đóng dropdown menu 3 chấm
+                document.body.click(); 
+
+                document.getElementById('reportTargetId').value = targetId;
+                document.getElementById('reportTargetType').value = loaiTarget; // 'CMT' hoặc 'PH_CMT'
+                document.getElementById('reportReasonSelect').value = '';
+                document.getElementById('reportReasonDetail').value = '';
+                document.getElementById('reportReasonDetailGroup').style.display = 'none';
+
+                var myModal = new bootstrap.Modal(document.getElementById('modalBaoCao'));
+                myModal.show();
+            };
+
+            // Lắng nghe sự kiện đổi "Lý do"
+            document.getElementById('reportReasonSelect').addEventListener('change', function() {
+                var detailGroup = document.getElementById('reportReasonDetailGroup');
+                if (this.value === 'Khác') {
+                    detailGroup.style.display = 'block';
+                } else {
+                    detailGroup.style.display = 'none';
+                }
+            });
+
+            // Hàm kích nổ API Báo cáo
+            window.guiBaoCaoViPham = function() {
+                var targetId = document.getElementById('reportTargetId').value;
+                var targetType = document.getElementById('reportTargetType').value;
+                var reasonSelect = document.getElementById('reportReasonSelect').value;
+                var reasonDetail = document.getElementById('reportReasonDetail').value.trim();
+
+                var finalReason = reasonSelect;
+
+                if (reasonSelect === '') {
+                    showToast('warning', 'Vui lòng chọn một lý do vi phạm.');
+                    return;
+                }
+
+                if (reasonSelect === 'Khác') {
+                    if (reasonDetail === '') {
+                        showToast('warning', 'Vui lòng nhập chi tiết lý do vi phạm.');
+                        return;
+                    }
+                    finalReason = reasonDetail;
+                }
+
+                var btn = document.getElementById('btnSubmitReport');
+                var originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin fa-xs"></i> Đang xử lý...';
+                btn.disabled = true;
+
+                var payload = {
+                    targetId: parseInt(targetId),
+                    targetType: targetType,
+                    reason: finalReason
+                };
+
+                // Đẩy gói tin vào cổng /api/reports/comments của PublicReportService
+                callApi('/api/reports/comments', 'POST', payload, null, function(res) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    
+                    if (res.status === 200) {
+                        var modalEl = document.getElementById('modalBaoCao');
+                        var modalObj = bootstrap.Modal.getInstance(modalEl);
+                        modalObj.hide();
+                        // Trả về câu cảm ơn của Cục diện Quản trị
+                        showToast('success', res.message || 'Đã gửi báo cáo thành công.');
+                    } else {
+                        showToast('error', res.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+                    }
+                }, function(err) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    // Lỗi 401 (Chưa đăng nhập) sẽ do hàm callApi và Backend tự lo
+                });
+            };
+
+
+            // =========================================================================
+            // HỆ SINH THÁI TÁC GIẢ TỰ THÂN (SỬA TRỰC TIẾP, XÓA, LỊCH SỬ)
+            // =========================================================================
+            
+            // Xử lý bật/tắt menu 3 chấm
+            window.toggleAuthorMenu = function(btn) {
+                var dropdown = btn.nextElementSibling;
+                var tatCaDrop = document.querySelectorAll('.ci-author-dropdown');
+                for (var i = 0; i < tatCaDrop.length; i = i + 1) {
+                    if (tatCaDrop[i] !== dropdown) tatCaDrop[i].classList.remove('show');
+                }
+                dropdown.classList.toggle('show');
+            };
+
+            // Đóng menu khi click ra ngoài
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.ci-author-menu-wrap') === null) {
+                    var tatCaDrop = document.querySelectorAll('.ci-author-dropdown');
+                    for (var i = 0; i < tatCaDrop.length; i = i + 1) {
+                        tatCaDrop[i].classList.remove('show');
+                    }
+                }
+            });
+
+            // Sửa trực tiếp (Inline Edit)
+            window.kichHoatSua = function(loai, id) {
+                var contentDiv = document.getElementById('content-' + loai + '-' + id);
+                if (contentDiv === null) return;
+                
+                // Lấy nội dung gốc từ attribute data-raw để đưa vào textarea
+                var rawText = contentDiv.getAttribute('data-raw');
+                
+                var htmlForm = '<div class="inline-edit-box">' +
+                               '<textarea id="edit-input-' + loai + '-' + id + '" class="inline-edit-textarea">' + rawText + '</textarea>' +
+                               '<div class="inline-edit-actions">' +
+                               '<button class="ie-btn ie-btn-cancel" onclick="huySua(\'' + loai + '\', ' + id + ')">Hủy</button>' +
+                               '<button class="ie-btn ie-btn-save" onclick="luuSua(\'' + loai + '\', ' + id + ')">Lưu thay đổi</button>' +
+                               '</div></div>';
+                
+                // Đóng dropdown menu
+                document.body.click(); 
+                // Thay thế giao diện text bằng form nhập liệu
+                contentDiv.innerHTML = htmlForm;
+            };
+
+            window.huySua = function(loai, id) {
+                var contentDiv = document.getElementById('content-' + loai + '-' + id);
+                if (contentDiv === null) return;
+                var rawText = contentDiv.getAttribute('data-raw');
+                // Trả lại text ban đầu
+                contentDiv.innerHTML = rawText;
+            };
+
+            window.luuSua = function(loai, id) {
+                var inputEl = document.getElementById('edit-input-' + loai + '-' + id);
+                if (inputEl === null) return;
+                
+                var noiDungMoi = inputEl.value.trim();
+                if (noiDungMoi === '') {
+                    showToast('warning', 'Nội dung không được để trống.');
+                    return;
+                }
+
+                var apiDich = (loai === 'cmt') ? '/api/comments/' + id : '/api/comments/reply/' + id;
+                var payload = { content: noiDungMoi, targetId: id };
+
+                callApi(apiDich, 'PUT', payload, null, function(res) {
+                    if (res.status === 200) {
+                        showToast('success', 'Đã lưu chỉnh sửa.');
+                        // Load lại khu vực bình luận để render UI đầy đủ (badge Đã chỉnh sửa)
+                        taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                    } else {
+                        showToast('error', res.message);
+                    }
+                });
+            };
+
+            window.xoaBinhLuan = function(loai, id) {
+                Swal.fire({
+                    title: 'Xóa bình luận?',
+                    text: "Bạn có chắc chắn muốn gỡ bỏ bình luận này vĩnh viễn không?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Xóa vĩnh viễn',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var apiDich = (loai === 'cmt') ? '/api/comments/' + id : '/api/comments/reply/' + id;
+                        callApi(apiDich, 'DELETE', null, null, function(res) {
+                            if (res.status === 200) {
+                                showToast('success', 'Đã xóa bình luận.');
+                                taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                            } else {
+                                showToast('error', res.message);
+                            }
+                        });
+                    }
+                });
+            };
+
+            // Lịch sử Sổ tay Tự thân (Action Log)
+            window.xemLichSu = function(loai, id) {
+                var apiDich = (loai === 'cmt') ? '/api/comments/' + id + '/history' : '/api/comments/reply/' + id + '/history';
+                
+                callApi(apiDich, 'GET', null, null, function(res) {
+                    if (res.status === 200) {
+                        var logs = res.data;
+                        if (logs === null || logs.length === 0) {
+                            showToast('info', 'Không có lịch sử chỉnh sửa nào.');
+                            return;
+                        }
+
+                        var htmlLichSu = '<div style="text-align:left; max-height:400px; overflow-y:auto;">';
+                        for (var i = 0; i < logs.length; i = i + 1) {
+                            var log = logs[i];
+                            // Chỉ lọc ra các hành vi sửa nội dung (UPDATE_CMT / UPDATE_PH_CMT)
+                            if (log.actionCode === 'UPDATE_CMT' || log.actionCode === 'UPDATE_PH_CMT') {
+                                var objCu = JSON.parse(log.oldPayload || '{}');
+                                var txtCu = objCu.content || '[Trống]';
+                                
+                                htmlLichSu += '<div style="border-bottom:1px dashed #e2e8f0; padding-bottom:12px; margin-bottom:12px;">';
+                                htmlLichSu += '<div style="font-size:.75rem; color:var(--gray-500); margin-bottom:4px;"><i class="fas fa-clock"></i> ' + dinhDangThoiGianChiTiet(log.createdAt) + '</div>';
+                                htmlLichSu += '<div style="background:#fef2f2; border-left:3px solid #ef4444; padding:8px 10px; font-size:.85rem; color:#991b1b; margin-bottom:6px; text-decoration:line-through;">' + lamSachChuoiHTML(txtCu) + '</div>';
+                                htmlLichSu += '<div style="background:#f0fdf4; border-left:3px solid #22c55e; padding:8px 10px; font-size:.85rem; color:#166534;">' + lamSachChuoiHTML(log.newPayload ? JSON.parse(log.newPayload).content : '') + '</div>';
+                                htmlLichSu += '</div>';
+                            }
+                        }
+                        htmlLichSu += '</div>';
+
+                        if (htmlLichSu === '<div style="text-align:left; max-height:400px; overflow-y:auto;"></div>') {
+                            showToast('info', 'Bình luận này chưa bị sửa văn bản.');
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: 'Lịch sử chỉnh sửa',
+                            html: htmlLichSu,
+                            width: '600px',
+                            showConfirmButton: true,
+                            confirmButtonText: 'Đóng',
+                            confirmButtonColor: '#004080'
+                        });
+                    }
+                });
+            };
+
+
+            // =========================================================================
+            // LƯỚI LỌC LEAD SCORING (TRUY VẾT TẢI FILE)
+            // =========================================================================
+            window.ghiNhanTruyVetTaiFile = function(maFileId, duongDanFile) {
+                // 1. Kích hoạt cuộc gọi ngầm xuống Backend để thu thập dữ liệu Lead
+                callApi('/api/posts/files/' + maFileId + '/download-track', 'POST', null, null, function(res) {
+                    
+                    // 2. Mở cửa sổ tải file cho người dùng sau khi đã ghi log thành công
+                    window.open(duongDanFile, '_blank');
+
+                    // 3. Ảo thuật UI: Tự động cộng 1 vào lượt tải trên màn hình để tạo cảm giác Real-time
+                    var theHienThiLuotTai = document.getElementById('dl-count-file-' + maFileId);
+                    if (theHienThiLuotTai !== null) {
+                        var soHienTai = parseInt(theHienThiLuotTai.getAttribute('data-count'), 10);
+                        if (isNaN(soHienTai) === true) soHienTai = 0;
+                        
+                        soHienTai = soHienTai + 1;
+                        theHienThiLuotTai.setAttribute('data-count', soHienTai);
+                        theHienThiLuotTai.innerHTML = '<i class="fas fa-download"></i> ' + dinhDangSoNganCach(soHienTai) + ' lượt';
+                    }
+
+                }, function(err) {
+                    // DÙ BACKEND LỖI 401 HAY 500, TUYỆT ĐỐI KHÔNG LÀM GIÁN ĐOẠN KHÁCH HÀNG TẢI FILE
+                    // Khách hàng là Thượng đế, Lead rác có thể bỏ, nhưng file thì phải được mở
+                    window.open(duongDanFile, '_blank');
+                });
+            };
+
+            // =========================================================================
             // HÀM TƯƠNG TÁC TỪ NGƯỜI DÙNG & CHỐNG NHÁY DOM (ANTI-BLINK)
             // =========================================================================
+
+            
 
             window.dienBieuTuong = function (bieuTuong, idTextArea) {
                 var oNhap = document.getElementById(idTextArea);

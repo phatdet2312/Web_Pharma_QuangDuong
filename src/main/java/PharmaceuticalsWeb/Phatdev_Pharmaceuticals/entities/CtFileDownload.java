@@ -25,40 +25,22 @@ import java.time.LocalDateTime;
 @Table(name = "CT_FILE_DOWNLOADS")
 public class CtFileDownload {
 
-    @EmbeddedId
-    private CtFileDownloadId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
+    private Long id;
 
     /** Tài liệu được tải (FK → POST_FILES) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("fileId")
-    @JoinColumn(name = "FILE_ID")
+    @JoinColumn(name = "FILE_ID", nullable = false)
     private PostFile postFile;
 
     /** Người dùng tải tài liệu (FK → USERS) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("userId")
-    @JoinColumn(name = "USER_ID")
+    @JoinColumn(name = "USER_ID", nullable = false)
     private User user;
 
     @Builder.Default
     @Column(name = "DOWNLOADED_AT", nullable = false)
     private LocalDateTime downloadedAt = LocalDateTime.now();
-
-    /**
-     * Khóa chính kép: (FILE_ID, USER_ID)
-     */
-    @Embeddable
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @EqualsAndHashCode
-    public static class CtFileDownloadId implements Serializable {
-
-        @Column(name = "FILE_ID")
-        private Long fileId;
-
-        @Column(name = "USER_ID")
-        private Long userId;
-    }
 }

@@ -4,6 +4,7 @@ package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtLikeCmt;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,4 +32,9 @@ public interface ICtLikeCmtRepository extends JpaRepository<CtLikeCmt, CtLikeCmt
     /** Đếm tổng reaction toàn hệ thống (cho admin stats) */
     @Query("SELECT COUNT(lk) FROM CtLikeCmt lk")
     long demTongReaction();
+
+    /** Xóa tất cả reaction của một comment khi comment đó bị xóa */
+    @Modifying
+    @Query("DELETE FROM CtLikeCmt lk WHERE lk.cmt.id = :cmtId")
+    void xoaLikeTheoCmtId(@Param("cmtId") Long cmtId);
 }

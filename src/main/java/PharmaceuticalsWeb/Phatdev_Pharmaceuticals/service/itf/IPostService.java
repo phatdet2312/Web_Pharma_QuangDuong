@@ -52,4 +52,10 @@ public interface IPostService {
      * @param userId Người thực hiện tương tác
      */
     void thichBaiViet(LikeRequest request, Long userId);
+
+    /**
+     * Ghi nhận hành vi tải tài liệu của người dùng (Thu thập Lead Scoring).
+     */
+    void ghiNhanTaiTaiLieu(Long fileId, Long userId);
+    
 }

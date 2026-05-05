@@ -147,6 +147,22 @@ public class ApiPostController {
     }
 
     /**
+     * Thu thập dữ liệu: Ghi nhận tải tài liệu
+     */
+    @PostMapping("/files/{fileId}/download-track")
+    public ApiResponse<Void> ghiNhanTaiTaiLieu(
+            @PathVariable Long fileId,
+            Authentication authentication) {
+
+        Long userId = layUserIdTuAuthentication(authentication);
+        // Backend âm thầm thu thập, Frontend không cần biết logic bên trong
+        postService.ghiNhanTaiTaiLieu(fileId, userId);
+        
+        return ApiResponse.thanhCong(null, "Đã ghi nhận tín hiệu hệ thống.");
+    }
+
+
+    /**
      * Lấy định danh từ JWT Authentication.
      * Trả về null thay vì Exception để hỗ trợ khách vãng lai (Guest).
      */

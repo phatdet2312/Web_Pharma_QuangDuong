@@ -4,6 +4,7 @@ package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtPhCmtModerationLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,4 +34,9 @@ public interface ICtPhCmtModerationLogRepository extends JpaRepository<CtPhCmtMo
            "WHERE l.action.code = 'HIDE' " +
            "AND l.createdAt = (SELECT MAX(l2.createdAt) FROM CtPhCmtModerationLog l2 WHERE l2.phCmt.id = l.phCmt.id)")
     long demPhCmtDangAnHien();
+
+    /** Xóa toàn bộ log của một reply khi reply đó bị xóa */
+    @Modifying
+    @Query("DELETE FROM CtPhCmtModerationLog l WHERE l.phCmt.id = :phCmtId")
+    void xoaLogTheoPhCmtId(@Param("phCmtId") Long phCmtId);
 }

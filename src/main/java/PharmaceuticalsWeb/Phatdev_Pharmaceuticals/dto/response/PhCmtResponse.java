@@ -67,6 +67,9 @@ public class PhCmtResponse {
     /** Mã cảm xúc cá nhân hóa trên phản hồi thứ cấp của tài khoản đang truy cập */
     private String currentUserReaction;
 
+    /** Cờ phán quyết từ Backend: Người đang xem có phải là tác giả của phản hồi này không? */
+    private boolean isAuthor;
+
     /** Thời điểm khởi tạo phản hồi lần đầu tiên */
     private LocalDateTime createdAt;
 

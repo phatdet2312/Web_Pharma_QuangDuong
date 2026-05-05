@@ -286,7 +286,6 @@ CREATE TABLE [POSTS](
 	SUMMARY NVARCHAR(500),                       -- Đoạn tóm tắt (Lead-in) dùng để mồi độc giả
 	CONTENT NVARCHAR(MAX) NOT NULL,              -- Nội dung HTML/Rich Text toàn bộ bài viết
 	THUMBNAIL_URL VARCHAR(255),                  -- Đường dẫn ảnh đại diện/bìa của bài viết
-	ACCESS_LEVEL VARCHAR(50) DEFAULT 'PUBLIC',   -- Quyền đọc (Do Java check: 'PUBLIC', 'ROLE_DOCTOR'...)
 	IS_PUBLISHED BIT DEFAULT 0,                  -- Cờ xuất bản: 1 = Hiển thị ra web, 0 = Bản nháp
 	SEO_TITLE NVARCHAR(100),                     -- Thẻ Title SEO (Ghi đè tiêu đề gốc để tối ưu từ khóa)
 	SEO_DESCRIPTION NVARCHAR(255),               -- Thẻ Meta Description SEO
@@ -296,6 +295,18 @@ CREATE TABLE [POSTS](
 	UPDATED_AT DATETIME DEFAULT GETDATE(),       -- Ngày sửa bài lần cuối
 	FOREIGN KEY (CATEGORY_ID) REFERENCES CATEGORIES(ID),
 	FOREIGN KEY (AUTHOR_ID) REFERENCES USERS(ID) 
+);
+
+-- Bảng CT_POST_ROLES: Cầu nối phân quyền hiển thị Bài viết y khoa.
+-- [QUAN HỆ]: Bảng trung gian N-N giữa POSTS và USER_ROLES.
+-- LƯU Ý KIẾN TRÚC: Thiết kế Khóa kép (POST_ID, ROLE_ID) chuẩn 5NF. 
+-- Chặn tuyệt đối việc gán trùng 1 chức vụ 2 lần cho cùng 1 bài viết.
+CREATE TABLE [CT_POST_ROLES](
+	POST_ID BIGINT NOT NULL,                     -- Bài viết mục tiêu (Khóa ngoại)
+	ROLE_ID INT NOT NULL,                        -- Nhóm chức vụ được phép đọc (Khóa ngoại)
+	PRIMARY KEY (POST_ID, ROLE_ID),              -- Khóa kép bóp nghẹt sự lặp lại
+	FOREIGN KEY (POST_ID) REFERENCES POSTS(ID),
+	FOREIGN KEY (ROLE_ID) REFERENCES USER_ROLES(ID)
 );
 
 -- Bảng POST_VIEW_LOGS: Nhật ký lượt xem đáp ứng chuẩn 3NF.
@@ -437,6 +448,17 @@ CREATE TABLE [EVENT_AGENDA](
 	DISPLAY_ORDER INT DEFAULT 1,                  -- Thứ tự sắp xếp hiển thị trên giao diện
 	FOREIGN KEY (CT_EVENT_ID) REFERENCES CT_EVENTS(ID),
 	CONSTRAINT CHK_Agenda_Time CHECK (END_TIME > START_TIME)
+);
+
+-- Bảng CT_EVENT_SESSION_ROLES: Cầu nối phân quyền hiển thị & đăng ký cho từng Trạm/Buổi Sự kiện.
+-- Đổi tên từ CT_EVENT_ROLES thành CT_EVENT_SESSION_ROLES để tránh xung đột tiền tố với bảng EVENTS.
+-- [QUAN HỆ]: Bảng trung gian N-N giữa CT_EVENTS và USER_ROLES.
+CREATE TABLE [CT_EVENT_SESSION_ROLES](
+	CT_EVENT_ID BIGINT NOT NULL,                 -- Trạm/Buổi sự kiện mục tiêu (Khóa ngoại)
+	ROLE_ID INT NOT NULL,                        -- Nhóm chức vụ được phép xem/đăng ký (Khóa ngoại)
+	PRIMARY KEY (CT_EVENT_ID, ROLE_ID),          -- Khóa kép định tuyến
+	FOREIGN KEY (CT_EVENT_ID) REFERENCES CT_EVENTS(ID),
+	FOREIGN KEY (ROLE_ID) REFERENCES USER_ROLES(ID)
 );
 
 -- Bảng CT_AGENDA_SPEAKERS: Bảng định tuyến N-N giữa Lịch trình và Diễn giả.

@@ -68,6 +68,7 @@ public class CommentServiceImpl implements ICommentService {
     private final IUserRoleRepository userRoleRepository;
     private final IPostRepository postRepository;
     private final ICtEventRepository ctEventRepository;
+    private final ICtPhCmtReportRepository phCmtReportRepository;
     private final IUserService userService;
     private final IAuditService auditService;
     
@@ -290,7 +291,7 @@ public class CommentServiceImpl implements ICommentService {
 
         ctPostCmtRepository.xoaLienKetTheoCmt(cmtId);
         ctEventCmtRepository.xoaLienKetTheoCmt(cmtId);
-        cmtRepository.delete(cmt);
+        xoaCmtVatLy(cmtId);
     }
 
     /**
@@ -341,7 +342,7 @@ public class CommentServiceImpl implements ICommentService {
         String oldPayload = taoJsonPayloadPhCmt(ph);
         ghiNhanNhatKyTuThanPhCmt(ph, ph.getUser(), "DELETE_CMT", oldPayload, null);
 
-        phCmtRepository.delete(ph);
+        xoaPhCmtVatLy(phCmtId);
     }
 
     /**
@@ -800,12 +801,30 @@ public class CommentServiceImpl implements ICommentService {
         if (cmtRepository.existsById(cmtId) == false) {
             throw new AppException(404, "Không tìm thấy bình luận để xóa.");
         }
-        ctPostCmtRepository.xoaLienKetTheoCmt(cmtId);
-        ctEventCmtRepository.xoaLienKetTheoCmt(cmtId);
+        
+        // 1. Phải xóa tất cả Phản hồi (Replies) lồng cấp bên trong trước
+        List<PhCmt> replies = phCmtRepository.findByRootCmtIdOrderByCreatedAtAsc(cmtId);
+        if (replies != null) {
+            Object[] arr = replies.toArray();
+            for (int i = 0; i < arr.length; i = i + 1) {
+                PhCmt rp = (PhCmt) arr[i];
+                xoaPhCmtVatLy(rp.getId()); // Tái sử dụng hàm dọn rác của phản hồi
+            }
+        }
+
+        // 2. Dọn sạch dữ liệu vệ tinh của Bình luận gốc
+        ctLikeCmtRepository.xoaLikeTheoCmtId(cmtId);
+        ctCmtReportRepository.xoaBaoCaoTheoCmtId(cmtId);
+        cmtModerationLogRepository.xoaLogTheoCmtId(cmtId);
         
         if (actionLogRepository != null) {
             actionLogRepository.xoaNhatKyTheoCmtId(cmtId);
         }
+        
+        ctPostCmtRepository.xoaLienKetTheoCmt(cmtId);
+        ctEventCmtRepository.xoaLienKetTheoCmt(cmtId);
+        
+        // 3. Tiêu hủy Bình luận gốc
         cmtRepository.deleteById(cmtId);
     }
 
@@ -815,9 +834,17 @@ public class CommentServiceImpl implements ICommentService {
         if (phCmtRepository.existsById(phCmtId) == false) {
             throw new AppException(404, "Không tìm thấy phản hồi để xóa.");
         }
+        
+        // DỌN SẠCH DỮ LIỆU VỆ TINH CỦA PHẢN HỒI (Rất quan trọng)
+        ctLikePhCmtRepository.xoaLikeTheoPhCmtId(phCmtId);
+        phCmtReportRepository.xoaBaoCaoTheoPhCmtId(phCmtId);
+        phCmtModerationLogRepository.xoaLogTheoPhCmtId(phCmtId);
+        
         if (phActionLogRepository != null) {
             phActionLogRepository.xoaNhatKyTheoPhCmtId(phCmtId);
         }
+        
+        // Sau khi dọn sạch mới được phép tiêu hủy
         phCmtRepository.deleteById(phCmtId);
     }
 
@@ -1074,6 +1101,15 @@ public class CommentServiceImpl implements ICommentService {
             replyResponses.add(xayDungPhCmtResponse((PhCmt) repliesArr[i], userId));
         }
         resp.setReplies(replyResponses);
+
+        // [CHUẨN MÙ] - Backend tự đối soát định danh và cấp cờ isAuthor
+        boolean laTacGiaCmt = false;
+        if (userId != null && cmt.getUser() != null) {
+            if (cmt.getUser().getId().equals(userId) == true) {
+                laTacGiaCmt = true;
+            }
+        }
+        resp.setAuthor(laTacGiaCmt);
         
         return resp;
     }
@@ -1112,6 +1148,16 @@ public class CommentServiceImpl implements ICommentService {
                 resp.setCurrentUserReaction(optLike.get().getLoaiLike().getCode());
             }
         }
+
+        // [CHUẨN MÙ] - Cấp cờ isAuthor cho Phản hồi
+        boolean laTacGiaPh = false;
+        if (userId != null && ph.getUser() != null) {
+            if (ph.getUser().getId().equals(userId) == true) {
+                laTacGiaPh = true;
+            }
+        }
+        resp.setAuthor(laTacGiaPh);
+
         return resp;
     }
 

@@ -25,5 +25,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
         String partnerUploadPath = partnerUploadDir.toFile().getAbsolutePath();
         registry.addResourceHandler("/images/partners/**")
                 .addResourceLocations("file:/" + partnerUploadPath + "/");
+
+        // Ánh xạ toàn bộ URL bắt đầu bằng "/uploads/**" tới thư mục gốc "./uploads/" trên ổ cứng
+        // Giúp Client có thể truy cập trực tiếp để tải file đính kèm, ảnh bài viết,...
+        Path generalUploadDir = Paths.get("./uploads");
+        String generalUploadPath = generalUploadDir.toFile().getAbsolutePath();
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:/" + generalUploadPath + "/");
     }
 }
