@@ -737,7 +737,7 @@ public class EventServiceImpl implements IEventService {
                 pr.setSlug(p.getSlug());
                 pr.setSummary(p.getSummary());
                 pr.setThumbnailUrl(p.getThumbnailUrl());
-                pr.setAccessLevel(p.getAccessLevel());
+                //pr.setAccessLevel(p.getAccessLevel());
 
                 if (p.getCategory() != null) {
                     pr.setCategoryName(p.getCategory().getName());

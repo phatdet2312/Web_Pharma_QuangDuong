@@ -49,13 +49,6 @@ public class Post {
     @Column(name = "THUMBNAIL_URL", length = 500)
     private String thumbnailUrl;
 
-    /**
-     * Tầng quyền truy cập nội dung:
-     * PUBLIC | PARTNER | DOCTOR | ADMIN
-     */
-    @Builder.Default
-    @Column(name = "ACCESS_LEVEL", nullable = false, length = 20)
-    private String accessLevel = "PUBLIC";
 
     /** true = đã xuất bản, false = bản nháp */
     @Builder.Default

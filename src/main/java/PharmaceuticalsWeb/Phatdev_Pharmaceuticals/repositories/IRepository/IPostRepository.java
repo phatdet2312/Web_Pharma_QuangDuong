@@ -39,10 +39,11 @@ public interface IPostRepository extends JpaRepository<Post, Long> {
 
     /**
      * Thống kê quy mô tài nguyên Y khoa Đặc quyền (Gated Content).
-     * Thuật toán tối ưu I/O: Xử lý gộp các Role mục tiêu bằng lệnh IN (...) 
-     * để giảm độ trễ (Latency) cho màn hình Dashboard Quản trị.
+     * Bất cứ bài viết nào không gắn với quyền PUBLIC (Giả sử ROLE_PUBLIC có Level = 99) 
+     * hoặc có Level < 999 thì được xem là Gated.
      */
-    @Query("SELECT COUNT(p) FROM Post p WHERE p.isPublished = true AND p.accessLevel IN ('DOCTOR', 'PARTNER', 'ADMIN')")
+    @Query("SELECT COUNT(DISTINCT p.id) FROM Post p WHERE p.isPublished = true " +
+           "AND EXISTS (SELECT 1 FROM CtPostRole cpr JOIN cpr.role r WHERE cpr.post.id = p.id AND r.roleLevel < 999)")
     long demBaiVietGated();
 
     /**
@@ -53,11 +54,11 @@ public interface IPostRepository extends JpaRepository<Post, Long> {
            "AND (:keyword IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "     OR LOWER(p.summary) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
-           "AND (:accessLevel IS NULL OR p.accessLevel = :accessLevel)")
+           "AND (:roleId IS NULL OR EXISTS (SELECT 1 FROM CtPostRole cpr WHERE cpr.post.id = p.id AND cpr.role.id = :roleId))")
     Page<Post> timKiemBaiVietDaXuatBan(
             @Param("keyword") String keyword,
             @Param("categoryId") Integer categoryId,
-            @Param("accessLevel") String accessLevel,
+            @Param("roleId") Integer roleId,
             Pageable pageable);
 
     /**
@@ -67,12 +68,12 @@ public interface IPostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE " +
            "(:keyword IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
-           "AND (:accessLevel IS NULL OR p.accessLevel = :accessLevel) " +
+           "AND (:roleId IS NULL OR EXISTS (SELECT 1 FROM CtPostRole cpr WHERE cpr.post.id = p.id AND cpr.role.id = :roleId)) " +
            "AND (:isPublished IS NULL OR p.isPublished = :isPublished)")
     Page<Post> timKiemBaiVietAdmin(
             @Param("keyword") String keyword,
             @Param("categoryId") Integer categoryId,
-            @Param("accessLevel") String accessLevel,
+            @Param("roleId") Integer roleId,
             @Param("isPublished") Boolean isPublished,
             Pageable pageable);
 

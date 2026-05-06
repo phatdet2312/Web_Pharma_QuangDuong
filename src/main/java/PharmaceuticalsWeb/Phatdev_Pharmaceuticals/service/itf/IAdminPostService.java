@@ -24,7 +24,7 @@ public interface IAdminPostService {
 
     /** Lấy danh sách tất cả bài viết với lọc/phân trang */
     Page<PostResponse> layDanhSachBaiViet(String keyword, Integer categoryId,
-                                           String accessLevel, Boolean isPublished,
+                                           Integer roleId, Boolean isPublished,
                                            int page, int size);
 
     /** Tạo bài viết mới */

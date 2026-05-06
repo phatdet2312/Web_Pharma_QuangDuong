@@ -10,14 +10,18 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PostResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PostStatsResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.TagResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Category;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtPostRole;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtPostRole.CtPostRoleId;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtPostTag;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Post;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Tag;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.UserRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICategoryRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtFileDownloadRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtLikePostRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtPostRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtPostTagRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPostFileRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPostImageRepository;
@@ -26,6 +30,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPost
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICmtRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ITagRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAdminPostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -66,6 +71,8 @@ public class AdminPostServiceImpl implements IAdminPostService {
     private final ICmtRepository cmtRepository;
     private final ICtLikePostRepository ctLikePostRepository;
     private final IUserRepository userRepository;
+    private final ICtPostRoleRepository ctPostRoleRepository;
+    private final IUserRoleRepository userRoleRepository;
 
     /**
      * Báo cáo toàn cảnh sức khỏe kho tàng Content Marketing.
@@ -101,7 +108,7 @@ public class AdminPostServiceImpl implements IAdminPostService {
      * Hỗ trợ khai thác tất cả ấn phẩm, bao gồm cả những bản lưu nháp.
      */
     @Override
-    public Page<PostResponse> layDanhSachBaiViet(String keyword, Integer categoryId, String accessLevel, Boolean isPublished, int page, int size) {
+    public Page<PostResponse> layDanhSachBaiViet(String keyword, Integer categoryId, Integer roleId, Boolean isPublished, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         
         String kw = null;
@@ -109,12 +116,8 @@ public class AdminPostServiceImpl implements IAdminPostService {
             kw = keyword.trim();
         }
         
-        String al = null;
-        if (accessLevel != null && accessLevel.trim().isEmpty() == false) {
-            al = accessLevel.trim();
-        }
 
-        Page<Post> posts = postRepository.timKiemBaiVietAdmin(kw, categoryId, al, isPublished, pageable);
+        Page<Post> posts = postRepository.timKiemBaiVietAdmin(kw, categoryId, roleId, isPublished, pageable);
         
         List<Post> postListTuDb = posts.getContent();
         List<PostResponse> responseList = new ArrayList<>();
@@ -153,12 +156,6 @@ public class AdminPostServiceImpl implements IAdminPostService {
         post.setContent(request.getContent());
         post.setThumbnailUrl(request.getThumbnailUrl());
         
-        if (request.getAccessLevel() != null && request.getAccessLevel().isEmpty() == false) {
-            post.setAccessLevel(request.getAccessLevel());
-        } else {
-            post.setAccessLevel("PUBLIC");
-        }
-        
         post.setPublished(request.isPublished());
         post.setSeoTitle(request.getSeoTitle());
         post.setSeoDescription(request.getSeoDescription());
@@ -174,6 +171,7 @@ public class AdminPostServiceImpl implements IAdminPostService {
         }
 
         Post saved = postRepository.save(post);
+        ganQuyenChoBaiViet(saved, request.getRoleIds());
         ganTagChoBaiViet(saved, request.getTagIds());
 
         return chuyenDoiPostResponse(saved);
@@ -197,10 +195,6 @@ public class AdminPostServiceImpl implements IAdminPostService {
         post.setContent(request.getContent());
         post.setThumbnailUrl(request.getThumbnailUrl());
         
-        if (request.getAccessLevel() != null && request.getAccessLevel().isEmpty() == false) {
-            post.setAccessLevel(request.getAccessLevel());
-        }
-        
         post.setPublished(request.isPublished());
         post.setSeoTitle(request.getSeoTitle());
         post.setSeoDescription(request.getSeoDescription());
@@ -223,6 +217,8 @@ public class AdminPostServiceImpl implements IAdminPostService {
         Post saved = postRepository.save(post);
 
         // Quy trình thay máu cấu trúc phân loại: Xóa hoàn toàn bảng liên kết cũ
+        ctPostRoleRepository.xoaHetQuyenCuaBaiViet(saved.getId()); // Dọn quyền cũ
+        ganQuyenChoBaiViet(saved, request.getRoleIds()); // Gắn quyền mới
         ctPostTagRepository.xoaHetTagCuaBaiViet(saved.getId());
         ganTagChoBaiViet(saved, request.getTagIds());
 
@@ -240,6 +236,7 @@ public class AdminPostServiceImpl implements IAdminPostService {
             throw new AppException(404, "Không tìm thấy bài viết cần xóa.");
         }
 
+        ctPostRoleRepository.xoaHetQuyenCuaBaiViet(postId);
         ctPostTagRepository.xoaHetTagCuaBaiViet(postId);
         postImageRepository.xoaHetAnhCuaBaiViet(postId);
         postFileRepository.xoaHetFileCuaBaiViet(postId);
@@ -469,6 +466,7 @@ public class AdminPostServiceImpl implements IAdminPostService {
             Long postId = (Long) idsArray[i];
             
             if (postRepository.existsById(postId) == true) {
+                ctPostRoleRepository.xoaHetQuyenCuaBaiViet(postId);
                 ctPostTagRepository.xoaHetTagCuaBaiViet(postId);
                 postImageRepository.xoaHetAnhCuaBaiViet(postId);
                 postFileRepository.xoaHetFileCuaBaiViet(postId);
@@ -481,6 +479,34 @@ public class AdminPostServiceImpl implements IAdminPostService {
     // CÔNG CỤ BỔ TRỢ NỘI BỘ (INTERNAL MAPPERS)
     // =========================================================================
 
+    private void ganQuyenChoBaiViet(Post post, List<Integer> roleIds) {
+        if (roleIds == null || roleIds.isEmpty() == true) {
+            UserRole publicRole = userRoleRepository.findByRoleName("PUBLIC").orElse(null);
+            if (publicRole != null) {
+                CtPostRoleId pkId = new CtPostRoleId(post.getId(), publicRole.getId());
+                CtPostRole bridge = new CtPostRole();
+                bridge.setId(pkId);
+                bridge.setPost(post);
+                bridge.setRole(publicRole);
+                ctPostRoleRepository.save(bridge);
+            }
+            return;
+        }
+
+        Object[] roleIdArr = roleIds.toArray();
+        for (int i = 0; i < roleIdArr.length; i = i + 1) {
+            Integer rId = (Integer) roleIdArr[i];
+            Optional<UserRole> optRole = userRoleRepository.findById(rId);
+            if (optRole.isPresent() == true) {
+                CtPostRoleId pkId = new CtPostRoleId(post.getId(), rId);
+                CtPostRole bridge = new CtPostRole();
+                bridge.setId(pkId);
+                bridge.setPost(post);
+                bridge.setRole(optRole.get());
+                ctPostRoleRepository.save(bridge);
+            }
+        }
+    }
     /**
      * Neo kết các Thẻ chủ đề (Tags) vào Bài viết thông qua Bảng định tuyến CT_POST_TAGS.
      */
@@ -535,7 +561,6 @@ public class AdminPostServiceImpl implements IAdminPostService {
         resp.setSlug(post.getSlug());
         resp.setSummary(post.getSummary());
         resp.setThumbnailUrl(post.getThumbnailUrl());
-        resp.setAccessLevel(post.getAccessLevel());
         resp.setPublished(post.isPublished());
         resp.setCreatedAt(post.getCreatedAt());
         resp.setUpdatedAt(post.getUpdatedAt());
@@ -550,6 +575,16 @@ public class AdminPostServiceImpl implements IAdminPostService {
             resp.setAuthorId(post.getAuthor().getId());
             resp.setAuthorName(post.getAuthor().getFullName());
         }
+
+        List<UserRole> roles = ctPostRoleRepository.layDanhSachQuyenCuaBaiViet(post.getId());
+        List<String> roleNames = new ArrayList<>();
+        if(roles != null) {
+            Object[] roleArr = roles.toArray();
+            for(int i = 0; i < roleArr.length; i++) {
+                roleNames.add(((UserRole)roleArr[i]).getRoleName());
+            }
+        }
+        resp.setAllowedRoleNames(roleNames);
 
         List<Tag> tags = ctPostTagRepository.layTagCuaBaiViet(post.getId());
         List<TagResponse> tagResponses = new ArrayList<>();

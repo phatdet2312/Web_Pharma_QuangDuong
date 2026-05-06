@@ -22,11 +22,13 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PostViewLog;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PublicProfile;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Tag;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.UserRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICategoryRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtFileDownloadRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtLikeCmtRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtLikePostRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtPostRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtPostTagRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICmtRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPostFileRepository;
@@ -84,6 +86,7 @@ public class PostServiceImpl implements IPostService {
     private final IUserRepository userRepository;
     private final IPublicProfileRepository publicProfileRepository;
     private final IPartnerProfileRepository partnerProfileRepository;
+    private final ICtPostRoleRepository ctPostRoleRepository;
 
     // Inject UserService để tận dụng hàm nạp quyền (napQuyenChoNguoiDung)
     private final IUserService userService;
@@ -145,7 +148,7 @@ public class PostServiceImpl implements IPostService {
      * Công cụ tìm kiếm bài viết Public đa năng kết hợp phân trang.
      */
     @Override
-    public Page<PostResponse> timKiemBaiViet(String keyword, Integer categoryId, String accessLevel, String sortBy,
+    public Page<PostResponse> timKiemBaiViet(String keyword, Integer categoryId, Integer roleId, String sortBy,
             int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         if (sortBy != null) {
@@ -164,12 +167,8 @@ public class PostServiceImpl implements IPostService {
             kw = keyword.trim();
         }
 
-        String al = null;
-        if (accessLevel != null && accessLevel.trim().isEmpty() == false) {
-            al = accessLevel.trim();
-        }
 
-        Page<Post> posts = postRepository.timKiemBaiVietDaXuatBan(kw, categoryId, al, pageable);
+        Page<Post> posts = postRepository.timKiemBaiVietDaXuatBan(kw, categoryId, roleId, pageable);
 
         // Chuyển đổi dữ liệu thủ công
         List<Post> contentList = posts.getContent();
@@ -297,7 +296,6 @@ public class PostServiceImpl implements IPostService {
         resp.setSlug(post.getSlug());
         resp.setSummary(post.getSummary());
         resp.setThumbnailUrl(post.getThumbnailUrl());
-        resp.setAccessLevel(post.getAccessLevel());
         resp.setPublished(post.isPublished());
         resp.setCreatedAt(post.getCreatedAt());
         resp.setUpdatedAt(post.getUpdatedAt());
@@ -312,6 +310,16 @@ public class PostServiceImpl implements IPostService {
             resp.setAuthorId(post.getAuthor().getId());
             resp.setAuthorName(post.getAuthor().getFullName());
         }
+
+        List<UserRole> roles = ctPostRoleRepository.layDanhSachQuyenCuaBaiViet(post.getId());
+        List<String> roleNames = new ArrayList<>();
+        if(roles != null) {
+            Object[] roleArr = roles.toArray();
+            for(int i = 0; i < roleArr.length; i++) {
+                roleNames.add(((UserRole)roleArr[i]).getRoleName());
+            }
+        }
+        resp.setAllowedRoleNames(roleNames);
 
         // Lấy mảng thẻ Tag
         List<Tag> tags = ctPostTagRepository.layTagCuaBaiViet(post.getId());
@@ -388,65 +396,53 @@ public class PostServiceImpl implements IPostService {
         resp.setSummary(post.getSummary());
 
         // =========================================================================
-        // BỘ LỌC KIỂM DUYỆT TRUY CẬP (ACCESS LEVEL SHIELD)
+        // BỘ LỌC KIỂM DUYỆT TRUY CẬP DỰA TRÊN ROLE_LEVEL (PAYWALL ĐỘNG)
         // =========================================================================
         boolean hasAccess = false;
-        String reqAccess = post.getAccessLevel();
+        
+        // 1. Xác định Cấp bậc quyền lực của người đang xem (UserLevel)
+        // Khách vãng lai mặc định mang Level 999 (Yếu nhất hệ mặt trời)
+        int userLevel = 999; 
+        if (userId != null) {
+            User u = layUserHoacLoi(userId);
+            userLevel = userService.layCapBacQuyenLucCaoNhat(u);
+        }
 
-        if (reqAccess == null) {
-            hasAccess = true;
-        } else if (reqAccess.equals("PUBLIC")) {
+        // 2. Kéo danh sách Quyền yêu cầu của Bài viết từ bảng trung gian
+        List<UserRole> cacQuyenYeuCau = ctPostRoleRepository.layDanhSachQuyenCuaBaiViet(post.getId());
+        List<PostDetailResponse.RoleInfo> requiredRolesInfo = new ArrayList<>();
+
+        if (cacQuyenYeuCau == null || cacQuyenYeuCau.isEmpty() == true) {
+            // Nếu bài viết không gắn quyền nào, Mặc định cho phép (Tránh lỗi mồ côi dữ liệu)
             hasAccess = true;
         } else {
-            // Nếu bài viết yêu cầu quyền đặc biệt, tiến hành kiểm tra User
-            if (userId != null) {
-                Optional<User> optU = userRepository.findById(userId);
-                if (optU.isPresent() == true) {
-                    User u = optU.get();
-                    // Nhờ UserService nạp danh sách quyền (Roles) từ DB vào RAM
-                    userService.napQuyenChoNguoiDung(u);
+            Object[] roleArr = cacQuyenYeuCau.toArray();
+            for (int i = 0; i < roleArr.length; i = i + 1) {
+                UserRole role = (UserRole) roleArr[i];
+                
+                // Đóng gói thông tin (Name, Description) để gửi về cho Frontend vẽ Paywall
+                PostDetailResponse.RoleInfo rInfo = new PostDetailResponse.RoleInfo();
+                rInfo.setRoleName(role.getRoleName());
+                rInfo.setDescription(role.getDescription());
+                requiredRolesInfo.add(rInfo);
 
-                    List<String> roles = u.getDanhSachTenRole();
-                    if (roles != null) {
-                        Object[] rolesArr = roles.toArray();
-                        for (int i = 0; i < rolesArr.length; i = i + 1) {
-                            String roleName = rolesArr[i].toString();
-
-                            // Các chức vụ đặc quyền luôn có quyền đọc toàn bộ hệ thống
-                            if (roleName.equals("SUPERADMIN")) {
-                                hasAccess = true;
-                                break;
-                            }
-                            if (roleName.equals("ADMIN")) {
-                                hasAccess = true;
-                                break;
-                            }
-
-                            // Chức vụ của User ở dạng "DOCTOR", nhưng AccessLevel lưu "ROLE_DOCTOR"
-                            String roleWithPrefix = "ROLE_" + roleName;
-                            if (roleWithPrefix.equals(reqAccess)) {
-                                hasAccess = true;
-                                break;
-                            }
-
-                            // Đề phòng trường hợp CSDL lưu không có tiền tố ROLE_
-                            if (roleName.equals(reqAccess)) {
-                                hasAccess = true;
-                                break;
-                            }
-                        }
-                    }
+                // THUẬT TOÁN SO SÁNH: Số Level càng NHỎ thì quyền càng TO.
+                // Nếu User có level <= Level yêu cầu của bài viết -> ĐƯỢC PHÉP XEM!
+                if (userLevel <= role.getRoleLevel()) {
+                    hasAccess = true;
                 }
             }
         }
 
-        // Quyết định cuối cùng: Cấp phát hoặc Từ chối nội dung HTML
+        // 3. Quyết định cuối cùng: Cấp phát hoặc Từ chối nội dung HTML
         if (hasAccess == true) {
             resp.setContent(post.getContent());
             resp.setHasFullAccess(true);
+            resp.setRequiredRoles(null); // Đã xem được thì không cần mảng Paywall
         } else {
             resp.setContent(null); // TUYỆT ĐỐI che giấu dữ liệu gốc
             resp.setHasFullAccess(false);
+            resp.setRequiredRoles(requiredRolesInfo); // Gửi mảng mô tả xuống Frontend để vẽ UI
         }
 
         // =========================================================================
@@ -513,7 +509,6 @@ public class PostServiceImpl implements IPostService {
         // BƠM CÁC THÔNG SỐ KỸ THUẬT VÀ TÀI NGUYÊN ĐÍNH KÈM
         // =========================================================================
         resp.setThumbnailUrl(post.getThumbnailUrl());
-        resp.setAccessLevel(post.getAccessLevel());
         resp.setPublished(post.isPublished());
         resp.setSeoTitle(post.getSeoTitle());
         resp.setSeoDescription(post.getSeoDescription());

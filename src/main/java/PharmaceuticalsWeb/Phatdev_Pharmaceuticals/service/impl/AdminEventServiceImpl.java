@@ -777,7 +777,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
             postResp.setSlug(post.getSlug());
             postResp.setSummary(post.getSummary());
             postResp.setThumbnailUrl(post.getThumbnailUrl());
-            postResp.setAccessLevel(post.getAccessLevel());
+            //postResp.setAccessLevel(post.getAccessLevel());
 
             if (post.getCategory() != null) {
                 postResp.setCategoryName(post.getCategory().getName());

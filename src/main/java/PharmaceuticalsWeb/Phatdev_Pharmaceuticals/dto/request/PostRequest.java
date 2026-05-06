@@ -33,11 +33,8 @@ public class PostRequest {
 
     private String thumbnailUrl;
 
-    /**
-     * Tầng truy cập: PUBLIC | PARTNER | DOCTOR | ADMIN
-     * Mặc định PUBLIC nếu không truyền.
-     */
-    private String accessLevel = "PUBLIC";
+   /** Danh sách ID các Nhóm quyền (USER_ROLES) được phép đọc bài này */
+    private List<Integer> roleIds;
 
     /** true = xuất bản ngay, false = lưu nháp */
     private boolean isPublished = false;

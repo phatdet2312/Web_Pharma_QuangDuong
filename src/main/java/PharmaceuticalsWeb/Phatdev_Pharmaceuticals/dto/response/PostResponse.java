@@ -27,7 +27,7 @@ public class PostResponse {
     private String slug;
     private String summary;
     private String thumbnailUrl;
-    private String accessLevel;
+    private List<String> allowedRoleNames;
     private boolean isPublished;
 
     /** Thông tin danh mục */

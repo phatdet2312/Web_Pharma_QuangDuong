@@ -78,12 +78,12 @@ public class ApiPostController {
     public ApiResponse<Page<PostResponse>> timKiemBaiViet(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer category,
-            @RequestParam(required = false) String access,
+            @RequestParam(required = false) Integer roleId,
             @RequestParam(defaultValue = "newest") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "9") int size) {
 
-        Page<PostResponse> result = postService.timKiemBaiViet(keyword, category, access, sort, page, size);
+        Page<PostResponse> result = postService.timKiemBaiViet(keyword, category, roleId, sort, page, size);
         return ApiResponse.thanhCong(result, "Lấy danh sách bài viết thành công");
     }
 

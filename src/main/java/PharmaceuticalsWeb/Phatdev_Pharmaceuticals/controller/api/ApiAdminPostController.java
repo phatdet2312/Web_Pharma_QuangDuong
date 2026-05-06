@@ -57,13 +57,13 @@ public class ApiAdminPostController {
     public ApiResponse<Page<PostResponse>> layDanhSach(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer category,
-            @RequestParam(required = false) String access,
+            @RequestParam(required = false) Integer roleId,
             @RequestParam(required = false) Boolean published,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Page<PostResponse> result = adminPostService.layDanhSachBaiViet(
-                keyword, category, access, published, page, size);
+                keyword, category, roleId, published, page, size);
         return ApiResponse.thanhCong(result, "Lấy danh sách thành công");
     }
 

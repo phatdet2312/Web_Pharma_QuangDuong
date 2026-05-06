@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import javax.management.relation.RoleInfo;
+
 /**
  * =========================================================================
  * TỔNG QUAN NHIỆM VỤ FILE: DTO ĐÓNG GÓI CHI TIẾT BÀI VIẾT Y KHOA
@@ -53,8 +55,8 @@ public class PostDetailResponse {
     /** Hình ảnh minh họa (Thumbnail) chính của Bài viết */
     private String thumbnailUrl;
 
-    /** Rào cản quyền hạn truy cập (VD: 'PUBLIC', 'ROLE_DOCTOR', 'ROLE_PARTNER') */
-    private String accessLevel;
+    /** Danh sách quyền yêu cầu để mở khóa bài viết (Paywall Động) */
+    private List<RoleInfo> requiredRoles;
 
     /** Cờ chỉ thị bài viết đã được kiểm duyệt và cho phép đưa ra công chúng */
     private boolean isPublished;
@@ -114,4 +116,14 @@ public class PostDetailResponse {
 
     /** Mốc thời gian Tác giả hoặc Admin cập nhật nội dung lần gần nhất */
     private LocalDateTime updatedAt;
+
+    @Getter 
+    @Setter 
+    @NoArgsConstructor 
+    @AllArgsConstructor
+    public static class RoleInfo {
+        private String roleName;
+        private String description;
+    }
 }
+

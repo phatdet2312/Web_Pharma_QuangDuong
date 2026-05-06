@@ -34,7 +34,7 @@ public interface IPostService {
      * keyword, categoryId, accessLevel: null = bỏ qua điều kiện đó.
      */
     Page<PostResponse> timKiemBaiViet(String keyword, Integer categoryId,
-                                       String accessLevel, String sortBy,
+                                       Integer roleId, String sortBy,
                                        int page, int size);
 
     /** Lấy bài viết nổi bật (nhiều view nhất) cho Featured section */
