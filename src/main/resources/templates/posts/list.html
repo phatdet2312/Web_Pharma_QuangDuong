@@ -551,10 +551,10 @@
                     <div class="sb-card-head"><i class="fas fa-shield-alt"></i> Phân quyền truy cập</div>
                     <div class="sb-card-body">
                         <div class="access-filter">
-                            <button class="af-btn active" data-access="">Tất cả</button>
-                            <button class="af-btn" data-access="PUBLIC"><i class="fas fa-globe-asia fa-xs"></i> Công khai</button>
-                            <button class="af-btn" data-access="ROLE_DOCTOR"><i class="fas fa-user-md fa-xs"></i> Bác sĩ / Dược sĩ</button>
-                            <button class="af-btn" data-access="ROLE_PARTNER"><i class="fas fa-building fa-xs"></i> Đối tác B2B</button>
+                            <button class="af-btn active" data-role-id="">Tất cả</button>
+                            <button class="af-btn" data-role-id="999"><i class="fas fa-globe-asia fa-xs"></i> Công khai</button>
+                            <button class="af-btn" data-role-id="ROLE_DOCTOR"><i class="fas fa-user-md fa-xs"></i> Bác sĩ / Dược sĩ</button>
+                            <button class="af-btn" data-role-id="ROLE_PARTNER"><i class="fas fa-building fa-xs"></i> Đối tác B2B</button>
                         </div>
                         <div style="margin-top:12px;padding:10px;background:var(--gold-100);border-radius:var(--r-md);border:1px solid rgba(244,169,0,.2);">
                             <p style="font-size:.75rem;color:var(--gray-600);margin:0;line-height:1.5;">
@@ -608,7 +608,7 @@
         sort: 'newest',
         keyword: '',
         category: '',
-        access: '',
+        roleId: '',
         view: 'grid'
     };
 
@@ -677,22 +677,36 @@
     /**
      * Phân loại cấp độ truy cập (Paywall Level) để vẽ thẻ Badge.
      */
-    function accessBadge(level) {
-        if (level === null || level === undefined || level === 'PUBLIC') {
+    function accessBadge(roleNames) {
+        if (roleNames === null || roleNames === undefined || roleNames.length === 0) {
             return '';
         }
-        if (level === 'ROLE_DOCTOR') {
-            return '<span style="background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:4px;font-size:.63rem;font-weight:700;">BS/DS</span>';
+        var hasPublic = false;
+        for (var i = 0; i < roleNames.length; i = i + 1) {
+            if (roleNames[i] === 'PUBLIC') {
+                hasPublic = true;
+            }
         }
-        if (level === 'ROLE_PARTNER') {
-            return '<span style="background:rgba(244,169,0,.15);color:var(--gold-600);padding:2px 8px;border-radius:4px;font-size:.63rem;font-weight:700;">B2B</span>';
+        if (hasPublic === true) { return ''; }
+
+        var badges = '';
+        for (var j = 0; j < roleNames.length; j = j + 1) {
+            var rName = roleNames[j];
+            // Lược bỏ chữ ROLE_ cho đẹp UI
+            var display = rName.replace('ROLE_', ''); 
+            badges += '<span style="background:#f0f2fa;color:#0061ff;padding:2px 8px;border-radius:4px;font-size:.63rem;font-weight:700;margin-right:4px;">' + esc(display) + '</span>';
         }
-        return '<span style="background:#f0f2fa;color:#0061ff;padding:2px 8px;border-radius:4px;font-size:.63rem;font-weight:700;">GATED</span>';
+        return badges;
     }
 
-    function lockIcon(level) {
-        if (level === null || level === undefined || level === 'PUBLIC') {
+    function lockIcon(roleNames) {
+        if (roleNames === null || roleNames === undefined || roleNames.length === 0) {
             return '';
+        }
+        for (var i = 0; i < roleNames.length; i = i + 1) {
+            if (roleNames[i] === 'PUBLIC') {
+                return '';
+            }
         }
         return '<div class="ac-lock"><i class="fas fa-lock fa-xs"></i></div>';
     }
@@ -838,11 +852,35 @@
                 }
             }
 
+            // =========================================================================
+            // THUẬT TOÁN XÁC ĐỊNH BÀI VIẾT NỔI BẬT CÓ BỊ KHÓA HAY KHÔNG
+            // =========================================================================
+            var laBaiVietKhoa = false;
+            if (p.allowedRoleNames !== null && p.allowedRoleNames !== undefined && p.allowedRoleNames.length > 0) {
+                laBaiVietKhoa = true;
+                for (var r = 0; r < p.allowedRoleNames.length; r = r + 1) {
+                    if (p.allowedRoleNames[r] === 'PUBLIC') {
+                        laBaiVietKhoa = false;
+                    }
+                }
+            }
+
+            var badgeHtml = '';
+            var lockHtml = '';
+            if (laBaiVietKhoa === true) {
+                // Đặt badge quyền truy cập ngay dưới chữ "Nổi bật"
+                badgeHtml = '<div style="position:absolute;top:42px;left:14px;display:flex;gap:4px;flex-wrap:wrap;z-index:2;">' + accessBadge(p.allowedRoleNames) + '</div>';
+                // Đặt ổ khóa màu vàng ở góc phải của dòng danh mục
+                lockHtml = '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:var(--gold-500);border-radius:var(--r-xs);font-size:.7rem;color:var(--ink-800);margin-left:auto;"><i class="fas fa-lock"></i></div>';
+            }
+
             var html = '<a href="/tin-tuc/' + esc(p.slug) + '" class="article-featured reveal">' +
                 '<div class="af-img-col">' + thumbImg(p.thumbnailUrl) +
-                '<div class="ac-img-overlay"></div><div class="af-featured-badge">Nổi bật</div></div>' +
+                '<div class="ac-img-overlay"></div><div class="af-featured-badge">Nổi bật</div>' + badgeHtml + '</div>' +
                 '<div class="af-body">' +
-                '<div class="ac-category">' + esc(p.categoryName || '') + '</div>' +
+                '<div style="display:flex;align-items:center;margin-bottom:10px;">' +
+                '<div class="ac-category" style="margin-bottom:0;">' + esc(p.categoryName || '') + '</div>' + lockHtml +
+                '</div>' +
                 '<div class="af-title">' + esc(p.title) + '</div>' +
                 '<div class="af-summary">' + esc(p.summary || '') + '</div>' +
                 (tagsHtml !== '' ? '<div class="af-tags">' + tagsHtml + '</div>' : '') +
@@ -872,9 +910,30 @@
             for (var i = 0; i < posts.length; i = i + 1) {
                 var p = posts[i];
                 var imgHtml = p.thumbnailUrl ? '<img class="pop-img" src="' + esc(p.thumbnailUrl) + '" alt="" loading="lazy">' : '<div class="pop-img"><i class="fas fa-file-medical-alt"></i></div>';
-                html += '<a href="/tin-tuc/' + esc(p.slug) + '" class="pop-post">' + imgHtml +
-                    '<div class="pop-info"><div class="pop-title">' + esc(p.title) + '</div>' +
-                    '<div class="pop-meta"><i class="fas fa-eye" style="margin-right:3px;font-size:.62rem;"></i>' + fmt(p.viewCount) + ' lượt xem</div>' +
+                
+                // Thuật toán kiểm tra bài khóa (Gated)
+                var laBaiVietKhoa = false;
+                if (p.allowedRoleNames !== null && p.allowedRoleNames !== undefined && p.allowedRoleNames.length > 0) {
+                    laBaiVietKhoa = true;
+                    for (var r = 0; r < p.allowedRoleNames.length; r = r + 1) {
+                        if (p.allowedRoleNames[r] === 'PUBLIC') {
+                            laBaiVietKhoa = false;
+                        }
+                    }
+                }
+
+                // Nếu là bài khóa, tạo một badge nhỏ xíu nằm cạnh lượt xem
+                var theKhoaMeta = '';
+                if (laBaiVietKhoa === true) {
+                    theKhoaMeta = '<span style="color:var(--gold-600); font-weight:700; margin-right:8px;"><i class="fas fa-lock"></i> Nội bộ</span>';
+                }
+
+                html += '<a href="/tin-tuc/' + esc(p.slug) + '" class="pop-post">' + 
+                    imgHtml +
+                    '<div class="pop-info">' + 
+                    '<div class="pop-title">' + esc(p.title) + '</div>' +
+                    // Đưa ổ khóa xuống dòng meta này để thoát khỏi vùng bị CSS cắt chữ
+                    '<div class="pop-meta">' + theKhoaMeta + '<i class="fas fa-eye" style="margin-right:3px;font-size:.62rem;"></i>' + fmt(p.viewCount) + ' lượt xem</div>' +
                     '</div></a>';
             }
             wrap.innerHTML = html;
@@ -894,8 +953,8 @@
         return '<div class="col-sm-6 col-xl-4 reveal ' + dc + '">' +
             '<a href="/tin-tuc/' + esc(p.slug) + '" class="article-card h-100">' +
             '<div class="ac-img-wrap">' + thumbImg(p.thumbnailUrl) +
-            '<div class="ac-img-overlay"></div><div class="ac-top-badges">' + accessBadge(p.accessLevel) + '</div>' +
-            '<div class="ac-bottom-info"><span class="ac-views"><i class="fas fa-eye"></i> ' + fmt(p.viewCount) + '</span>' + lockIcon(p.accessLevel) + '</div></div>' +
+            '<div class="ac-img-overlay"></div><div class="ac-top-badges">' + accessBadge(p.allowedRoleNames) + '</div>' +
+            '<div class="ac-bottom-info"><span class="ac-views"><i class="fas fa-eye"></i> ' + fmt(p.viewCount) + '</span>' + lockIcon(p.allowedRoleNames) + '</div></div>' +
             '<div class="ac-body"><div class="ac-category">' + esc(p.categoryName || '') + '</div>' +
             '<div class="ac-title">' + esc(p.title) + '</div><div class="ac-summary">' + esc(p.summary || '') + '</div>' +
             '<div class="ac-footer"><div class="ac-author"><div class="ac-avatar">' + esc(ini) + '</div>' +
@@ -906,7 +965,18 @@
     function buildListCard(p) {
         var imgBlock = p.thumbnailUrl ? '<img src="' + esc(p.thumbnailUrl) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;">' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--gray-100);"><i class="fas fa-file-medical-alt" style="font-size:1.5rem;color:var(--gray-300);"></i></div>';
         var dlMeta = (p.downloadCount > 0) ? '<span class="alc-meta"><i class="fas fa-download"></i> ' + fmt(p.downloadCount) + ' tải</span>' : '';
-        var badgeHtml = (p.accessLevel !== null && p.accessLevel !== 'PUBLIC') ? '<div style="position:absolute;top:8px;left:8px;">' + accessBadge(p.accessLevel) + '</div>' : '';
+        
+        var laBaiVietKhoa = false;
+        if (p.allowedRoleNames !== null && p.allowedRoleNames !== undefined && p.allowedRoleNames.length > 0) {
+            laBaiVietKhoa = true;
+            for (var r = 0; r < p.allowedRoleNames.length; r = r + 1) {
+                if (p.allowedRoleNames[r] === 'PUBLIC') {
+                    laBaiVietKhoa = false;
+                }
+            }
+        }
+        var badgeHtml = laBaiVietKhoa ? '<div style="position:absolute;top:8px;left:8px;">' + accessBadge(p.allowedRoleNames) + '</div>' : '';
+        var gatedInline = laBaiVietKhoa ? '<span class="badge-gated" style="font-size:.65rem;"><i class="fas fa-lock fa-xs"></i> Gated</span>' : '';
 
         // Bổ sung thẻ wrap reveal để dạng list cũng có hiệu ứng trượt
         return '<div class="reveal reveal-d1"><a href="/tin-tuc/' + esc(p.slug) + '" class="article-list-card">' +
@@ -914,7 +984,7 @@
             '<div class="alc-body">' +
             '<div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap;">' +
             '<span style="font-size:.68rem;font-weight:700;color:var(--teal-600);">' + esc(p.categoryName || '') + '</span>' +
-            ((p.accessLevel !== null && p.accessLevel !== 'PUBLIC') ? '<span class="badge-gated" style="font-size:.65rem;"><i class="fas fa-lock fa-xs"></i> Gated</span>' : '') +
+            gatedInline +
             '</div><div class="alc-title">' + esc(p.title) + '</div><div class="alc-summary">' + esc(p.summary || '') + '</div>' +
             '<div class="alc-footer"><span class="alc-meta"><i class="fas fa-user-md"></i> ' + esc(p.authorName || 'Ẩn danh') + '</span>' +
             '<span class="alc-meta"><i class="fas fa-calendar"></i> ' + fmtDate(p.createdAt) + '</span>' +
@@ -929,7 +999,7 @@
         var url = '/api/posts?page=' + state.page + '&size=' + state.size + '&sort=' + encodeURIComponent(state.sort);
         if (state.keyword !== '') { url += '&keyword=' + encodeURIComponent(state.keyword); }
         if (state.category !== '') { url += '&category=' + encodeURIComponent(state.category); }
-        if (state.access !== '') { url += '&access=' + encodeURIComponent(state.access); }
+        if (state.roleId !== '') { url += '&roleId=' + encodeURIComponent(state.roleId); }
 
         callApi(url, 'GET', null, null, function (response) {
             var pageData = response.data;
@@ -1038,13 +1108,13 @@
             }
             chipsHtml += '<span class="af-chip" data-type="category">' + esc(catLabel) + ' <i class="fas fa-times" style="font-size:.6rem;cursor:pointer;"></i></span>';
         }
-        if (state.access !== '') {
-            var accessLabel = state.access;
-            if (state.access === 'PUBLIC') { accessLabel = 'Công khai'; }
-            else if (state.access === 'ROLE_DOCTOR') { accessLabel = 'Bác sĩ / Dược sĩ'; }
-            else if (state.access === 'ROLE_PARTNER') { accessLabel = 'Đối tác B2B'; }
-            
-            chipsHtml += '<span class="af-chip" data-type="access">' + accessLabel + ' <i class="fas fa-times" style="font-size:.6rem;cursor:pointer;"></i></span>';
+        if (state.roleId !== '') {
+            var accessLabel = 'Vai trò ID: ' + state.roleId;
+            var selRole = document.getElementById('search-role');
+            if (selRole !== null && selRole.selectedIndex >= 0) {
+                accessLabel = selRole.options[selRole.selectedIndex].text;
+            }
+            chipsHtml += '<span class="af-chip" data-type="roleId">' + accessLabel + ' <i class="fas fa-times" style="font-size:.6rem;cursor:pointer;"></i></span>';
         }
 
         if (chipsHtml === '') {
@@ -1069,7 +1139,7 @@
                 e.preventDefault();
                 clearFilter('keyword');
                 clearFilter('category');
-                clearFilter('access');
+                clearFilter('roleId');
             });
         }
     }
@@ -1091,13 +1161,13 @@
                 if (id === '' || id === null) { catLinks[cl].classList.add('active'); } 
                 else { catLinks[cl].classList.remove('active'); }
             }
-        } else if (type === 'access') {
-            state.access = '';
-            var accInput = document.getElementById('search-access');
+        } else if (type === 'roleId') {
+            state.roleId = '';
+            var accInput = document.getElementById('search-role');
             if (accInput !== null) { accInput.value = ''; }
             var afBtns = document.querySelectorAll('.af-btn');
             for (var a = 0; a < afBtns.length; a = a + 1) {
-                var val = afBtns[a].getAttribute('data-access');
+                var val = afBtns[a].getAttribute('data-role-id');
                 if (val === '' || val === null) { afBtns[a].classList.add('active'); } 
                 else { afBtns[a].classList.remove('active'); }
             }
@@ -1114,13 +1184,13 @@
         var btnSearch = document.getElementById('search-btn');
         var kwEl = document.getElementById('search-keyword');
         var catEl = document.getElementById('search-category');
-        var accEl = document.getElementById('search-access');
+        var accEl = document.getElementById('search-role');
         var sortEl = document.getElementById('sort-select');
 
         function thucThiTimKiem() {
             if (kwEl !== null) { state.keyword = kwEl.value.trim(); }
             if (catEl !== null) { state.category = catEl.value; }
-            if (accEl !== null) { state.access = accEl.value; }
+            if (accEl !== null) { state.roleId = accEl.value; }
             state.page = 0;
 
             var catLinks = document.querySelectorAll('#sidebar-categories .cat-link');
@@ -1132,8 +1202,8 @@
 
             var afBtns = document.querySelectorAll('.af-btn');
             for (var a = 0; a < afBtns.length; a = a + 1) {
-                var valAttr = afBtns[a].getAttribute('data-access');
-                if (valAttr === state.access) { afBtns[a].classList.add('active'); } 
+                var valAttr = afBtns[a].getAttribute('data-role-id');
+                if (valAttr === state.roleId) { afBtns[a].classList.add('active'); } 
                 else { afBtns[a].classList.remove('active'); }
             }
 
@@ -1192,11 +1262,11 @@
                     all[j].classList.remove('active');
                 }
                 this.classList.add('active');
-                state.access = this.getAttribute('data-access');
+                state.roleId = this.getAttribute('data-role-id'); 
                 state.page = 0;
                 
-                var accSel = document.getElementById('search-access');
-                if (accSel !== null) { accSel.value = state.access; }
+                var accSel = document.getElementById('search-role');
+                if (accSel !== null) { accSel.value = state.roleId; }
                 
                 updateActiveFilters();
                 loadPosts();
