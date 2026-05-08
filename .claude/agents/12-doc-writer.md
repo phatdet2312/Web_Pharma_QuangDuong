@@ -20,7 +20,8 @@ Khi được gọi:
 
 Nguyên tắc:
 - README: What → Why → How → API → Contributing
-- Javadoc: mô tả method, @param, @return, @throws
+- Code doc: mô tả function/method, params, return, exceptions (theo convention dự án)
 - Comment giải thích WHY, không giải thích WHAT
 - Dùng Markdown, có table of contents nếu doc dài
 - Trả lời bằng tiếng Việt
+ 

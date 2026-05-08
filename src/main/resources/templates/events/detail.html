@@ -727,6 +727,57 @@
                     }
                 }
 
+                /* ============================================================
+                 HỆ THỐNG HIỂN THỊ PAYWALL 
+                ============================================================ */
+                .badge-gated {
+                    display: inline-flex; align-items: center; gap: 4px;
+                    padding: 3px 12px; border-radius: 50px;
+                    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+                    letter-spacing: 1px;
+                    background: rgba(220,38,38,.15); color: #ef4444; border: 1px solid rgba(220,38,38,.3);
+                }
+
+                .session-paywall {
+                    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, white 30%);
+                    position: relative;
+                    margin-top: -60px;
+                    padding-top: 60px;
+                    text-align: center;
+                    padding-bottom: 20px;
+                }
+
+                .paywall-card {
+                    background: linear-gradient(135deg, var(--ink-900), var(--ink-800));
+                    border: 1px solid rgba(255, 255, 255, .1);
+                    border-radius: var(--r-xl);
+                    padding: 36px 32px;
+                }
+
+                .paywall-lock {
+                    width: 56px; height: 56px; background: var(--gold-500);
+                    border-radius: var(--r-lg); display: flex; align-items: center; justify-content: center;
+                    font-size: 1.3rem; color: var(--ink-800); margin: 0 auto 16px;
+                }
+
+                .paywall-title {
+                    font-size: 1.2rem; font-weight: 800; color: white; margin-bottom: 8px;
+                }
+
+                .paywall-desc {
+                    font-size: .88rem; color: rgba(255, 255, 255, .6); line-height: 1.6; margin-bottom: 24px;
+                }
+
+                .paywall-roles {
+                    display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;
+                }
+
+                .pr-badge {
+                    display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px;
+                    border-radius: 50px; font-size: .75rem; font-weight: 600;
+                    background: rgba(0, 152, 152, .15); color: var(--teal-300); border: 1px solid rgba(0, 184, 184, .2);
+                }
+
                 @media (max-width: 576px) {
                     .edh-title {
                         font-size: 1.4rem;
@@ -802,12 +853,36 @@
                         <div class="col-lg-8">
 
                             <!-- Description -->
+                            <!-- Description & Paywall -->
                             <div class="event-main-card reveal">
                                 <div class="emc-section-head"><i class="fas fa-info-circle"></i> Giới thiệu Sự kiện
                                 </div>
-                                <div class="emc-section-body">
+                                <div class="emc-section-body" style="position: relative;">
                                     <div id="session-description" class="prose"
                                         style="font-size:.9rem;line-height:1.8;"></div>
+                                        
+                                    <!-- Bức tường Paywall (Mặc định ẩn) -->
+                                    <div id="session-paywall-container" style="display: none;">
+                                        <div class="session-paywall">
+                                            <div class="paywall-card">
+                                                <div class="paywall-lock"><i class="fas fa-lock"></i></div>
+                                                <div class="paywall-title">Buổi sự kiện có giới hạn truy cập</div>
+                                                <div class="paywall-desc">
+                                                    Nội dung chuyên sâu, liên kết tham dự trực tuyến (Meeting) và tài liệu đính kèm của phiên này đã được bảo mật.<br>
+                                                    Vui lòng định danh chức vụ tương ứng để mở khóa toàn bộ thông tin.
+                                                </div>
+                                                <div class="paywall-roles" id="dynamic-paywall-roles">
+                                                    <!-- Javascript sẽ vẽ Badge chức vụ vào đây -->
+                                                </div>
+                                                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                                    <a href="/login" class="btn-primary-pharma"><i class="fas fa-sign-in-alt fa-sm"></i> Đăng nhập ngay</a>
+                                                    <a href="/register" class="btn-gold-pharma"><i class="fas fa-user-plus fa-sm"></i> Đăng ký miễn phí</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Kết thúc Paywall -->
+
                                 </div>
                             </div>
 
@@ -1065,6 +1140,77 @@
         var cmtTrangHt = 0;
         var cmtTongTrang = 0;
 
+        // ------------------------------------------------------------
+        // BỘ CÔNG CỤ TIỆN ÍCH (UTILITIES) - PHẢI KHAI BÁO ĐẦU TIÊN
+        // ------------------------------------------------------------
+        function lamSachChuoiHTML(s) {
+            if (s === null || s === undefined) { return ''; }
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // Tạo alias esc trỏ về lamSachChuoiHTML để code cũ không bị gãy
+        function esc(s) { return lamSachChuoiHTML(s); }
+
+        function themSo0PhiaTruoc(n) {
+            return n < 10 ? '0' + n : '' + n;
+        }
+
+        // Tạo alias pad2
+        function pad2(n) { return themSo0PhiaTruoc(n); }
+
+        function dinhDangSo(n) {
+            if (n === null || n === undefined) { return '0'; }
+            return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function dinhDangNgay(iso) {
+            if (!iso) { return '—'; }
+            var d = new Date(iso);
+            return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
+        }
+
+        function dinhDangNgayGio(iso) {
+            if (!iso) { return '—'; }
+            var d = new Date(iso);
+            return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + ' — ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+        }
+
+        function dinhDangNgayDayDu(iso) {
+            if (!iso) { return '—'; }
+            var d = new Date(iso);
+            var thu = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+            return thu[d.getDay()] + ', ' + pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
+        }
+
+        function layGio(iso) {
+            if (!iso) { return '—'; }
+            var d = new Date(iso);
+            return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+        }
+
+        function hienLoiChinh(msg) {
+            var body = document.querySelector('.event-detail-body');
+            if (body) {
+                body.innerHTML = '<div class="container" style="text-align:center;padding:80px 20px;"><i class="fas fa-exclamation-triangle fa-3x" style="color:var(--danger);display:block;margin-bottom:16px;"></i><div style="font-size:1rem;color:var(--gray-600);">' + lamSachChuoiHTML(msg) + '</div><a href="/hoi-thao" style="margin-top:20px;display:inline-block;padding:10px 24px;background:var(--teal-600);color:white;border-radius:var(--r-md);text-decoration:none;font-weight:600;">Quay lại danh sách</a></div>';
+            }
+        }
+
+        function kiemTraLaBiKhoa(mangQuyen) {
+            if (mangQuyen === null || mangQuyen === undefined || mangQuyen.length === 0) {
+                return false;
+            }
+            for (var i = 0; i < mangQuyen.length; i = i + 1) {
+                if (mangQuyen[i] === 'PUBLIC') {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // ------------------------------------------------------------
+        // HẾT KHU VỰC CÔNG CỤ - BẮT ĐẦU LUỒNG CHÍNH
+        // ------------------------------------------------------------
+
         document.addEventListener('DOMContentLoaded', function () {
             khoiDong();
         });
@@ -1161,24 +1307,55 @@
 
             var bgEl = document.getElementById('hero-bg');
             if (cd.thumbnailUrl) {
-                bgEl.style.backgroundImage = "url('" + esc(cd.thumbnailUrl) + "')";
+                bgEl.style.backgroundImage = "url('" + lamSachChuoiHTML(cd.thumbnailUrl) + "')";
             }
 
             var bcEl = document.getElementById('hero-breadcrumb-campaign');
-            bcEl.href = '/hoi-thao/' + esc(cd.slug);
+            bcEl.href = '/hoi-thao/' + lamSachChuoiHTML(cd.slug);
             bcEl.textContent = cd.title || '';
 
+            // TÍNH TOÁN BỘ HUY HIỆU (TYPE + STATUS + PAYWALL BADGE)
             var typeBadge = document.getElementById('hero-type-badge');
-            typeBadge.innerHTML = '<i class="fas fa-tag fa-xs"></i> ' + esc(cd.eventTypeName || '');
+            typeBadge.innerHTML = '<i class="fas fa-tag fa-xs"></i> ' + lamSachChuoiHTML(cd.eventTypeName || '');
 
             var statusBadge = document.getElementById('hero-status-badge');
             renderStatusBadge(statusBadge, s.currentStatus);
 
+            // SINH BADGE KHÓA (GATED) TỪ DANH SÁCH QUYỀN (ĐỒNG BỘ CHUẨN POST)
+            var theHTMLBadgesKhoa = '';
+            if (s.requiredRoles !== null && s.requiredRoles !== undefined && s.requiredRoles.length > 0) {
+                // Nếu bị khóa, Backend sẽ trả về mảng requiredRoles chứa đầy đủ Description
+                for (var b = 0; b < s.requiredRoles.length; b = b + 1) {
+                    var tenHienThi = s.requiredRoles[b].description ? s.requiredRoles[b].description : 'Độc quyền';
+                    theHTMLBadgesKhoa += '<span class="badge-gated ms-2"><i class="fas fa-lock fa-xs"></i> ' + lamSachChuoiHTML(tenHienThi) + '</span>';
+                }
+            } else if (s.hasFullAccess === false) {
+                // Fallback nếu Backend quên gửi mảng
+                theHTMLBadgesKhoa += '<span class="badge-gated ms-2"><i class="fas fa-lock fa-xs"></i> LƯU HÀNH NỘI BỘ</span>';
+            } else if (kiemTraLaBiKhoa(s.allowedRoleNames) === true) {
+                // ĐẶC BIỆT: Nếu Admin có quyền xem (hasFullAccess = true -> requiredRoles = null)
+                // Ta vẫn hiện Badge màu xanh lá để Admin biết đây là phiên Nội bộ đã được bẻ khóa
+                theHTMLBadgesKhoa += '<span class="badge-gated ms-2" style="background:rgba(22,163,74,.15); color:var(--success); border-color:rgba(22,163,74,.3);"><i class="fas fa-unlock fa-xs"></i> NỘI BỘ (ĐÃ MỞ KHÓA)</span>';
+            }
+            
+            // Tìm vùng chứa Top Badges và nhúng thêm Badge Khóa vào
+            var vungTopBadges = document.querySelector('.edh-top-badges');
+            if(vungTopBadges !== null && theHTMLBadgesKhoa !== '') {
+                // Kiểm tra xem đã nhúng chưa để tránh bị duplicate khi chuyển tab Session
+                var daCoKhoa = vungTopBadges.querySelector('.badge-gated');
+                if(daCoKhoa !== null) {
+                    // Xóa các badge khóa cũ đi trước khi nhúng mới
+                    var cacBadgeCu = vungTopBadges.querySelectorAll('.badge-gated');
+                    for(var c = 0; c < cacBadgeCu.length; c++) { cacBadgeCu[c].remove(); }
+                }
+                vungTopBadges.insertAdjacentHTML('beforeend', theHTMLBadgesKhoa);
+            }
+
             document.getElementById('hero-title').textContent = s.title ? s.title : (cd.title || '');
 
             var linkEl = document.getElementById('hero-campaign-link');
-            linkEl.href = '/hoi-thao/' + esc(cd.slug);
-            linkEl.innerHTML = '<i class="fas fa-layer-group fa-xs"></i> Thuộc: ' + esc(cd.title || '');
+            linkEl.href = '/hoi-thao/' + lamSachChuoiHTML(cd.slug);
+            linkEl.innerHTML = '<i class="fas fa-layer-group fa-xs"></i> Thuộc: ' + lamSachChuoiHTML(cd.title || '');
 
             renderQuickFacts(s);
         }
@@ -1289,13 +1466,52 @@
         // ============================================================
 
         function renderMoTa() {
-            var el = document.getElementById('session-description');
-            if (buoiHienTai.content) {
-                el.innerHTML = buoiHienTai.content;
-            } else if (chienDich.description) {
-                el.innerHTML = chienDich.description;
+            var theNoiDung = document.getElementById('session-description');
+            var theBucTuong = document.getElementById('session-paywall-container');
+            var theRolesBox = document.getElementById('dynamic-paywall-roles');
+
+            var moTaChiTiet = buoiHienTai.content;
+            var moTaNganGoc = chienDich.description || '';
+
+            // [CHUẨN MÙ]: CHỈ KIỂM TRA CỜ HAS FULL ACCESS CỦA BACKEND
+            if (buoiHienTai.hasFullAccess === true) {
+                // MỞ KHÓA TOÀN BỘ
+                if (moTaChiTiet !== null && moTaChiTiet !== undefined && moTaChiTiet !== '') {
+                    theNoiDung.innerHTML = moTaChiTiet;
+                } else if (moTaNganGoc !== '') {
+                    theNoiDung.innerHTML = moTaNganGoc;
+                } else {
+                    theNoiDung.innerHTML = '<p style="color:var(--gray-400);">Chưa có mô tả chi tiết.</p>';
+                }
+                theBucTuong.style.display = 'none';
             } else {
-                el.innerHTML = '<p style="color:var(--gray-400);">Chưa có mô tả chi tiết.</p>';
+                // BỊ KHÓA -> DỰNG PAYWALL VÀ LÀM MỜ NỘI DUNG
+                var hienThiCheMo = moTaNganGoc;
+                if (hienThiCheMo.length > 250) {
+                    hienThiCheMo = hienThiCheMo.substring(0, 250) + '...';
+                }
+
+                theNoiDung.innerHTML = '<div style="filter: blur(4px); opacity: 0.6; user-select: none; pointer-events: none;">' +
+                    '<p>' + lamSachChuoiHTML(hienThiCheMo) + '</p>' +
+                    '<p>*** Khu vực nội dung đã bị mã hóa. Cần thẩm định quyền hạn. ***</p></div>';
+
+                // Vẽ các thẻ chức vụ yêu cầu (Description từ DB gửi lên)
+                var theHTMLRoles = '';
+                if (buoiHienTai.requiredRoles !== null && buoiHienTai.requiredRoles !== undefined && buoiHienTai.requiredRoles.length > 0) {
+                    for (var r = 0; r < buoiHienTai.requiredRoles.length; r = r + 1) {
+                        var rInfo = buoiHienTai.requiredRoles[r];
+                        var tenHienThi = rInfo.description ? rInfo.description : rInfo.roleName;
+                        theHTMLRoles += '<span class="pr-badge"><i class="fas fa-shield-alt fa-xs"></i> ' + lamSachChuoiHTML(tenHienThi) + '</span>';
+                    }
+                } else {
+                    theHTMLRoles = '<span class="pr-badge"><i class="fas fa-lock fa-xs"></i> Lưu hành nội bộ</span>';
+                }
+
+                if (theRolesBox !== null) {
+                    theRolesBox.innerHTML = theHTMLRoles;
+                }
+                
+                theBucTuong.style.display = 'block';
             }
         }
 

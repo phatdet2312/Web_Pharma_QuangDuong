@@ -18,6 +18,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PostResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.TagResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEvent;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventRegistration;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventSessionRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventStatusHistory;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventTag;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Event;
@@ -26,9 +27,11 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Location;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Post;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Tag;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.UserRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventRegistrationRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventSessionRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventStatusHistoryRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventTagRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtPostEventRepository;
@@ -37,6 +40,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IEven
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ILocationRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ITagRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAdminEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -81,6 +85,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
     private final ICtPostEventRepository ctPostEventRepository;
     private final ITagRepository tagRepository;
     private final IUserRepository userRepository;
+    private final ICtEventSessionRoleRepository ctEventSessionRoleRepository;
+    private final IUserRoleRepository userRoleRepository;
 
     /**
      * Đo lường sức khỏe toàn diện của Hệ sinh thái Sự kiện trong tháng hiện tại.
@@ -144,7 +150,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
     public Page<EventResponse> layDanhSachChienDich(
             String keyword, Integer eventTypeId,
             LocalDateTime startDate, LocalDateTime endDate,
-            Integer locationId, int page, int size) {
+            Integer locationId, Integer roleId, int page, int size) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -154,7 +160,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         }
 
         Page<Event> eventsPage = eventRepository.timKiemChienDich(kw, eventTypeId, startDate, endDate, locationId,
-                pageable);
+                roleId, pageable);
         List<Event> eventList = eventsPage.getContent();
         List<EventResponse> responseList = new ArrayList<>();
 
@@ -303,6 +309,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         }
         statusHistoryRepository.save(history);
 
+        ganQuyenChoBuoi(saved, request.getRoleIds());
         // Nối mảng thẻ chủ đề (Tags) vào bảng trung gian
         ganTagChoBuoi(saved, request.getTagIds());
 
@@ -343,6 +350,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
 
         CtEvent saved = ctEventRepository.save(ctEvent);
 
+        ctEventSessionRoleRepository.xoaHetQuyenCuaBuoi(saved.getId());
+        ganQuyenChoBuoi(saved, request.getRoleIds());
         // Quy trình thay máu Tag: Hủy liên kết cũ, xây dựng liên kết mới.
         ctEventTagRepository.xoaHetTagCuaBuoi(saved.getId());
         ganTagChoBuoi(saved, request.getTagIds());
@@ -361,6 +370,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện để xóa.");
         }
         ctEventTagRepository.xoaHetTagCuaBuoi(ctEventId);
+        ctEventSessionRoleRepository.xoaHetQuyenCuaBuoi(ctEventId);
         ctEventRepository.deleteById(ctEventId);
     }
 
@@ -643,6 +653,36 @@ public class AdminEventServiceImpl implements IAdminEventService {
     // =========================================================================
     // HÀM BỔ TRỢ NỘI BỘ (INTERNAL HELPERS)
     // =========================================================================
+
+    private void ganQuyenChoBuoi(CtEvent ctEvent, List<Integer> roleIds) {
+        if (roleIds == null || roleIds.isEmpty() == true) {
+            UserRole publicRole = userRoleRepository.findByRoleName("PUBLIC").orElse(null);
+            if (publicRole != null) {
+                CtEventSessionRole.CtEventSessionRoleId pkId = new CtEventSessionRole.CtEventSessionRoleId(ctEvent.getId(), publicRole.getId());
+                CtEventSessionRole bridge = new CtEventSessionRole();
+                bridge.setId(pkId);
+                bridge.setCtEvent(ctEvent);
+                bridge.setRole(publicRole);
+                ctEventSessionRoleRepository.save(bridge);
+            }
+            return;
+        }
+
+        Object[] roleIdArr = roleIds.toArray();
+        for (int i = 0; i < roleIdArr.length; i = i + 1) {
+            Integer rId = (Integer) roleIdArr[i];
+            Optional<UserRole> optRole = userRoleRepository.findById(rId);
+            if (optRole.isPresent() == true) {
+                CtEventSessionRole.CtEventSessionRoleId pkId = new CtEventSessionRole.CtEventSessionRoleId(ctEvent.getId(), rId);
+                CtEventSessionRole bridge = new CtEventSessionRole();
+                bridge.setId(pkId);
+                bridge.setCtEvent(ctEvent);
+                bridge.setRole(optRole.get());
+                ctEventSessionRoleRepository.save(bridge);
+            }
+        }
+    }
+
 
     /**
      * Duyệt mảng cấu trúc để gắn liên kết Thẻ chủ đề (Tags) vào Phiên sự kiện.

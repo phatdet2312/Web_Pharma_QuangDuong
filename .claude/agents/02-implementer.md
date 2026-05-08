@@ -23,8 +23,8 @@ Khi được gọi:
 4. Chạy build/compile kiểm tra lỗi cơ bản
 
 Nguyên tắc:
-- Controller → Service → Repository, KHÔNG vi phạm phân lớp
-- Mỗi method ≤ 30 dòng logic
-- Custom Exception + validation đầy đủ
+- Tuân thủ kiến trúc phân lớp của dự án (xem "Project Convention" trong `.ai-memory/01_system_architecture.md`)
+- Mỗi method/function ≤ 30 dòng logic
+- Xử lý lỗi đầy đủ theo convention dự án
 - KHÔNG đọc file không liên quan để tiết kiệm token
 - Trả lời bằng tiếng Việt

@@ -31,6 +31,7 @@ public class EventResponse {
     private Integer eventTypeId;
     private String eventTypeName;
 
+    private List<String> allowedRoleNames;
     /** Danh sách buổi của chiến dịch này */
     private List<CtEventResponse> sessions;
 

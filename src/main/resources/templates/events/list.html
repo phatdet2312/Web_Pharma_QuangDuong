@@ -945,6 +945,68 @@
                     color: var(--danger);
                 }
 
+                /* ============================================================
+                   BỔ SUNG CSS: HỆ THỐNG HIỂN THỊ PAYWALL SỰ KIỆN
+                ============================================================ */
+                /* 1. Badge và Khóa cho Cấp Mẹ (Poster Chiến dịch) */
+                .ecc-role-badges {
+                    position: absolute;
+                    top: 42px;
+                    left: 14px;
+                    display: flex;
+                    gap: 4px;
+                    flex-wrap: wrap;
+                    z-index: 2;
+                }
+                .ecc-role-badge-item {
+                    background: #f0f2fa;
+                    color: #0061ff;
+                    padding: 3px 8px;
+                    border-radius: 4px;
+                    font-size: .63rem;
+                    font-weight: 700;
+                    letter-spacing: .5px;
+                }
+                .ecc-lock {
+                    position: absolute;
+                    bottom: 10px;
+                    right: 10px;
+                    width: 28px;
+                    height: 28px;
+                    background: var(--gold-500);
+                    border-radius: var(--r-xs);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .8rem;
+                    color: var(--ink-800);
+                    z-index: 2;
+                    box-shadow: var(--shadow-md);
+                }
+
+                /* 2. Hiệu ứng Bóng mờ Ổ khóa cho Cấp Con & Sidebar */
+                .si-date-col, .emc-date-badge {
+                    position: relative; /* Ép buộc relative để chứa overlay absolute */
+                }
+                .date-lock-overlay {
+                    position: absolute;
+                    inset: 0;
+                    background: rgba(1, 13, 30, 0.45); /* Nền đen mờ 45% */
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 2;
+                }
+                .date-lock-overlay i {
+                    font-size: 1.6rem;
+                    color: rgba(244, 169, 0, 0.95); /* Vàng dạ quang nổi bật */
+                    text-shadow: 0 2px 8px rgba(0,0,0,0.8); /* Đổ bóng để tách nền */
+                }
+                /* Thu nhỏ ổ khóa ở Sidebar cho cân đối */
+                .emc-date-badge .date-lock-overlay i {
+                    font-size: 1.2rem;
+                }
+
 
                 
 
@@ -1242,6 +1304,37 @@
             // =========================================================================
             // 2. CÁC HÀM TIỆN ÍCH ĐỊNH DẠNG (UTILITIES)
             // =========================================================================
+
+            /**
+             * Nhiệm vụ: Kiểm tra mảng Quyền xem có bị khóa không.
+             * Nếu mảng rỗng hoặc chứa PUBLIC -> Không khóa.
+             */
+            function kiemTraLaBiKhoa(mangQuyen) {
+                if (mangQuyen === null || mangQuyen === undefined || mangQuyen.length === 0) {
+                    return false;
+                }
+                for (var i = 0; i < mangQuyen.length; i = i + 1) {
+                    if (mangQuyen[i] === 'PUBLIC') {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            /**
+             * Nhiệm vụ: Sinh ra chuỗi HTML các thẻ Badge xanh lam chứa tên quyền.
+             */
+            function taoChuoiBadgeQuyen(mangQuyen) {
+                if (kiemTraLaBiKhoa(mangQuyen) === false) {
+                    return '';
+                }
+                var html = '';
+                for (var i = 0; i < mangQuyen.length; i = i + 1) {
+                    var tenQuyen = mangQuyen[i].replace('ROLE_', '');
+                    html += '<span class="ecc-role-badge-item">' + lamSachChuoiHTML(tenQuyen) + '</span>';
+                }
+                return '<div class="ecc-role-badges">' + html + '</div>';
+            }
 
             /**
              * Nhiệm vụ: Tẩy sạch mọi thẻ HTML từ Rich-Text Editor để lấy text thuần túy
@@ -1679,12 +1772,21 @@
                     }
                 }
 
+                var laBiKhoaChienDich = kiemTraLaBiKhoa(chienDich.allowedRoleNames);
+                var htmlBadgeQuyen = taoChuoiBadgeQuyen(chienDich.allowedRoleNames);
+                var htmlOKhoaGocAnh = '';
+                if (laBiKhoaChienDich === true) {
+                    htmlOKhoaGocAnh = '<div class="ecc-lock"><i class="fas fa-lock"></i></div>';
+                }
+
                 var html = '';
                 if (laBiHuyToanBo === true) {
                     html += '<div class="event-campaign-card reveal" style="opacity:.75;">';
                     html += '<div class="ecc-header">';
                     html += '<div class="ecc-poster" style="filter:grayscale(.6);"><img src="' + lamSachChuoiHTML(hinhAnh) + '" alt=""><div class="ecc-poster-overlay"></div>';
-                    html += '<div class="ecc-type-badge" style="background:var(--gray-400);"><i class="fas fa-ban fa-xs me-1"></i> Đã hủy</div></div>';
+                    html += '<div class="ecc-type-badge" style="background:var(--gray-400);"><i class="fas fa-ban fa-xs me-1"></i> Đã hủy</div>';
+                    html += htmlBadgeQuyen + htmlOKhoaGocAnh; // CHÈN QUYỀN VÀ KHÓA VÀO ĐÂY
+                    html += '</div>';
                 } else {
                     html += '<div class="event-campaign-card reveal">';
                     html += '<div class="ecc-header">';
@@ -1692,6 +1794,7 @@
                     if (chienDich.eventTypeName !== null && chienDich.eventTypeName !== undefined && chienDich.eventTypeName !== '') {
                         html += '<div class="ecc-type-badge"><i class="fas fa-tag fa-xs me-1"></i>' + lamSachChuoiHTML(chienDich.eventTypeName) + '</div>';
                     }
+                    html += htmlBadgeQuyen + htmlOKhoaGocAnh; // CHÈN QUYỀN VÀ KHÓA VÀO ĐÂY
                     html += '</div>';
                 }
 
@@ -1850,9 +1953,17 @@
 
                 var theLichSu = '<a href="' + linkSuKien + '#lich-su-trang-thai" class="status-history-btn"><i class="fas fa-history fa-xs"></i> Lịch sử trạng thái</a>';
 
+                var htmlBongMoKhoa = '';
+                if (kiemTraLaBiKhoa(phien.allowedRoleNames) === true) {
+                    htmlBongMoKhoa = '<div class="date-lock-overlay" title="Phiên sự kiện có giới hạn truy cập"><i class="fas fa-lock"></i></div>';
+                }
+
                 // 5. LẮP RÁP CHUỖI HTML THEO ĐÚNG LAYOUT CỦA TRANG PUBLIC
                 var html = '<div class="session-item">';
-                html += '<div class="si-date-col"><div class="sid-day">' + themSo0PhiaTruoc(ngayBatDau.getDate()) + '</div><div class="sid-month">Tháng ' + (ngayBatDau.getMonth() + 1) + '</div><div class="sid-year">' + ngayBatDau.getFullYear() + '</div></div>';
+                
+                // Nhúng Bóng Mờ vào ô chứa Ngày tháng
+                html += '<div class="si-date-col">' + htmlBongMoKhoa + '<div class="sid-day">' + themSo0PhiaTruoc(ngayBatDau.getDate()) + '</div><div class="sid-month">Tháng ' + (ngayBatDau.getMonth() + 1) + '</div><div class="sid-year">' + ngayBatDau.getFullYear() + '</div></div>';
+                
                 html += '<div class="si-body"><div class="si-main"><div class="si-location-name">' + lamSachChuoiHTML(tenPhien) + '</div>';
                 html += '<div class="si-time-row"><span class="si-time"><i class="fas fa-clock"></i> ' + gioBatDau + ' – ' + gioKetThuc + '</span>';
 
@@ -2172,8 +2283,13 @@
                             linkDi = '/hoi-thao/' + suKien.eventSlug + '?session=' + suKien.id;
                         }
 
+                        var htmlBongMoKhoaSidebar = '';
+                        if (kiemTraLaBiKhoa(suKien.allowedRoleNames) === true) {
+                            htmlBongMoKhoaSidebar = '<div class="date-lock-overlay" title="Sự kiện nội bộ"><i class="fas fa-lock"></i></div>';
+                        }
+
                         html += '<a href="' + linkDi + '" class="event-mini-card">' +
-                            '<div class="emc-date-badge"><div class="emc-day">' + themSo0PhiaTruoc(thoiGian.getDate()) + '</div><div class="emc-month">' + mangTenThang[thoiGian.getMonth()] + '</div></div>' +
+                            '<div class="emc-date-badge">' + htmlBongMoKhoaSidebar + '<div class="emc-day">' + themSo0PhiaTruoc(thoiGian.getDate()) + '</div><div class="emc-month">' + mangTenThang[thoiGian.getMonth()] + '</div></div>' +
                             '<div class="emc-body"><div class="emc-title">' + lamSachChuoiHTML(tenHienThi) + '</div><div class="emc-meta">' + theBeNho + theSlot + '</div></div></a>';
                     }
                     vungChua.innerHTML = html;

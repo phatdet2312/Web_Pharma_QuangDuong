@@ -39,10 +39,10 @@ public interface IEventService {
      * Mỗi EventResponse chứa list sessions (CtEventResponse).
      */
     Page<EventResponse> timKiemSuKien(String keyword, Integer eventTypeId, String timeFilter,
-                                       Integer locationId, String sortBy, int page, int size);
+                                       Integer locationId, Integer roleId, String sortBy, int page, int size);
 
     /** Lấy chi tiết chiến dịch theo slug */
-    EventResponse layChiTietSuKien(String slug);
+    EventResponse layChiTietSuKien(String slug, Long userId);
 
     /** Lấy buổi sự kiện sắp tới (cho sidebar "Sự kiện sắp diễn ra") */
     List<CtEventResponse> layBuoiSapToi(int limit);
@@ -70,5 +70,5 @@ public interface IEventService {
      * Endpoint: GET /api/events/sessions/{ctEventId}
      * Dùng cho events/detail.html khi load thông tin nhanh facts của một buổi cụ thể.
      */
-    CtEventResponse layChiTietBuoi(Long ctEventId);
+    CtEventResponse layChiTietBuoi(Long ctEventId, Long userId);
 }

@@ -72,11 +72,12 @@ public class ApiAdminEventController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(required = false) Integer locationId,
+            @RequestParam(required = false) Integer roleId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         return ApiResponse.thanhCong(
-                adminEventService.layDanhSachChienDich(keyword, type, startDate, endDate, locationId, page, size),
+                adminEventService.layDanhSachChienDich(keyword, type, startDate, endDate, locationId, roleId, page, size),
                 "Lấy danh sách thành công");
     }
 

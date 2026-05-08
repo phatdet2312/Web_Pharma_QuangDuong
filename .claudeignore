@@ -55,9 +55,17 @@ mvnw.cmd
 gradlew
 gradlew.bat
 
+# READMEs (hướng dẫn cho người dùng, agent không cần đọc)
+.ai-memory/README.md
+.claude/rules/README.md
+.claude/skills/README.md
+.claude/hooks/README.md
+.claude/agents/README.md
+docs/README.md
+
 # Deep knowledge (agent đọc có chủ đích, không quét)
 .ai-memory/03_deep_knowledge/
-
+ 
 # Test data
 src/test/resources/fixtures/
 __snapshots__/

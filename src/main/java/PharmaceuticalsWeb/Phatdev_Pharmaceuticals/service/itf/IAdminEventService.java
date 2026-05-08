@@ -35,7 +35,7 @@ public interface IAdminEventService {
     Page<EventResponse> layDanhSachChienDich(
             String keyword, Integer eventTypeId, 
             LocalDateTime startDate, LocalDateTime endDate, 
-            Integer locationId, int page, int size);
+            Integer locationId, Integer roleId, int page, int size);
 
     /** Khởi tạo một Chiến dịch Marketing y khoa */
     EventResponse taoChienDich(EventRequest request);

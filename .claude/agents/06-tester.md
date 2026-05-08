@@ -21,8 +21,8 @@ Khi được gọi:
 3. Chạy test và báo cáo kết quả
 
 Nguyên tắc:
-- Dùng JUnit 5 + Mockito (Java) hoặc framework phù hợp
-- Mỗi test method test DUY NHẤT 1 behavior
-- Test name rõ ràng: `should_returnUser_when_validId`
+- Dùng test framework của dự án (xem "Test Framework & Pattern" trong `.ai-memory/01_system_architecture.md`)
+- Mỗi test method/function test DUY NHẤT 1 behavior
+- Test name rõ ràng, mô tả expected behavior
 - Mock external dependency, KHÔNG test implementation detail
 - Trả lời bằng tiếng Việt

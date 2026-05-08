@@ -69,4 +69,23 @@ public class CtEventResponse {
 
     /** Bài viết liên quan của buổi sự kiện (CT_POST_EVENTS) */
     private List<PostResponse> relatedPosts;
+
+    /** Danh sách Tên quyền (dành cho việc vẽ Badge nhỏ ở ngoài danh sách) */
+    private List<String> allowedRoleNames;
+
+    /** Cờ sinh tử: Quyết định mở khóa hay dựng Paywall */
+    private boolean hasFullAccess;
+
+    /** Danh sách Chi tiết quyền yêu cầu (dùng để vẽ khung Paywall bên trong detail) */
+    private List<RoleInfo> requiredRoles;
+
+    /** Lớp nội bộ mô tả thông tin quyền (Tái sử dụng cấu trúc của Post) */
+    @Getter 
+    @Setter 
+    @NoArgsConstructor 
+    @AllArgsConstructor
+    public static class RoleInfo {
+        private String roleName;
+        private String description;
+    }
 }

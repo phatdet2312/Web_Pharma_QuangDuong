@@ -9,5 +9,5 @@
 |------------|----------|--------------------------|----------------------------|
 | YYYY-MM-DD | INIT     | Khởi tạo AI Memory Bank  | .ai-memory/*               |
  
-<!-- Type: INIT | FEAT | FIX | REFACTOR | CONFIG | DOCS -->
+<!-- Type: INIT | FEAT | FIX | REFACTOR | CONFIG | DOCS | DRIFT | ROLLBACK | LEARN -->
  

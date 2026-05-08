@@ -46,6 +46,9 @@ public class CtEventRequest {
 
     private String seoDescription;
 
+    /** Danh sách ID các Nhóm quyền (USER_ROLES) được phép đăng ký/xem buổi này */
+    private List<Integer> roleIds;
+
     /** Danh sách ID tag gán cho buổi */
     private List<Long> tagIds;
 }

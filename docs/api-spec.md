@@ -36,13 +36,13 @@ Production:  https://api.example.com/api/v1
  
 ## Error Codes
 <!-- Liệt kê tất cả error code của dự án -->
-| Code                    | HTTP Status | Mô tả                    |
-|-------------------------|-------------|--------------------------|
-| RESOURCE_NOT_FOUND      | 404         | Không tìm thấy tài nguyên |
-| VALIDATION_ERROR        | 400         | Dữ liệu input không hợp lệ|
-| UNAUTHORIZED            | 401         | Chưa đăng nhập            |
+| Code                    | HTTP Status | Mô tả                      |
+|-------------------------|-------------|----------------------------|
+| RESOURCE_NOT_FOUND      | 404         | Không tìm thấy tài nguyên  |
+| VALIDATION_ERROR        | 400         | Dữ liệu input không hợp lệ |
+| UNAUTHORIZED            | 401         | Chưa đăng nhập             |
 | FORBIDDEN               | 403         | Không có quyền             |
-| INTERNAL_ERROR          | 500         | Lỗi server                |
+| INTERNAL_ERROR          | 500         | Lỗi server                 |
  
 ## Endpoints
 <!-- Agent đọc phần này khi cần biết chi tiết request/response -->

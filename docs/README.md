@@ -41,11 +41,11 @@ Khi developer điền xong nội dung thật cho 1 file:
 3. Cập nhật `Last updated` thành ngày hiện tại
 ## So sánh với .ai-memory/
  
-| Đặc điểm         | docs/                   | .ai-memory/              |
-|-------------------|-------------------------|--------------------------|
-| Ai viết?          | Developer               | Agent tự tạo/cập nhật    |
-| Ai sửa?           | Developer               | Agent tự đồng bộ         |
-| Load khi nào?     | On-demand (@docs/...)   | Mỗi phiên theo protocol  |
-| Nội dung?         | Chi tiết, đầy đủ        | Tóm tắt, ngắn gọn       |
-| Lỗi thời?         | Developer chịu trách nhiệm | Agent tự phát hiện     |
+| Đặc điểm          | docs/                      | .ai-memory/              |
+|-------------------|----------------------------|--------------------------|
+| Ai viết?          | Developer                  | Agent tự tạo/cập nhật    |
+| Ai sửa?           | Developer                  | Agent tự đồng bộ         |
+| Load khi nào?     | On-demand (@docs/...)      | Mỗi phiên theo protocol  |
+| Nội dung?         | Chi tiết, đầy đủ           | Tóm tắt, ngắn gọn        |
+| Lỗi thời?         | Developer chịu trách nhiệm | Agent tự phát hiện       |
  

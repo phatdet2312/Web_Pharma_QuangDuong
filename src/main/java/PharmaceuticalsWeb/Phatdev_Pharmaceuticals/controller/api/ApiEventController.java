@@ -86,18 +86,20 @@ public class ApiEventController {
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) String time,
             @RequestParam(required = false) Integer locationId,
+            @RequestParam(required = false) Integer roleId,
             @RequestParam(defaultValue = "newest") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size) {
 
-        Page<EventResponse> result = eventService.timKiemSuKien(keyword, type, time, locationId, sort, page, size);
+        Page<EventResponse> result = eventService.timKiemSuKien(keyword, type, time, locationId, roleId, sort, page, size);
         return ApiResponse.thanhCong(result, "Lấy danh sách sự kiện thành công");
     }
 
     /** Chi tiết chiến dịch theo slug */
     @GetMapping("/{slug}")
-    public ApiResponse<EventResponse> layChiTiet(@PathVariable String slug) {
-        return ApiResponse.thanhCong(eventService.layChiTietSuKien(slug), "Lấy chi tiết sự kiện thành công");
+    public ApiResponse<EventResponse> layChiTiet(@PathVariable String slug, Authentication authentication) {
+        Long userId = layUserIdTuAuthentication(authentication);
+        return ApiResponse.thanhCong(eventService.layChiTietSuKien(slug, userId), "Lấy chi tiết sự kiện thành công");
     }
 
     /** Buổi sự kiện sắp tới (sidebar "Upcoming events") */
@@ -165,8 +167,12 @@ public class ApiEventController {
 
     /** G1: Chi tiết một buổi sự kiện (session detail card trên events/detail.html) */
     @GetMapping("/sessions/{ctEventId}")
-    public ApiResponse<CtEventResponse> layChiTietBuoi(@PathVariable Long ctEventId) {
-        return ApiResponse.thanhCong(eventService.layChiTietBuoi(ctEventId), "Lấy chi tiết buổi thành công");
+    public ApiResponse<CtEventResponse> layChiTietBuoi(
+            @PathVariable Long ctEventId, 
+            Authentication authentication) {
+        
+        Long userId = layUserIdTuAuthentication(authentication);
+        return ApiResponse.thanhCong(eventService.layChiTietBuoi(ctEventId, userId), "Lấy chi tiết buổi thành công");
     }
 
     /** Lấy bình luận của buổi sự kiện */

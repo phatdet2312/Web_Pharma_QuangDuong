@@ -12,16 +12,16 @@
  
 ### users
 <!-- Bảng người dùng -->
-| Column       | Type         | Nullable | Default        | Ghi chú                |
-|-------------|-------------|----------|----------------|------------------------|
-| id           | BIGINT       | NO       | AUTO_INCREMENT | PK                     |
-| email        | VARCHAR(255) | NO       |                | UNIQUE                 |
-| password     | VARCHAR(255) | NO       |                | BCrypt hash            |
-| full_name    | VARCHAR(100) | NO       |                |                        |
-| role         | ENUM         | NO       | 'USER'         | USER, ADMIN, MODERATOR |
-| is_active    | BOOLEAN      | NO       | true           |                        |
-| created_at   | TIMESTAMP    | NO       | CURRENT_TIMESTAMP |                     |
-| updated_at   | TIMESTAMP    | NO       | CURRENT_TIMESTAMP | ON UPDATE            |
+| Column       | Type         | Nullable | Default           | Ghi chú                |
+|--------------|--------------|----------|-------------------|------------------------|
+| id           | BIGINT       | NO       | AUTO_INCREMENT    | PK                     |
+| email        | VARCHAR(255) | NO       |                   | UNIQUE                 |
+| password     | VARCHAR(255) | NO       |                   | BCrypt hash            |
+| full_name    | VARCHAR(100) | NO       |                   |                        |
+| role         | ENUM         | NO       | 'USER'            | USER, ADMIN, MODERATOR |
+| is_active    | BOOLEAN      | NO       | true              |                        |
+| created_at   | TIMESTAMP    | NO       | CURRENT_TIMESTAMP |                        |
+| updated_at   | TIMESTAMP    | NO       | CURRENT_TIMESTAMP | ON UPDATE              |
  
 **Indexes:** email (UNIQUE), role, is_active, created_at
 **Relations:** 1-N → orders, 1-N → addresses
@@ -38,6 +38,6 @@
 - ENUM lưu dạng VARCHAR, validate ở application layer
 ## Migration History
 <!-- Liệt kê các migration quan trọng -->
-| Version | Ngày       | Mô tả                          |
+| Version | Ngày       | Mô tả                            |
 |---------|------------|----------------------------------|
 | V1      | YYYY-MM-DD | Initial schema                   |

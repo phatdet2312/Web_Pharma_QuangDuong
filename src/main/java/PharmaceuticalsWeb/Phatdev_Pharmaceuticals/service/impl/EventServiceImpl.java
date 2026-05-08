@@ -8,6 +8,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.*;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.*;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -46,6 +47,8 @@ public class EventServiceImpl implements IEventService {
     private final ICtPostEventRepository ctPostEventRepository;
     private final IUserRepository userRepository;
     private final ILocationRepository locationRepository;
+    private final ICtEventSessionRoleRepository ctEventSessionRoleRepository;
+    private final IUserService userService;
 
     /**
      * Báo cáo sơ bộ bức tranh toàn cảnh về sự kiện để phục vụ Hero Stats trên
@@ -189,7 +192,7 @@ public class EventServiceImpl implements IEventService {
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEvent ctEvent = (CtEvent) arr[i];
             // Tái sử dụng cỗ máy mapping cực xịn của ngài
-            result.add(xayDungCtEventResponse(ctEvent));
+            result.add(xayDungCtEventResponse(ctEvent, null));
         }
         return result;
     }
@@ -198,7 +201,7 @@ public class EventServiceImpl implements IEventService {
      * Tìm kiếm và phân trang Chiến dịch Marketing hướng người dùng cuối.
      */
     @Override
-    public Page<EventResponse> timKiemSuKien(String keyword, Integer type, String time, Integer locationId, String sort,
+    public Page<EventResponse> timKiemSuKien(String keyword, Integer type, String time, Integer locationId, Integer roleId, String sort,
             int page, int size) {
 
         // 1. Cấu hình Sắp xếp (Sort)
@@ -257,7 +260,7 @@ public class EventServiceImpl implements IEventService {
         }
 
         Page<Event> eventsPage = eventRepository.timKiemChienDichPublic(kw, type, startDate, endDate, locationId,
-                pageable);
+                roleId, pageable);
 
         // 3. Đóng gói DTO (Sử dụng Object[] thay vì Stream API)
         List<Event> eventList = eventsPage.getContent();
@@ -266,7 +269,7 @@ public class EventServiceImpl implements IEventService {
         Object[] arr = eventList.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             Event e = (Event) arr[i];
-            responseList.add(xayDungEventResponse(e)); // Giả định bạn đã có hàm helper này
+            responseList.add(xayDungEventResponse(e, null)); // Giả định bạn đã có hàm helper này
         }
 
         return new PageImpl<>(responseList, pageable, eventsPage.getTotalElements());
@@ -277,12 +280,12 @@ public class EventServiceImpl implements IEventService {
      * tĩnh (Slug).
      */
     @Override
-    public EventResponse layChiTietSuKien(String slug) {
+    public EventResponse layChiTietSuKien(String slug, Long userId) {
         Optional<Event> optEvent = eventRepository.findBySlug(slug);
         if (optEvent.isPresent() == false) {
             throw new AppException(404, "Chúng tôi không tìm thấy thông tin chiến dịch sự kiện này.");
         }
-        return xayDungEventResponse(optEvent.get());
+       return xayDungEventResponse(optEvent.get(), userId);
     }
 
     /**
@@ -290,12 +293,12 @@ public class EventServiceImpl implements IEventService {
      * Tái sử dụng hàm xayDungCtEventResponse đã có sẵn.
      */
     @Override
-    public CtEventResponse layChiTietBuoi(Long ctEventId) {
+    public CtEventResponse layChiTietBuoi(Long ctEventId, Long userId) {
         Optional<CtEvent> optCtEvent = ctEventRepository.findById(ctEventId);
         if (optCtEvent.isPresent() == false) {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện được yêu cầu.");
         }
-        return xayDungCtEventResponse(optCtEvent.get());
+        return xayDungCtEventResponse(optCtEvent.get(), userId);
     }
 
     /**
@@ -317,7 +320,7 @@ public class EventServiceImpl implements IEventService {
                 break;
             }
             CtEvent ctEvent = (CtEvent) arr[i];
-            result.add(xayDungCtEventResponse(ctEvent));
+            result.add(xayDungCtEventResponse(ctEvent, null));
             count = count + 1;
         }
         return result;
@@ -594,7 +597,7 @@ public class EventServiceImpl implements IEventService {
     /**
      * Gom nhóm dữ liệu của một Chiến dịch, quét toàn bộ Phiên con.
      */
-    private EventResponse xayDungEventResponse(Event event) {
+    private EventResponse xayDungEventResponse(Event event, Long userId) {
         EventResponse resp = new EventResponse();
         resp.setId(event.getId());
         resp.setTitle(event.getTitle());
@@ -615,10 +618,33 @@ public class EventServiceImpl implements IEventService {
         Object[] arr = sessions.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEvent ce = (CtEvent) arr[i];
-            sessionResponses.add(xayDungCtEventResponse(ce));
+            sessionResponses.add(xayDungCtEventResponse(ce, userId));
 
         }
         resp.setSessions(sessionResponses);
+
+        List<String> gomQuyenChienDich = new ArrayList<>();
+        Object[] sessionRespArr = sessionResponses.toArray();
+        for (int i = 0; i < sessionRespArr.length; i++) {
+            CtEventResponse ss = (CtEventResponse) sessionRespArr[i];
+            if (ss.getAllowedRoleNames() != null) {
+                Object[] rolesArr = ss.getAllowedRoleNames().toArray();
+                for (int j = 0; j < rolesArr.length; j++) {
+                    String rName = rolesArr[j].toString();
+                    boolean daCo = false;
+                    for (int k = 0; k < gomQuyenChienDich.size(); k++) {
+                        if (gomQuyenChienDich.get(k).equals(rName)) {
+                            daCo = true;
+                            break;
+                        }
+                    }
+                    if (!daCo) {
+                        gomQuyenChienDich.add(rName);
+                    }
+                }
+            }
+        }
+        resp.setAllowedRoleNames(gomQuyenChienDich);
 
         return resp;
     }
@@ -627,7 +653,7 @@ public class EventServiceImpl implements IEventService {
      * Bóc tách Phiên sự kiện, phân tích Slot trống và kết nối Dữ liệu Y khoa đính
      * kèm.
      */
-    private CtEventResponse xayDungCtEventResponse(CtEvent ctEvent) {
+    private CtEventResponse xayDungCtEventResponse(CtEvent ctEvent, Long userId) {
         CtEventResponse resp = new CtEventResponse();
 
         // 1. Ánh xạ các thông tin định danh và thời gian cơ bản
@@ -639,6 +665,62 @@ public class EventServiceImpl implements IEventService {
         resp.setTotalSlots(ctEvent.getTotalSlots());
         resp.setSeoTitle(ctEvent.getSeoTitle());
         resp.setSeoDescription(ctEvent.getSeoDescription());
+
+        // =========================================================================
+        // BỘ LỌC KIỂM DUYỆT TRUY CẬP DỰA TRÊN ROLE_LEVEL (PAYWALL ĐỘNG)
+        // =========================================================================
+        boolean hasAccess = false;
+        int userLevel = 999;
+
+        if (userId != null) {
+            User u = userRepository.findById(userId).orElse(null);
+            if (u != null) {
+                userLevel = userService.layCapBacQuyenLucCaoNhat(u);
+            }
+        }
+
+        List<UserRole> cacQuyenYeuCau = ctEventSessionRoleRepository.layDanhSachQuyenCuaBuoi(ctEvent.getId());
+        List<CtEventResponse.RoleInfo> requiredRolesInfo = new ArrayList<>();
+        List<String> allowedRoleNames = new ArrayList<>();
+
+        if (cacQuyenYeuCau == null || cacQuyenYeuCau.isEmpty() == true) {
+            hasAccess = true;
+        } else {
+            Object[] roleArr = cacQuyenYeuCau.toArray();
+            for (int i = 0; i < roleArr.length; i = i + 1) {
+                UserRole role = (UserRole) roleArr[i];
+
+                CtEventResponse.RoleInfo rInfo = new CtEventResponse.RoleInfo();
+                rInfo.setRoleName(role.getRoleName());
+                rInfo.setDescription(role.getDescription());
+                requiredRolesInfo.add(rInfo);
+
+                allowedRoleNames.add(role.getRoleName());
+
+                if (userLevel <= role.getRoleLevel()) {
+                    hasAccess = true;
+                }
+            }
+        }
+
+        resp.setAllowedRoleNames(allowedRoleNames);
+
+        // Quyết định che giấu nội dung nếu không đủ thẩm quyền
+        if (hasAccess == true) {
+            resp.setHasFullAccess(true);
+            resp.setRequiredRoles(null);
+        } else {
+            // CHE DẤU DỮ LIỆU NHẠY CẢM TẠI ĐÂY (CHUẨN MÙ)
+            resp.setContent(null);
+            // Nếu muốn che link Zoom/Meet của sự kiện khóa, bật dòng dưới:
+            if (ctEvent.getLocation() != null && ctEvent.getLocation().isOnline()) {
+                resp.setLocationAddress(null);
+            }
+
+            resp.setHasFullAccess(false);
+            resp.setRequiredRoles(requiredRolesInfo);
+        }
+        // =========================================================================
 
         // 2. Phân giải thông tin Chiến dịch cha (EVENTS)
         if (ctEvent.getEvent() != null) {
@@ -737,7 +819,7 @@ public class EventServiceImpl implements IEventService {
                 pr.setSlug(p.getSlug());
                 pr.setSummary(p.getSummary());
                 pr.setThumbnailUrl(p.getThumbnailUrl());
-                //pr.setAccessLevel(p.getAccessLevel());
+                // pr.setAccessLevel(p.getAccessLevel());
 
                 if (p.getCategory() != null) {
                     pr.setCategoryName(p.getCategory().getName());
