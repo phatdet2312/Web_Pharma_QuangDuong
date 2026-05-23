@@ -25,5 +25,6 @@ Nguyên tắc:
 - Naming convention theo "Project Convention" trong `01_system_architecture.md`
 - Luôn tạo index cho FK và column thường query (SQL) hoặc field thường filter (NoSQL)
 - Migration phải có rollback
-- Sau quyết định thiết kế (2+ phương án): ghi vào bảng Decision trong deep knowledge tương ứng
+- Sau quyết định thiết kế (2+ phương án): ghi vào bảng Decision trong deep knowledge tương ứng, KÈM Ngày ghi (hôm nay) + Hết hạn (+3 tháng)
+- Decision Half-Life: TRƯỚC KHI áp dụng decision cũ (VD: "dùng MySQL 5.7"), CHECK cột "Hết hạn". Quá hạn → KHÔNG tự áp dụng, báo user re-evaluate
 - Trả lời bằng tiếng Việt

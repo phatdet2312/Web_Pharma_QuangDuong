@@ -731,11 +731,18 @@
                  HỆ THỐNG HIỂN THỊ PAYWALL 
                 ============================================================ */
                 .badge-gated {
-                    display: inline-flex; align-items: center; gap: 4px;
-                    padding: 3px 12px; border-radius: 50px;
-                    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 3px 12px;
+                    border-radius: 50px;
+                    font-size: .68rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
                     letter-spacing: 1px;
-                    background: rgba(220,38,38,.15); color: #ef4444; border: 1px solid rgba(220,38,38,.3);
+                    background: rgba(220, 38, 38, .15);
+                    color: #ef4444;
+                    border: 1px solid rgba(220, 38, 38, .3);
                 }
 
                 .session-paywall {
@@ -755,27 +762,52 @@
                 }
 
                 .paywall-lock {
-                    width: 56px; height: 56px; background: var(--gold-500);
-                    border-radius: var(--r-lg); display: flex; align-items: center; justify-content: center;
-                    font-size: 1.3rem; color: var(--ink-800); margin: 0 auto 16px;
+                    width: 56px;
+                    height: 56px;
+                    background: var(--gold-500);
+                    border-radius: var(--r-lg);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.3rem;
+                    color: var(--ink-800);
+                    margin: 0 auto 16px;
                 }
 
                 .paywall-title {
-                    font-size: 1.2rem; font-weight: 800; color: white; margin-bottom: 8px;
+                    font-size: 1.2rem;
+                    font-weight: 800;
+                    color: white;
+                    margin-bottom: 8px;
                 }
 
                 .paywall-desc {
-                    font-size: .88rem; color: rgba(255, 255, 255, .6); line-height: 1.6; margin-bottom: 24px;
+                    font-size: .88rem;
+                    color: rgba(255, 255, 255, .6);
+                    line-height: 1.6;
+                    margin-bottom: 24px;
                 }
 
                 .paywall-roles {
-                    display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    margin-bottom: 24px;
                 }
 
                 .pr-badge {
-                    display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px;
-                    border-radius: 50px; font-size: .75rem; font-weight: 600;
-                    background: rgba(0, 152, 152, .15); color: var(--teal-300); border: 1px solid rgba(0, 184, 184, .2);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 4px 12px;
+                    border-radius: 50px;
+                    font-size: .75rem;
+                    font-weight: 600;
+                    background: rgba(0, 152, 152, .15);
+                    color: var(--teal-300);
+                    border: 1px solid rgba(0, 184, 184, .2);
                 }
 
                 @media (max-width: 576px) {
@@ -860,7 +892,7 @@
                                 <div class="emc-section-body" style="position: relative;">
                                     <div id="session-description" class="prose"
                                         style="font-size:.9rem;line-height:1.8;"></div>
-                                        
+
                                     <!-- Bức tường Paywall (Mặc định ẩn) -->
                                     <div id="session-paywall-container" style="display: none;">
                                         <div class="session-paywall">
@@ -868,15 +900,18 @@
                                                 <div class="paywall-lock"><i class="fas fa-lock"></i></div>
                                                 <div class="paywall-title">Buổi sự kiện có giới hạn truy cập</div>
                                                 <div class="paywall-desc">
-                                                    Nội dung chuyên sâu, liên kết tham dự trực tuyến (Meeting) và tài liệu đính kèm của phiên này đã được bảo mật.<br>
+                                                    Nội dung chuyên sâu, liên kết tham dự trực tuyến (Meeting) và tài
+                                                    liệu đính kèm của phiên này đã được bảo mật.<br>
                                                     Vui lòng định danh chức vụ tương ứng để mở khóa toàn bộ thông tin.
                                                 </div>
                                                 <div class="paywall-roles" id="dynamic-paywall-roles">
                                                     <!-- Javascript sẽ vẽ Badge chức vụ vào đây -->
                                                 </div>
                                                 <div class="d-flex gap-2 justify-content-center flex-wrap">
-                                                    <a href="/login" class="btn-primary-pharma"><i class="fas fa-sign-in-alt fa-sm"></i> Đăng nhập ngay</a>
-                                                    <a href="/register" class="btn-gold-pharma"><i class="fas fa-user-plus fa-sm"></i> Đăng ký miễn phí</a>
+                                                    <a href="/login" class="btn-primary-pharma"><i
+                                                            class="fas fa-sign-in-alt fa-sm"></i> Đăng nhập ngay</a>
+                                                    <a href="/register" class="btn-gold-pharma"><i
+                                                            class="fas fa-user-plus fa-sm"></i> Đăng ký miễn phí</a>
                                                 </div>
                                             </div>
                                         </div>
@@ -1337,16 +1372,16 @@
                 // Ta vẫn hiện Badge màu xanh lá để Admin biết đây là phiên Nội bộ đã được bẻ khóa
                 theHTMLBadgesKhoa += '<span class="badge-gated ms-2" style="background:rgba(22,163,74,.15); color:var(--success); border-color:rgba(22,163,74,.3);"><i class="fas fa-unlock fa-xs"></i> NỘI BỘ (ĐÃ MỞ KHÓA)</span>';
             }
-            
+
             // Tìm vùng chứa Top Badges và nhúng thêm Badge Khóa vào
             var vungTopBadges = document.querySelector('.edh-top-badges');
-            if(vungTopBadges !== null && theHTMLBadgesKhoa !== '') {
+            if (vungTopBadges !== null && theHTMLBadgesKhoa !== '') {
                 // Kiểm tra xem đã nhúng chưa để tránh bị duplicate khi chuyển tab Session
                 var daCoKhoa = vungTopBadges.querySelector('.badge-gated');
-                if(daCoKhoa !== null) {
+                if (daCoKhoa !== null) {
                     // Xóa các badge khóa cũ đi trước khi nhúng mới
                     var cacBadgeCu = vungTopBadges.querySelectorAll('.badge-gated');
-                    for(var c = 0; c < cacBadgeCu.length; c++) { cacBadgeCu[c].remove(); }
+                    for (var c = 0; c < cacBadgeCu.length; c++) { cacBadgeCu[c].remove(); }
                 }
                 vungTopBadges.insertAdjacentHTML('beforeend', theHTMLBadgesKhoa);
             }
@@ -1375,6 +1410,17 @@
             } else if (status === 'FULL') {
                 el.className = 'edh-status-badge full';
                 el.innerHTML = '<i class="fas fa-ban fa-xs"></i> Hết chỗ';
+            } else if (status === 'LOCKED') {
+                el.style.background = 'rgba(245,158,11,.16)';
+                el.style.color = 'var(--gold-600)';
+                el.style.border = '1px solid rgba(245,158,11,.35)';
+                var lockedStatusText = 'Dành riêng';
+                if (buoiHienTai !== null && buoiHienTai !== undefined
+                        && buoiHienTai.displayStatus !== null && buoiHienTai.displayStatus !== undefined
+                        && buoiHienTai.displayStatus !== '') {
+                    lockedStatusText = buoiHienTai.displayStatus;
+                }
+                el.innerHTML = '<i class="fas fa-lock fa-xs"></i> ' + esc(lockedStatusText);
             } else if (status === 'CANCELLED') {
                 el.style.background = 'rgba(220,38,38,.2)';
                 el.style.color = '#f87171';
@@ -1395,12 +1441,15 @@
 
         function renderQuickFacts(s) {
             var start = new Date(s.startTime);
-            var end = s.endTime ? new Date(s.endTime) : null;
+            var end = null;
+            if (s.endTime) {
+                end = new Date(s.endTime);
+            }
 
             document.getElementById('eqf-date').innerHTML = '<i class="fas fa-calendar-alt"></i> ' + dinhDangNgayDayDu(s.startTime);
 
             var thoiGian = pad2(start.getHours()) + ':' + pad2(start.getMinutes());
-            if (end) {
+            if (end !== null) {
                 thoiGian += ' – ' + pad2(end.getHours()) + ':' + pad2(end.getMinutes());
                 var phut = Math.round((end.getTime() - start.getTime()) / 60000);
                 if (phut > 0) {
@@ -1409,11 +1458,24 @@
             }
             document.getElementById('eqf-time').innerHTML = '<i class="fas fa-clock"></i> ' + esc(thoiGian);
 
-            var diaIcon = s.online ? 'fa-video' : 'fa-map-marker-alt';
-            var diaText = s.locationName ? s.locationName : (s.online ? 'Trực tuyến' : 'Chưa xác định');
+            var diaIcon = 'fa-map-marker-alt';
+            if (s.online === true) {
+                diaIcon = 'fa-video';
+            }
+
+            var diaText = 'Chưa xác định';
+            if (s.locationName) {
+                diaText = s.locationName;
+            } else if (s.online === true) {
+                diaText = 'Trực tuyến';
+            }
             document.getElementById('eqf-location').innerHTML = '<i class="fas ' + diaIcon + '"></i> ' + esc(diaText);
 
-            var regCount = s.registeredCount || 0;
+            // [MARKETING ENGINE] - KHÔNG CHẶN QUYỀN NỮA. HIỂN THỊ THẲNG SỐ VÉ.
+            var regCount = 0;
+            if (s.registeredCount) {
+                regCount = s.registeredCount;
+            }
             var regText = dinhDangSo(regCount);
             if (s.totalSlots > 0) {
                 regText += ' / ' + dinhDangSo(s.totalSlots);
@@ -1421,8 +1483,12 @@
             document.getElementById('eqf-registered').innerHTML = '<i class="fas fa-users"></i> ' + regText;
 
             var conEl = document.getElementById('eqf-available');
+            conEl.style.color = '';
             if (s.totalSlots > 0) {
-                var available = s.availableSlots || 0;
+                var available = 0;
+                if (s.availableSlots) {
+                    available = s.availableSlots;
+                }
                 conEl.innerHTML = '<i class="fas fa-ticket-alt"></i> ' + dinhDangSo(available) + ' slot';
                 if (available <= 10) {
                     conEl.style.color = 'var(--danger)';
@@ -1493,14 +1559,29 @@
 
                 theNoiDung.innerHTML = '<div style="filter: blur(4px); opacity: 0.6; user-select: none; pointer-events: none;">' +
                     '<p>' + lamSachChuoiHTML(hienThiCheMo) + '</p>' +
-                    '<p>*** Khu vực nội dung đã bị mã hóa. Cần thẩm định quyền hạn. ***</p></div>';
+                    '<p><i class="fas fa-lock"></i> Nội dung chuyên sâu đã được ẩn cho đến khi tài khoản đủ quyền.</p></div>';
+
+                var paywallTitle = theBucTuong.querySelector('.paywall-title');
+                var paywallDesc = theBucTuong.querySelector('.paywall-desc');
+                if (paywallTitle !== null) {
+                    paywallTitle.textContent = buoiHienTai.accessNoticeTitle || 'Phiên chuyên môn giới hạn';
+                }
+                if (paywallDesc !== null) {
+                    paywallDesc.textContent = buoiHienTai.accessNoticeMessage || 'Một số thông tin chi tiết chỉ mở cho tài khoản có quyền phù hợp.';
+                }
 
                 // Vẽ các thẻ chức vụ yêu cầu (Description từ DB gửi lên)
                 var theHTMLRoles = '';
                 if (buoiHienTai.requiredRoles !== null && buoiHienTai.requiredRoles !== undefined && buoiHienTai.requiredRoles.length > 0) {
                     for (var r = 0; r < buoiHienTai.requiredRoles.length; r = r + 1) {
                         var rInfo = buoiHienTai.requiredRoles[r];
-                        var tenHienThi = rInfo.description ? rInfo.description : rInfo.roleName;
+
+                        // Dùng if-else nguyên thủy
+                        var tenHienThi = rInfo.roleName;
+                        if (rInfo.description !== null && rInfo.description !== undefined && rInfo.description !== '') {
+                            tenHienThi = rInfo.description;
+                        }
+
                         theHTMLRoles += '<span class="pr-badge"><i class="fas fa-shield-alt fa-xs"></i> ' + lamSachChuoiHTML(tenHienThi) + '</span>';
                     }
                 } else {
@@ -1510,7 +1591,7 @@
                 if (theRolesBox !== null) {
                     theRolesBox.innerHTML = theHTMLRoles;
                 }
-                
+
                 theBucTuong.style.display = 'block';
             }
         }
@@ -1518,27 +1599,56 @@
         function renderViTri() {
             var s = buoiHienTai;
             var container = document.getElementById('location-container');
+
+            // Tách bạch các biến, KHÔNG dùng toán tử 3 ngôi
+            var iconTrungTam = 'fa-lock';
+            var mauIcon = 'var(--gold-600)';
+            var mauNenIcon = 'rgba(244,169,0,.15)';
+            var theBongMo = '';
+            var mauChuDiaDiem = 'var(--gold-600);font-weight:600;';
+            var iconGocMap = 'fa-lock';
+
+            if (s.hasFullAccess === true) {
+                mauIcon = 'var(--teal-600)';
+                mauNenIcon = 'var(--teal-100)';
+                mauChuDiaDiem = 'var(--gray-500)';
+                if (s.online === true) {
+                    iconTrungTam = 'fa-video';
+                    iconGocMap = 'fa-video';
+                } else {
+                    iconTrungTam = 'fa-map-marker-alt';
+                    iconGocMap = 'fa-map-marker-alt';
+                }
+            } else {
+                theBongMo = 'background:var(--gold-500);';
+            }
+
+            var chuoiDiaChi = 'Link tham gia sẽ được gửi qua email sau khi xác nhận đăng ký.';
+            if (s.locationAddress) {
+                chuoiDiaChi = esc(s.locationAddress);
+            }
+
             var html = '';
-            if (s.online) {
+            if (s.online === true) {
                 html += '<div class="location-map" style="background:linear-gradient(135deg,var(--ink-800),var(--ink-700));justify-content:center;">';
-                html += '<i class="fas fa-video" style="font-size:3rem;color:rgba(255,255,255,.2);"></i>';
+                html += '<i class="fas ' + iconGocMap + '" style="font-size:3rem;color:rgba(255,255,255,.2);"></i>';
                 html += '</div>';
                 html += '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--gray-50);border-radius:var(--r-lg);border:1px solid var(--gray-200);">';
-                html += '<div style="width:36px;height:36px;background:var(--teal-100);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--teal-600);flex-shrink:0;"><i class="fas fa-video"></i></div>';
+                html += '<div style="width:36px;height:36px;background:' + mauNenIcon + ';border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:' + mauIcon + ';flex-shrink:0;"><i class="fas ' + iconTrungTam + '"></i></div>';
                 html += '<div>';
                 html += '<div style="font-size:.9rem;font-weight:700;color:var(--ink-800);margin-bottom:3px;">' + esc(s.locationName || 'Trực tuyến') + '</div>';
-                html += '<div style="font-size:.82rem;color:var(--gray-500);">' + (s.locationAddress ? esc(s.locationAddress) : 'Link tham gia sẽ được gửi qua email sau khi xác nhận đăng ký.') + '</div>';
+                html += '<div style="font-size:.82rem;color:' + mauChuDiaDiem + '">' + chuoiDiaChi + '</div>';
                 html += '</div></div>';
             } else {
                 html += '<div class="location-map">';
-                html += '<div class="location-map-overlay"><div class="location-pin"><i class="fas fa-map-marker-alt"></i></div></div>';
+                html += '<div class="location-map-overlay"><div class="location-pin" style="' + theBongMo + '"><i class="fas ' + iconGocMap + '"></i></div></div>';
                 html += '</div>';
                 html += '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--gray-50);border-radius:var(--r-lg);border:1px solid var(--gray-200);">';
-                html += '<div style="width:36px;height:36px;background:var(--teal-100);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--teal-600);flex-shrink:0;"><i class="fas fa-map-marker-alt"></i></div>';
+                html += '<div style="width:36px;height:36px;background:' + mauNenIcon + ';border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:' + mauIcon + ';flex-shrink:0;"><i class="fas ' + iconTrungTam + '"></i></div>';
                 html += '<div>';
                 html += '<div style="font-size:.9rem;font-weight:700;color:var(--ink-800);margin-bottom:3px;">' + esc(s.locationName || 'Hội trường') + '</div>';
                 if (s.locationAddress) {
-                    html += '<div style="font-size:.82rem;color:var(--gray-500);">' + esc(s.locationAddress) + '</div>';
+                    html += '<div style="font-size:.82rem;color:' + mauChuDiaDiem + '">' + chuoiDiaChi + '</div>';
                 }
                 html += '</div></div>';
             }
@@ -1634,7 +1744,11 @@
                 html += '<td style="padding:12px 18px;">';
                 html += '<div style="font-size:.87rem;font-weight:600;color:var(--ink-800);' + (a.description ? 'margin-bottom:3px;' : '') + '">' + esc(a.sessionTitle || '') + '</div>';
                 if (a.description) {
-                    html += '<div style="font-size:.75rem;color:var(--gray-400);">' + esc(a.description) + '</div>';
+                    var descStyle = a.restricted === true
+                        ? 'font-size:.75rem;color:var(--gold-600);font-weight:600;'
+                        : 'font-size:.75rem;color:var(--gray-400);';
+                    var descIcon = a.restricted === true ? '<i class="fas fa-lock fa-xs"></i> ' : '';
+                    html += '<div style="' + descStyle + '">' + descIcon + esc(a.description) + '</div>';
                 }
                 html += '</td>';
                 html += '<td style="padding:12px 18px;font-size:.8rem;color:var(--gray-700);font-weight:600;">' + dienGiaHtml + '</td>';
@@ -1715,13 +1829,21 @@
             var html = '<div class="status-timeline">';
             for (var i = 0; i < list.length; i++) {
                 var h = list[i];
-                var isLast = (i === list.length - 1);
+                var isCurrent = (i === 0);
+                var statusText = h.displayStatus;
+                if (statusText === null || statusText === undefined || statusText === '') {
+                    statusText = h.statusCode || '';
+                }
                 var dotClass = layDotClass(h.statusCode);
                 var iconClass = layIconClass(h.statusCode);
                 html += '<div class="st-item">';
                 html += '<div class="st-dot ' + dotClass + '"><i class="fas ' + iconClass + ' fa-xs"></i></div>';
                 html += '<div class="st-info">';
-                html += '<div class="st-action">' + esc(h.statusCode || '') + (isLast ? ' — Trạng thái hiện tại' : '') + '</div>';
+                html += '<div class="st-action">' + esc(statusText);
+                if (isCurrent === true) {
+                    html += ' — Trạng thái hiện tại';
+                }
+                html += '</div>';
                 html += '<div class="st-meta">';
                 if (h.changedByUserName) {
                     html += '<span><i class="fas fa-user fa-xs me-1"></i>' + esc(h.changedByUserName) + '</span>';
@@ -1919,9 +2041,17 @@
             document.getElementById('reg-count-text').textContent = 'Đã đăng ký: ' + dinhDangSo(s.registeredCount || 0);
 
             var urgencyBlock = document.getElementById('reg-urgency-block');
+
+            // [MARKETING ENGINE]: Luôn hiển thị trạng thái Slot (nếu có giới hạn) để tạo sự cấp bách
             if (s.totalSlots > 0) {
                 document.getElementById('reg-slots-text').textContent = dinhDangSo(s.availableSlots || 0) + ' slot còn lại!';
-                document.getElementById('reg-urgency').textContent = 'Chỉ còn ' + dinhDangSo(s.availableSlots || 0) + '/' + dinhDangSo(s.totalSlots) + ' chỗ — Đăng ký trước khi hết!';
+
+                // Nếu bị khóa, báo cho biết là "Chỉ còn X chỗ, mau nâng cấp đi!"
+                if (s.hasFullAccess === false) {
+                    document.getElementById('reg-urgency').textContent = 'Chỉ còn ' + dinhDangSo(s.availableSlots || 0) + ' chỗ — Định danh tài khoản để giữ slot!';
+                } else {
+                    document.getElementById('reg-urgency').textContent = 'Chỉ còn ' + dinhDangSo(s.availableSlots || 0) + '/' + dinhDangSo(s.totalSlots) + ' chỗ — Đăng ký trước khi hết!';
+                }
                 urgencyBlock.style.display = 'flex';
             } else {
                 document.getElementById('reg-slots-text').textContent = 'Không giới hạn chỗ';
@@ -1942,6 +2072,8 @@
                     msg = 'Buổi sự kiện đã kết thúc.';
                 } else if (status === 'ONGOING') {
                     msg = 'Buổi sự kiện đang diễn ra, không nhận đăng ký mới.';
+                } else if (status === 'LOCKED') {
+                    msg = s.registrationNotice || 'Đăng ký cho phiên này chỉ mở cho tài khoản đủ quyền chuyên môn.';
                 } else {
                     msg = 'Buổi sự kiện hiện không nhận đăng ký.';
                 }

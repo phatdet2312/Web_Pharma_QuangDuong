@@ -1,0 +1,125 @@
+{
+  "_comment": "Hooks variant cho Windows PowerShell native (không cần Git Bash/WSL). Cách dùng: Rename-Item -LiteralPath \".codex\\hooks.json\" -NewName \"hooks.unix.json\"; Rename-Item -LiteralPath \".codex\\hooks.windows.json\" -NewName \"hooks.json\". Yêu cầu PowerShell 5.1+ hoặc pwsh 7+. Chạy lần đầu: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned.",
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "_comment": "Chặn lệnh Bash nguy hiểm trước khi chạy",
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/pre-bash-firewall.ps1",
+            "statusMessage": "Firewall kiểm tra pattern lệnh nguy hiểm",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "_comment": "Bảo vệ protected files khi apply_patch / Write",
+        "matcher": "^(apply_patch|Edit|Write|MultiEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/pre-edit-protect.ps1",
+            "statusMessage": "Kiểm tra file protected",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+
+    "PermissionRequest": [
+      {
+        "_comment": "Chặn approval request cho lệnh Bash nguy hiểm trước khi hiện prompt approve",
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/pre-bash-firewall.ps1",
+            "statusMessage": "Firewall kiểm tra approval request nguy hiểm",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "_comment": "Chặn approval request sửa protected files",
+        "matcher": "^(apply_patch|Edit|Write|MultiEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/pre-edit-protect.ps1",
+            "statusMessage": "Kiểm tra approval request protected file",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+
+    "PostToolUse": [
+      {
+        "_comment": "Log + auto-typecheck + detect rework sau khi sửa file",
+        "matcher": "^(apply_patch|Edit|Write|MultiEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/post-edit-log.ps1",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/post-edit-typecheck.ps1",
+            "statusMessage": "Auto compile/lint",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/post-edit-detect-rework.ps1",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "_comment": "Đầu phiên: drift + rework + memory size",
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/session-start.ps1",
+            "statusMessage": "Kiểm tra drift + rework alerts",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "_comment": "Quét prompt user xem có lộ secret không",
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/scan-secret-in-prompt.ps1",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "_comment": "Cuối turn: ghi telemetry agent (cho $agent-roi)",
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/log-agent-turn.ps1",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

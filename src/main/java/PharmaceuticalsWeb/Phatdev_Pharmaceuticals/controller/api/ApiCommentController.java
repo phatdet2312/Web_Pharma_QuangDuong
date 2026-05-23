@@ -11,13 +11,17 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.LoaiLikeResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PhCmtResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.ICommentService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -37,6 +41,7 @@ public class ApiCommentController {
 
     private final ICommentService commentService;
     private final IUserService userService;
+    private final IEventService eventService;
     
     /** Lấy tất cả loại reaction */
     @GetMapping("/reaction-types")
@@ -70,8 +75,38 @@ public class ApiCommentController {
             Authentication authentication) {
         
         Long userId = layUserIdTuAuthentication(authentication);
+        if (eventService.coQuyenTruyCapBuoi(eventId, userId) == false) {
+            Page<CmtResponse> emptyPage = new PageImpl<>(new ArrayList<>(), PageRequest.of(page, size), 0);
+            return ApiResponse.thanhCong(emptyPage, "Bình luận chỉ mở cho tài khoản đủ quyền tham dự.");
+        }
         Page<CmtResponse> result = commentService.layCmtCuaBuoi(eventId, sortBy, page, size, userId);
         return ApiResponse.thanhCong(result, "Lấy danh sách bình luận sự kiện thành công.");
+    }
+
+    /** Lấy phản hồi cấp 2 trực tiếp dưới một bình luận gốc */
+    @GetMapping("/{cmtId}/replies")
+    public ApiResponse<Page<PhCmtResponse>> layPhanHoiCapHai(
+            @PathVariable Long cmtId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            Authentication authentication) {
+
+        Long userId = layUserIdTuAuthentication(authentication);
+        Page<PhCmtResponse> result = commentService.layPhanHoiCapHai(cmtId, page, size, userId);
+        return ApiResponse.thanhCong(result, "Lấy danh sách câu trả lời thành công.");
+    }
+
+    /** Lấy phản hồi cấp 3, gom cả các tầng sâu hơn về cùng một luồng hiển thị */
+    @GetMapping("/reply/{phCmtId}/replies")
+    public ApiResponse<Page<PhCmtResponse>> layPhanHoiCapBa(
+            @PathVariable Long phCmtId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            Authentication authentication) {
+
+        Long userId = layUserIdTuAuthentication(authentication);
+        Page<PhCmtResponse> result = commentService.layPhanHoiCapBa(phCmtId, page, size, userId);
+        return ApiResponse.thanhCong(result, "Lấy danh sách câu trả lời lồng cấp thành công.");
     }
 
     /** Gửi bình luận cho bài viết */
@@ -100,6 +135,9 @@ public class ApiCommentController {
         Long userId = layUserIdTuAuthentication(authentication);
         if (userId == null) {
             return ApiResponse.loi(401, "Vui lòng đăng nhập.");
+        }
+        if (eventService.coQuyenTruyCapBuoi(eventId, userId) == false) {
+            return ApiResponse.loi(403, "Bình luận chỉ mở cho tài khoản đủ quyền tham dự phiên này.");
         }
         request.setTargetId(eventId);
         CmtResponse result = commentService.guiCmtSuKien(request, userId);

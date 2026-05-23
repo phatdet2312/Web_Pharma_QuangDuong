@@ -24,6 +24,10 @@ public class EventStatusHistoryResponse {
     private Long id;
     private Long ctEventId;
     private String statusCode;
+
+    /** Chuỗi trạng thái đã được backend biên dịch cho từng ngữ cảnh hiển thị. */
+    private String displayStatus;
+
     private Long changedByUserId;
     private String changedByUserName;
     private LocalDateTime changedAt;

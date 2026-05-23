@@ -29,6 +29,9 @@ public class EventAgendaResponse {
     private String sessionTitle;
     private String description;
     private Integer displayOrder;
+
+    /** true nếu phần mô tả chi tiết đã được backend thay bằng teaser bảo mật */
+    private boolean restricted;
     
     /** Danh sách thông tin chuyên gia phụ trách khung giờ này */
     private List<EventSpeakerResponse> speakers;

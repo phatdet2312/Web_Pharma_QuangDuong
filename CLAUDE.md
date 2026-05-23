@@ -42,6 +42,13 @@ Nếu docs/ nói khác .ai-memory/ → kiểm tra code thực tế để xác đ
 - Khi test fail 2+ vòng: tự động /reflect
 - Trước khi code: đọc `07_learnings.md` để tránh lặp sai lầm cũ
 - Mỗi 10 phiên hoặc khi có 5+ entries Lần>=3: gợi ý user chạy /promote-learning
+- Khi user báo bug production: đề xuất /production-feedback (tìm commit gây ra + ghi learning từ thực tế)
+- Hook `post-edit-detect-rework.sh`: tự ghi alert vào `.claude/rework-alerts.log` khi 1 file bị edit >3 lần trong 30 phút (dấu hiệu sai). Đọc alert mỗi đầu phiên để /reflect ngầm
+
+## Memory Health
+- Định kỳ check kích thước memory. Khi `06_evolution_log.md` > 50KB hoặc mỗi tháng: gợi ý /compact-memory
+- Decision Half-Life: mọi decision có "Hết hạn". Quá hạn → KHÔNG tự áp dụng, hỏi user re-evaluate
+- Agent ROI: gõ /agent-roi để xem agent nào tốn token, agent nào hữu ích → tinh chỉnh
 
 ## Self-Healing
 - Sau khi implementer viết code: tester chạy eval
@@ -81,8 +88,10 @@ KHÔNG tự làm nếu có agent chuyên biệt phù hợp.
 | Thiết kế kiến trúc, chọn pattern, trade-off   | **architect**        | claude-opus-4-6     |
 | Lập kế hoạch, phân rã task lớn, roadmap       | **planner**          | claude-opus-4-6     |
 | Audit bảo mật, tìm vulnerability              | **security-auditor** | claude-opus-4-6     |
+| Review SÂU non-security (escalation tầng 2)   | **deep-reviewer**    | claude-opus-4-6     |
+| User EXPLICIT yêu cầu "adversarial review"/"tìm lỗ hổng tinh vi"/"audit kỹ" | **adversarial-critic** | claude-opus-4-6   |
 | Viết code mới, implement feature              | **implementer**      | claude-sonnet-4-6   |
-| Review code, kiểm tra chất lượng              | **reviewer**         | claude-sonnet-4-6   |
+| Review code tầng 1 + Confidence Report        | **reviewer**         | claude-sonnet-4-6   |
 | Debug, fix bug, phân tích stack trace          | **debugger**         | claude-sonnet-4-6   |
 | Viết test, chạy test, eval output             | **tester**           | claude-sonnet-4-6   |
 | Refactor, tách method, giảm duplication        | **refactorer**       | claude-sonnet-4-6   |
@@ -116,8 +125,36 @@ KHÔNG tự làm nếu có agent chuyên biệt phù hợp.
    → nếu test FAIL: /reflect ghi learning → debugger fix → tester (tối đa 3 vòng)
    → nếu test PASS: memory-keeper
  
- **"Review module X":**
-  explorer (list files) → reviewer (code quality) → security-auditor (nếu module nhạy cảm) → memory-keeper
+ **"Review module X" (Two-Tier Review):**
+  ```
+  explorer (list files) → reviewer Sonnet (xuất Confidence Report)
+       ├── Tất cả HIGH/MEDIUM + không critical path  → memory-keeper (DONE)
+       ├── Security LOW                              → security-auditor (Opus)
+       ├── Logic/Concurrency/Arch/Perf LOW           → deep-reviewer (Opus)
+       ├── Critical path auth/ hoặc payment/ → BẮT BUỘC CẢ security-auditor + deep-reviewer
+       ├── Critical path transaction/scheduler/migration/ hoặc PR>300 dòng
+       │       → BẮT BUỘC deep-reviewer (Opus), bỏ qua confidence
+       └── Sau escalation → memory-keeper
+  ```
+  Quy tắc đọc Confidence Report:
+  - reviewer Sonnet BẮT BUỘC xuất bảng confidence + escalation recommendation
+  - Orchestrator đọc bảng đó để quyết định có gọi tầng 2 hay không
+  - Critical path whitelist + PR size là OR-trigger (kích hoạt tầng 2 dù confidence HIGH)
+
+ **"Deep review thủ công":** user nói "review sâu module X" hoặc "deep review" → orchestrator nhận diện ý định → gọi thẳng deep-reviewer, bỏ qua tầng 1
+ (Không có slash command `/deep-review` — đây là natural language trigger qua agent description)
+
+ **"Adversarial review" (Tầng 3 — Offensive):**
+  user nói "kiểm tra kỹ", "adversarial review", "tìm lỗ hổng tinh vi", hoặc trước deploy production lần đầu
+  → orchestrator gọi `adversarial-critic` (Opus)
+  → KHÁC deep-reviewer: offensive thinking (giả định sai, tìm test case break) thay vì defensive (check checklist)
+  → Mỗi finding PHẢI có test case reproduce — không có test case = không phải finding
+  → Verdict: SAFE TO SHIP / NEEDS HARDENING / DO NOT SHIP
+
+ **"Bug production"** (user báo bug đã deploy / user thật gặp):
+  → CHẠY skill /production-feedback (KHÔNG chỉ debug-flow)
+  → Xác nhận bug do AI gây ra → tìm commit gây ra → so với memory tại thời điểm đó → ghi learning loại A/B/C
+  → Đề xuất sửa rule/deep_knowledge/checklist tương ứng
  
  **"Refactor code":**
   reviewer (đánh giá hiện trạng) → refactorer (thực hiện) → tester (verify không break)

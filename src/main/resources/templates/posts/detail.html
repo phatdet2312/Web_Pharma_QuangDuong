@@ -1070,6 +1070,71 @@
                     margin-bottom: 8px;
                 }
 
+                .reply-input-box {
+                    width: 100%;
+                    background: white;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: var(--r-lg);
+                    padding: 8px 10px 6px;
+                    margin-bottom: 8px;
+                    transition: var(--t-fast);
+                }
+
+                .reply-input-box:focus-within {
+                    border-color: var(--teal-400);
+                    box-shadow: 0 0 0 3px rgba(20, 184, 166, .12);
+                }
+
+                .reply-mention-token-row {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    margin-bottom: 4px;
+                }
+
+                .reply-mention-token {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 4px 9px;
+                    background: #E6F7F4;
+                    color: #0F766E;
+                    border: 1px solid #99E6DA;
+                    border-radius: 999px;
+                    font-size: .78rem;
+                    font-weight: 800;
+                    line-height: 1;
+                }
+
+                .reply-mention-token button {
+                    width: 16px;
+                    height: 16px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: none;
+                    border-radius: 50%;
+                    background: #CCF1EA;
+                    color: #0F766E;
+                    cursor: pointer;
+                    padding: 0;
+                    font-size: .62rem;
+                }
+
+                .reply-input-box .cf-textarea {
+                    border: none;
+                    border-radius: 0;
+                    padding: 4px 2px;
+                    min-height: 58px;
+                    margin-bottom: 0;
+                    box-shadow: none;
+                }
+
+                .reply-input-box .cf-textarea:focus {
+                    border-color: transparent;
+                }
+
                 /* Guest CTA */
                 .comment-guest-cta {
                     background: var(--gray-50);
@@ -1218,6 +1283,21 @@
                     margin-top: 12px;
                 }
 
+                .reply-level-3 {
+                    margin-left: 0;
+                }
+
+                .reply-nav-row {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin: 6px 0 12px 38px;
+                }
+
+                .reply-nav-row:empty {
+                    display: none;
+                }
+
                 .reply-item {
                     display: flex;
                     gap: 10px;
@@ -1275,10 +1355,32 @@
                     margin-bottom: 7px;
                 }
 
+                .reply-mention-inline {
+                    display: inline-flex;
+                    align-items: center;
+                    max-width: 100%;
+                    margin-right: 4px;
+                    padding: 1px 7px;
+                    border-radius: 999px;
+                    background: #E6F7F4;
+                    color: #0F766E;
+                    border: 1px solid #99E6DA;
+                    font-size: .78rem;
+                    font-weight: 800;
+                    line-height: 1.35;
+                    vertical-align: baseline;
+                    word-break: break-word;
+                }
+
                 .ri-actions {
                     display: flex;
                     align-items: center;
                     gap: 6px;
+                    position: relative;
+                }
+
+                .ria-reply {
+                    margin-left: auto;
                 }
 
                 /* Load more replies */
@@ -1703,6 +1805,14 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div id="collapse-comments-container"
+                                        style="text-align:center;margin-top:12px;display:none;">
+                                        <button onclick="thuGonBinhLuanGoc()"
+                                            style="padding:9px 24px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--r-md);font-size:.82rem;font-weight:600;color:var(--gray-500);cursor:pointer;transition:var(--t-fast);">
+                                            <i class="fas fa-chevron-up fa-xs me-2"></i> Thu gọn bình luận
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div id="post-gallery-container" style="display: none;">
@@ -1982,6 +2092,7 @@
 
             var trangBinhLuanHienTai = 0;
             var kichThuocTrangBinhLuan = 10;
+            var kichThuocTrangPhanHoi = 5;
             var conBinhLuanDeTai = false;
             var danhSachLoaiCamXuc = [];
 
@@ -1993,6 +2104,30 @@
             function lamSachChuoiHTML(chuoiKhongAnToan) {
                 if (chuoiKhongAnToan === null || chuoiKhongAnToan === undefined) return '';
                 return String(chuoiKhongAnToan).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            }
+
+            function maHoaChuoiChoOnclick(giaTri) {
+                var chuoiCanMaHoa = '';
+                if (giaTri !== null && giaTri !== undefined) {
+                    chuoiCanMaHoa = String(giaTri);
+                }
+                return encodeURIComponent(chuoiCanMaHoa).replace(/'/g, '%27');
+            }
+
+            function dinhDangNoiDungPhanHoiTheoTen(noiDung, tenNguoiNhan) {
+                var noiDungAnToan = lamSachChuoiHTML(noiDung);
+                if (tenNguoiNhan !== null && tenNguoiNhan !== undefined && tenNguoiNhan !== '') {
+                    var tagNguoiNhanAnToan = '@' + lamSachChuoiHTML(tenNguoiNhan);
+                    if (noiDungAnToan.indexOf(tagNguoiNhanAnToan) === 0) {
+                        var phanNoiDungSauTag = noiDungAnToan.substring(tagNguoiNhanAnToan.length);
+                        return '<span class="reply-mention-inline">' + tagNguoiNhanAnToan + '</span>' + phanNoiDungSauTag;
+                    }
+                }
+                return noiDungAnToan;
+            }
+
+            function dinhDangNoiDungPhanHoi(rp) {
+                return dinhDangNoiDungPhanHoiTheoTen(rp.content, rp.replyToUserFullName);
             }
 
             function dinhDangNgayThang(chuoiISO) {
@@ -2543,21 +2678,53 @@
                             }
                         }
 
-                        var nutTaiThem = document.getElementById('load-more-comments-container');
-                        if (conBinhLuanDeTai === true) {
-                            nutTaiThem.style.display = 'block';
-                        } else {
-                            nutTaiThem.style.display = 'none';
-                        }
+                        capNhatNutPhanTrangBinhLuanGoc();
                     } else {
                         showToast('error', res.message);
                     }
                 });
             }
 
+            /**
+             * Đồng bộ trạng thái hai nút điều hướng của danh sách bình luận gốc.
+             * Phản hồi cấp dưới vẫn được render theo từng bình luận gốc, không phân trang ở đây.
+             */
+            function capNhatNutPhanTrangBinhLuanGoc() {
+                var nutTaiThem = document.getElementById('load-more-comments-container');
+                if (nutTaiThem !== null) {
+                    if (conBinhLuanDeTai === true) {
+                        nutTaiThem.style.display = 'block';
+                    } else {
+                        nutTaiThem.style.display = 'none';
+                    }
+                }
+
+                var nutThuGon = document.getElementById('collapse-comments-container');
+                if (nutThuGon !== null) {
+                    if (trangBinhLuanHienTai > 0) {
+                        nutThuGon.style.display = 'block';
+                    } else {
+                        nutThuGon.style.display = 'none';
+                    }
+                }
+            }
+
             window.taiThemBinhLuanGoc = function () {
                 if (conBinhLuanDeTai === true) {
                     taiDanhSachBinhLuan(trangBinhLuanHienTai + 1, false);
+                }
+            };
+
+            window.thuGonBinhLuanGoc = function () {
+                if (trangBinhLuanHienTai <= 0) {
+                    return;
+                }
+
+                taiDanhSachBinhLuan(0, true);
+
+                var khuBinhLuan = document.getElementById('comment-list-container');
+                if (khuBinhLuan !== null) {
+                    khuBinhLuan.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             };
 
@@ -2573,8 +2740,12 @@
                 }
 
                 var laBiCanhBao = (cmt.currentStatus === 'WARN');
-                var theHTMLLopMau = laBiCanhBao ? ' moderated' : '';
-                var theHTMLCanhBao = laBiCanhBao ? '<div class="ci-moderation-banner"><i class="fas fa-exclamation-triangle"></i> Bình luận này đang bị cảnh báo do vi phạm tiêu chuẩn cộng đồng.</div>' : '';
+                var theHTMLLopMau = '';
+                var theHTMLCanhBao = '';
+                if (laBiCanhBao === true) {
+                    theHTMLLopMau = ' moderated';
+                    theHTMLCanhBao = '<div class="ci-moderation-banner"><i class="fas fa-exclamation-triangle"></i> Bình luận này đang bị cảnh báo do vi phạm tiêu chuẩn cộng đồng.</div>';
+                }
 
                 var theHTMLChucVu = '';
                 if (cmt.userRoleName === 'SUPERADMIN' || cmt.userRoleName === 'ADMIN') {
@@ -2585,56 +2756,9 @@
 
                 var idVungCamXucCmt = 'react-wrap-cmt-' + cmt.id;
                 var theHTMLCamXucCuaCmt = '<div id="' + idVungCamXucCmt + '" style="display:inline-block;">' + xdKhungCamXucThongMinh('cmt', cmt.id) + '</div>';
+                var tenTacGiaCmtMaHoa = maHoaChuoiChoOnclick(cmt.userFullName);
 
-                var theHTMLPhanHoiCap2 = '';
-                if (cmt.replies !== null && cmt.replies !== undefined && cmt.replies.length > 0) {
-                    theHTMLPhanHoiCap2 += '<div class="reply-thread">';
-                    for (var r = 0; r < cmt.replies.length; r = r + 1) {
-                        var rp = cmt.replies[r];
-                        var rpBiAn = (rp.currentStatus === 'HIDE' || rp.currentStatus === 'DELETE');
-                        if (rpBiAn === true) continue;
-
-                        var rpHtmlChucVu = '';
-                        var idVungCamXucRp = 'react-wrap-reply-' + rp.id;
-                        var rpCamXuc = '<div id="' + idVungCamXucRp + '" style="display:inline-block;">' + xdKhungCamXucThongMinh('reply', rp.id) + '</div>';
-
-                        var rpMenuTacGia = '<div class="ci-author-menu-wrap">' +
-                            '<button class="ci-author-menu-btn" onclick="toggleAuthorMenu(this)"><i class="fas fa-ellipsis-v"></i></button>' +
-                            '<div class="ci-author-dropdown">';
-
-                        if (rp.author === true) {
-                            // Tác giả -> Sửa, Lịch sử, Xóa
-                            rpMenuTacGia += '<button class="ci-author-action" onclick="kichHoatSua(\'reply\', ' + rp.id + ')"><i class="fas fa-pen fa-fw"></i> Chỉnh sửa</button>' +
-                                '<button class="ci-author-action" onclick="xemLichSu(\'reply\', ' + rp.id + ')"><i class="fas fa-history fa-fw"></i> Lịch sử sửa</button>' +
-                                '<button class="ci-author-action danger" onclick="xoaBinhLuan(\'reply\', ' + rp.id + ')"><i class="fas fa-trash fa-fw"></i> Xóa phản hồi</button>';
-                        } else {
-                            // Người khác -> Báo cáo vi phạm (Đẩy mã 'PH_CMT' chuẩn DB)
-                            rpMenuTacGia += '<button class="ci-author-action" onclick="moFormBaoCao(\'PH_CMT\', ' + rp.id + ')"><i class="fas fa-flag fa-fw"></i> Báo cáo vi phạm</button>';
-                        }
-                        rpMenuTacGia += '</div></div>';
-
-                        var rpDaSua = (rp.createdAt !== rp.updatedAt) ? '<span class="cmt-edited-badge" onclick="xemLichSu(\'reply\', ' + rp.id + ')">(đã chỉnh sửa)</span>' : '';
-
-                        theHTMLPhanHoiCap2 += '<div class="reply-item" id="reply-item-' + rp.id + '">' +
-                            '<div class="ri-avatar">' + layChuCaiDauTien(rp.userFullName) + '</div>' +
-                            '<div class="ri-bubble-wrapper">' +
-                            '<div class="ri-bubble">' +
-                            // KHỐI HEADER BẢO VỆ 3 CHẤM
-                            '<div class="ci-header-main">' +
-                            '<div class="ci-header-content">' +
-                            '<div class="ci-name-group"><span class="ri-name ci-name" title="' + lamSachChuoiHTML(rp.userFullName) + '">' + lamSachChuoiHTML(rp.userFullName) + '</span>' + rpHtmlChucVu + '</div>' +
-                            '<div class="ci-date-group"><span class="ri-date">' + dinhDangThoiGianChiTiet(rp.createdAt) + '</span>' + rpDaSua + '</div>' +
-                            '</div>' +
-                            rpMenuTacGia +
-                            '</div>' +
-                            '<div class="ri-content" id="content-reply-' + rp.id + '" data-raw="' + lamSachChuoiHTML(rp.content) + '">' + lamSachChuoiHTML(rp.content) + '</div>' +
-                            '<div class="ri-actions">' + rpCamXuc + '<button class="ria-btn" onclick="hienThiFormPhanHoi(\'reply\', ' + cmt.id + ', ' + rp.id + ', \'' + lamSachChuoiHTML(rp.userFullName) + '\')"><i class="fas fa-reply fa-xs"></i> Trả lời</button></div>' +
-                            '</div>' +
-                            '<div id="reply-container-phcmt-' + rp.id + '"></div>' +
-                            '</div></div>';
-                    }
-                    theHTMLPhanHoiCap2 += '</div>';
-                }
+                var theHTMLPhanHoiCap2 = taoKhuVucPhanHoiCapHai(cmt);
 
                 var cmtMenuTacGia = '<div class="ci-author-menu-wrap">' +
                     '<button class="ci-author-menu-btn" onclick="toggleAuthorMenu(this)"><i class="fas fa-ellipsis-h"></i></button>' +
@@ -2651,7 +2775,10 @@
                 }
                 cmtMenuTacGia += '</div></div>';
 
-                var cmtDaSua = (cmt.createdAt !== cmt.updatedAt) ? '<span class="cmt-edited-badge" onclick="xemLichSu(\'cmt\', ' + cmt.id + ')">(đã chỉnh sửa)</span>' : '';
+                var cmtDaSua = '';
+                if (cmt.createdAt !== cmt.updatedAt) {
+                    cmtDaSua = '<span class="cmt-edited-badge" onclick="xemLichSu(\'cmt\', ' + cmt.id + ')">(đã chỉnh sửa)</span>';
+                }
 
                 return '<div class="comment-item" id="cmt-' + cmt.id + '">' +
                     '<div class="ci-avatar">' + layChuCaiDauTien(cmt.userFullName) + '</div>' +
@@ -2666,12 +2793,297 @@
                     cmtMenuTacGia +
                     '</div>' +
                     '<div class="ci-content" id="content-cmt-' + cmt.id + '" data-raw="' + lamSachChuoiHTML(cmt.content) + '">' + lamSachChuoiHTML(cmt.content) + '</div>' +
-                    '<div class="ci-actions">' + theHTMLCamXucCuaCmt + '<button class="cia-btn cia-reply" onclick="hienThiFormPhanHoi(\'cmt\', ' + cmt.id + ', null, \'' + lamSachChuoiHTML(cmt.userFullName) + '\')"><i class="fas fa-reply fa-xs"></i> Phản hồi</button></div>' +
+                    '<div class="ci-actions">' + theHTMLCamXucCuaCmt + '<button class="cia-btn cia-reply" onclick="hienThiFormPhanHoi(\'cmt\', ' + cmt.id + ', null, decodeURIComponent(\'' + tenTacGiaCmtMaHoa + '\'))"><i class="fas fa-reply fa-xs"></i> Phản hồi</button></div>' +
                     '</div>' +
                     '<div id="reply-container-cmt-' + cmt.id + '"></div>' +
                     theHTMLPhanHoiCap2 +
                     '</div></div>';
             }
+
+            function taoKhuVucPhanHoiCapHai(cmt) {
+                var soPhanHoi = 0;
+                if (cmt.replyCount !== null && cmt.replyCount !== undefined) {
+                    soPhanHoi = Number(cmt.replyCount);
+                }
+
+                var theHTMLNut = '';
+                if (soPhanHoi > 0) {
+                    theHTMLNut = taoNutXemPhanHoiCapHai(cmt.id, soPhanHoi);
+                }
+
+                return '<div class="reply-thread" id="reply-thread-cmt-' + cmt.id + '" style="display:none;"></div>' +
+                    '<div class="reply-nav-row" id="reply-actions-cmt-' + cmt.id + '" data-total="' + soPhanHoi + '">' + theHTMLNut + '</div>';
+            }
+
+            function cauTrucHTMLPhanHoi(rp, maCmtGoc) {
+                var rpBiAn = (rp.currentStatus === 'HIDE' || rp.currentStatus === 'DELETE');
+                if (rpBiAn === true) {
+                    return '';
+                }
+
+                var lopItem = 'reply-item';
+                if (rp.displayLevel === 3) {
+                    lopItem = lopItem + ' reply-level-3';
+                }
+
+                var idVungCamXucRp = 'react-wrap-reply-' + rp.id;
+                var rpCamXuc = '<div id="' + idVungCamXucRp + '" style="display:inline-block;">' + xdKhungCamXucThongMinh('reply', rp.id) + '</div>';
+
+                var rpMenuTacGia = '<div class="ci-author-menu-wrap">' +
+                    '<button class="ci-author-menu-btn" onclick="toggleAuthorMenu(this)"><i class="fas fa-ellipsis-v"></i></button>' +
+                    '<div class="ci-author-dropdown">';
+
+                if (rp.author === true) {
+                    rpMenuTacGia += '<button class="ci-author-action" onclick="kichHoatSua(\'reply\', ' + rp.id + ')"><i class="fas fa-pen fa-fw"></i> Chỉnh sửa</button>' +
+                        '<button class="ci-author-action" onclick="xemLichSu(\'reply\', ' + rp.id + ')"><i class="fas fa-history fa-fw"></i> Lịch sử sửa</button>' +
+                        '<button class="ci-author-action danger" onclick="xoaBinhLuan(\'reply\', ' + rp.id + ')"><i class="fas fa-trash fa-fw"></i> Xóa phản hồi</button>';
+                } else {
+                    rpMenuTacGia += '<button class="ci-author-action" onclick="moFormBaoCao(\'PH_CMT\', ' + rp.id + ')"><i class="fas fa-flag fa-fw"></i> Báo cáo vi phạm</button>';
+                }
+                rpMenuTacGia += '</div></div>';
+
+                var rpDaSua = '';
+                if (rp.createdAt !== rp.updatedAt) {
+                    rpDaSua = '<span class="cmt-edited-badge" onclick="xemLichSu(\'reply\', ' + rp.id + ')">(đã chỉnh sửa)</span>';
+                }
+
+                var theHTMLPhanHoiCon = taoKhuVucPhanHoiCapBa(rp, maCmtGoc);
+                var tenTacGia = lamSachChuoiHTML(rp.userFullName);
+                var tenTacGiaMaHoa = maHoaChuoiChoOnclick(rp.userFullName);
+                var noiDungPhanHoi = dinhDangNoiDungPhanHoi(rp);
+
+                return '<div class="' + lopItem + '" id="reply-item-' + rp.id + '" data-root-cmt-id="' + maCmtGoc + '" data-thread-anchor-id="' + rp.threadAnchorPhId + '" data-display-level="' + rp.displayLevel + '">' +
+                    '<div class="ri-avatar">' + layChuCaiDauTien(rp.userFullName) + '</div>' +
+                    '<div class="ri-bubble-wrapper">' +
+                    '<div class="ri-bubble">' +
+                    '<div class="ci-header-main">' +
+                    '<div class="ci-header-content">' +
+                    '<div class="ci-name-group"><span class="ri-name ci-name" title="' + tenTacGia + '">' + tenTacGia + '</span></div>' +
+                    '<div class="ci-date-group"><span class="ri-date">' + dinhDangThoiGianChiTiet(rp.createdAt) + '</span>' + rpDaSua + '</div>' +
+                    '</div>' +
+                    rpMenuTacGia +
+                    '</div>' +
+                    '<div class="ri-content" id="content-reply-' + rp.id + '" data-raw="' + lamSachChuoiHTML(rp.content) + '" data-reply-to-name="' + lamSachChuoiHTML(rp.replyToUserFullName) + '">' + noiDungPhanHoi + '</div>' +
+                    '<div class="ri-actions">' + rpCamXuc + '<button class="ria-btn ria-reply" onclick="hienThiFormPhanHoi(\'reply\', ' + maCmtGoc + ', ' + rp.id + ', decodeURIComponent(\'' + tenTacGiaMaHoa + '\'))"><i class="fas fa-reply fa-xs"></i> Trả lời</button></div>' +
+                    '</div>' +
+                    '<div id="reply-container-phcmt-' + rp.id + '"></div>' +
+                    theHTMLPhanHoiCon +
+                    '</div></div>';
+            }
+
+            function taoKhuVucPhanHoiCapBa(rp, maCmtGoc) {
+                if (rp.displayLevel !== 2) {
+                    return '';
+                }
+
+                var soPhanHoi = 0;
+                if (rp.replyCount !== null && rp.replyCount !== undefined) {
+                    soPhanHoi = Number(rp.replyCount);
+                }
+
+                var theHTMLNut = '';
+                if (soPhanHoi > 0) {
+                    theHTMLNut = taoNutXemPhanHoiCapBa(maCmtGoc, rp.id, soPhanHoi);
+                }
+
+                return '<div class="reply-thread" id="reply-thread-phcmt-' + rp.id + '" style="display:none;"></div>' +
+                    '<div class="reply-nav-row" id="reply-actions-phcmt-' + rp.id + '" data-total="' + soPhanHoi + '">' + theHTMLNut + '</div>';
+            }
+
+            function layTongSoPhanHoiTuTrang(duLieuTrang) {
+                var tongSo = 0;
+                if (duLieuTrang !== null && duLieuTrang !== undefined
+                    && duLieuTrang.totalElements !== null && duLieuTrang.totalElements !== undefined) {
+                    tongSo = Number(duLieuTrang.totalElements);
+                }
+                if (isNaN(tongSo) === true) {
+                    tongSo = 0;
+                }
+                return tongSo;
+            }
+
+            function anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) {
+                if (tongSo > 0) {
+                    return false;
+                }
+                if (vungPhanHoi !== null) {
+                    vungPhanHoi.innerHTML = '';
+                    vungPhanHoi.style.display = 'none';
+                }
+                if (vungDieuHuong !== null) {
+                    vungDieuHuong.setAttribute('data-total', 0);
+                    vungDieuHuong.innerHTML = '';
+                }
+                return true;
+            }
+
+            function taoNutXemPhanHoiCapHai(maCmtGoc, tongSo) {
+                return '<button class="load-replies-btn" onclick="taiPhanHoiCapHai(' + maCmtGoc + ', 0, true)">' +
+                    '<i class="fas fa-comment-dots fa-xs"></i> Xem ' + dinhDangSoNganCach(tongSo) + ' câu trả lời</button>';
+            }
+
+            function taoNutXemPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, tongSo) {
+                return '<button class="load-replies-btn" onclick="taiPhanHoiCapBa(' + maCmtGoc + ', ' + maPhanHoiNeo + ', 0, true)">' +
+                    '<i class="fas fa-comment-dots fa-xs"></i> Xem ' + dinhDangSoNganCach(tongSo) + ' câu trả lời</button>';
+            }
+
+            window.taiPhanHoiCapHai = function (maCmtGoc, chiSoTrang, laLamMoi) {
+                var vungPhanHoi = document.getElementById('reply-thread-cmt-' + maCmtGoc);
+                if (vungPhanHoi === null) {
+                    return;
+                }
+
+                var duongDanGoiAPI = '/api/comments/' + maCmtGoc + '/replies?page=' + chiSoTrang + '&size=' + kichThuocTrangPhanHoi;
+                callApi(duongDanGoiAPI, 'GET', null, null, function (res) {
+                    if (res.status !== 200) {
+                        showToast('error', res.message);
+                        return;
+                    }
+
+                    var duLieuTrang = res.data;
+                    var danhSachPhanHoi = duLieuTrang.content || [];
+                    var theHTMLNoiDung = '';
+
+                    for (var i = 0; i < danhSachPhanHoi.length; i = i + 1) {
+                        khoTrangThaiPhanHoi[danhSachPhanHoi[i].id] = {
+                            reactions: danhSachPhanHoi[i].reactions || [],
+                            currentUserReaction: danhSachPhanHoi[i].currentUserReaction
+                        };
+                        theHTMLNoiDung += cauTrucHTMLPhanHoi(danhSachPhanHoi[i], maCmtGoc);
+                    }
+
+                    vungPhanHoi.style.display = 'block';
+                    if (laLamMoi === true) {
+                        vungPhanHoi.innerHTML = theHTMLNoiDung;
+                    } else {
+                        vungPhanHoi.insertAdjacentHTML('beforeend', theHTMLNoiDung);
+                    }
+
+                    capNhatDieuHuongPhanHoiCapHai(maCmtGoc, duLieuTrang);
+                });
+            };
+
+            window.taiPhanHoiCapBa = function (maCmtGoc, maPhanHoiNeo, chiSoTrang, laLamMoi) {
+                var vungPhanHoi = document.getElementById('reply-thread-phcmt-' + maPhanHoiNeo);
+                if (vungPhanHoi === null) {
+                    return;
+                }
+
+                var duongDanGoiAPI = '/api/comments/reply/' + maPhanHoiNeo + '/replies?page=' + chiSoTrang + '&size=' + kichThuocTrangPhanHoi;
+                callApi(duongDanGoiAPI, 'GET', null, null, function (res) {
+                    if (res.status !== 200) {
+                        showToast('error', res.message);
+                        return;
+                    }
+
+                    var duLieuTrang = res.data;
+                    var danhSachPhanHoi = duLieuTrang.content || [];
+                    var theHTMLNoiDung = '';
+
+                    for (var i = 0; i < danhSachPhanHoi.length; i = i + 1) {
+                        khoTrangThaiPhanHoi[danhSachPhanHoi[i].id] = {
+                            reactions: danhSachPhanHoi[i].reactions || [],
+                            currentUserReaction: danhSachPhanHoi[i].currentUserReaction
+                        };
+                        theHTMLNoiDung += cauTrucHTMLPhanHoi(danhSachPhanHoi[i], maCmtGoc);
+                    }
+
+                    vungPhanHoi.style.display = 'block';
+                    if (laLamMoi === true) {
+                        vungPhanHoi.innerHTML = theHTMLNoiDung;
+                    } else {
+                        vungPhanHoi.insertAdjacentHTML('beforeend', theHTMLNoiDung);
+                    }
+
+                    capNhatDieuHuongPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, duLieuTrang);
+                });
+            };
+
+            function capNhatDieuHuongPhanHoiCapHai(maCmtGoc, duLieuTrang) {
+                var vungDieuHuong = document.getElementById('reply-actions-cmt-' + maCmtGoc);
+                if (vungDieuHuong === null) {
+                    return;
+                }
+
+                var tongSo = layTongSoPhanHoiTuTrang(duLieuTrang);
+                var vungPhanHoi = document.getElementById('reply-thread-cmt-' + maCmtGoc);
+                if (anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) === true) {
+                    return;
+                }
+
+                vungDieuHuong.setAttribute('data-total', tongSo);
+                var theHTMLNut = '';
+                if (duLieuTrang.last === false) {
+                    var trangKeTiep = duLieuTrang.number + 1;
+                    theHTMLNut += '<button class="load-replies-btn" onclick="taiPhanHoiCapHai(' + maCmtGoc + ', ' + trangKeTiep + ', false)">' +
+                        '<i class="fas fa-chevron-down fa-xs"></i> Tải thêm câu trả lời</button>';
+                }
+                theHTMLNut += '<button class="load-replies-btn" onclick="anPhanHoiCuaBinhLuan(' + maCmtGoc + ')">' +
+                    '<i class="fas fa-chevron-up fa-xs"></i> Ẩn câu trả lời</button>';
+                vungDieuHuong.innerHTML = theHTMLNut;
+            }
+
+            function capNhatDieuHuongPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, duLieuTrang) {
+                var vungDieuHuong = document.getElementById('reply-actions-phcmt-' + maPhanHoiNeo);
+                if (vungDieuHuong === null) {
+                    return;
+                }
+
+                var tongSo = layTongSoPhanHoiTuTrang(duLieuTrang);
+                var vungPhanHoi = document.getElementById('reply-thread-phcmt-' + maPhanHoiNeo);
+                if (anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) === true) {
+                    return;
+                }
+
+                vungDieuHuong.setAttribute('data-total', tongSo);
+                var theHTMLNut = '';
+                if (duLieuTrang.last === false) {
+                    var trangKeTiep = duLieuTrang.number + 1;
+                    theHTMLNut += '<button class="load-replies-btn" onclick="taiPhanHoiCapBa(' + maCmtGoc + ', ' + maPhanHoiNeo + ', ' + trangKeTiep + ', false)">' +
+                        '<i class="fas fa-chevron-down fa-xs"></i> Tải thêm câu trả lời</button>';
+                }
+                theHTMLNut += '<button class="load-replies-btn" onclick="anPhanHoiCuaPhanHoi(' + maCmtGoc + ', ' + maPhanHoiNeo + ')">' +
+                    '<i class="fas fa-chevron-up fa-xs"></i> Ẩn câu trả lời</button>';
+                vungDieuHuong.innerHTML = theHTMLNut;
+            }
+
+            window.anPhanHoiCuaBinhLuan = function (maCmtGoc) {
+                var vungPhanHoi = document.getElementById('reply-thread-cmt-' + maCmtGoc);
+                var vungDieuHuong = document.getElementById('reply-actions-cmt-' + maCmtGoc);
+                if (vungPhanHoi !== null) {
+                    vungPhanHoi.innerHTML = '';
+                    vungPhanHoi.style.display = 'none';
+                }
+                if (vungDieuHuong !== null) {
+                    var tongSo = Number(vungDieuHuong.getAttribute('data-total'));
+                    if (isNaN(tongSo) === true) {
+                        tongSo = 0;
+                    }
+                    if (anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) === true) {
+                        return;
+                    }
+                    vungDieuHuong.innerHTML = taoNutXemPhanHoiCapHai(maCmtGoc, tongSo);
+                }
+            };
+
+            window.anPhanHoiCuaPhanHoi = function (maCmtGoc, maPhanHoiNeo) {
+                var vungPhanHoi = document.getElementById('reply-thread-phcmt-' + maPhanHoiNeo);
+                var vungDieuHuong = document.getElementById('reply-actions-phcmt-' + maPhanHoiNeo);
+                if (vungPhanHoi !== null) {
+                    vungPhanHoi.innerHTML = '';
+                    vungPhanHoi.style.display = 'none';
+                }
+                if (vungDieuHuong !== null) {
+                    var tongSo = Number(vungDieuHuong.getAttribute('data-total'));
+                    if (isNaN(tongSo) === true) {
+                        tongSo = 0;
+                    }
+                    if (anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) === true) {
+                        return;
+                    }
+                    vungDieuHuong.innerHTML = taoNutXemPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, tongSo);
+                }
+            };
 
             // =========================================================================
             // HỆ THỐNG BÁO CÁO VI PHẠM (REPORT SYSTEM)
@@ -2790,7 +3202,7 @@
                 var rawText = contentDiv.getAttribute('data-raw');
 
                 var htmlForm = '<div class="inline-edit-box">' +
-                    '<textarea id="edit-input-' + loai + '-' + id + '" class="inline-edit-textarea">' + rawText + '</textarea>' +
+                    '<textarea id="edit-input-' + loai + '-' + id + '" class="inline-edit-textarea">' + lamSachChuoiHTML(rawText) + '</textarea>' +
                     '<div class="inline-edit-actions">' +
                     '<button class="ie-btn ie-btn-cancel" onclick="huySua(\'' + loai + '\', ' + id + ')">Hủy</button>' +
                     '<button class="ie-btn ie-btn-save" onclick="luuSua(\'' + loai + '\', ' + id + ')">Lưu thay đổi</button>' +
@@ -2806,9 +3218,47 @@
                 var contentDiv = document.getElementById('content-' + loai + '-' + id);
                 if (contentDiv === null) return;
                 var rawText = contentDiv.getAttribute('data-raw');
-                // Trả lại text ban đầu
-                contentDiv.innerHTML = rawText;
+                if (loai === 'reply') {
+                    var tenNguoiNhan = contentDiv.getAttribute('data-reply-to-name');
+                    contentDiv.innerHTML = dinhDangNoiDungPhanHoiTheoTen(rawText, tenNguoiNhan);
+                } else {
+                    contentDiv.innerHTML = lamSachChuoiHTML(rawText);
+                }
             };
+
+            function lamMoiSauThaoTacBinhLuan(loai, id) {
+                if (loai !== 'reply') {
+                    taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                    return;
+                }
+
+                var phanHoiItem = document.getElementById('reply-item-' + id);
+                if (phanHoiItem === null) {
+                    taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                    return;
+                }
+
+                var maCmtGoc = Number(phanHoiItem.getAttribute('data-root-cmt-id'));
+                var maPhanHoiNeo = Number(phanHoiItem.getAttribute('data-thread-anchor-id'));
+                var tangHienThi = Number(phanHoiItem.getAttribute('data-display-level'));
+
+                if (isNaN(maCmtGoc) === true || isNaN(tangHienThi) === true) {
+                    taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                    return;
+                }
+
+                if (tangHienThi === 2) {
+                    taiPhanHoiCapHai(maCmtGoc, 0, true);
+                    return;
+                }
+
+                if (isNaN(maPhanHoiNeo) === false) {
+                    taiPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, 0, true);
+                    return;
+                }
+
+                taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+            }
 
             window.luuSua = function (loai, id) {
                 var inputEl = document.getElementById('edit-input-' + loai + '-' + id);
@@ -2826,8 +3276,8 @@
                 callApi(apiDich, 'PUT', payload, null, function (res) {
                     if (res.status === 200) {
                         showToast('success', 'Đã lưu chỉnh sửa.');
-                        // Load lại khu vực bình luận để render UI đầy đủ (badge Đã chỉnh sửa)
-                        taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                        // Refresh đúng nhánh đang mở để không làm mất trạng thái lazy-load của reply.
+                        lamMoiSauThaoTacBinhLuan(loai, id);
                     } else {
                         showToast('error', res.message);
                     }
@@ -2850,7 +3300,7 @@
                         callApi(apiDich, 'DELETE', null, null, function (res) {
                             if (res.status === 200) {
                                 showToast('success', 'Đã xóa bình luận.');
-                                taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                                lamMoiSauThaoTacBinhLuan(loai, id);
                             } else {
                                 showToast('error', res.message);
                             }
@@ -2971,14 +3421,32 @@
                     cacFormCu[f].innerHTML = '';
                 }
 
-                var idKhuVuc = (loaiGoi === 'cmt') ? 'reply-container-cmt-' + maCmtGoc : 'reply-container-phcmt-' + maPhCmtCha;
+                var idKhuVuc = 'reply-container-cmt-' + maCmtGoc;
+                if (loaiGoi !== 'cmt') {
+                    idKhuVuc = 'reply-container-phcmt-' + maPhCmtCha;
+                }
                 var khoiChua = document.getElementById(idKhuVuc);
 
                 if (khoiChua === null) return;
 
-                var thePhCha = maPhCmtCha ? maPhCmtCha : 'null';
+                var thePhCha = 'null';
+                if (maPhCmtCha !== null && maPhCmtCha !== undefined) {
+                    thePhCha = maPhCmtCha;
+                }
+                var tenNguoiNhanAnToan = lamSachChuoiHTML(tenNguoiNhan);
+                var theHTMLTagNguoiNhan = '';
+                if (tenNguoiNhanAnToan !== '') {
+                    theHTMLTagNguoiNhan = '<div class="reply-mention-token-row" id="reply-mention-token-wrapper" data-mention-name="' + tenNguoiNhanAnToan + '">' +
+                        '<span class="reply-mention-token"><i class="fas fa-at fa-xs"></i>' + tenNguoiNhanAnToan +
+                        '<button type="button" onclick="xoaTagPhanHoi()" aria-label="Xóa tag người nhận"><i class="fas fa-times"></i></button></span>' +
+                        '</div>';
+                }
+
                 var theHTMLForm = '<div class="reply-form-wrapper" style="display:flex; flex-direction:column;">' +
-                    '<textarea id="reply-input-dynamic" class="cf-textarea" placeholder="Trả lời ' + tenNguoiNhan + '..."></textarea>' +
+                    '<div class="reply-input-box">' +
+                    theHTMLTagNguoiNhan +
+                    '<textarea id="reply-input-dynamic" class="cf-textarea" placeholder="Nhập câu trả lời..."></textarea>' +
+                    '</div>' +
                     '<div class="cf-footer">' +
                     '<div class="cf-emotion-btns">' +
                     '<button class="ce-btn" onclick="dienBieuTuong(\'👍\', \'reply-input-dynamic\')">👍</button>' +
@@ -2995,7 +3463,26 @@
                     '</div>';
 
                 khoiChua.innerHTML = theHTMLForm;
-                document.getElementById('reply-input-dynamic').focus();
+                var oNhapPhanHoi = document.getElementById('reply-input-dynamic');
+                if (oNhapPhanHoi !== null) {
+                    oNhapPhanHoi.focus();
+                    oNhapPhanHoi.addEventListener('keydown', function (suKien) {
+                        if (suKien.key === 'Backspace' && oNhapPhanHoi.value === '') {
+                            xoaTagPhanHoi();
+                        }
+                    });
+                }
+            };
+
+            window.xoaTagPhanHoi = function () {
+                var vungTag = document.getElementById('reply-mention-token-wrapper');
+                if (vungTag !== null) {
+                    vungTag.remove();
+                }
+                var oNhapPhanHoi = document.getElementById('reply-input-dynamic');
+                if (oNhapPhanHoi !== null) {
+                    oNhapPhanHoi.focus();
+                }
             };
 
             window.dongFormPhanHoi = function (idKhuVuc) {
@@ -3006,15 +3493,35 @@
             window.guiLenhPhanHoi = function (maCmtGoc, maPhCmtCha) {
                 var theNhap = document.getElementById('reply-input-dynamic');
                 if (theNhap === null) return;
-                var noiDung = theNhap.value.trim();
+                var noiDungNguoiDungNhap = theNhap.value.trim();
 
-                if (noiDung === '') { showToast('warning', 'Nội dung phản hồi không được để trống.'); return; }
+                if (noiDungNguoiDungNhap === '') { showToast('warning', 'Nội dung phản hồi không được để trống.'); return; }
+
+                var noiDung = noiDungNguoiDungNhap;
+                var vungTag = document.getElementById('reply-mention-token-wrapper');
+                if (vungTag !== null) {
+                    var tenNguoiNhan = vungTag.getAttribute('data-mention-name');
+                    if (tenNguoiNhan !== null && tenNguoiNhan.trim() !== '') {
+                        noiDung = '@' + tenNguoiNhan.trim() + ' ' + noiDungNguoiDungNhap;
+                    }
+                }
+
+                var idKhuVucCanDong = 'reply-container-cmt-' + maCmtGoc;
+                if (maPhCmtCha !== null && maPhCmtCha !== undefined) {
+                    idKhuVucCanDong = 'reply-container-phcmt-' + maPhCmtCha;
+                }
 
                 var doiTuongData = { rootCmtId: maCmtGoc, parentPhId: maPhCmtCha, content: noiDung };
                 callApi('/api/comments/reply', 'POST', doiTuongData, null, function (res) {
                     if (res.status === 200) {
                         showToast('success', 'Đã ghi nhận phản hồi.');
-                        taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+                        dongFormPhanHoi(idKhuVucCanDong);
+                        var phanHoiMoi = res.data;
+                        if (phanHoiMoi !== null && phanHoiMoi !== undefined && phanHoiMoi.displayLevel === 3) {
+                            taiPhanHoiCapBa(maCmtGoc, phanHoiMoi.threadAnchorPhId, 0, true);
+                        } else {
+                            taiPhanHoiCapHai(maCmtGoc, 0, true);
+                        }
                     } else {
                         showToast('error', res.message || 'Vui lòng đăng nhập để phản hồi.');
                     }

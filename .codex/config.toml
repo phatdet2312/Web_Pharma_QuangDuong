@@ -1,0 +1,64 @@
+# =============================================================
+# Codex CLI Project Configuration
+# Spec: https://developers.openai.com/codex/config-advanced
+# =============================================================
+
+# -------------------------------------------------------------
+# Model & reasoning
+# -------------------------------------------------------------
+model = "gpt-5.5"
+model_reasoning_effort = "xhigh"
+
+# -------------------------------------------------------------
+# Sandbox & approval
+# -------------------------------------------------------------
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+default_permissions = "workspace-secure"
+
+# Native read-deny layer for sensitive paths.
+# MIRROR of `.codexignore` lines tagged `# sensitive`.
+# Codex config cannot import `.codexignore`, so keep this block synced when the sensitive block changes.
+[permissions.workspace-secure.filesystem]
+":project_roots" = { "." = "write", ".env" = "none", ".env.*" = "none", ".envrc" = "none", "*.pem" = "none", "**/*.pem" = "none", "*.key" = "none", "**/*.key" = "none", "*.pfx" = "none", "**/*.pfx" = "none", "*.p12" = "none", "**/*.p12" = "none", "secrets/**" = "none", "**/secrets/**" = "none", "credentials.json" = "none", "**/credentials.json" = "none", "service-account*.json" = "none", "**/service-account*.json" = "none", ".aws/credentials" = "none", "**/.aws/credentials" = "none", ".npmrc" = "none", "**/.npmrc" = "none", ".netrc" = "none", "**/.netrc" = "none", ".ssh/**" = "none", "**/.ssh/**" = "none" }
+glob_scan_max_depth = 8
+
+# -------------------------------------------------------------
+# Subagents global config
+# Spec: https://developers.openai.com/codex/subagents
+# -------------------------------------------------------------
+[agents]
+max_threads = 6                       # tối đa 6 subagent chạy song song
+max_depth = 1                         # chỉ phiên chính spawn subagent trực tiếp; tránh delegation lồng nhau ngoài ý muốn
+job_max_runtime_seconds = 1800        # 30 phút mỗi job spawn_agents_on_csv
+
+# -------------------------------------------------------------
+# History
+# -------------------------------------------------------------
+[history]
+persistence = "save-all"
+
+# -------------------------------------------------------------
+# MCP servers (khai báo thêm nếu cần)
+# -------------------------------------------------------------
+# [mcp_servers.<name>]
+# command = "uvx"
+# args = ["mcp-server-name"]
+# env = { "KEY" = "value" }
+
+# -------------------------------------------------------------
+# Project-local launch presets
+# -------------------------------------------------------------
+# Codex 0.130.0 ignores active [profiles.*] in project-local `.codex/config.toml`.
+# Do NOT move these presets to user-level config for a distributable agent kit.
+# Use project-local launchers instead:
+# - .codex/launch/codex.ps1 / codex.sh              -> default xhigh
+# - .codex/launch/codex-xhigh.ps1 / codex-xhigh.sh  -> xhigh reasoning
+# - .codex/launch/codex-high.ps1 / codex-high.sh    -> high reasoning
+# - .codex/launch/codex-low.ps1 / codex-low.sh      -> low reasoning
+# - .codex/launch/codex-fast.ps1 / codex-fast.sh    -> minimal + read-only
+# - .codex/launch/codex-review-deep.ps1 / .sh       -> high + on-request approval
+
+# Hooks được khai báo tách riêng ở .codex/hooks.json (file format)
+# để dễ đọc và mở rộng. Có thể inline ở đây nếu muốn — xem:
+# https://developers.openai.com/codex/hooks

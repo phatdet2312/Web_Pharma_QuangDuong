@@ -9,6 +9,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.*;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.EventStatusDisplayPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -38,6 +39,18 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class EventServiceImpl implements IEventService {
 
+    private static final String STATUS_LOCKED = "LOCKED";
+    private static final String LOCKED_DISPLAY_STATUS = "Dành riêng cho nhóm chuyên môn";
+    private static final String LOCKED_ACCESS_TITLE = "Phiên chuyên môn giới hạn";
+    private static final String LOCKED_ACCESS_MESSAGE =
+            "Một số thông tin chi tiết chỉ mở cho tài khoản có quyền phù hợp. "
+            + "Danh sách diễn giả, chủ đề và bài viết liên quan vẫn được hiển thị để bạn đánh giá mức độ phù hợp.";
+    private static final String LOCKED_REGISTRATION_MESSAGE =
+            "Đăng ký cho phiên này chỉ mở sau khi tài khoản đủ quyền chuyên môn. "
+            + "Vui lòng đăng nhập bằng tài khoản đã được xác minh hoặc liên hệ quản trị viên.";
+    private static final String LOCKED_LOCATION_MESSAGE =
+            "Chi tiết địa điểm/link tham gia sẽ mở sau khi hồ sơ đủ điều kiện.";
+
     private final IEventRepository eventRepository;
     private final ICtEventRepository ctEventRepository;
     private final IEventTypeRepository eventTypeRepository;
@@ -49,6 +62,7 @@ public class EventServiceImpl implements IEventService {
     private final ILocationRepository locationRepository;
     private final ICtEventSessionRoleRepository ctEventSessionRoleRepository;
     private final IUserService userService;
+    private final EventStatusDisplayPolicy eventStatusDisplayPolicy;
 
     /**
      * Báo cáo sơ bộ bức tranh toàn cảnh về sự kiện để phục vụ Hero Stats trên
@@ -167,7 +181,7 @@ public class EventServiceImpl implements IEventService {
             LocationResponse resp = new LocationResponse();
             resp.setId(loc.getId());
             resp.setName(loc.getName());
-            resp.setAddress(loc.getAddress());
+            resp.setAddress(null);
             resp.setOnline(loc.isOnline());
             result.add(resp);
         }
@@ -179,7 +193,7 @@ public class EventServiceImpl implements IEventService {
      * Tham số: year, month.
      */
     @Override
-    public List<CtEventResponse> layBuoiTrongThang(int year, int month) {
+    public List<CtEventResponse> layBuoiTrongThang(int year, int month, Long userId) {
         YearMonth targetMonth = YearMonth.of(year, month);
         LocalDateTime dauThang = targetMonth.atDay(1).atStartOfDay();
         LocalDateTime cuoiThang = targetMonth.atEndOfMonth().atTime(23, 59, 59);
@@ -187,12 +201,12 @@ public class EventServiceImpl implements IEventService {
         // Gọi hàm repository đã được ngài viết sẵn từ trước
         List<CtEvent> danhSach = ctEventRepository.layBuoiDaCongBoTrongThang(dauThang, cuoiThang);
         List<CtEventResponse> result = new ArrayList<>();
+        int userLevel = layCapBacNguoiDung(userId);
 
         Object[] arr = danhSach.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEvent ctEvent = (CtEvent) arr[i];
-            // Tái sử dụng cỗ máy mapping cực xịn của ngài
-            result.add(xayDungCtEventResponse(ctEvent, null));
+            result.add(xayDungCtEventResponse(ctEvent, userLevel));
         }
         return result;
     }
@@ -202,7 +216,7 @@ public class EventServiceImpl implements IEventService {
      */
     @Override
     public Page<EventResponse> timKiemSuKien(String keyword, Integer type, String time, Integer locationId, Integer roleId, String sort,
-            int page, int size) {
+            int page, int size, Long userId) {
 
         // 1. Cấu hình Sắp xếp (Sort)
         Sort sortOrder = Sort.by(Sort.Direction.DESC, "created_at");
@@ -265,11 +279,12 @@ public class EventServiceImpl implements IEventService {
         // 3. Đóng gói DTO (Sử dụng Object[] thay vì Stream API)
         List<Event> eventList = eventsPage.getContent();
         List<EventResponse> responseList = new ArrayList<>();
+        int userLevel = layCapBacNguoiDung(userId);
 
         Object[] arr = eventList.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             Event e = (Event) arr[i];
-            responseList.add(xayDungEventResponse(e, null)); // Giả định bạn đã có hàm helper này
+            responseList.add(xayDungEventResponse(e, userLevel));
         }
 
         return new PageImpl<>(responseList, pageable, eventsPage.getTotalElements());
@@ -285,7 +300,8 @@ public class EventServiceImpl implements IEventService {
         if (optEvent.isPresent() == false) {
             throw new AppException(404, "Chúng tôi không tìm thấy thông tin chiến dịch sự kiện này.");
         }
-       return xayDungEventResponse(optEvent.get(), userId);
+        int userLevel = layCapBacNguoiDung(userId);
+        return xayDungEventResponse(optEvent.get(), userLevel);
     }
 
     /**
@@ -298,7 +314,8 @@ public class EventServiceImpl implements IEventService {
         if (optCtEvent.isPresent() == false) {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện được yêu cầu.");
         }
-        return xayDungCtEventResponse(optCtEvent.get(), userId);
+        int userLevel = layCapBacNguoiDung(userId);
+        return xayDungCtEventResponse(optCtEvent.get(), userLevel);
     }
 
     /**
@@ -306,12 +323,13 @@ public class EventServiceImpl implements IEventService {
      * tháng tới.
      */
     @Override
-    public List<CtEventResponse> layBuoiSapToi(int limit) {
+    public List<CtEventResponse> layBuoiSapToi(int limit, Long userId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime cuoiThang = now.plusMonths(3);
         List<CtEvent> danhSach = ctEventRepository.layBuoiDaCongBoTrongThang(now, cuoiThang);
 
         List<CtEventResponse> result = new ArrayList<>();
+        int userLevel = layCapBacNguoiDung(userId);
         int count = 0;
 
         Object[] arr = danhSach.toArray();
@@ -320,7 +338,7 @@ public class EventServiceImpl implements IEventService {
                 break;
             }
             CtEvent ctEvent = (CtEvent) arr[i];
-            result.add(xayDungCtEventResponse(ctEvent, null));
+            result.add(xayDungCtEventResponse(ctEvent, userLevel));
             count = count + 1;
         }
         return result;
@@ -401,6 +419,12 @@ public class EventServiceImpl implements IEventService {
         }
 
         CtEvent ctEvent = optCtEvent.get();
+
+        int userLevel = layCapBacNguoiDung(userId);
+        EventAccessDecision access = xayDungQuyetDinhTruyCap(ctEvent, userLevel);
+        if (access.hasFullAccess == false) {
+            throw new AppException(403, LOCKED_REGISTRATION_MESSAGE);
+        }
 
         // 1. Phân tích Cổng chặn
         Optional<CtEventStatusHistory> optStatus = statusHistoryRepository.layTrangThaiHienTai(ctEvent.getId());
@@ -493,7 +517,11 @@ public class EventServiceImpl implements IEventService {
      * Tra cứu Timeline lịch sử hoạt động của một Phiên sự kiện.
      */
     @Override
-    public List<EventStatusHistoryResponse> layLichSuTrangThaiPublic(Long ctEventId) {
+    public List<EventStatusHistoryResponse> layLichSuTrangThaiPublic(Long ctEventId, Long userId) {
+        if (coQuyenTruyCapBuoi(ctEventId, userId) == false) {
+            return new ArrayList<>();
+        }
+
         List<CtEventStatusHistory> danhSach = statusHistoryRepository.findByCtEventIdOrderByChangedAtDesc(ctEventId);
         List<EventStatusHistoryResponse> result = new ArrayList<>();
 
@@ -501,17 +529,16 @@ public class EventServiceImpl implements IEventService {
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEventStatusHistory h = (CtEventStatusHistory) arr[i];
 
+            if (eventStatusDisplayPolicy.duocHienThiPublic(h.getStatusCode()) == false) {
+                continue;
+            }
+
             EventStatusHistoryResponse resp = new EventStatusHistoryResponse();
             resp.setId(h.getId());
             resp.setCtEventId(ctEventId);
             resp.setStatusCode(h.getStatusCode());
+            resp.setDisplayStatus(eventStatusDisplayPolicy.layNhanPublic(h.getStatusCode()));
             resp.setChangedAt(h.getChangedAt());
-            resp.setNote(h.getNote());
-
-            if (h.getChangedByUser() != null) {
-                resp.setChangedByUserId(h.getChangedByUser().getId());
-                resp.setChangedByUserName(h.getChangedByUser().getFullName());
-            }
             result.add(resp);
         }
         return result;
@@ -521,7 +548,8 @@ public class EventServiceImpl implements IEventService {
      * Thuật toán trích xuất tóm tắt khách mời phục vụ Social Proof tại Frontend.
      * Áp dụng cơ chế che giấu dữ liệu (Masking) bằng vòng lặp For truyền thống.
      */
-    public EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId) {
+    public EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId, Long userId) {
+
         // 1. Đếm tổng số lượng (Tái sử dụng hàm đếm Slot để đồng bộ 100% với
         // thanh Tiến độ)
         long total = ctEventRepository.demSlotDaDangKy(ctEventId);
@@ -532,7 +560,10 @@ public class EventServiceImpl implements IEventService {
         List<EventAttendeePublicResponse.AttendeeMaskedInfo> maskedList = new ArrayList<>();
 
         Object[] regArray = latestRegs.toArray();
-        int limit = regArray.length < 5 ? regArray.length : 5;
+        int limit = 5;
+        if (regArray.length < 5) {
+            limit = regArray.length;
+        }
 
         for (int i = 0; i < limit; i = i + 1) {
             CtEventRegistration reg = (CtEventRegistration) regArray[i];
@@ -556,8 +587,12 @@ public class EventServiceImpl implements IEventService {
             info.setInitial(rawName.substring(0, 1).toUpperCase());
             info.setMaskedName(maskName(rawName));
             info.setMaskedPhone(maskPhone(rawPhone));
-            info.setWorkplace(reg.getWorkplace());
             info.setRegisteredAt(reg.getRegisteredAt());
+            if (reg.getWorkplace() != null) {
+                info.setWorkplace("***");
+            } else {
+                info.setWorkplace(null);
+            }
 
             maskedList.add(info);
         }
@@ -594,15 +629,118 @@ public class EventServiceImpl implements IEventService {
     // HÀM TIỆN ÍCH BÓC TÁCH DỮ LIỆU
     // =========================================================================
 
+    @Override
+    public boolean coQuyenTruyCapBuoi(Long ctEventId, Long userId) {
+        Optional<CtEvent> optCtEvent = ctEventRepository.findById(ctEventId);
+        if (optCtEvent.isPresent() == false) {
+            return false;
+        }
+
+        int userLevel = layCapBacNguoiDung(userId);
+        EventAccessDecision access = xayDungQuyetDinhTruyCap(optCtEvent.get(), userLevel);
+        return access.hasFullAccess;
+    }
+
+    /** Tính cấp bậc quyền lực cao nhất của người dùng, trả 999 nếu chưa đăng nhập hoặc không tồn tại */
+    private int layCapBacNguoiDung(Long userId) {
+        if (userId == null) {
+            return 999;
+        }
+        Optional<User> optUser = userRepository.findById(userId);
+        if (optUser.isPresent() == false) {
+            return 999;
+        }
+        return userService.layCapBacQuyenLucCaoNhat(optUser.get());
+    }
+
+    private EventAccessDecision xayDungQuyetDinhTruyCap(CtEvent ctEvent, int userLevel) {
+        EventAccessDecision decision = new EventAccessDecision();
+
+        List<UserRole> requiredRoles = ctEventSessionRoleRepository.layDanhSachQuyenCuaBuoi(ctEvent.getId());
+        if (requiredRoles == null || requiredRoles.isEmpty() == true) {
+            decision.hasFullAccess = true;
+            return decision;
+        }
+
+        Object[] roleArr = requiredRoles.toArray();
+        for (int i = 0; i < roleArr.length; i = i + 1) {
+            UserRole role = (UserRole) roleArr[i];
+
+            CtEventResponse.RoleInfo roleInfo = new CtEventResponse.RoleInfo();
+            roleInfo.setRoleName(role.getRoleName());
+            roleInfo.setDescription(role.getDescription());
+            decision.requiredRolesInfo.add(roleInfo);
+            decision.allowedRoleNames.add(role.getRoleName());
+
+            if (role.getRoleLevel() != null && userLevel <= role.getRoleLevel()) {
+                decision.hasFullAccess = true;
+            }
+        }
+
+        return decision;
+    }
+
+    private String tinhTrangThaiHienThi(String status, int totalSlots, long availableSlots) {
+        String chuoiHienThi = "Không xác định";
+
+        if ("CANCELLED".equals(status) == true) {
+            chuoiHienThi = "Đã hủy";
+        } else if ("FINISHED".equals(status) == true || "ENDED".equals(status) == true) {
+            chuoiHienThi = "Đã kết thúc";
+        } else if ("ONGOING".equals(status) == true) {
+            chuoiHienThi = "Đang diễn ra";
+        } else if ("OPEN".equals(status) == true || "UPCOMING".equals(status) == true) {
+            if (totalSlots > 0 && availableSlots <= 0) {
+                chuoiHienThi = "Hết chỗ";
+            } else {
+                chuoiHienThi = "Sắp diễn ra";
+            }
+        } else if ("FULL".equals(status) == true) {
+            chuoiHienThi = "Hết chỗ";
+        }
+
+        return chuoiHienThi;
+    }
+
+    /** Kiểm tra trạng thái đã kết thúc hoặc hủy — frontend được phép hiển thị công khai cho mọi user */
+    private boolean laTrangThaiDongCongKhai(String status) {
+        if ("CANCELLED".equals(status) == true) {
+            return true;
+        }
+        if ("FINISHED".equals(status) == true || "ENDED".equals(status) == true) {
+            return true;
+        }
+        return false;
+    }
+
+    /** Tạo bản tóm tắt marketing an toàn: loại bỏ HTML/script, ẩn URL, cắt 280 ký tự */
+    private String taoMoTaMarketing(String rawDescription) {
+        if (rawDescription == null) {
+            return null;
+        }
+
+        String text = rawDescription
+                .replaceAll("(?si)<script[^>]*>.*?</script>", " ")
+                .replaceAll("(?si)<style[^>]*>.*?</style>", " ")
+                .replaceAll("<[^>]*>", " ")
+                .replaceAll("(?i)https?://\\S+|www\\.\\S+", "[liên kết mở sau]")
+                .replaceAll("\\s+", " ")
+                .trim();
+
+        if (text.length() > 280) {
+            return text.substring(0, 280) + "...";
+        }
+        return text;
+    }
+
     /**
      * Gom nhóm dữ liệu của một Chiến dịch, quét toàn bộ Phiên con.
      */
-    private EventResponse xayDungEventResponse(Event event, Long userId) {
+    private EventResponse xayDungEventResponse(Event event, int userLevel) {
         EventResponse resp = new EventResponse();
         resp.setId(event.getId());
         resp.setTitle(event.getTitle());
         resp.setSlug(event.getSlug());
-        resp.setDescription(event.getDescription());
         resp.setThumbnailUrl(event.getThumbnailUrl());
         resp.setCreatedAt(event.getCreatedAt());
         resp.setUpdatedAt(event.getUpdatedAt());
@@ -618,10 +756,26 @@ public class EventServiceImpl implements IEventService {
         Object[] arr = sessions.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEvent ce = (CtEvent) arr[i];
-            sessionResponses.add(xayDungCtEventResponse(ce, userId));
+            sessionResponses.add(xayDungCtEventResponse(ce, userLevel));
 
         }
         resp.setSessions(sessionResponses);
+
+        boolean tatCaPhienBiKhoa = sessionResponses.isEmpty() == false;
+        Object[] sessionArrForDescription = sessionResponses.toArray();
+        for (int i = 0; i < sessionArrForDescription.length; i = i + 1) {
+            CtEventResponse ss = (CtEventResponse) sessionArrForDescription[i];
+            if (ss.isHasFullAccess() == true) {
+                tatCaPhienBiKhoa = false;
+                break;
+            }
+        }
+
+        if (tatCaPhienBiKhoa == true) {
+            resp.setDescription(taoMoTaMarketing(event.getDescription()));
+        } else {
+            resp.setDescription(event.getDescription());
+        }
 
         List<String> gomQuyenChienDich = new ArrayList<>();
         Object[] sessionRespArr = sessionResponses.toArray();
@@ -653,74 +807,33 @@ public class EventServiceImpl implements IEventService {
      * Bóc tách Phiên sự kiện, phân tích Slot trống và kết nối Dữ liệu Y khoa đính
      * kèm.
      */
-    private CtEventResponse xayDungCtEventResponse(CtEvent ctEvent, Long userId) {
+    private CtEventResponse xayDungCtEventResponse(CtEvent ctEvent, int userLevel) {
         CtEventResponse resp = new CtEventResponse();
+        EventAccessDecision access = xayDungQuyetDinhTruyCap(ctEvent, userLevel);
 
         // 1. Ánh xạ các thông tin định danh và thời gian cơ bản
         resp.setId(ctEvent.getId());
         resp.setTitle(ctEvent.getTitle());
-        resp.setContent(ctEvent.getContent());
         resp.setStartTime(ctEvent.getStartTime());
         resp.setEndTime(ctEvent.getEndTime());
-        resp.setTotalSlots(ctEvent.getTotalSlots());
-        resp.setSeoTitle(ctEvent.getSeoTitle());
-        resp.setSeoDescription(ctEvent.getSeoDescription());
+        resp.setAllowedRoleNames(access.allowedRoleNames);
 
-        // =========================================================================
-        // BỘ LỌC KIỂM DUYỆT TRUY CẬP DỰA TRÊN ROLE_LEVEL (PAYWALL ĐỘNG)
-        // =========================================================================
-        boolean hasAccess = false;
-        int userLevel = 999;
-
-        if (userId != null) {
-            User u = userRepository.findById(userId).orElse(null);
-            if (u != null) {
-                userLevel = userService.layCapBacQuyenLucCaoNhat(u);
-            }
-        }
-
-        List<UserRole> cacQuyenYeuCau = ctEventSessionRoleRepository.layDanhSachQuyenCuaBuoi(ctEvent.getId());
-        List<CtEventResponse.RoleInfo> requiredRolesInfo = new ArrayList<>();
-        List<String> allowedRoleNames = new ArrayList<>();
-
-        if (cacQuyenYeuCau == null || cacQuyenYeuCau.isEmpty() == true) {
-            hasAccess = true;
-        } else {
-            Object[] roleArr = cacQuyenYeuCau.toArray();
-            for (int i = 0; i < roleArr.length; i = i + 1) {
-                UserRole role = (UserRole) roleArr[i];
-
-                CtEventResponse.RoleInfo rInfo = new CtEventResponse.RoleInfo();
-                rInfo.setRoleName(role.getRoleName());
-                rInfo.setDescription(role.getDescription());
-                requiredRolesInfo.add(rInfo);
-
-                allowedRoleNames.add(role.getRoleName());
-
-                if (userLevel <= role.getRoleLevel()) {
-                    hasAccess = true;
-                }
-            }
-        }
-
-        resp.setAllowedRoleNames(allowedRoleNames);
-
-        // Quyết định che giấu nội dung nếu không đủ thẩm quyền
-        if (hasAccess == true) {
+        if (access.hasFullAccess == true) {
+            resp.setContent(ctEvent.getContent());
+            resp.setSeoTitle(ctEvent.getSeoTitle());
+            resp.setSeoDescription(ctEvent.getSeoDescription());
             resp.setHasFullAccess(true);
             resp.setRequiredRoles(null);
         } else {
-            // CHE DẤU DỮ LIỆU NHẠY CẢM TẠI ĐÂY (CHUẨN MÙ)
             resp.setContent(null);
-            // Nếu muốn che link Zoom/Meet của sự kiện khóa, bật dòng dưới:
-            if (ctEvent.getLocation() != null && ctEvent.getLocation().isOnline()) {
-                resp.setLocationAddress(null);
-            }
-
+            resp.setSeoTitle(null);
+            resp.setSeoDescription(null);
             resp.setHasFullAccess(false);
-            resp.setRequiredRoles(requiredRolesInfo);
+            resp.setRequiredRoles(access.requiredRolesInfo);
+            resp.setAccessNoticeTitle(LOCKED_ACCESS_TITLE);
+            resp.setAccessNoticeMessage(LOCKED_ACCESS_MESSAGE);
+            resp.setRegistrationNotice(LOCKED_REGISTRATION_MESSAGE);
         }
-        // =========================================================================
 
         // 2. Phân giải thông tin Chiến dịch cha (EVENTS)
         if (ctEvent.getEvent() != null) {
@@ -731,10 +844,21 @@ public class EventServiceImpl implements IEventService {
 
         // 3. Phân giải thông tin Địa điểm (LOCATIONS)
         if (ctEvent.getLocation() != null) {
-            resp.setLocationId(ctEvent.getLocation().getId());
-            resp.setLocationName(ctEvent.getLocation().getName());
-            resp.setLocationAddress(ctEvent.getLocation().getAddress());
             resp.setOnline(ctEvent.getLocation().isOnline());
+
+            if (access.hasFullAccess == true) {
+                resp.setLocationId(ctEvent.getLocation().getId());
+                resp.setLocationName(ctEvent.getLocation().getName());
+                resp.setLocationAddress(ctEvent.getLocation().getAddress());
+            } else {
+                resp.setLocationId(null);
+                if (ctEvent.getLocation().isOnline() == true) {
+                    resp.setLocationName("Phòng trực tuyến riêng");
+                } else {
+                    resp.setLocationName("Địa điểm dành riêng cho khách mời đủ điều kiện");
+                }
+                resp.setLocationAddress(LOCKED_LOCATION_MESSAGE);
+            }
         }
 
         // 4. TRÍCH XUẤT TRẠNG THÁI GỐC TỪ NHẬT KÝ KIỂM TOÁN (Event Sourcing)
@@ -743,7 +867,6 @@ public class EventServiceImpl implements IEventService {
         if (optStatus.isPresent() == true) {
             maTrangThaiGoc = optStatus.get().getStatusCode();
         }
-        resp.setCurrentStatus(maTrangThaiGoc);
 
         // 5. THUẬT TOÁN ĐỐI SOÁT CUNG - CẦU VÀ TÍNH TOÁN "CHUẨN MÙ" CHO FRONTEND
         long soVeDaDangKy = ctEventRepository.demSlotDaDangKy(ctEvent.getId());
@@ -753,34 +876,28 @@ public class EventServiceImpl implements IEventService {
             soVeConTrong = ctEvent.getTotalSlots() - soVeDaDangKy;
         }
 
+        resp.setTotalSlots(ctEvent.getTotalSlots());
         resp.setRegisteredCount(soVeDaDangKy);
         resp.setAvailableSlots(soVeConTrong);
 
-        // --- BƯỚC A: TÍNH TOÁN CHUỖI HIỂN THỊ TRẠNG THÁI (DISPLAY STATUS) ---
-        String chuoiHienThi = "Không xác định";
-
-        if (maTrangThaiGoc.equals("CANCELLED") == true) {
-            chuoiHienThi = "Đã hủy";
-        } else if (maTrangThaiGoc.equals("FINISHED") == true || maTrangThaiGoc.equals("ENDED") == true) {
-            chuoiHienThi = "Đã kết thúc";
-        } else if (maTrangThaiGoc.equals("ONGOING") == true) {
-            chuoiHienThi = "Đang diễn ra";
-        } else if (maTrangThaiGoc.equals("OPEN") == true || maTrangThaiGoc.equals("UPCOMING") == true) {
-            // Logic quan trọng: Nếu Backend thấy hết chỗ, ép trạng thái hiển thị thành "Hết
-            // chỗ"
-            if (ctEvent.getTotalSlots() > 0 && soVeConTrong <= 0) {
-                chuoiHienThi = "Hết chỗ";
+        if (access.hasFullAccess == true) {
+            resp.setCurrentStatus(maTrangThaiGoc);
+            resp.setDisplayStatus(tinhTrangThaiHienThi(maTrangThaiGoc, ctEvent.getTotalSlots(), soVeConTrong));
+        } else {
+            if (laTrangThaiDongCongKhai(maTrangThaiGoc) == true) {
+                resp.setCurrentStatus(maTrangThaiGoc);
+                resp.setDisplayStatus(tinhTrangThaiHienThi(maTrangThaiGoc, 0, 0));
             } else {
-                chuoiHienThi = "Sắp diễn ra";
+                resp.setCurrentStatus(STATUS_LOCKED);
+                resp.setDisplayStatus(LOCKED_DISPLAY_STATUS);
             }
         }
-        resp.setDisplayStatus(chuoiHienThi);
 
         // --- BƯỚC B: THIẾT LẬP CỜ BÁO ĐỘNG ĐỎ (CRITICAL FLAG) ---
         // Thuật toán: Nếu số vé còn lại ít hơn hoặc bằng 20% tổng dung lượng -> Bật cờ
         // đỏ.
         boolean laToiHan = false;
-        if (ctEvent.getTotalSlots() > 0) {
+        if (access.hasFullAccess == true && ctEvent.getTotalSlots() > 0) {
             double nguongToiHan = ctEvent.getTotalSlots() * 0.2;
             if (soVeConTrong > 0 && soVeConTrong <= nguongToiHan) {
                 laToiHan = true;
@@ -833,6 +950,12 @@ public class EventServiceImpl implements IEventService {
         resp.setRelatedPosts(ketQuaPosts);
 
         return resp;
+    }
+
+    private static class EventAccessDecision {
+        private boolean hasFullAccess = false;
+        private final List<CtEventResponse.RoleInfo> requiredRolesInfo = new ArrayList<>();
+        private final List<String> allowedRoleNames = new ArrayList<>();
     }
 
     private EventRegistrationResponse chuyenDoiRegistrationResponse(CtEventRegistration reg) {

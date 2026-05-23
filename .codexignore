@@ -1,0 +1,123 @@
+# .codexignore — Single source of truth cho path policy của Codex
+# Codex CLI tới 18/5/2026 chưa có tài liệu chính thống xác nhận native respect file này như `.claudeignore`.
+# Bộ này ép qua AGENTS.md + hook đọc file này. Nếu Codex native support trong tương lai, giữ file này làm nguồn trung tâm.
+#
+# Cú pháp nội bộ của bộ agent:
+# - Dòng không tag: bỏ qua khi quét rộng/list workspace, nhưng vẫn có thể Read file cụ thể nếu task có lý do rõ.
+# - `# sensitive`: không Read trừ khi user explicit yêu cầu trong prompt hiện tại; nếu đọc phải mask secret.
+# - `# protected-edit`: hook chặn sửa tự động; muốn sửa cần user xác nhận rõ.
+# - `# protected-edit` không đồng nghĩa ignore rộng nếu dòng đó không có `# sensitive`.
+#
+# Lưu ý native Codex: phần `# sensitive` được mirror trong `.codex/config.toml`
+# vì `permissions.<profile>.filesystem` không import động từ file này.
+
+# Secrets & Credentials — sensitive + protected edit
+.env # sensitive protected-edit
+.env.* # sensitive protected-edit
+.envrc # sensitive protected-edit
+*.pem # sensitive protected-edit
+**/*.pem # sensitive protected-edit
+*.key # sensitive protected-edit
+**/*.key # sensitive protected-edit
+*.pfx # sensitive protected-edit
+**/*.pfx # sensitive protected-edit
+*.p12 # sensitive protected-edit
+**/*.p12 # sensitive protected-edit
+secrets/** # sensitive protected-edit
+**/secrets/** # sensitive protected-edit
+credentials.json # sensitive protected-edit
+**/credentials.json # sensitive protected-edit
+service-account*.json # sensitive protected-edit
+**/service-account*.json # sensitive protected-edit
+.aws/credentials # sensitive protected-edit
+**/.aws/credentials # sensitive protected-edit
+.npmrc # sensitive protected-edit
+**/.npmrc # sensitive protected-edit
+.netrc # sensitive protected-edit
+**/.netrc # sensitive protected-edit
+.ssh/** # sensitive protected-edit
+**/.ssh/** # sensitive protected-edit
+
+# Protected control files — không ignore đọc, chỉ chặn edit tự động
+.codex/config.toml # protected-edit
+.codex/hooks.json # protected-edit
+.codex/hooks.windows.json # protected-edit
+.codexignore # protected-edit
+Dockerfile # protected-edit
+docker-compose.yml # protected-edit
+
+# Build & Output
+node_modules/
+target/
+build/
+dist/
+out/
+
+# Database & Data dumps
+CSDL/
+*.sql
+*.dump
+
+# Version Control & IDE
+.git/
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+
+# Java / Maven / Gradle
+.mvn/
+.gradle/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs & Temp
+*.log
+*.tmp
+*.bak
+*.swp
+logs/
+
+# Upload & Static assets (binary)
+uploads/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+mvnw
+mvnw.cmd
+gradlew
+gradlew.bat
+
+# READMEs (hướng dẫn cho người dùng, agent không cần đọc)
+.ai-memory/README.md
+.codex/rules/README.md
+.codex/scripts/README.md
+.codex/agents/README.md
+.agents/skills/README.md
+docs/README.md
+
+# Deep knowledge (agent đọc có chủ đích qua INDEX.md, không quét)
+.ai-memory/03_deep_knowledge/
+
+# Memory archive (do $compact-memory tạo, chỉ recovery khi cần)
+.ai-memory/_archive/
+
+# Test data
+src/test/resources/fixtures/
+__snapshots__/
+*.test.js.snap

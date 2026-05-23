@@ -25,3 +25,8 @@ Nguyên tắc:
 - Nếu cần reproduce: đề xuất lệnh test cụ thể
 - Ghi bug vào `.ai-memory/05_active_workspace.md` nếu chưa fix được
 - Trả lời bằng tiếng Việt
+
+## Production bug handoff
+- Nếu user báo bug là "trên production" / "đã deploy" / "user thật gặp" → ĐỀ XUẤT chuyển sang skill `/production-feedback` thay vì chỉ fix
+- Lý do: production bug cần TÌM COMMIT GÂY RA + GHI LEARNING để không lặp, không chỉ fix
+- Hỏi user: "Đây là bug production. Bạn muốn chạy /production-feedback để vừa fix vừa học không?"

@@ -3,6 +3,7 @@
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,6 +17,7 @@ import lombok.Setter;
 public class EventRegistrationRequest {
 
     /** ID buổi sự kiện muốn đăng ký */
+    @NotNull(message = "ID buổi sự kiện không được để trống")
     private Long ctEventId;
 
     /** Thông tin khách ẩn danh — bỏ qua nếu user đã đăng nhập */

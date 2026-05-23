@@ -17,7 +17,7 @@ public class EventStatusRequest {
     /** ID buổi sự kiện cần đổi trạng thái */
     private Long ctEventId;
 
-    /** Trạng thái mới: DRAFT | OPEN | FULL | CANCELLED | COMPLETED */
+    /** Trạng thái mới: DRAFT | OPEN | UPCOMING | ONGOING | FULL | CANCELLED | FINISHED | ENDED */
     @NotBlank(message = "Mã trạng thái không được để trống")
     private String statusCode;
 

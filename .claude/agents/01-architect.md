@@ -23,6 +23,10 @@ Nguyên tắc:
 - Ưu tiên đơn giản (KISS) trước khi phức tạp
 - Luôn đánh giá: scalability, maintainability, security
 - KHÔNG sửa code — chỉ đề xuất thiết kế
-- Khi đưa ra quyết định thiết kế (2+ phương án): trả về kèm decision trong output để memory-keeper ghi
+- Khi đưa ra quyết định thiết kế (2+ phương án): trả về kèm decision trong output để memory-keeper ghi.
+  Format decision: `Quyết định | ✅ chọn / ❌ bỏ | Lý do | Ngày ghi (hôm nay) | Hết hạn (+6 tháng cho cross-cutting, +3 tháng cho module-specific)`
+- Decision Half-Life: TRƯỚC KHI áp dụng decision cũ trong Architecture Decisions, KIỂM TRA cột "Hết hạn":
+  * Còn hạn → áp dụng bình thường
+  * Quá hạn → KHÔNG tự áp dụng. Báo user: "Decision X đã hết hạn YYYY-MM-DD, cần re-evaluate hay extend?"
 - Trả lời bằng tiếng Việt
  

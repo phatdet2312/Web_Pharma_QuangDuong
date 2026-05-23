@@ -23,6 +23,7 @@ public interface ISpeakerAgendaService {
 
     // --- NGHIỆP VỤ LỊCH TRÌNH ---
     List<EventAgendaResponse> layDSLichTrinhCuaBuoi(Long ctEventId);
+    List<EventAgendaResponse> layDSLichTrinhCuaBuoi(Long ctEventId, boolean coQuyenXemChiTiet);
     EventAgendaResponse themLichTrinh(Long ctEventId, EventAgendaRequest request);
     EventAgendaResponse capNhatLichTrinh(Long agendaId, EventAgendaRequest request);
     void xoaLichTrinh(Long agendaId);

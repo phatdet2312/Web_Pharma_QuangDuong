@@ -76,6 +76,15 @@ public class CtEventResponse {
     /** Cờ sinh tử: Quyết định mở khóa hay dựng Paywall */
     private boolean hasFullAccess;
 
+    /** Tiêu đề khối teaser khi phiên bị khóa */
+    private String accessNoticeTitle;
+
+    /** Thông điệp giải thích ngắn gọn cho frontend render paywall/CTA */
+    private String accessNoticeMessage;
+
+    /** Thông điệp thay thế khu vực đăng ký khi user chưa đủ quyền */
+    private String registrationNotice;
+
     /** Danh sách Chi tiết quyền yêu cầu (dùng để vẽ khung Paywall bên trong detail) */
     private List<RoleInfo> requiredRoles;
 

@@ -1,0 +1,3 @@
+# Folder lưu memory đã nén (do skill /compact-memory tạo)
+# Raw log từ 06_evolution_log.md, 07_learnings.md, hoặc deep_knowledge của module chết
+# Agent KHÔNG đọc folder này trong daily workflow — chỉ recovery khi cần

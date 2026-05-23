@@ -33,9 +33,11 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * =========================================================================
@@ -52,6 +54,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CommentServiceImpl implements ICommentService {
 
+    private static final int TANG_HIEN_THI_PHAN_HOI_CAP_HAI = 2;
+    private static final int TANG_HIEN_THI_PHAN_HOI_TOI_DA = 3;
     private final ICmtRepository cmtRepository;
     private final IPhCmtRepository phCmtRepository;
     private final ICtPostCmtRepository ctPostCmtRepository;
@@ -69,6 +73,8 @@ public class CommentServiceImpl implements ICommentService {
     private final IPostRepository postRepository;
     private final ICtEventRepository ctEventRepository;
     private final ICtPhCmtReportRepository phCmtReportRepository;
+    private final ICtCmtReportModLogRepository cmtReportModLogRepository;
+    private final ICtPhCmtReportModLogRepository phCmtReportModLogRepository;
     private final IUserService userService;
     private final IAuditService auditService;
     
@@ -101,7 +107,7 @@ public class CommentServiceImpl implements ICommentService {
         
         Object[] arr = cmtListTuDb.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
-            responseList.add(xayDungCmtResponse((Cmt) arr[i], userId));
+            responseList.add(xayDungCmtResponse((Cmt) arr[i], userId, false));
         }
         
         return new PageImpl<>(responseList, pageable, cmtPage.getTotalElements());
@@ -132,6 +138,55 @@ public class CommentServiceImpl implements ICommentService {
         }
         
         return new PageImpl<>(responseList, pageable, cmtPage.getTotalElements());
+    }
+
+    /**
+     * Lấy phản hồi cấp 2 trực tiếp dưới bình luận gốc.
+     * Mỗi phần tử chỉ kèm số lượng câu trả lời con để frontend chủ động mở theo nhu cầu.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PhCmtResponse> layPhanHoiCapHai(Long rootCmtId, int page, int size, Long userId) {
+        if (cmtRepository.existsById(rootCmtId) == false) {
+            throw new AppException(404, "Không tìm thấy bình luận gốc để tải câu trả lời.");
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PhCmt> phanHoiPage = phCmtRepository.findByRootCmtIdAndParentPhIsNullOrderByCreatedAtAsc(rootCmtId, pageable);
+        List<PhCmt> tatCaPhanHoiCuaGoc = phCmtRepository.findByRootCmtIdOrderByCreatedAtAsc(rootCmtId);
+        Map<Long, List<Long>> banDoConTheoCha = xayDungBanDoConTheo(tatCaPhanHoiCuaGoc);
+        List<PhCmtResponse> responseList = new ArrayList<>();
+
+        Object[] arr = phanHoiPage.getContent().toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            PhCmt phanHoi = (PhCmt) arr[i];
+            PhCmtResponse dto = xayDungPhCmtResponse(phanHoi, userId);
+            dto.setDisplayLevel(TANG_HIEN_THI_PHAN_HOI_CAP_HAI);
+            dto.setThreadAnchorPhId(phanHoi.getId());
+            dto.setReplyCount(demTongConChauTuBanDo(banDoConTheoCha, phanHoi.getId()));
+            responseList.add(dto);
+        }
+
+        return new PageImpl<>(responseList, pageable, phanHoiPage.getTotalElements());
+    }
+
+    /**
+     * Lấy luồng phản hồi cấp 3 dưới một phản hồi cấp 2.
+     * Các bản ghi sâu hơn cấp 3 vẫn giữ quan hệ DB thật nhưng được hiển thị ở tầng 3 kèm tag người nhận.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PhCmtResponse> layPhanHoiCapBa(Long phCmtId, int page, int size, Long userId) {
+        PhCmt phanHoiDangMo = layPhanHoiHoacLoi(phCmtId);
+        PhCmt phanHoiNeoCapHai = timPhanHoiNeoCapHai(phanHoiDangMo);
+
+        List<PhCmt> tatCaPhanHoiCuaGoc = phCmtRepository.findByRootCmtIdOrderByCreatedAtAsc(phanHoiNeoCapHai.getRootCmt().getId());
+        Map<Long, List<Long>> banDoConTheoCha = xayDungBanDoConTheo(tatCaPhanHoiCuaGoc);
+        List<PhCmt> danhSachHienThi = locConChauCuaPhanHoi(tatCaPhanHoiCuaGoc, phanHoiNeoCapHai.getId(), banDoConTheoCha);
+        Pageable pageable = PageRequest.of(page, size);
+        List<PhCmtResponse> responseList = taoTrangPhanHoiCapBa(danhSachHienThi, phanHoiNeoCapHai.getId(), page, size, userId);
+
+        return new PageImpl<>(responseList, pageable, danhSachHienThi.size());
     }
 
     // =========================================================================
@@ -228,9 +283,16 @@ public class CommentServiceImpl implements ICommentService {
 
         if (request.getParentPhId() != null) {
             Optional<PhCmt> optParent = phCmtRepository.findById(request.getParentPhId());
-            if (optParent.isPresent() == true) {
-                phCmt.setParentPh(optParent.get());
+            if (optParent.isPresent() == false) {
+                throw new AppException(404, "Phản hồi cha không còn tồn tại để thiết lập luồng trả lời.");
             }
+
+            PhCmt parentPh = optParent.get();
+            if (parentPh.getRootCmt().getId().equals(optRootCmt.get().getId()) == false) {
+                throw new AppException(400, "Phản hồi cha không thuộc cùng bình luận gốc với yêu cầu hiện tại.");
+            }
+
+            phCmt.setParentPh(parentPh);
         }
 
         PhCmt saved = phCmtRepository.save(phCmt);
@@ -340,7 +402,7 @@ public class CommentServiceImpl implements ICommentService {
         }
 
         String oldPayload = taoJsonPayloadPhCmt(ph);
-        ghiNhanNhatKyTuThanPhCmt(ph, ph.getUser(), "DELETE_CMT", oldPayload, null);
+        ghiNhanNhatKyTuThanPhCmt(ph, ph.getUser(), "DELETE_PH_CMT", oldPayload, null);
 
         xoaPhCmtVatLy(phCmtId);
     }
@@ -808,12 +870,15 @@ public class CommentServiceImpl implements ICommentService {
             Object[] arr = replies.toArray();
             for (int i = 0; i < arr.length; i = i + 1) {
                 PhCmt rp = (PhCmt) arr[i];
-                xoaPhCmtVatLy(rp.getId()); // Tái sử dụng hàm dọn rác của phản hồi
+                if (rp.getParentPh() == null) {
+                    xoaNhanhPhCmtVatLyCungCay(replies, rp.getId());
+                }
             }
         }
 
         // 2. Dọn sạch dữ liệu vệ tinh của Bình luận gốc
         ctLikeCmtRepository.xoaLikeTheoCmtId(cmtId);
+        cmtReportModLogRepository.xoaLogTheoCmtId(cmtId);
         ctCmtReportRepository.xoaBaoCaoTheoCmtId(cmtId);
         cmtModerationLogRepository.xoaLogTheoCmtId(cmtId);
         
@@ -831,21 +896,77 @@ public class CommentServiceImpl implements ICommentService {
     @Override
     @Transactional
     public void xoaPhCmtVatLy(Long phCmtId) {
-        if (phCmtRepository.existsById(phCmtId) == false) {
+        Optional<PhCmt> optPhCmt = phCmtRepository.findById(phCmtId);
+        if (optPhCmt.isPresent() == false) {
             throw new AppException(404, "Không tìm thấy phản hồi để xóa.");
         }
-        
-        // DỌN SẠCH DỮ LIỆU VỆ TINH CỦA PHẢN HỒI (Rất quan trọng)
+
+        Long rootCmtId = optPhCmt.get().getRootCmt().getId();
+        List<PhCmt> replies = phCmtRepository.findByRootCmtIdOrderByCreatedAtAsc(rootCmtId);
+        xoaNhanhPhCmtVatLyCungCay(replies, phCmtId);
+    }
+
+    /** Xóa một nhánh PH_CMT theo thứ tự hậu tự: con cháu trước, node cha sau */
+    private void xoaNhanhPhCmtVatLyCungCay(List<PhCmt> replies, Long phCmtId) {
+        List<Long> thuTuXoa = taoThuTuXoaHauTuPhCmt(replies, phCmtId);
+        Object[] arr = thuTuXoa.toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            Long idCanXoa = (Long) arr[i];
+            xoaDuLieuVeTinhPhCmt(idCanXoa);
+            phCmtRepository.deleteById(idCanXoa);
+        }
+        phCmtRepository.flush();
+    }
+
+    /**
+     * Tạo thứ tự xóa không dùng đệ quy để cây phản hồi rất sâu vẫn được dọn sạch.
+     * Nếu dữ liệu bị vòng lặp cha-con, transaction sẽ rollback thay vì xóa dang dở.
+     */
+    private List<Long> taoThuTuXoaHauTuPhCmt(List<PhCmt> replies, Long phCmtId) {
+        Map<Long, List<Long>> banDoConTheoCha = xayDungBanDoConTheo(replies);
+        List<Long> thuTuDuyet = new ArrayList<>();
+        List<Long> nganXep = new ArrayList<>();
+        Set<Long> daDuaVaoNganXep = new HashSet<>();
+
+        nganXep.add(phCmtId);
+        daDuaVaoNganXep.add(phCmtId);
+
+        while (nganXep.isEmpty() == false) {
+            Long idDangXet = nganXep.remove(nganXep.size() - 1);
+            thuTuDuyet.add(idDangXet);
+
+            List<Long> dsCon = banDoConTheoCha.get(idDangXet);
+            if (dsCon != null) {
+                Object[] arrCon = dsCon.toArray();
+                for (int i = 0; i < arrCon.length; i = i + 1) {
+                    Long conId = (Long) arrCon[i];
+                    if (daDuaVaoNganXep.add(conId) == false) {
+                        throw new AppException(409, "Cây phản hồi có vòng lặp dữ liệu. Hệ thống đã hủy thao tác xóa để bảo toàn dữ liệu.");
+                    }
+                    nganXep.add(conId);
+                }
+            }
+        }
+
+        List<Long> thuTuXoa = new ArrayList<>();
+        for (int i = thuTuDuyet.size() - 1; i >= 0; i = i - 1) {
+            thuTuXoa.add(thuTuDuyet.get(i));
+        }
+        return thuTuXoa;
+    }
+
+    /**
+     * Dọn toàn bộ dữ liệu phụ thuộc trực tiếp vào một PH_CMT trước khi xóa bản ghi chính.
+     */
+    private void xoaDuLieuVeTinhPhCmt(Long phCmtId) {
         ctLikePhCmtRepository.xoaLikeTheoPhCmtId(phCmtId);
+        phCmtReportModLogRepository.xoaLogTheoPhCmtId(phCmtId);
         phCmtReportRepository.xoaBaoCaoTheoPhCmtId(phCmtId);
         phCmtModerationLogRepository.xoaLogTheoPhCmtId(phCmtId);
-        
+
         if (phActionLogRepository != null) {
             phActionLogRepository.xoaNhatKyTheoPhCmtId(phCmtId);
         }
-        
-        // Sau khi dọn sạch mới được phép tiêu hủy
-        phCmtRepository.deleteById(phCmtId);
     }
 
     @Override
@@ -855,12 +976,7 @@ public class CommentServiceImpl implements ICommentService {
         for (int i = 0; i < ids.length; i = i + 1) {
             Long cmtId = (Long) ids[i];
             if (cmtRepository.existsById(cmtId) == true) {
-                ctPostCmtRepository.xoaLienKetTheoCmt(cmtId);
-                ctEventCmtRepository.xoaLienKetTheoCmt(cmtId);
-                if (actionLogRepository != null) {
-                    actionLogRepository.xoaNhatKyTheoCmtId(cmtId);
-                }
-                cmtRepository.deleteById(cmtId);
+                xoaCmtVatLy(cmtId);
             }
         }
     }
@@ -1052,7 +1168,140 @@ public class CommentServiceImpl implements ICommentService {
     // CÔNG CỤ XÂY DỰNG DTO ĐỆ QUY KHÔNG LAMBDA
     // =========================================================================
 
+    private PhCmt layPhanHoiHoacLoi(Long phCmtId) {
+        Optional<PhCmt> optPhanHoi = phCmtRepository.findById(phCmtId);
+        if (optPhanHoi.isPresent() == false) {
+            throw new AppException(404, "Không tìm thấy câu trả lời được yêu cầu.");
+        }
+        return optPhanHoi.get();
+    }
+
+    private PhCmt timPhanHoiNeoCapHai(PhCmt phanHoiBatDau) {
+        PhCmt hienTai = phanHoiBatDau;
+        Set<Long> daDiQua = new HashSet<>();
+
+        while (hienTai.getParentPh() != null) {
+            if (daDiQua.add(hienTai.getId()) == false) {
+                throw new AppException(409, "Cây phản hồi có vòng lặp dữ liệu, không thể xác định nhánh hiển thị an toàn.");
+            }
+            hienTai = hienTai.getParentPh();
+        }
+
+        return hienTai;
+    }
+
+    /**
+     * Xây dựng bản đồ parentId → danh sách ID con trực tiếp.
+     * Dùng chung cho demTongConChau và locConChau, tránh duyệt O(n×m) lặp lại.
+     */
+    private Map<Long, List<Long>> xayDungBanDoConTheo(List<PhCmt> tatCaPhanHoi) {
+        Map<Long, List<Long>> banDo = new HashMap<>();
+        Object[] arr = tatCaPhanHoi.toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            PhCmt ph = (PhCmt) arr[i];
+            if (ph.getParentPh() != null) {
+                Long parentId = ph.getParentPh().getId();
+                List<Long> dsCon = banDo.get(parentId);
+                if (dsCon == null) {
+                    dsCon = new ArrayList<>();
+                    banDo.put(parentId, dsCon);
+                }
+                dsCon.add(ph.getId());
+            }
+        }
+        return banDo;
+    }
+
+    /** Đếm tổng con cháu theo bản đồ đã dựng sẵn, không phụ thuộc độ sâu call-stack */
+    private long demTongConChauTuBanDo(Map<Long, List<Long>> banDo, Long nodeId) {
+        Set<Long> dsConChauId = gomConChauIdTuBanDo(banDo, nodeId);
+        return dsConChauId.size();
+    }
+
+    /** Gom toàn bộ ID con cháu vào tập hợp — dùng để lọc danh sách hiển thị */
+    private Set<Long> gomConChauIdTuBanDo(Map<Long, List<Long>> banDo, Long nodeId) {
+        Set<Long> ketQua = new HashSet<>();
+        List<Long> nganXep = new ArrayList<>();
+
+        List<Long> dsConTrucTiep = banDo.get(nodeId);
+        if (dsConTrucTiep != null) {
+            Object[] arrConTrucTiep = dsConTrucTiep.toArray();
+            for (int i = 0; i < arrConTrucTiep.length; i = i + 1) {
+                nganXep.add((Long) arrConTrucTiep[i]);
+            }
+        }
+
+        while (nganXep.isEmpty() == false) {
+            Long idDangXet = nganXep.remove(nganXep.size() - 1);
+            if (idDangXet.equals(nodeId) == true || ketQua.add(idDangXet) == false) {
+                throw new AppException(409, "Cây phản hồi có vòng lặp dữ liệu, không thể thống kê nhánh trả lời an toàn.");
+            }
+
+            List<Long> dsCon = banDo.get(idDangXet);
+            if (dsCon != null) {
+                Object[] arrCon = dsCon.toArray();
+                for (int i = 0; i < arrCon.length; i = i + 1) {
+                    nganXep.add((Long) arrCon[i]);
+                }
+            }
+        }
+
+        return ketQua;
+    }
+
+    private List<PhCmt> locConChauCuaPhanHoi(List<PhCmt> tatCaPhanHoiCuaGoc, Long phanHoiNeoId, Map<Long, List<Long>> banDo) {
+        Set<Long> dsConChauId = gomConChauIdTuBanDo(banDo, phanHoiNeoId);
+
+        List<PhCmt> ketQua = new ArrayList<>();
+        Object[] arr = tatCaPhanHoiCuaGoc.toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            PhCmt phanHoi = (PhCmt) arr[i];
+            if (dsConChauId.contains(phanHoi.getId()) == true) {
+                ketQua.add(phanHoi);
+            }
+        }
+        return ketQua;
+    }
+
+    private List<PhCmtResponse> taoTrangPhanHoiCapBa(List<PhCmt> danhSachHienThi, Long phanHoiNeoId, int page, int size, Long userId) {
+        List<PhCmtResponse> responseList = new ArrayList<>();
+        int viTriBatDau = page * size;
+        int viTriKetThuc = viTriBatDau + size;
+
+        if (viTriBatDau > danhSachHienThi.size()) {
+            viTriBatDau = danhSachHienThi.size();
+        }
+        if (viTriKetThuc > danhSachHienThi.size()) {
+            viTriKetThuc = danhSachHienThi.size();
+        }
+
+        for (int i = viTriBatDau; i < viTriKetThuc; i = i + 1) {
+            PhCmt phanHoi = danhSachHienThi.get(i);
+            PhCmtResponse dto = xayDungPhCmtResponse(phanHoi, userId);
+            dto.setDisplayLevel(TANG_HIEN_THI_PHAN_HOI_TOI_DA);
+            dto.setThreadAnchorPhId(phanHoiNeoId);
+            dto.setReplyCount(0);
+            responseList.add(dto);
+        }
+
+        return responseList;
+    }
+
+    private String layTenHienThiNguoiDung(User user) {
+        if (user == null) {
+            return "Tài khoản đã xóa";
+        }
+        if (user.getFullName() != null && user.getFullName().trim().isEmpty() == false) {
+            return user.getFullName();
+        }
+        return user.getUsername();
+    }
+
     private CmtResponse xayDungCmtResponse(Cmt cmt, Long userId) {
+        return xayDungCmtResponse(cmt, userId, true);
+    }
+
+    private CmtResponse xayDungCmtResponse(Cmt cmt, Long userId, boolean taiKemPhanHoi) {
         CmtResponse resp = new CmtResponse();
         resp.setId(cmt.getId());
         resp.setContent(cmt.getContent());
@@ -1093,12 +1342,15 @@ public class CommentServiceImpl implements ICommentService {
             }
         }
 
-        List<PhCmt> replies = phCmtRepository.findByRootCmtIdOrderByCreatedAtAsc(cmt.getId());
+        resp.setReplyCount(phCmtRepository.countByRootCmtIdAndParentPhIsNull(cmt.getId()));
+
         List<PhCmtResponse> replyResponses = new ArrayList<>();
-        
-        Object[] repliesArr = replies.toArray();
-        for (int i = 0; i < repliesArr.length; i = i + 1) {
-            replyResponses.add(xayDungPhCmtResponse((PhCmt) repliesArr[i], userId));
+        if (taiKemPhanHoi == true) {
+            List<PhCmt> replies = phCmtRepository.findByRootCmtIdOrderByCreatedAtAsc(cmt.getId());
+            Object[] repliesArr = replies.toArray();
+            for (int i = 0; i < repliesArr.length; i = i + 1) {
+                replyResponses.add(xayDungPhCmtResponse((PhCmt) repliesArr[i], userId));
+            }
         }
         resp.setReplies(replyResponses);
 
@@ -1121,9 +1373,18 @@ public class CommentServiceImpl implements ICommentService {
         resp.setContent(ph.getContent());
         resp.setCreatedAt(ph.getCreatedAt());
         resp.setUpdatedAt(ph.getUpdatedAt());
+        resp.setDisplayLevel(TANG_HIEN_THI_PHAN_HOI_CAP_HAI);
+        resp.setThreadAnchorPhId(ph.getId());
 
         if (ph.getParentPh() != null) {
             resp.setParentPhId(ph.getParentPh().getId());
+            resp.setReplyToUserId(ph.getParentPh().getUser().getId());
+            resp.setReplyToUserFullName(layTenHienThiNguoiDung(ph.getParentPh().getUser()));
+            resp.setDisplayLevel(TANG_HIEN_THI_PHAN_HOI_TOI_DA);
+            resp.setThreadAnchorPhId(timPhanHoiNeoCapHai(ph).getId());
+        } else if (ph.getRootCmt() != null && ph.getRootCmt().getUser() != null) {
+            resp.setReplyToUserId(ph.getRootCmt().getUser().getId());
+            resp.setReplyToUserFullName(layTenHienThiNguoiDung(ph.getRootCmt().getUser()));
         }
 
         if (ph.getUser() != null) {

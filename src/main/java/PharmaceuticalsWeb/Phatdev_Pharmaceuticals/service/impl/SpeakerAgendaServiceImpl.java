@@ -112,13 +112,18 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
 
     @Override
     public List<EventAgendaResponse> layDSLichTrinhCuaBuoi(Long ctEventId) {
+        return layDSLichTrinhCuaBuoi(ctEventId, true);
+    }
+
+    @Override
+    public List<EventAgendaResponse> layDSLichTrinhCuaBuoi(Long ctEventId, boolean coQuyenXemChiTiet) {
         List<EventAgenda> dsLichTrinh = agendaRepository.findByCtEventIdOrderByStartTimeAsc(ctEventId);
         List<EventAgendaResponse> dsKetQua = new ArrayList<>();
 
         Object[] mangLichTrinh = dsLichTrinh.toArray();
         for (int i = 0; i < mangLichTrinh.length; i++) {
             EventAgenda agenda = (EventAgenda) mangLichTrinh[i];
-            dsKetQua.add(dongGoiAgenda(agenda));
+            dsKetQua.add(dongGoiAgenda(agenda, coQuyenXemChiTiet));
         }
         return dsKetQua;
     }
@@ -238,14 +243,26 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
 
     /** Đóng gói dữ liệu Lịch trình, bao gồm việc quét mảng Diễn giả liên quan */
     private EventAgendaResponse dongGoiAgenda(EventAgenda agenda) {
+        return dongGoiAgenda(agenda, true);
+    }
+
+    /** Đóng gói lịch trình public; giữ teaser marketing nhưng không lộ mô tả chuyên sâu khi bị khóa */
+    private EventAgendaResponse dongGoiAgenda(EventAgenda agenda, boolean coQuyenXemChiTiet) {
         EventAgendaResponse resp = new EventAgendaResponse();
         resp.setId(agenda.getId());
         resp.setCtEventId(agenda.getCtEvent().getId());
         resp.setStartTime(agenda.getStartTime());
         resp.setEndTime(agenda.getEndTime());
         resp.setSessionTitle(agenda.getSessionTitle());
-        resp.setDescription(agenda.getDescription());
         resp.setDisplayOrder(agenda.getDisplayOrder());
+
+        if (coQuyenXemChiTiet == true) {
+            resp.setDescription(agenda.getDescription());
+            resp.setRestricted(false);
+        } else {
+            resp.setDescription("Nội dung chuyên sâu của khung này sẽ mở sau khi tài khoản đủ quyền tham dự.");
+            resp.setRestricted(true);
+        }
 
         // Kéo danh sách Diễn giả thực sự báo cáo trong mốc lịch trình này
         List<EventSpeaker> dsDienGia = bridgeRepository.layDSDienGiaTheoLichTrinh(agenda.getId());

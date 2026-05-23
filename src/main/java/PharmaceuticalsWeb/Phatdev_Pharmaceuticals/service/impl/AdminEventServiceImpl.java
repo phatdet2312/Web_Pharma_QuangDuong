@@ -42,6 +42,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ITagR
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAdminEventService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.EventStatusDisplayPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -87,6 +88,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
     private final IUserRepository userRepository;
     private final ICtEventSessionRoleRepository ctEventSessionRoleRepository;
     private final IUserRoleRepository userRoleRepository;
+    private final EventStatusDisplayPolicy eventStatusDisplayPolicy;
 
     /**
      * Đo lường sức khỏe toàn diện của Hệ sinh thái Sự kiện trong tháng hiện tại.
@@ -390,6 +392,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
             resp.setId(h.getId());
             resp.setCtEventId(h.getCtEvent().getId());
             resp.setStatusCode(h.getStatusCode());
+            resp.setDisplayStatus(eventStatusDisplayPolicy.layNhanAdmin(h.getStatusCode()));
             resp.setChangedAt(h.getChangedAt());
             resp.setNote(h.getNote());
 

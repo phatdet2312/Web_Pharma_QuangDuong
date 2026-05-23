@@ -19,6 +19,7 @@ import java.util.List;
  * Đóng gói dữ liệu phản hồi bình luận (reply) trả về client.
  * Duy trì liên kết logic vững chắc với Bình luận mỏ neo (RootCmt) 
  * và hỗ trợ thiết lập sơ đồ cây thông qua Phản hồi cha (ParentPh).
+ * Backend quyết định tầng hiển thị để frontend không phải tự suy luận cây dữ liệu vô hạn.
  */
 @Getter
 @Setter
@@ -40,6 +41,21 @@ public class PhCmtResponse {
 
     /** Mã định danh của tài khoản tác giả */
     private Long userId;
+
+    /** Tầng hiển thị đã được backend quy chuẩn: 2 hoặc 3 trong giao diện public hiện tại */
+    private int displayLevel;
+
+    /** Mã phản hồi cấp 2 làm mỏ neo hiển thị cho các phản hồi cấp 3 trở đi */
+    private Long threadAnchorPhId;
+
+    /** Tổng số câu trả lời con còn có thể mở tiếp dưới phản hồi này */
+    private long replyCount;
+
+    /** Mã tài khoản đang được phản hồi trực tiếp, dùng cho nhãn tag tên ở tầng 3 */
+    private Long replyToUserId;
+
+    /** Tên hiển thị của tài khoản đang được phản hồi trực tiếp */
+    private String replyToUserFullName;
 
     /** Họ và tên hiển thị của tài khoản tác giả */
     private String userFullName;

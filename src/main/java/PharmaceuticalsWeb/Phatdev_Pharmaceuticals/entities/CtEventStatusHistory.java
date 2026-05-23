@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * =========================================================================
  * Lịch sử thay đổi trạng thái buổi sự kiện (Event Sourcing Pattern).
  * Trạng thái hiện tại = bản ghi có CHANGED_AT mới nhất của buổi đó.
- * Các STATUS_CODE thường dùng: DRAFT, OPEN, FULL, CANCELLED, COMPLETED.
+ * Các STATUS_CODE thường dùng: DRAFT, OPEN, UPCOMING, ONGOING, FULL, CANCELLED, FINISHED, ENDED.
  */
 @Getter
 @Setter
@@ -35,7 +35,7 @@ public class CtEventStatusHistory {
     @JoinColumn(name = "CT_EVENT_ID", nullable = false)
     private CtEvent ctEvent;
 
-    /** Mã trạng thái mới: DRAFT|OPEN|FULL|CANCELLED|COMPLETED */
+    /** Mã trạng thái mới: DRAFT|OPEN|UPCOMING|ONGOING|FULL|CANCELLED|FINISHED|ENDED */
     @Column(name = "STATUS_CODE", nullable = false, length = 30)
     private String statusCode;
 

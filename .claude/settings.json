@@ -1,12 +1,8 @@
 {
   "env": {
-    //"ANTHROPIC_AUTH_TOKEN": "YOUR_API_KEY",
-    //"ANTHROPIC_BASE_URL": "url",
-    //"ANTHROPIC_MODEL": "claude-opus-4-6-20250115",
-    //"ANTHROPIC_SMALL_FAST_MODEL": "claude-haiku-4-5-20251001",
-    //"CLAUDE_CODE_SUBAGENT_MODEL": "claude-opus-4-6-20250115",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6-20250115",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6-20250311",
+    "ANTHROPIC_MODEL": "claude-opus-4-6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001"
   },
   "permissions": {
@@ -76,42 +72,100 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/pre-bash-firewall.sh"
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-bash-firewall.sh"],
+            "timeout": 10,
+            "statusMessage": "Firewall: checking dangerous commands"
           }
         ]
       },
       {
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/pre-edit-protect.sh"
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-edit-protect.sh"],
+            "timeout": 10,
+            "statusMessage": "Checking protected files"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-bash-firewall.sh"],
+            "timeout": 10,
+            "statusMessage": "Firewall: checking approval request"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-edit-protect.sh"],
+            "timeout": 10,
+            "statusMessage": "Checking protected file approval"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/post-edit-log.sh"
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit-log.sh"],
+            "timeout": 5
           },
           {
             "type": "command",
-            "command": ".claude/hooks/post-edit-typecheck.sh"
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit-typecheck.sh"],
+            "timeout": 120,
+            "statusMessage": "Auto compile/lint"
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit-detect-rework.sh"],
+            "timeout": 5
           }
         ]
       }
     ],
-    "SubagentStop": [
+    "SessionStart": [
       {
-        "matcher": "",
+        "matcher": "startup|resume",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/post-subagent-log.sh"
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.sh"],
+            "timeout": 15,
+            "statusMessage": "Checking drift + rework + memory"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/scan-secret-prompt.sh"],
+            "timeout": 5
           }
         ]
       }

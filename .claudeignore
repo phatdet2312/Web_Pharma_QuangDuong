@@ -1,16 +1,57 @@
-# Build & Output
+# .claudeignore — Single source of truth cho path policy
+#
+# Tag noi bo (hook pre-edit-protect doc file nay):
+#   # sensitive          — khong doc tru khi user yeu cau ro rang
+#   # protected-edit     — hook chan sua tu dong, can user xac nhan
+#   Dong khong tag       — bo qua khi quet rong, van Read duoc neu co ly do
+
+# === Secrets & Credentials ===
+.env # sensitive protected-edit
+.env.* # sensitive protected-edit
+.envrc # sensitive protected-edit
+*.pem # sensitive protected-edit
+**/*.pem # sensitive protected-edit
+*.key # sensitive protected-edit
+**/*.key # sensitive protected-edit
+*.pfx # sensitive protected-edit
+*.p12 # sensitive protected-edit
+secrets/** # sensitive protected-edit
+**/secrets/** # sensitive protected-edit
+credentials.json # sensitive protected-edit
+**/credentials.json # sensitive protected-edit
+service-account*.json # sensitive protected-edit
+.aws/credentials # sensitive protected-edit
+.npmrc # sensitive protected-edit
+.netrc # sensitive protected-edit
+.ssh/** # sensitive protected-edit
+
+# === Protected control files ===
+.claude/settings.json # protected-edit
+.claude/settings.local.json # protected-edit
+.claudeignore # protected-edit
+Dockerfile # protected-edit
+docker-compose.yml # protected-edit
+.ai-memory/00_core_rules.xml # protected-edit
+
+# === Setup scripts (one-time, Claude khong can doc) ===
+.claude/setup.cmd
+.claude/setup.ps1
+.claude/setup.sh
+*.backup
+
+# === Build & Output ===
 node_modules/
 target/
 build/
 dist/
 out/
 
-# Database & Data dumps
+# === Database & Data dumps ===
 CSDL/
 *.sql
 *.dump
 
-# Version Control & IDE
+# === Version Control & IDE ===
 .git/
 .idea/
 .vscode/
@@ -18,7 +59,7 @@ CSDL/
 .project
 .classpath
 
-# Java / Maven / Gradle
+# === Java / Maven / Gradle ===
 .mvn/
 .gradle/
 *.class
@@ -26,14 +67,14 @@ CSDL/
 *.war
 *.ear
 
-# Logs & Temp
+# === Logs & Temp ===
 *.log
 *.tmp
 *.bak
 *.swp
 logs/
 
-# Upload & Static assets (binary)
+# === Binary assets ===
 uploads/
 *.png
 *.jpg
@@ -46,7 +87,7 @@ uploads/
 *.ttf
 *.eot
 
-# Lock files
+# === Lock files ===
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
@@ -55,7 +96,7 @@ mvnw.cmd
 gradlew
 gradlew.bat
 
-# READMEs (hướng dẫn cho người dùng, agent không cần đọc)
+# === READMEs ===
 .ai-memory/README.md
 .claude/rules/README.md
 .claude/skills/README.md
@@ -63,10 +104,13 @@ gradlew.bat
 .claude/agents/README.md
 docs/README.md
 
-# Deep knowledge (agent đọc có chủ đích, không quét)
+# === Deep knowledge ===
 .ai-memory/03_deep_knowledge/
- 
-# Test data
+
+# === Memory archive ===
+.ai-memory/_archive/
+
+# === Test data ===
 src/test/resources/fixtures/
 __snapshots__/
 *.test.js.snap

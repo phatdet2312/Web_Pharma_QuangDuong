@@ -16,8 +16,8 @@ import java.util.List;
  * THỰC THỂ TRUYỀN TẢI: BÌNH LUẬN GỐC (ROOT COMMENT)
  * =========================================================================
  * Nhiệm vụ tổng quan:
- * Đóng gói dữ liệu bình luận gốc trả về client, bao gồm danh sách phản hồi 
- * lồng cấp (replies) và thống kê cảm xúc. Cung cấp đầy đủ thông tin để 
+ * Đóng gói dữ liệu bình luận gốc trả về client, bao gồm thống kê phản hồi
+ * và thống kê cảm xúc. Cung cấp đầy đủ thông tin để
  * Client-side vẽ giao diện mà không cần tự xử lý logic phân quyền hay kiểm duyệt.
  */
 @Getter
@@ -63,7 +63,10 @@ public class CmtResponse {
     /** Danh sách thống kê reaction tổng hợp theo từng phân loại cảm xúc */
     private List<LoaiLikeResponse> reactions;
 
-    /** Danh sách phản hồi thứ cấp trực thuộc bình luận gốc, sắp xếp theo CREATED_AT tăng dần */
+    /** Tổng số phản hồi cấp 2 trực tiếp để frontend hiển thị nút "Xem X câu trả lời" */
+    private long replyCount;
+
+    /** Danh sách phản hồi thứ cấp chỉ được dùng ở các luồng cũ cần nạp kèm reply */
     private List<PhCmtResponse> replies;
 
     /** Cờ phán quyết từ Backend: Người đang xem có phải là tác giả của bình luận này không? */

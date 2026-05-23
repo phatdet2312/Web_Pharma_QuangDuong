@@ -27,7 +27,9 @@ Quy trình SELF-SYNC:
 - Đổi kiến trúc → cập nhật `01_system_architecture.md`
 - Ghi log → `06_evolution_log.md`
 - Cập nhật `last_updated` + `Confidence`
-- Khi nhận output từ architect/planner có decision: ghi vào bảng Decision trong deep knowledge hoặc Architecture Decisions nếu cross-cutting
+- Khi nhận output từ architect/planner/deep-reviewer có decision: ghi vào bảng Decision trong deep knowledge hoặc Architecture Decisions nếu cross-cutting
+- BẮT BUỘC ghi đủ 5 cột: Quyết định | Phương án | Lý do | Ngày ghi (hôm nay) | Hết hạn (+3 tháng cho module, +6 tháng cho cross-cutting)
+- Khi sync memory: nếu thấy decision có "Hết hạn" đã quá ngày hiện tại → đánh dấu `[EXPIRED]` đầu dòng, báo user để re-evaluate
 
 Quy tắc xung đột:
 - Code thực tế LUÔN ĐÚNG hơn memory

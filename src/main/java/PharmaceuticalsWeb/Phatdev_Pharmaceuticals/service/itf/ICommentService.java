@@ -40,6 +40,12 @@ public interface ICommentService {
     /** Gửi reply cho comment gốc hoặc reply khác */
     PhCmtResponse guiPhCmt(ReplyRequest request, Long userId);
 
+    /** Lấy phản hồi cấp 2 trực tiếp của một bình luận gốc */
+    Page<PhCmtResponse> layPhanHoiCapHai(Long rootCmtId, int page, int size, Long userId);
+
+    /** Lấy phản hồi cấp 3 hiển thị dưới một phản hồi cấp 2 */
+    Page<PhCmtResponse> layPhanHoiCapBa(Long phCmtId, int page, int size, Long userId);
+
     /** Chỉnh sửa bình luận gốc — Kích hoạt ghi log Audit Tự thân */
     CmtResponse capNhatCmt(Long cmtId, CommentRequest request, Long userId);
 

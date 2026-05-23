@@ -1567,7 +1567,10 @@
                         var htmlOpt = '<option value="">Tất cả địa điểm</option>';
                         for (var i = 0; i < danhSach.length; i = i + 1) {
                             // Định danh rõ ràng Trực tuyến hay Thực địa
-                            var tienTo = danhSach[i].online ? "[Online 🌐] " : "[📍 offline] ";
+                            var tienTo = "[📍 offline] ";
+                            if (danhSach[i].online === true) {
+                                tienTo = "[Online 🌐] ";
+                            }
                             htmlOpt += '<option value="' + danhSach[i].id + '">' + tienTo + lamSachChuoiHTML(danhSach[i].name) + '</option>';
                         }
                         selectEl.innerHTML = htmlOpt;
@@ -1889,6 +1892,8 @@
                     htmlTrangThai = '<span class="si-status finished"><i class="fas fa-check fa-xs"></i> Đã kết thúc</span>';
                 } else if (chuoiHienThi === 'Đang diễn ra') {
                     htmlTrangThai = '<span class="si-status upcoming"><span style="width:6px;height:6px;background:var(--teal-500);border-radius:50%;animation:pulseDot 1.8s infinite;display:inline-block;"></span> Đang diễn ra</span>';
+                } else if (phien.currentStatus === 'LOCKED') {
+                    htmlTrangThai = '<span class="si-status" style="background:rgba(245,158,11,.12);color:var(--gold-600);border:1px solid rgba(245,158,11,.3);"><i class="fas fa-lock fa-xs"></i> ' + lamSachChuoiHTML(chuoiHienThi) + '</span>';
                 } else {
                     htmlTrangThai = '<span class="si-status finished">' + lamSachChuoiHTML(chuoiHienThi) + '</span>';
                 }
@@ -1897,11 +1902,12 @@
                 var htmlSlot = '';
                 if (phien.totalSlots > 0) {
                     var lopMauSac = '';
-                    // Backend truyền về cờ isCritical
                     if (phien.critical === true || phien.isCritical === true) {
                         lopMauSac = ' critical'; // Lớp CSS chữ màu đỏ
                     }
                     htmlSlot = '<div class="si-slots' + lopMauSac + '"><strong>' + dinhDangSo(phien.availableSlots) + '</strong> / ' + dinhDangSo(phien.totalSlots) + ' slot còn lại</div>';
+                } else {
+                    htmlSlot = '<div class="si-slots"><i class="fas fa-infinity fa-xs"></i> Không giới hạn</div>';
                 }
 
                 // 3. XỬ LÝ NÚT ĐĂNG KÝ
@@ -1920,6 +1926,8 @@
                 var htmlNutDangKy = '';
                 if (choPhepDangKy === true) {
                     htmlNutDangKy = '<a href="' + linkSuKien + '" class="si-register-btn"><i class="fas fa-ticket-alt fa-xs"></i> Đăng ký ngay</a>';
+                } else if (phien.currentStatus === 'LOCKED') {
+                    htmlNutDangKy = '<a href="' + linkSuKien + '" class="si-register-btn" style="background:var(--gold-500);color:var(--ink-900);"><i class="fas fa-lock fa-xs"></i> Xem điều kiện</a>';
                 } else if (chuoiHienThi === 'Hết chỗ') {
                     htmlNutDangKy = '<a href="' + linkSuKien + '" class="si-register-btn disabled"><i class="fas fa-times fa-xs"></i> Đã đầy</a>';
                 }
@@ -1940,7 +1948,9 @@
                 }
 
                 var htmlDiaChi = '';
-                if (phien.online === true) {
+                if (phien.hasFullAccess === false) {
+                    htmlDiaChi = '<div class="si-address"><i class="fas fa-lock"></i> ' + lamSachChuoiHTML(phien.locationAddress || 'Chi tiết địa điểm/link tham dự sẽ mở sau khi hồ sơ đủ điều kiện.') + '</div>';
+                } else if (phien.online === true) {
                     htmlDiaChi = '<div class="si-address"><i class="fas fa-link"></i> Link tham gia gửi qua email sau đăng ký</div>';
                 } else if (phien.locationAddress !== null && phien.locationAddress !== undefined && phien.locationAddress !== '') {
                     htmlDiaChi = '<div class="si-address"><i class="fas fa-location-arrow"></i> ' + lamSachChuoiHTML(phien.locationAddress) + '</div>';
@@ -2346,9 +2356,15 @@
                     }
 
                     // VẼ BỘ ĐIỀU HƯỚNG PHÂN TRANG (CƠ CHẾ MỚI BẰNG NÚT < VÀ >)
-                    var theTrangTruoc = coTrangTruoc ? '<button onclick="taiDangKyCuaToi(' + (trangDangKyCuaToi - 1) + ')" style="background:transparent;border:none;color:var(--teal-600);cursor:pointer;font-weight:700;font-size:1rem;"><i class="fas fa-angle-left"></i></button>' : '<button disabled style="background:transparent;border:none;color:var(--gray-300);cursor:not-allowed;font-weight:700;font-size:1rem;"><i class="fas fa-angle-left"></i></button>';
+                    var theTrangTruoc = '<button disabled style="background:transparent;border:none;color:var(--gray-300);cursor:not-allowed;font-weight:700;font-size:1rem;"><i class="fas fa-angle-left"></i></button>';
+                    if (coTrangTruoc === true) {
+                        theTrangTruoc = '<button onclick="taiDangKyCuaToi(' + (trangDangKyCuaToi - 1) + ')" style="background:transparent;border:none;color:var(--teal-600);cursor:pointer;font-weight:700;font-size:1rem;"><i class="fas fa-angle-left"></i></button>';
+                    }
 
-                    var theTrangSau = coTrangSau ? '<button onclick="taiDangKyCuaToi(' + (trangDangKyCuaToi + 1) + ')" style="background:transparent;border:none;color:var(--teal-600);cursor:pointer;font-weight:700;font-size:1rem;"><i class="fas fa-angle-right"></i></button>' : '<button disabled style="background:transparent;border:none;color:var(--gray-300);cursor:not-allowed;font-weight:700;font-size:1rem;"><i class="fas fa-angle-right"></i></button>';
+                    var theTrangSau = '<button disabled style="background:transparent;border:none;color:var(--gray-300);cursor:not-allowed;font-weight:700;font-size:1rem;"><i class="fas fa-angle-right"></i></button>';
+                    if (coTrangSau === true) {
+                        theTrangSau = '<button onclick="taiDangKyCuaToi(' + (trangDangKyCuaToi + 1) + ')" style="background:transparent;border:none;color:var(--teal-600);cursor:pointer;font-weight:700;font-size:1rem;"><i class="fas fa-angle-right"></i></button>';
+                    }
 
                     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px dashed var(--gray-200);">';
                     html += '<a href="/su-kien-cua-toi" style="font-size:.8rem;color:var(--teal-600);font-weight:600;text-decoration:none;">Xem tất cả</a>';
@@ -2387,7 +2403,7 @@
                     var chuDiaDiem = 'Tại hội trường';
                     if (phien.online === true) {
                         bieuTuongDiaDiem = 'fa-video';
-                        chuDiaDiem = 'Trực tuyến';
+                        chuDiaDiem = phien.locationName || 'Trực tuyến';
                     } else if (phien.locationName !== null && phien.locationName !== undefined && phien.locationName !== '') {
                         chuDiaDiem = phien.locationName;
                     }
@@ -2402,12 +2418,16 @@
                         linkDi = '/hoi-thao/' + phien.eventSlug + '?session=' + phien.id;
                     }
 
+                    var labelNut = '<i class="fas fa-ticket-alt fa-xs"></i> Đăng ký tham gia';
+                    if (phien.currentStatus === 'LOCKED') {
+                        labelNut = '<i class="fas fa-lock fa-xs"></i> Xem điều kiện';
+                    }
                     vungChua.innerHTML = '<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal-400);margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span style="width:5px;height:5px;background:var(--teal-400);border-radius:50%;animation:pulseDot 1.8s infinite;"></span>SẮP DIỄN RA — ' + ngayThang + ' ' + gioPhut + '</div>' +
                         '<div style="font-size:.95rem;font-weight:700;color:white;margin-bottom:8px;line-height:1.3;">' + lamSachChuoiHTML(tenHienThi) + '</div>' +
                         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">' +
                         '<span style="font-size:.75rem;color:rgba(255,255,255,.5);"><i class="fas ' + bieuTuongDiaDiem + '" style="color:var(--teal-400);margin-right:4px;"></i>' + lamSachChuoiHTML(chuDiaDiem) + '</span>' +
                         '<span style="font-size:.75rem;color:rgba(255,255,255,.5);"><i class="fas fa-users" style="color:var(--teal-400);margin-right:4px;"></i>' + lamSachChuoiHTML(thongTinVe) + '</span></div>' +
-                        '<a href="' + linkDi + '" class="btn-gold-pharma" style="padding:8px 16px;font-size:.82rem;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-ticket-alt fa-xs"></i> Đăng ký tham gia</a>';
+                        '<a href="' + linkDi + '" class="btn-gold-pharma" style="padding:8px 16px;font-size:.82rem;display:inline-flex;align-items:center;gap:5px;">' + labelNut + '</a>';
                 });
             }
 

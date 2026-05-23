@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs wc *)"
+      "Bash(xargs wc *)",
+      "Bash(.\\\\mvnw.cmd compile *)",
+      "Bash(Select-String \"error\")",
+      "Bash(Select-Object -First 15)",
+      "Bash(./mvnw.cmd compile *)",
+      "Bash(findstr \"^?\")"
     ]
   }
 }

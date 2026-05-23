@@ -29,10 +29,14 @@
 <!-- CHỈ ghi khi có 2+ phương án được cân nhắc -->
 <!-- KHÔNG ghi convention (đã có trong rules/) -->
 <!-- Agent có Write tự ghi, agent không có Write trả output để memory-keeper ghi -->
- 
-| Quyết định | Phương án (✅ chọn / ❌ bỏ) | Lý do | Dead End |
-|-----------|---------------------------|-------|----------|
-|           |                           |       |          |
+<!-- HALF-LIFE: Mỗi decision có Ngày ghi + Hết hạn (mặc định +3 tháng).
+     Agent gặp tình huống tương tự PHẢI check "Hết hạn" trước khi áp dụng.
+     Nếu quá hạn → BUỘC re-evaluate, hỏi user "Decision X đã hết hạn YYYY-MM-DD.
+     Muốn re-evaluate hay extend?" -->
+
+| Quyết định | Phương án (✅ chọn / ❌ bỏ) | Lý do | Ngày ghi | Hết hạn   | Dead End |
+|-----------|---------------------------|-------|----------|-----------|----------|
+|           |                           |       | YYYY-MM-DD | YYYY-MM-DD |          |
  
 ## Ghi chú
 <!-- Edge case, known issue, hoặc đặc biệt cần lưu ý -->

@@ -4,6 +4,9 @@ package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtPhCmtReportModLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,4 +25,12 @@ public interface ICtPhCmtReportModLogRepository extends JpaRepository<CtPhCmtRep
      * Trích xuất toàn bộ tiến trình xử lý của một Đơn báo cáo phản hồi.
      */
     List<CtPhCmtReportModLog> findByReportIdOrderByCreatedAtDesc(Long reportId);
+
+    /**
+     * Dọn nhật ký xử lý báo cáo trước khi xóa báo cáo của một phản hồi.
+     */
+    @Modifying
+    @Query("DELETE FROM CtPhCmtReportModLog l WHERE l.report.id IN " +
+           "(SELECT r.id FROM CtPhCmtReport r WHERE r.phCmt.id = :phCmtId)")
+    void xoaLogTheoPhCmtId(@Param("phCmtId") Long phCmtId);
 }

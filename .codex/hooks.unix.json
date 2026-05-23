@@ -1,0 +1,125 @@
+{
+  "_comment": "Codex hooks framework — spec: https://developers.openai.com/codex/hooks. Codex tự load file này song song với hooks ở ~/.codex/hooks.json.",
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "_comment": "Chặn lệnh Bash nguy hiểm trước khi chạy",
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/scripts/pre-bash-firewall.sh",
+            "statusMessage": "Firewall kiểm tra pattern lệnh nguy hiểm",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "_comment": "Bảo vệ protected files khi apply_patch / Write",
+        "matcher": "^(apply_patch|Edit|Write|MultiEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/scripts/pre-edit-protect.sh",
+            "statusMessage": "Kiểm tra file protected",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+
+    "PermissionRequest": [
+      {
+        "_comment": "Chặn approval request cho lệnh Bash nguy hiểm trước khi hiện prompt approve",
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/scripts/pre-bash-firewall.sh",
+            "statusMessage": "Firewall kiểm tra approval request nguy hiểm",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "_comment": "Chặn approval request sửa protected files",
+        "matcher": "^(apply_patch|Edit|Write|MultiEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/scripts/pre-edit-protect.sh",
+            "statusMessage": "Kiểm tra approval request protected file",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+
+    "PostToolUse": [
+      {
+        "_comment": "Ghi log + auto-typecheck sau khi apply_patch/Edit/Write",
+        "matcher": "^(apply_patch|Edit|Write|MultiEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/scripts/post-edit-log.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/scripts/post-edit-typecheck.sh",
+            "statusMessage": "Auto compile/lint",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/scripts/post-edit-detect-rework.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "_comment": "Đầu phiên: drift check + rework alert + memory size check",
+            "type": "command",
+            "command": "bash .codex/scripts/session-start.sh",
+            "statusMessage": "Kiểm tra drift + rework alerts",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "_comment": "Quét prompt user xem có lộ secret không (API key, password trong text)",
+            "type": "command",
+            "command": "bash .codex/scripts/scan-secret-in-prompt.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "_comment": "Cuối turn: ghi telemetry agent (cho /agent-roi). Hook không tự tiếp tục turn, chỉ log.",
+            "type": "command",
+            "command": "bash .codex/scripts/log-agent-turn.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

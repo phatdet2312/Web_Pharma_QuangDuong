@@ -8,6 +8,11 @@ Trước MỌI task, kiểm tra `01_system_architecture.md`:
 
 ## Khi nhận task mới (DAILY EXECUTION)
 0. **Drift check**: Chạy `git log --oneline -5` → nếu có commit Claude không biết → chạy /detect-drift TRƯỚC
+0b. **Rework alert check**: Nếu `.claude/rework-alerts.log` tồn tại và có dòng MỚI (trong 24h qua) → đọc + trigger /reflect ngầm để nhận diện pattern sai
+0c. **Memory size check** (1 lần mỗi 10 phiên hoặc đầu phiên mới sau >24h):
+    - Chạy `ls -l .ai-memory/06_evolution_log.md .ai-memory/07_learnings.md`
+    - Nếu `06_evolution_log.md` > 50KB hoặc `07_learnings.md` > 30KB → BÁO user: "Memory đã lớn ([size]). Đề xuất chạy /compact-memory để nén log cũ."
+    - KHÔNG tự chạy /compact-memory — chỉ đề xuất, user quyết định
 1. **Learning check**: Đọc `.ai-memory/07_learnings.md` → tránh lặp sai lầm đã biết
 2. Đọc `.ai-memory/04_active_plan.md` → có task dang dở không?
 3. Đọc `.ai-memory/05_active_workspace.md` → có bug/blocker không?
@@ -28,7 +33,15 @@ Trước MỌI task, kiểm tra `01_system_architecture.md`:
 - Đổi kiến trúc → cập nhật `01_system_architecture.md`
 - Ghi log vào `06_evolution_log.md`
 - Sau quyết định thiết kế (2+ phương án): ghi vào bảng Decision trong deep knowledge hoặc Architecture Decisions nếu cross-cutting
+- BẮT BUỘC ghi đủ 5 cột: Quyết định | Phương án | Lý do | Ngày ghi | Hết hạn (+3 tháng module, +6 tháng cross-cutting)
 - Trước khi đề xuất phương án: đọc bảng Decision để tránh đề xuất phương án đã bị reject hoặc dead end
+
+## Decision Half-Life (CHỐNG decision lỗi thời)
+- Mọi Decision có "Hết hạn" — KHÔNG dùng decision quá hạn
+- Trước khi áp dụng decision cũ: CHECK ngày hiện tại vs cột "Hết hạn"
+  * Còn hạn → áp dụng bình thường
+  * Quá hạn → KHÔNG tự áp dụng. Báo user: "Decision X đã hết hạn YYYY-MM-DD. Re-evaluate hay extend?"
+- memory-keeper khi sync: mark `[EXPIRED]` các decision quá hạn → cảnh báo
 
 ## Self-Improving (sau sai lầm)
 - Khi user correction hoặc test fail 2+ vòng: trigger /reflect

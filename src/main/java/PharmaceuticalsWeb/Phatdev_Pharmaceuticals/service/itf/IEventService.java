@@ -25,7 +25,7 @@ public interface IEventService {
     List<LocationResponse> layTatCaDiaDiemPublic();
 
     // lấy danh sách buổi sự kiện trong 1 tháng cụ thể (Mini Calendar)
-    List<CtEventResponse> layBuoiTrongThang(int year, int month);
+    List<CtEventResponse> layBuoiTrongThang(int year, int month, Long userId);
 
 
     /** Thống kê tổng quan cho Hero Stats trang public */
@@ -39,13 +39,14 @@ public interface IEventService {
      * Mỗi EventResponse chứa list sessions (CtEventResponse).
      */
     Page<EventResponse> timKiemSuKien(String keyword, Integer eventTypeId, String timeFilter,
-                                       Integer locationId, Integer roleId, String sortBy, int page, int size);
+                                       Integer locationId, Integer roleId, String sortBy, int page, int size,
+                                       Long userId);
 
     /** Lấy chi tiết chiến dịch theo slug */
     EventResponse layChiTietSuKien(String slug, Long userId);
 
     /** Lấy buổi sự kiện sắp tới (cho sidebar "Sự kiện sắp diễn ra") */
-    List<CtEventResponse> layBuoiSapToi(int limit);
+    List<CtEventResponse> layBuoiSapToi(int limit, Long userId);
 
     /** Lấy các buổi user đã đăng ký (cho sidebar "Đăng ký của tôi") */
     Page<EventRegistrationResponse> layDangKyCuaToi(Long userId, int page, int size);
@@ -60,10 +61,10 @@ public interface IEventService {
     void huyDangKy(Long registrationId, Long userId);
 
     /** Lịch sử trạng thái buổi sự kiện (public — dùng cho timeline events/detail.html) */
-    List<EventStatusHistoryResponse> layLichSuTrangThaiPublic(Long ctEventId);
+    List<EventStatusHistoryResponse> layLichSuTrangThaiPublic(Long ctEventId, Long userId);
 
     /** Trích xuất tóm tắt danh sách chuyên gia đăng ký phục vụ Social Proof (Đã qua xử lý Masking) */
-    EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId);
+    EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId, Long userId);
 
     /**
      * Lấy chi tiết một Buổi sự kiện theo ID (G1).
@@ -71,4 +72,7 @@ public interface IEventService {
      * Dùng cho events/detail.html khi load thông tin nhanh facts của một buổi cụ thể.
      */
     CtEventResponse layChiTietBuoi(Long ctEventId, Long userId);
+
+    /** Kiểm tra quyền đọc dữ liệu chi tiết của một buổi sự kiện. */
+    boolean coQuyenTruyCapBuoi(Long ctEventId, Long userId);
 }

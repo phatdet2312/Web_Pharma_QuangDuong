@@ -8,6 +8,22 @@ description: >
  
 # Quy trình Bootstrap Memory Bank
  
+## Bước 0: Kiểm tra dự án TRỐNG (NEW PROJECT GUARD)
+- `list_dir` root cấp 1
+- Nếu KHÔNG tìm thấy build config (pom.xml/package.json/go.mod/Cargo.toml/...) VÀ KHÔNG có file code (.java/.py/.go/.ts/.rs/.cs/.rb...):
+  **DỪNG BOOTSTRAP AUTO-DETECT**, chuyển sang chế độ INTERACTIVE:
+  1. Hỏi user trực tiếp:
+     - "Dự án trống chưa có code. Bạn dự định stack gì? (Java/Spring, Node/Express, Python/FastAPI, Go, ...)"
+     - "Loại dự án? (web-backend, web-fullstack, mobile, cli, library...)"
+     - "Database dự định? (PostgreSQL, MySQL, MongoDB, SQLite, không có...)"
+     - "Build tool? (Maven, Gradle, npm, pip, cargo...)"
+  2. Điền `01_system_architecture.md` với câu trả lời + Confidence: LOW (vì chưa có code thật để verify)
+  3. Đánh dấu Project Convention "Chưa xác định — sẽ phát hiện sau khi có code"
+  4. Tạo 02_project_map.md với note "Empty project — map sẽ tự cập nhật"
+  5. Tạo 03_deep_knowledge/INDEX.md trống
+  6. Báo user: "Bootstrap interactive xong. Khi tạo file code đầu tiên, /sync-memory sẽ refine convention"
+- Nếu CÓ build config / file code → tiếp tục Bước 1
+
 ## Bước 1: Quét dự án
 - `list_dir` root (2 cấp sâu), KHÔNG quét: node_modules, target, build, .git
 

@@ -26,5 +26,6 @@ Nguyên tắc:
 - Error format: { code, message, details, timestamp }
 - Pagination: page, size, sort
 - Validate input đầy đủ theo convention của dự án
-- Sau quyết định thiết kế (2+ phương án): ghi vào bảng Decision trong deep knowledge tương ứng
+- Sau quyết định thiết kế (2+ phương án): ghi vào bảng Decision trong deep knowledge tương ứng, KÈM Ngày ghi (hôm nay) + Hết hạn (+3 tháng)
+- Decision Half-Life: TRƯỚC KHI áp dụng decision cũ (VD: "response wrap {data, error}"), CHECK cột "Hết hạn". Quá hạn → KHÔNG tự áp dụng, báo user re-evaluate
 - Trả lời bằng tiếng Việt

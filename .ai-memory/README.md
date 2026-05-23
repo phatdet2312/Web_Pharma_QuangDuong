@@ -16,7 +16,8 @@ các file ở đây qua các phiên làm việc, giúp không phải quét lại
 ├── 04_active_plan.md            ← Kế hoạch task đang thực hiện
 ├── 05_active_workspace.md       ← Bug, blocker, context cho phiên sau
 ├── 06_evolution_log.md          ← Nhật ký thay đổi code theo thời gian
-└── 07_learnings.md              ← Bài học từ sai lầm (self-improving)
+├── 07_learnings.md              ← Bài học từ sai lầm (self-improving)
+└── _archive/                    ← Raw log đã nén (do /compact-memory tạo); agent KHÔNG đọc
 ```
 
 ## Vai trò từng file
@@ -32,13 +33,14 @@ các file ở đây qua các phiên làm việc, giúp không phải quét lại
 | `05_active_workspace.md`          | Bug, blocker, context cho phiên sau                       | Agent cập nhật mỗi phiên                 |
 | `06_evolution_log.md`             | Nhật ký thay đổi code theo thời gian                      | Agent ghi log mỗi task                   |
 | `07_learnings.md`                 | Bài học từ sai lầm (pattern → rule)                       | Agent ghi qua /reflect                   |
+| `_archive/`                       | Raw log đã nén từ /compact-memory; KHÔNG đọc daily        | /compact-memory tạo, agent không quét    |
    
 ## Vòng đời
  1. **Bootstrap** (lần đầu): Agent quét dự án → điền 01, 02, tạo INDEX + file trong 03
  2. **Daily**: Agent đọc memory thay vì quét lại → tiết kiệm 60-75% token
  3. **Self-sync**: Sau mỗi thay đổi code → agent cập nhật memory tương ứng
  4. **Self-improving**: Sau sai lầm → /reflect ghi vào 07 → /promote-learning đưa lên rules
- 5. **Drift detection**: Khi phát hiện code thay đổi ngoài Claude → đồng bộ lại
+ 5. **Drift detection**: Khi phát hiện code thay đổi ngoài Codex → đồng bộ lại
 
 ## Quy tắc quan trọng
 - `Status: PENDING_BOOTSTRAP` trong 01 hoặc 02 → agent chưa quét, cần chạy bootstrap
