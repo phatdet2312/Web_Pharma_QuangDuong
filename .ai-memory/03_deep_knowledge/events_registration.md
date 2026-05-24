@@ -1,5 +1,5 @@
 # Events & Registration
-> Last updated: 2026-05-24
+> Last updated: 2026-05-25
 > Source files: `controller/view/EventViewController.java`, `controller/api/ApiEventController.java`, `controller/api/ApiCommentController.java`, `controller/api/ApiPublicSpeakerAgendaController.java`, `controller/api/ApiAdminEventController.java`, `service/itf/IEventService.java`, `service/impl/EventServiceImpl.java`, `service/impl/SpeakerAgendaServiceImpl.java`, `service/support/EventStatusDisplayPolicy.java`, `service/support/NguCanhNguoiDung.java`, `service/support/NguCanhNguoiDungFactory.java`, `entities/Event.java`, `entities/CtEvent.java`, `entities/CtEventRegistration.java`
 > Confidence: HIGH
 
@@ -74,13 +74,10 @@ Refactor 3 vi pham OOP trong event service:
 | GET | `/api/events/sessions/{ctEventId}/status-history` | Timeline status | No, empty if locked |
 | GET | `/api/events/sessions/{ctEventId}/attendees-summary` | Social proof masked attendees | No, empty if locked |
 
-## Audit Notes 2026-05-21
+## Ghi chu
 
-- Sau fix truc tiep, event sample trong `DuLieuMau.sql` PASS validator noi bo.
-- `EVENTS=100`, `CT_EVENTS=100`; moi session gan 1 campaign cha rieng va description khong trung exact.
-- Future sessions: 20 session sau 2026-05-20, 0 session sau 2026-07-30, max `CT_EVENTS.START_TIME` trong gioi han.
-- Latest status distribution: `ENDED=75`, `CANCELLED=5`, `OPEN=13`, `UPCOMING=7`; khong con `COMPLETED`.
-- Capacity/registration: over-capacity 0, future `ATTENDED` 0, registration sau start 0, non-event registration timestamp sau 2026-05-20 = 0.
+- File `DuLieuMau.sql` (chua sample data event) da bi user xoa khoi repo ngay 2026-05-25. Chi con schema `FileKhoiTaoCSDL.sql`.
+- Khi can test event flows, phai tao du lieu truc tiep trong DB hoac dung DatabaseSeeder.
 
 ## Decision Log
 

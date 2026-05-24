@@ -1,5 +1,5 @@
 # Comments & Moderation
-> Last updated: 2026-05-24
+> Last updated: 2026-05-25
 > Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, `dto/request/EditContentRequest.java`, comment/report/moderation entities
 > Confidence: MEDIUM
 
@@ -82,6 +82,19 @@ Module comment xử lý comment/reply cho post và event session, reaction, lị
 - Controller không thay đổi logic validate, chỉ DTO bỏ field không cần khi chỉnh sửa.
 
 **Phương án bỏ:** Sửa `ReplyRequest` thêm field `rootCmtId` optional → sai design; request creation và update không nên dùng DTO chung khi contract khác nhau.
+
+## UI Comment Threading - Facebook Tree Branch (2026-05-25)
+
+User tự implement CSS vẽ nhánh cây kiểu Facebook cho comment post detail:
+- CSS variables: `--avatar-size-l1/l2`, `--gap-l1/l2`, `--trunk-offset-l1/l2`, `--trunk-start-gap`
+- Trục dọc (trunk): `::after` trên `.ci-bubble`/`.ri-bubble` khi parent có `.has-replies` hoặc có `.reply-nav-row:not(:empty)`
+- Nhánh L (branch): `::before` trên `.reply-item` rẽ từ trục vào mỗi reply, border-radius tạo cong
+- Cắt trục ở `:last-child::after { display: none }`
+- Nối xuyên form reply inline: `.reply-form-wrapper::before` vẽ trục tiếp nối
+- Hai cấp: Level 1→2 (biến `l1`, selector `.ci-bubble-wrapper > .reply-thread`) và Level 2→3 (biến `l2`, selector `.ri-bubble-wrapper > .reply-thread`)
+- Selector dùng `:has()` cho trường hợp chưa mở reply nhưng có nút navigation
+
+**Quy tắc khi sửa UI comment:** Không xóa/đổi class `.has-replies`, `.ci-bubble-wrapper`, `.ri-bubble-wrapper`, `.reply-form-wrapper` vì tree branch CSS phụ thuộc vào cấu trúc DOM này.
 
 ## Ghi chú
 

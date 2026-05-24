@@ -1,5 +1,5 @@
 # System Architecture
-> Last updated: 2026-05-18
+> Last updated: 2026-05-25
 > Status: BOOTSTRAPPED
 
 ## Tech Stack
@@ -31,8 +31,9 @@
 3. JavaScript trong template gọi JSON API dưới `/api/...`.
 4. `controller.api` nhận request, validate DTO bằng Jakarta Validation, trả `ApiResponse<T>`.
 5. Service interface trong `service.itf` được implement ở `service.impl`; service chứa business rule, mapping DTO thủ công và transaction.
-6. Repository trong `repositories.IRepository` dùng Spring Data JPA, derived query hoặc JPQL `@Query`.
-7. Entity trong `entities` ánh xạ bảng SQL Server bằng JPA annotation.
+6. `service.support` chứa policy/helper dùng chung giữa service (VD: `NguCanhNguoiDung`, `EventStatusDisplayPolicy`); không truy cập DB trực tiếp.
+7. Repository trong `repositories.IRepository` dùng Spring Data JPA, derived query hoặc JPQL `@Query`.
+8. Entity trong `entities` ánh xạ bảng SQL Server bằng JPA annotation.
 
 Security flow:
 
