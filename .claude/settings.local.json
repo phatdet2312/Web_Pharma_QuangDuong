@@ -9,7 +9,9 @@
       "Bash(findstr \"^?\")",
       "Bash(./mvnw.cmd clean *)",
       "Bash(mvn compile *)",
-      "Bash(./mvnw compile *)"
+      "Bash(./mvnw compile *)",
+      "Bash(powershell -Command \"Get-Process -Name java -ErrorAction SilentlyContinue | Select-Object Id, ProcessName | Format-Table\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | Select-Object LocalPort, OwningProcess, State\")"
     ]
   }
 }

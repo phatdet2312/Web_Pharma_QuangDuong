@@ -1281,6 +1281,18 @@
                 /* Reply (PH_CMT Cấp 2+) */
                 .reply-thread {
                     margin-top: 12px;
+                    position: relative;
+                }
+
+                .reply-thread:empty {
+                    margin-top: 0;
+                }
+
+                .reply-item {
+                    display: flex;
+                    gap: 10px;
+                    margin-bottom: 12px;
+                    position: relative;
                 }
 
                 .reply-level-3 {
@@ -1291,17 +1303,182 @@
                     display: flex;
                     flex-wrap: wrap;
                     gap: 8px;
-                    margin: 6px 0 12px 38px;
+                    margin: 12px 0 12px 0;
+                    padding-left: 4px;
+                    position: relative;
                 }
 
                 .reply-nav-row:empty {
                     display: none;
                 }
 
-                .reply-item {
-                    display: flex;
-                    gap: 10px;
-                    margin-bottom: 12px;
+                /* ============================================
+                   Facebook Tree Branch
+                   ============================================ */
+                :root {
+                    /* Cấp 1 -> Cấp 2 */
+                    --avatar-size-l1: 36px;
+                    --gap-l1: 12px;
+                    /* Khoảng cách từ avatar đến bubble */
+                    /* Tâm trục = -(khoảng cách + nửa avatar) */
+                    --trunk-offset-l1: calc((var(--avatar-size-l1) / 2 + var(--gap-l1)) * -1);
+
+                    /* Cấp 2 -> Cấp 3 */
+                    --avatar-size-l2: 28px;
+                    --gap-l2: 10px;
+                    --trunk-offset-l2: calc((var(--avatar-size-l2) / 2 + var(--gap-l2)) * -1);
+
+                    /* Khoảng hở từ avatar đến điểm bắt đầu đường dọc */
+                    --trunk-start-gap: 6px;
+                }
+
+                /* Thêm position relative cho các khối chứa để dùng làm mốc vẽ nhánh */
+                .ci-bubble,
+                .ri-bubble,
+                .reply-form-wrapper {
+                    position: relative;
+                }
+
+                /* 1. Trục dọc từ Avatar cha xuống tới khối tiếp theo (Level 1 -> 2) */
+                .comment-item.has-replies>.ci-bubble-wrapper>.ci-bubble::after,
+                .comment-item:has(> .ci-bubble-wrapper > .reply-nav-row:not(:empty))>.ci-bubble-wrapper>.ci-bubble::after {
+                    content: '';
+                    position: absolute;
+                    left: calc(var(--trunk-offset-l1) - 1px);
+                    top: calc(var(--avatar-size-l1) + var(--trunk-start-gap) - 1px);
+                    bottom: -13px;
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                /* Nối trục dọc xuyên qua khung trả lời inline nếu đang mở */
+                .ci-bubble-wrapper>div>.reply-form-wrapper::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l1);
+                    top: 0;
+                    bottom: -12px;
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                .ri-bubble-wrapper>div>.reply-form-wrapper::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l2);
+                    top: 0;
+                    bottom: -12px;
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                /* 2. Nhánh L rẽ vào từng reply-item (Level 2) */
+                .ci-bubble-wrapper>.reply-thread>.reply-item::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l1);
+                    top: 0;
+                    width: calc(var(--trunk-offset-l1) * -1 - 6px);
+                    /* Kéo nhánh L vào cách mép bubble 6px */
+                    height: 14px;
+                    border-left: 2px solid var(--gray-200);
+                    border-bottom: 2px solid var(--gray-200);
+                    border-bottom-left-radius: 12px;
+                    z-index: 1;
+                }
+
+                /* 3. Trục dọc nối tiếp GIỮA các reply-item (Level 2) */
+                .ci-bubble-wrapper>.reply-thread>.reply-item::after {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l1);
+                    top: 0;
+                    height: calc(100% + 12px);
+                    /* +12px margin-bottom của reply-item */
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                /* CẮT trục dọc ở reply-item cuối cùng */
+                .ci-bubble-wrapper>.reply-thread>.reply-item:last-child::after {
+                    display: none;
+                }
+
+                /* 4. Nhánh L cho nút "Xem x câu trả lời" (Level 1 -> 2) */
+                .comment-item:not(.has-replies)>.ci-bubble-wrapper>.reply-nav-row:not(:empty)::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l1);
+                    top: 0;
+                    width: calc(var(--trunk-offset-l1) * -1 - 6px);
+                    height: 16px;
+                    border-left: 2px solid var(--gray-200);
+                    border-bottom: 2px solid var(--gray-200);
+                    border-bottom-left-radius: 12px;
+                }
+
+                /* ============================================
+                   Facebook Tree Branch — Cấp 2 -> Cấp 3
+                   ============================================ */
+
+                /* 5. Trục dọc từ Avatar cấp 2 xuống khối tiếp theo */
+                .reply-item.has-replies>.ri-bubble-wrapper>.ri-bubble::after,
+                .reply-item:has(> .ri-bubble-wrapper > .reply-nav-row:not(:empty))>.ri-bubble-wrapper>.ri-bubble::after {
+                    content: '';
+                    position: absolute;
+                    left: calc(var(--trunk-offset-l2) - 1px);
+                    top: calc(var(--avatar-size-l2) + var(--trunk-start-gap) - 1px);
+                    bottom: -13px;
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                /* 6. Nhánh L rẽ vào từng reply-item (Level 3) */
+                .ri-bubble-wrapper>.reply-thread>.reply-item::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l2);
+                    top: 0;
+                    width: calc(var(--trunk-offset-l2) * -1 - 6px);
+                    height: 14px;
+                    border-left: 2px solid var(--gray-200);
+                    border-bottom: 2px solid var(--gray-200);
+                    border-bottom-left-radius: 10px;
+                    z-index: 1;
+                }
+
+                /* 7. Trục dọc nối tiếp GIỮA các reply-item (Level 3) */
+                .ri-bubble-wrapper>.reply-thread>.reply-item::after {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l2);
+                    top: 0;
+                    height: calc(100% + 12px);
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                .ri-bubble-wrapper>.reply-thread>.reply-item:last-child::after {
+                    display: none;
+                }
+
+                /* 8. Nhánh L cho nút "Xem x câu trả lời" (Level 2 -> 3) */
+                .reply-item:not(.has-replies)>.ri-bubble-wrapper>.reply-nav-row:not(:empty)::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l2);
+                    top: 0;
+                    width: calc(var(--trunk-offset-l2) * -1 - 6px);
+                    height: 16px;
+                    border-left: 2px solid var(--gray-200);
+                    border-bottom: 2px solid var(--gray-200);
+                    border-bottom-left-radius: 10px;
                 }
 
                 .ri-avatar {
@@ -2909,6 +3086,20 @@
                 if (vungPhanHoi !== null) {
                     vungPhanHoi.innerHTML = '';
                     vungPhanHoi.style.display = 'none';
+                    var idThread = vungPhanHoi.id || '';
+                    if (idThread.indexOf('reply-thread-cmt-') === 0) {
+                        var maCmt = idThread.replace('reply-thread-cmt-', '');
+                        var cmtEl = document.getElementById('cmt-' + maCmt);
+                        if (cmtEl !== null) {
+                            cmtEl.classList.remove('has-replies');
+                        }
+                    } else if (idThread.indexOf('reply-thread-phcmt-') === 0) {
+                        var maPhCmt = idThread.replace('reply-thread-phcmt-', '');
+                        var rpEl = document.getElementById('reply-item-' + maPhCmt);
+                        if (rpEl !== null) {
+                            rpEl.classList.remove('has-replies');
+                        }
+                    }
                 }
                 if (vungDieuHuong !== null) {
                     vungDieuHuong.setAttribute('data-total', 0);
@@ -2959,6 +3150,11 @@
                         vungPhanHoi.insertAdjacentHTML('beforeend', theHTMLNoiDung);
                     }
 
+                    var cmtItem = document.getElementById('cmt-' + maCmtGoc);
+                    if (cmtItem !== null) {
+                        cmtItem.classList.add('has-replies');
+                    }
+
                     capNhatDieuHuongPhanHoiCapHai(maCmtGoc, duLieuTrang);
                 });
             };
@@ -2993,6 +3189,11 @@
                         vungPhanHoi.innerHTML = theHTMLNoiDung;
                     } else {
                         vungPhanHoi.insertAdjacentHTML('beforeend', theHTMLNoiDung);
+                    }
+
+                    var replyParent = document.getElementById('reply-item-' + maPhanHoiNeo);
+                    if (replyParent !== null) {
+                        replyParent.classList.add('has-replies');
                     }
 
                     capNhatDieuHuongPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, duLieuTrang);
@@ -3053,6 +3254,10 @@
                 if (vungPhanHoi !== null) {
                     vungPhanHoi.innerHTML = '';
                     vungPhanHoi.style.display = 'none';
+                    var cmtItem = document.getElementById('cmt-' + maCmtGoc);
+                    if (cmtItem !== null) {
+                        cmtItem.classList.remove('has-replies');
+                    }
                 }
                 if (vungDieuHuong !== null) {
                     var tongSo = Number(vungDieuHuong.getAttribute('data-total'));
@@ -3072,6 +3277,10 @@
                 if (vungPhanHoi !== null) {
                     vungPhanHoi.innerHTML = '';
                     vungPhanHoi.style.display = 'none';
+                    var replyParent = document.getElementById('reply-item-' + maPhanHoiNeo);
+                    if (replyParent !== null) {
+                        replyParent.classList.remove('has-replies');
+                    }
                 }
                 if (vungDieuHuong !== null) {
                     var tongSo = Number(vungDieuHuong.getAttribute('data-total'));
