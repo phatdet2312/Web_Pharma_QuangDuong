@@ -32,6 +32,9 @@ public interface IPhCmtRepository extends JpaRepository<PhCmt, Long> {
     /** Đếm phản hồi cấp 2 trực tiếp dưới một bình luận gốc */
     long countByRootCmtIdAndParentPhIsNull(Long rootCmtId);
 
+    /** Đếm tổng tất cả phản hồi mọi cấp dưới một bình luận gốc (kiểu Facebook) */
+    long countByRootCmtId(Long rootCmtId);
+
     /** Đếm tổng reply toàn hệ thống (cho admin stats) */
     @Query("SELECT COUNT(p) FROM PhCmt p")
     long demTongPhCmt();

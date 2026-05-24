@@ -1,6 +1,6 @@
 # Events & Registration
 > Last updated: 2026-05-24
-> Source files: `controller/view/EventViewController.java`, `controller/api/ApiEventController.java`, `controller/api/ApiCommentController.java`, `controller/api/ApiPublicSpeakerAgendaController.java`, `controller/api/ApiAdminEventController.java`, `service/impl/EventServiceImpl.java`, `service/impl/SpeakerAgendaServiceImpl.java`, `service/support/EventStatusDisplayPolicy.java`, `entities/Event.java`, `entities/CtEvent.java`, `entities/CtEventRegistration.java`
+> Source files: `controller/view/EventViewController.java`, `controller/api/ApiEventController.java`, `controller/api/ApiCommentController.java`, `controller/api/ApiPublicSpeakerAgendaController.java`, `controller/api/ApiAdminEventController.java`, `service/itf/IEventService.java`, `service/impl/EventServiceImpl.java`, `service/impl/SpeakerAgendaServiceImpl.java`, `service/support/EventStatusDisplayPolicy.java`, `service/support/NguCanhNguoiDung.java`, `service/support/NguCanhNguoiDungFactory.java`, `entities/Event.java`, `entities/CtEvent.java`, `entities/CtEventRegistration.java`
 > Confidence: HIGH
 
 ## Mo ta chuc nang
@@ -23,6 +23,35 @@ Module su kien quan ly campaign (`EVENTS`), session cu the (`CT_EVENTS`), dang k
 - `taoMoTaMarketing` phai strip `<script>...</script>`, `<style>...</style>`, HTML tag va URL truoc khi tao teaser cho event bi khoa.
 - Comments/status-history/attendee-summary cua event session phai kiem tra `coQuyenTruyCapBuoi`; neu thieu quyen tra empty/403 phu hop.
 - `POST /api/events/register` phai chan session thieu quyen truoc khi lo trang thai/capacity.
+
+## OOP Refactor - NguCanhNguoiDung (2026-05-24)
+
+Refactor 3 vi pham OOP trong event service:
+
+1. **Tính mù (opacity)**: Service method trước nhận `Long userId` → giờ nhận `NguCanhNguoiDung` (chứa userId + capBacCaoNhat). Service tự tạo object này bằng factory, không còn "xin" data từ bên ngoài.
+2. **Ai làm việc nấy**: Factory là @Component, inject `IUserRepository` + `IUserService`, có method `taoNguCanh(Long userId)` → trả object context chứa tất cả thông tin cần, không phải service tự query.
+3. **Nâng cấp trần**: Class shared `NguCanhNguoiDung` trong `service/support`, getter methods `layCapBacCaoNhat()`, không phải inner class `private static` trong `EventServiceImpl`.
+
+**Phương thức thay đổi (9 method dùng NguCanhNguoiDung):**
+- `layBuoiTrongThang(NguCanhNguoiDung)`
+- `timKiemSuKien(NguCanhNguoiDung, ...params)`
+- `layChiTietSuKien(NguCanhNguoiDung, ...)`
+- `layChiTietBuoi(NguCanhNguoiDung, ...)`
+- `layBuoiSapToi(NguCanhNguoiDung, ...)`
+- `dangKyThamDu(NguCanhNguoiDung, ...)`
+- `layLichSuTrangThaiPublic(NguCanhNguoiDung, ...)`
+- `layTomTatKhachMoiPublic(NguCanhNguoiDung, ...)`
+- `coQuyenTruyCapBuoi(NguCanhNguoiDung, ctEventId)` — method kiểm tra quyền sử dụng trong controller event/speaker/comment endpoints
+
+**3 method giữ nguyên Long userId:**
+- `layDangKyCuaToi(Long userId)` — endpoint `/my-registrations`
+- `layVeCuaToiTaiBuoiNay(Long userId)` — check ticket hiện tại
+- `huyDangKy(Long userId, Long regId)` — validation user ownership
+
+**Controller refactor:**
+- `ApiEventController`: inject `NguCanhNguoiDungFactory`, mỗi endpoint public tạo `NguCanhNguoiDung` một lần rồi truyền xuống service.
+- `ApiPublicSpeakerAgendaController`: inject factory, gọi `coQuyenTruyCapBuoi(nguCanh)`.
+- `ApiCommentController`: inject factory, sửa 2 lời gọi `coQuyenTruyCapBuoi(nguCanh)` cho comment event session.
 
 ## API Endpoints
 

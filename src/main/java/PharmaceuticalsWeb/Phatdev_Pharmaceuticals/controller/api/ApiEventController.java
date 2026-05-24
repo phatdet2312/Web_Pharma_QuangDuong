@@ -18,6 +18,8 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.ICommentService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDung;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDungFactory;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -51,6 +53,7 @@ public class ApiEventController {
     private final IEventService eventService;
     private final ICommentService commentService;
     private final IUserService userService;
+    private final NguCanhNguoiDungFactory nguCanhFactory;
 
     /** Thống kê Hero Stats trang sự kiện */
     @GetMapping("/stats")
@@ -71,11 +74,12 @@ public class ApiEventController {
     /** Lấy dữ liệu cho Lịch Mini (Đánh dấu ngày có sự kiện) */
     @GetMapping("/calendar")
     public ApiResponse<List<CtEventResponse>> layLichTrongThang(
-            @RequestParam int year, 
+            @RequestParam int year,
             @RequestParam int month,
             Authentication authentication) {
         Long userId = layUserIdTuAuthentication(authentication);
-        return ApiResponse.thanhCong(eventService.layBuoiTrongThang(year, month, userId), "Lấy lịch sự kiện thành công");
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        return ApiResponse.thanhCong(eventService.layBuoiTrongThang(year, month, nguCanh), "Lấy lịch sự kiện thành công");
     }
 
     /** Danh sách loại sự kiện cho filter sidebar */
@@ -98,8 +102,9 @@ public class ApiEventController {
             Authentication authentication) {
 
         Long userId = layUserIdTuAuthentication(authentication);
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
         Page<EventResponse> result = eventService.timKiemSuKien(keyword, type, time, locationId, roleId, sort, page,
-                size, userId);
+                size, nguCanh);
         return ApiResponse.thanhCong(result, "Lấy danh sách sự kiện thành công");
     }
 
@@ -107,7 +112,8 @@ public class ApiEventController {
     @GetMapping("/{slug}")
     public ApiResponse<EventResponse> layChiTiet(@PathVariable String slug, Authentication authentication) {
         Long userId = layUserIdTuAuthentication(authentication);
-        return ApiResponse.thanhCong(eventService.layChiTietSuKien(slug, userId), "Lấy chi tiết sự kiện thành công");
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        return ApiResponse.thanhCong(eventService.layChiTietSuKien(slug, nguCanh), "Lấy chi tiết sự kiện thành công");
     }
 
     /** Buổi sự kiện sắp tới (sidebar "Upcoming events") */
@@ -116,7 +122,8 @@ public class ApiEventController {
             @RequestParam(defaultValue = "5") int limit,
             Authentication authentication) {
         Long userId = layUserIdTuAuthentication(authentication);
-        return ApiResponse.thanhCong(eventService.layBuoiSapToi(limit, userId), "Lấy sự kiện sắp tới thành công");
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        return ApiResponse.thanhCong(eventService.layBuoiSapToi(limit, nguCanh), "Lấy sự kiện sắp tới thành công");
     }
 
     /** Đăng ký của tôi (sidebar "My registrations") */
@@ -157,7 +164,8 @@ public class ApiEventController {
             Authentication authentication) {
 
         Long userId = layUserIdTuAuthentication(authentication);
-        EventRegistrationResponse result = eventService.dangKyThamDu(request, userId);
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        EventRegistrationResponse result = eventService.dangKyThamDu(request, nguCanh);
         return ApiResponse.thanhCong(result, "Đăng ký tham dự thành công");
     }
 
@@ -178,11 +186,12 @@ public class ApiEventController {
     /** G1: Chi tiết một buổi sự kiện (session detail card trên events/detail.html) */
     @GetMapping("/sessions/{ctEventId}")
     public ApiResponse<CtEventResponse> layChiTietBuoi(
-            @PathVariable Long ctEventId, 
+            @PathVariable Long ctEventId,
             Authentication authentication) {
-        
+
         Long userId = layUserIdTuAuthentication(authentication);
-        return ApiResponse.thanhCong(eventService.layChiTietBuoi(ctEventId, userId), "Lấy chi tiết buổi thành công");
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        return ApiResponse.thanhCong(eventService.layChiTietBuoi(ctEventId, nguCanh), "Lấy chi tiết buổi thành công");
     }
 
     /** Lấy bình luận của buổi sự kiện */
@@ -194,9 +203,9 @@ public class ApiEventController {
             @RequestParam(defaultValue = "10") int size,
              Authentication authentication) {
 
-        // Giải mã định danh người dùng (Sẽ trả về null nếu là khách ẩn danh)
         Long userId = layUserIdTuAuthentication(authentication);
-        if (eventService.coQuyenTruyCapBuoi(ctEventId, userId) == false) {
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        if (eventService.coQuyenTruyCapBuoi(ctEventId, nguCanh) == false) {
             Page<CmtResponse> emptyPage = new PageImpl<>(new ArrayList<>(), PageRequest.of(page, size), 0);
             return ApiResponse.thanhCong(emptyPage, "Bình luận chỉ mở cho tài khoản đủ quyền tham dự.");
         }
@@ -210,8 +219,9 @@ public class ApiEventController {
             @PathVariable Long ctEventId,
             Authentication authentication) {
         Long userId = layUserIdTuAuthentication(authentication);
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
         return ApiResponse.thanhCong(
-                eventService.layLichSuTrangThaiPublic(ctEventId, userId),
+                eventService.layLichSuTrangThaiPublic(ctEventId, nguCanh),
                 "Lấy lịch sử trạng thái thành công");
     }
 
@@ -226,7 +236,8 @@ public class ApiEventController {
         if (userId == null) {
             return ApiResponse.loi(401, "Vui lòng đăng nhập để bình luận");
         }
-        if (eventService.coQuyenTruyCapBuoi(ctEventId, userId) == false) {
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        if (eventService.coQuyenTruyCapBuoi(ctEventId, nguCanh) == false) {
             return ApiResponse.loi(403, "Bình luận chỉ mở cho tài khoản đủ quyền tham dự phiên này.");
         }
         request.setTargetId(ctEventId);
@@ -240,7 +251,8 @@ public class ApiEventController {
             @PathVariable Long ctEventId,
             Authentication authentication) {
         Long userId = layUserIdTuAuthentication(authentication);
-        return ApiResponse.thanhCong(eventService.layTomTatKhachMoiPublic(ctEventId, userId),
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        return ApiResponse.thanhCong(eventService.layTomTatKhachMoiPublic(ctEventId, nguCanh),
                 "Tải tóm tắt đăng ký thành công");
     }
 

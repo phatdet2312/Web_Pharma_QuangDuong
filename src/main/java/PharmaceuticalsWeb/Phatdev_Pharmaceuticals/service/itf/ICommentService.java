@@ -4,6 +4,7 @@ package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.BulkActionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentModerationRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentRequest;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EditContentRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LoaiLikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.ReplyRequest;
@@ -47,13 +48,13 @@ public interface ICommentService {
     Page<PhCmtResponse> layPhanHoiCapBa(Long phCmtId, int page, int size, Long userId);
 
     /** Chỉnh sửa bình luận gốc — Kích hoạt ghi log Audit Tự thân */
-    CmtResponse capNhatCmt(Long cmtId, CommentRequest request, Long userId);
+    CmtResponse capNhatCmt(Long cmtId, EditContentRequest request, Long userId);
 
     /** Xóa bình luận gốc — Kích hoạt ghi log Audit Tự thân */
     void xoaCmt(Long cmtId, Long userId);
 
     /** Chỉnh sửa phản hồi — Kích hoạt ghi log Audit Tự thân */
-    PhCmtResponse capNhatPhCmt(Long phCmtId, ReplyRequest request, Long userId);
+    PhCmtResponse capNhatPhCmt(Long phCmtId, EditContentRequest request, Long userId);
 
     /** Xóa phản hồi — Kích hoạt ghi log Audit Tự thân */
     void xoaPhCmt(Long phCmtId, Long userId);

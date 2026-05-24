@@ -4,6 +4,7 @@ package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.impl;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.BulkActionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentModerationRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentRequest;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EditContentRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LoaiLikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.ReplyRequest;
@@ -309,7 +310,7 @@ public class CommentServiceImpl implements ICommentService {
      */
     @Override
     @Transactional
-    public CmtResponse capNhatCmt(Long cmtId, CommentRequest request, Long userId) {
+    public CmtResponse capNhatCmt(Long cmtId, EditContentRequest request, Long userId) {
         Optional<Cmt> optCmt = cmtRepository.findById(cmtId);
         if (optCmt.isPresent() == false) {
             throw new AppException(404, "Bản ghi bình luận này không còn tồn tại trên cơ sở dữ liệu.");
@@ -362,7 +363,7 @@ public class CommentServiceImpl implements ICommentService {
      */
     @Override
     @Transactional
-    public PhCmtResponse capNhatPhCmt(Long phCmtId, ReplyRequest request, Long userId) {
+    public PhCmtResponse capNhatPhCmt(Long phCmtId, EditContentRequest request, Long userId) {
         Optional<PhCmt> optPh = phCmtRepository.findById(phCmtId);
         if (optPh.isPresent() == false) {
             throw new AppException(404, "Phân nhánh phản hồi này không còn tồn tại.");
@@ -1342,7 +1343,7 @@ public class CommentServiceImpl implements ICommentService {
             }
         }
 
-        resp.setReplyCount(phCmtRepository.countByRootCmtIdAndParentPhIsNull(cmt.getId()));
+        resp.setReplyCount(phCmtRepository.countByRootCmtId(cmt.getId()));
 
         List<PhCmtResponse> replyResponses = new ArrayList<>();
         if (taiKemPhanHoi == true) {

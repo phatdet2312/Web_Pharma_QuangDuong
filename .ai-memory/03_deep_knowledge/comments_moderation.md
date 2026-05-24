@@ -1,6 +1,6 @@
 # Comments & Moderation
 > Last updated: 2026-05-24
-> Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, comment/report/moderation entities
+> Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, `dto/request/EditContentRequest.java`, comment/report/moderation entities
 > Confidence: MEDIUM
 
 ## Mô tả chức năng
@@ -70,6 +70,18 @@ Module comment xử lý comment/reply cho post và event session, reaction, lị
 | Chưa có | N/A | Bootstrap chỉ ghi nhận code hiện tại | 2026-05-18 | N/A | N/A |
 | Lazy-load reply public post | Chọn: root API chỉ trả `replyCount`, reply cấp 2/cấp 3 có endpoint riêng; Bỏ: trả cả cây `PH_CMT` trong `/api/comments/posts/{postId}` | Giảm payload, tránh frontend biết toàn bộ cây reply, giữ UI tối đa 3 tầng nhưng DB vẫn hỗ trợ vô hạn tầng để mở rộng sau này | 2026-05-23 | 2026-08-23 | Trả full `cmt.replies` làm UI rối và tốn payload |
 | Delete lifecycle cho cay reply | Chon: xoa `PH_CMT` theo hau tu va don log/report truoc node chinh; Bo: xoa phang reply theo danh sach hoac bulk delete comment truc tiep | Dam bao khong vi pham FK khi reply co nhieu tang, giu delete flow tap trung va de bao tri khi tang so cap hien thi sau nay | 2026-05-23 | 2026-08-23 | Xoa cha truoc con gay loi he thong ngoai y muon khi `PARENT_PH_ID` con tro ve node cha |
+
+## Bug Fix - EditContentRequest (2026-05-24)
+
+**Root cause:** PUT `/api/comments/reply/{id}` dùng `ReplyRequest` có `@NotNull rootCmtId`, nhưng frontend chỉ gửi `{content}` khi sửa reply → validate fail.
+
+**Fix:**
+- Tạo DTO `EditContentRequest` chỉ có `@NotBlank content`.
+- Sửa `capNhatCmt` và `capNhatPhCmt` trong `ICommentService` + `CommentServiceImpl`: signature đổi từ `CommentRequest`/`ReplyRequest` → `EditContentRequest`.
+- `ApiCommentController`: PUT endpoints (cmt cấp 1 và reply cấp 2+) dùng `EditContentRequest`.
+- Controller không thay đổi logic validate, chỉ DTO bỏ field không cần khi chỉnh sửa.
+
+**Phương án bỏ:** Sửa `ReplyRequest` thêm field `rootCmtId` optional → sai design; request creation và update không nên dùng DTO chung khi contract khác nhau.
 
 ## Ghi chú
 

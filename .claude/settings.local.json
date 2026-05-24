@@ -6,7 +6,10 @@
       "Bash(Select-String \"error\")",
       "Bash(Select-Object -First 15)",
       "Bash(./mvnw.cmd compile *)",
-      "Bash(findstr \"^?\")"
+      "Bash(findstr \"^?\")",
+      "Bash(./mvnw.cmd clean *)",
+      "Bash(mvn compile *)",
+      "Bash(./mvnw compile *)"
     ]
   }
 }

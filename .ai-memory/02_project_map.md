@@ -47,7 +47,7 @@ project-root/
 | View controllers | `src/main/java/.../controller/view` | Route trả Thymeleaf templates | `HomeViewController`, `AuthViewController`, `PostViewController`, `EventViewController`, `AdminViewController`, `PartnerViewController` |
 | Services interfaces | `src/main/java/.../service/itf` | Hợp đồng business service | `IUserService`, `IPostService`, `IEventService`, `ICommentService`, `IRoleManagementService` |
 | Services impl | `src/main/java/.../service/impl` | Business logic, transaction, DTO mapping | `UserServiceImpl`, `PostServiceImpl`, `EventServiceImpl`, `CommentServiceImpl`, `AdminPostServiceImpl`, `AdminEventServiceImpl`, `RoleManagementServiceImpl` |
-| Service support | `src/main/java/.../service/support` | Policy/helper component dung chung cho service, khong truy cap DB truc tiep | `EventStatusDisplayPolicy` |
+| Service support | `src/main/java/.../service/support` | Policy/helper component dung chung cho service, khong truy cap DB truc tiep | `EventStatusDisplayPolicy`, `NguCanhNguoiDung`, `NguCanhNguoiDungFactory` |
 | Repositories | `src/main/java/.../repositories/IRepository` | Spring Data JPA access layer | `IUserRepository`, `IPostRepository`, `IEventRepository`, `ICtEventRepository`, `ICmtRepository` |
 | Entities | `src/main/java/.../entities` | JPA table mapping | `User`, `UserRole`, `Permission`, `Post`, `Event`, `CtEvent`, `Cmt`, `PhCmt`, `CtEventRegistration` |
 | DTO request | `src/main/java/.../dto/request` | Client input objects + validation | `LoginRequest`, `RegisterRequest`, `PostRequest`, `EventRequest`, `CommentRequest`, `RoleRequest` |

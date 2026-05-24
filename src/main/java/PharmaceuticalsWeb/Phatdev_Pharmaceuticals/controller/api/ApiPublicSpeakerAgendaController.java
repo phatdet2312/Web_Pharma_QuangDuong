@@ -8,6 +8,8 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.ISpeakerAgendaService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDung;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDungFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,7 @@ public class ApiPublicSpeakerAgendaController {
     private final ISpeakerAgendaService service;
     private final IEventService eventService;
     private final IUserService userService;
+    private final NguCanhNguoiDungFactory nguCanhFactory;
 
     @GetMapping("/{ctEventId}/speakers")
     public ApiResponse<List<EventSpeakerResponse>> layDSDienGia(@PathVariable Long ctEventId) {
@@ -38,7 +41,8 @@ public class ApiPublicSpeakerAgendaController {
             @PathVariable Long ctEventId,
             Authentication authentication) {
         Long userId = layUserIdTuAuthentication(authentication);
-        boolean coQuyenXemChiTiet = eventService.coQuyenTruyCapBuoi(ctEventId, userId);
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        boolean coQuyenXemChiTiet = eventService.coQuyenTruyCapBuoi(ctEventId, nguCanh);
         return ApiResponse.thanhCong(service.layDSLichTrinhCuaBuoi(ctEventId, coQuyenXemChiTiet),
                 "Tải lịch trình chi tiết thành công");
     }

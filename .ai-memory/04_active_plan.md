@@ -47,10 +47,20 @@ Trien khai dung correction moi nhat cho `CSDL/DuLieuMau.sql`: giu phong cach HTM
 - Schema-wide validation theo `FileKhoiTaoCSDL.sql`: parse_viol=0, null_viol=0, len_viol=0, missing_notnull_no_default=0.
 - Bao cao moi: `CSDL/BAO_CAO_KIEM_TRA_DULIEUMAU.md` ket luan **DAT validator tinh noi bo**.
 
+## Thay doi 2026-05-24 - OOP + Bug Fix
+
+Hai thay doi lon tren phan backend code (khong lien quan `CSDL/DuLieuMau.sql`):
+
+| # | Task | Status | Ghi chu |
+|---|------|--------|---------|
+| 1 | Refactor OOP - NguCanhNguoiDung: tim cu inner class va method khong dung, xoa dependency IUserService khoi EventServiceImpl, Factory tao context bang injection, 9 method service dung NguCanhNguoiDung, 3 method giu Long userId | DONE | Fix 3 vi pham: tinh mu, ai lam viec nay, nang cap tran. Controller goi factory 1 lan/request. |
+| 2 | Fix bug EditContentRequest: PUT comment cap 2/3 dung ReplyRequest co rootCmtId required nhung frontend chi gui content. Tao DTO rieng cho chinh sua, cap nhat method signature trong ICommentService/impl. | DONE | Bo ReplyRequest co @NotNull rootCmtId, dung EditContentRequest @NotBlank content. |
+
 ## Hanh dong tiep theo dung
 
-1. User chay lai `CSDL/DuLieuMau.sql` trong SSMS de verify runtime ban hien tai.
+1. User chay lai `CSDL/DuLieuMau.sql` trong SSMS de verify runtime ban hien tai (neu chua done tren phien truoc).
 2. Neu SSMS bao loi, dung exact error de fix tiep.
+3. Chay `mvnw.cmd test` de verify backend code sau 2 refactor (hanh dong kiem tra sof trong task OOP).
 
 ## Cau hoi cho User
 

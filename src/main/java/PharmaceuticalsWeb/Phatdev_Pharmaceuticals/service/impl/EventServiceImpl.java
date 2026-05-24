@@ -8,8 +8,8 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.*;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.*;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
-import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.EventStatusDisplayPolicy;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDung;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -61,7 +61,6 @@ public class EventServiceImpl implements IEventService {
     private final IUserRepository userRepository;
     private final ILocationRepository locationRepository;
     private final ICtEventSessionRoleRepository ctEventSessionRoleRepository;
-    private final IUserService userService;
     private final EventStatusDisplayPolicy eventStatusDisplayPolicy;
 
     /**
@@ -193,7 +192,7 @@ public class EventServiceImpl implements IEventService {
      * Tham số: year, month.
      */
     @Override
-    public List<CtEventResponse> layBuoiTrongThang(int year, int month, Long userId) {
+    public List<CtEventResponse> layBuoiTrongThang(int year, int month, NguCanhNguoiDung nguCanh) {
         YearMonth targetMonth = YearMonth.of(year, month);
         LocalDateTime dauThang = targetMonth.atDay(1).atStartOfDay();
         LocalDateTime cuoiThang = targetMonth.atEndOfMonth().atTime(23, 59, 59);
@@ -201,12 +200,11 @@ public class EventServiceImpl implements IEventService {
         // Gọi hàm repository đã được ngài viết sẵn từ trước
         List<CtEvent> danhSach = ctEventRepository.layBuoiDaCongBoTrongThang(dauThang, cuoiThang);
         List<CtEventResponse> result = new ArrayList<>();
-        int userLevel = layCapBacNguoiDung(userId);
 
         Object[] arr = danhSach.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEvent ctEvent = (CtEvent) arr[i];
-            result.add(xayDungCtEventResponse(ctEvent, userLevel));
+            result.add(xayDungCtEventResponse(ctEvent, nguCanh));
         }
         return result;
     }
@@ -216,7 +214,7 @@ public class EventServiceImpl implements IEventService {
      */
     @Override
     public Page<EventResponse> timKiemSuKien(String keyword, Integer type, String time, Integer locationId, Integer roleId, String sort,
-            int page, int size, Long userId) {
+            int page, int size, NguCanhNguoiDung nguCanh) {
 
         // 1. Cấu hình Sắp xếp (Sort)
         Sort sortOrder = Sort.by(Sort.Direction.DESC, "created_at");
@@ -279,12 +277,11 @@ public class EventServiceImpl implements IEventService {
         // 3. Đóng gói DTO (Sử dụng Object[] thay vì Stream API)
         List<Event> eventList = eventsPage.getContent();
         List<EventResponse> responseList = new ArrayList<>();
-        int userLevel = layCapBacNguoiDung(userId);
 
         Object[] arr = eventList.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             Event e = (Event) arr[i];
-            responseList.add(xayDungEventResponse(e, userLevel));
+            responseList.add(xayDungEventResponse(e, nguCanh));
         }
 
         return new PageImpl<>(responseList, pageable, eventsPage.getTotalElements());
@@ -295,13 +292,12 @@ public class EventServiceImpl implements IEventService {
      * tĩnh (Slug).
      */
     @Override
-    public EventResponse layChiTietSuKien(String slug, Long userId) {
+    public EventResponse layChiTietSuKien(String slug, NguCanhNguoiDung nguCanh) {
         Optional<Event> optEvent = eventRepository.findBySlug(slug);
         if (optEvent.isPresent() == false) {
             throw new AppException(404, "Chúng tôi không tìm thấy thông tin chiến dịch sự kiện này.");
         }
-        int userLevel = layCapBacNguoiDung(userId);
-        return xayDungEventResponse(optEvent.get(), userLevel);
+        return xayDungEventResponse(optEvent.get(), nguCanh);
     }
 
     /**
@@ -309,13 +305,12 @@ public class EventServiceImpl implements IEventService {
      * Tái sử dụng hàm xayDungCtEventResponse đã có sẵn.
      */
     @Override
-    public CtEventResponse layChiTietBuoi(Long ctEventId, Long userId) {
+    public CtEventResponse layChiTietBuoi(Long ctEventId, NguCanhNguoiDung nguCanh) {
         Optional<CtEvent> optCtEvent = ctEventRepository.findById(ctEventId);
         if (optCtEvent.isPresent() == false) {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện được yêu cầu.");
         }
-        int userLevel = layCapBacNguoiDung(userId);
-        return xayDungCtEventResponse(optCtEvent.get(), userLevel);
+        return xayDungCtEventResponse(optCtEvent.get(), nguCanh);
     }
 
     /**
@@ -323,13 +318,12 @@ public class EventServiceImpl implements IEventService {
      * tháng tới.
      */
     @Override
-    public List<CtEventResponse> layBuoiSapToi(int limit, Long userId) {
+    public List<CtEventResponse> layBuoiSapToi(int limit, NguCanhNguoiDung nguCanh) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime cuoiThang = now.plusMonths(3);
         List<CtEvent> danhSach = ctEventRepository.layBuoiDaCongBoTrongThang(now, cuoiThang);
 
         List<CtEventResponse> result = new ArrayList<>();
-        int userLevel = layCapBacNguoiDung(userId);
         int count = 0;
 
         Object[] arr = danhSach.toArray();
@@ -338,7 +332,7 @@ public class EventServiceImpl implements IEventService {
                 break;
             }
             CtEvent ctEvent = (CtEvent) arr[i];
-            result.add(xayDungCtEventResponse(ctEvent, userLevel));
+            result.add(xayDungCtEventResponse(ctEvent, nguCanh));
             count = count + 1;
         }
         return result;
@@ -412,7 +406,7 @@ public class EventServiceImpl implements IEventService {
      */
     @Override
     @Transactional
-    public EventRegistrationResponse dangKyThamDu(EventRegistrationRequest request, Long userId) {
+    public EventRegistrationResponse dangKyThamDu(EventRegistrationRequest request, NguCanhNguoiDung nguCanh) {
         Optional<CtEvent> optCtEvent = ctEventRepository.findById(request.getCtEventId());
         if (optCtEvent.isPresent() == false) {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện để đăng ký vé.");
@@ -420,8 +414,7 @@ public class EventServiceImpl implements IEventService {
 
         CtEvent ctEvent = optCtEvent.get();
 
-        int userLevel = layCapBacNguoiDung(userId);
-        EventAccessDecision access = xayDungQuyetDinhTruyCap(ctEvent, userLevel);
+        EventAccessDecision access = xayDungQuyetDinhTruyCap(ctEvent, nguCanh);
         if (access.hasFullAccess == false) {
             throw new AppException(403, LOCKED_REGISTRATION_MESSAGE);
         }
@@ -447,10 +440,10 @@ public class EventServiceImpl implements IEventService {
         }
 
         // 3. ĐỐI SOÁT VÉ CÁ NHÂN (CHUẨN APPEND-ONLY)
-        if (userId != null) {
+        if (nguCanh.layUserId() != null) {
             // Chỉ kiểm tra vé mới nhất
             Optional<CtEventRegistration> optReg = registrationRepository
-                    .findFirstByCtEventIdAndUserIdOrderByRegisteredAtDesc(ctEvent.getId(), userId);
+                    .findFirstByCtEventIdAndUserIdOrderByRegisteredAtDesc(ctEvent.getId(), nguCanh.layUserId());
 
             if (optReg.isPresent() == true) {
                 CtEventRegistration latestReg = optReg.get();
@@ -474,8 +467,8 @@ public class EventServiceImpl implements IEventService {
         reg.setStatus("PENDING");
         reg.setRegisteredAt(LocalDateTime.now());
 
-        if (userId != null) {
-            Optional<User> optUser = userRepository.findById(userId);
+        if (nguCanh.layUserId() != null) {
+            Optional<User> optUser = userRepository.findById(nguCanh.layUserId());
             if (optUser.isPresent() == true) {
                 reg.setUser(optUser.get());
             }
@@ -517,8 +510,8 @@ public class EventServiceImpl implements IEventService {
      * Tra cứu Timeline lịch sử hoạt động của một Phiên sự kiện.
      */
     @Override
-    public List<EventStatusHistoryResponse> layLichSuTrangThaiPublic(Long ctEventId, Long userId) {
-        if (coQuyenTruyCapBuoi(ctEventId, userId) == false) {
+    public List<EventStatusHistoryResponse> layLichSuTrangThaiPublic(Long ctEventId, NguCanhNguoiDung nguCanh) {
+        if (coQuyenTruyCapBuoi(ctEventId, nguCanh) == false) {
             return new ArrayList<>();
         }
 
@@ -548,7 +541,7 @@ public class EventServiceImpl implements IEventService {
      * Thuật toán trích xuất tóm tắt khách mời phục vụ Social Proof tại Frontend.
      * Áp dụng cơ chế che giấu dữ liệu (Masking) bằng vòng lặp For truyền thống.
      */
-    public EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId, Long userId) {
+    public EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId, NguCanhNguoiDung nguCanh) {
 
         // 1. Đếm tổng số lượng (Tái sử dụng hàm đếm Slot để đồng bộ 100% với
         // thanh Tiến độ)
@@ -630,30 +623,17 @@ public class EventServiceImpl implements IEventService {
     // =========================================================================
 
     @Override
-    public boolean coQuyenTruyCapBuoi(Long ctEventId, Long userId) {
+    public boolean coQuyenTruyCapBuoi(Long ctEventId, NguCanhNguoiDung nguCanh) {
         Optional<CtEvent> optCtEvent = ctEventRepository.findById(ctEventId);
         if (optCtEvent.isPresent() == false) {
             return false;
         }
 
-        int userLevel = layCapBacNguoiDung(userId);
-        EventAccessDecision access = xayDungQuyetDinhTruyCap(optCtEvent.get(), userLevel);
+        EventAccessDecision access = xayDungQuyetDinhTruyCap(optCtEvent.get(), nguCanh);
         return access.hasFullAccess;
     }
 
-    /** Tính cấp bậc quyền lực cao nhất của người dùng, trả 999 nếu chưa đăng nhập hoặc không tồn tại */
-    private int layCapBacNguoiDung(Long userId) {
-        if (userId == null) {
-            return 999;
-        }
-        Optional<User> optUser = userRepository.findById(userId);
-        if (optUser.isPresent() == false) {
-            return 999;
-        }
-        return userService.layCapBacQuyenLucCaoNhat(optUser.get());
-    }
-
-    private EventAccessDecision xayDungQuyetDinhTruyCap(CtEvent ctEvent, int userLevel) {
+    private EventAccessDecision xayDungQuyetDinhTruyCap(CtEvent ctEvent, NguCanhNguoiDung nguCanh) {
         EventAccessDecision decision = new EventAccessDecision();
 
         List<UserRole> requiredRoles = ctEventSessionRoleRepository.layDanhSachQuyenCuaBuoi(ctEvent.getId());
@@ -672,7 +652,7 @@ public class EventServiceImpl implements IEventService {
             decision.requiredRolesInfo.add(roleInfo);
             decision.allowedRoleNames.add(role.getRoleName());
 
-            if (role.getRoleLevel() != null && userLevel <= role.getRoleLevel()) {
+            if (role.getRoleLevel() != null && nguCanh.layCapBacCaoNhat() <= role.getRoleLevel()) {
                 decision.hasFullAccess = true;
             }
         }
@@ -736,7 +716,7 @@ public class EventServiceImpl implements IEventService {
     /**
      * Gom nhóm dữ liệu của một Chiến dịch, quét toàn bộ Phiên con.
      */
-    private EventResponse xayDungEventResponse(Event event, int userLevel) {
+    private EventResponse xayDungEventResponse(Event event, NguCanhNguoiDung nguCanh) {
         EventResponse resp = new EventResponse();
         resp.setId(event.getId());
         resp.setTitle(event.getTitle());
@@ -756,7 +736,7 @@ public class EventServiceImpl implements IEventService {
         Object[] arr = sessions.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             CtEvent ce = (CtEvent) arr[i];
-            sessionResponses.add(xayDungCtEventResponse(ce, userLevel));
+            sessionResponses.add(xayDungCtEventResponse(ce, nguCanh));
 
         }
         resp.setSessions(sessionResponses);
@@ -807,9 +787,9 @@ public class EventServiceImpl implements IEventService {
      * Bóc tách Phiên sự kiện, phân tích Slot trống và kết nối Dữ liệu Y khoa đính
      * kèm.
      */
-    private CtEventResponse xayDungCtEventResponse(CtEvent ctEvent, int userLevel) {
+    private CtEventResponse xayDungCtEventResponse(CtEvent ctEvent, NguCanhNguoiDung nguCanh) {
         CtEventResponse resp = new CtEventResponse();
-        EventAccessDecision access = xayDungQuyetDinhTruyCap(ctEvent, userLevel);
+        EventAccessDecision access = xayDungQuyetDinhTruyCap(ctEvent, nguCanh);
 
         // 1. Ánh xạ các thông tin định danh và thời gian cơ bản
         resp.setId(ctEvent.getId());

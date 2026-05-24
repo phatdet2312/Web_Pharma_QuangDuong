@@ -2,6 +2,7 @@
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentRequest;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EditContentRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.ReplyRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ApiResponse;
@@ -13,6 +14,8 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.ICommentService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDung;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDungFactory;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -42,6 +45,7 @@ public class ApiCommentController {
     private final ICommentService commentService;
     private final IUserService userService;
     private final IEventService eventService;
+    private final NguCanhNguoiDungFactory nguCanhFactory;
     
     /** Lấy tất cả loại reaction */
     @GetMapping("/reaction-types")
@@ -75,7 +79,8 @@ public class ApiCommentController {
             Authentication authentication) {
         
         Long userId = layUserIdTuAuthentication(authentication);
-        if (eventService.coQuyenTruyCapBuoi(eventId, userId) == false) {
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        if (eventService.coQuyenTruyCapBuoi(eventId, nguCanh) == false) {
             Page<CmtResponse> emptyPage = new PageImpl<>(new ArrayList<>(), PageRequest.of(page, size), 0);
             return ApiResponse.thanhCong(emptyPage, "Bình luận chỉ mở cho tài khoản đủ quyền tham dự.");
         }
@@ -136,7 +141,8 @@ public class ApiCommentController {
         if (userId == null) {
             return ApiResponse.loi(401, "Vui lòng đăng nhập.");
         }
-        if (eventService.coQuyenTruyCapBuoi(eventId, userId) == false) {
+        NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
+        if (eventService.coQuyenTruyCapBuoi(eventId, nguCanh) == false) {
             return ApiResponse.loi(403, "Bình luận chỉ mở cho tài khoản đủ quyền tham dự phiên này.");
         }
         request.setTargetId(eventId);
@@ -162,7 +168,7 @@ public class ApiCommentController {
     @PutMapping("/{cmtId}")
     public ApiResponse<CmtResponse> capNhatCmt(
             @PathVariable Long cmtId,
-            @Valid @RequestBody CommentRequest request,
+            @Valid @RequestBody EditContentRequest request,
             Authentication authentication) {
         
         Long userId = layUserIdTuAuthentication(authentication);
@@ -191,7 +197,7 @@ public class ApiCommentController {
     @PutMapping("/reply/{phCmtId}")
     public ApiResponse<PhCmtResponse> capNhatPhCmt(
             @PathVariable Long phCmtId,
-            @Valid @RequestBody ReplyRequest request,
+            @Valid @RequestBody EditContentRequest request,
             Authentication authentication) {
         
         Long userId = layUserIdTuAuthentication(authentication);

@@ -1,5 +1,5 @@
 # Active Workspace - Ban lam viec hien tai
-> Last updated: 2026-05-23
+> Last updated: 2026-05-24
 
 ## Trang thai hien tai
 
@@ -34,6 +34,24 @@
 - `CSDL/THÔNG TIN HẠN DÙNG SẢN PHẨM_20260413.xlsx` ton tai, 1394 rows/6 columns; day la nguon san pham noi bo dung cho rebuild.
 - Source matrix da co tai `CSDL/DULIEUMAU_POST_SOURCE_MATRIX.md`: 300/300 post duoc map toi Excel noi bo + Roche/Accu-Chek/FDA/WHO/eLabDoc.
 - Learning ve du lieu mau copy-template da len Lan=3; nen de xuat user chay `$promote-learning` de dua thanh rule enforced.
+
+## Thay doi moi nhat 2026-05-24
+
+**OOP Refactor - NguCanhNguoiDung:**
+- Tao class `NguCanhNguoiDung` trong `service/support` chứa userId + capBacCaoNhat; getter methods `layCapBacCaoNhat()`.
+- Tao factory `@Component NguCanhNguoiDungFactory` inject `IUserRepository` + `IUserService`; method `taoNguCanh(Long userId)`.
+- Sua `IEventService`: 9 method doi `Long userId` -> `NguCanhNguoiDung`: layBuoiTrongThang, timKiemSuKien, layChiTietSuKien, layChiTietBuoi, layBuoiSapToi, dangKyThamDu, layLichSuTrangThaiPublic, layTomTatKhachMoiPublic, coQuyenTruyCapBuoi.
+- Sua `EventServiceImpl`: xoa inner class NguCanhNguoiDung, xoa method taoNguCanhTruyCap, xoa field dependency IUserService; doi access `nguCanh.capBacCaoNhat` -> `nguCanh.layCapBacCaoNhat()`.
+- Sua `ApiEventController`: inject NguCanhNguoiDungFactory; moi endpoint public tao context 1 lan roi truyen xuong service.
+- Sua `ApiPublicSpeakerAgendaController`: inject factory, goi `coQuyenTruyCapBuoi(nguCanh, ctEventId)`.
+- Sua `ApiCommentController`: inject factory, goi `coQuyenTruyCapBuoi(nguCanh)` cho 2 endpoint comment event session.
+- Ly do: Fix 3 vi pham OOP (tinh mu service, ai lam viec nay, nang cap tran).
+
+**Bug Fix - EditContentRequest:**
+- Root cause: PUT `/api/comments/reply/{id}` dung `ReplyRequest` co `@NotNull rootCmtId`, nhung frontend chi gui {content} -> validate fail.
+- Tao `EditContentRequest` dto chi co `@NotBlank content`.
+- Sua `capNhatCmt` va `capNhatPhCmt` trong `ICommentService` + `CommentServiceImpl`: signature doi tu CommentRequest/ReplyRequest -> EditContentRequest.
+- Sua `ApiCommentController`: PUT endpoints dung `EditContentRequest`.
 
 ## Debug Notes
 
