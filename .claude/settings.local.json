@@ -23,7 +23,15 @@
       "Bash(find \"C:/Users/PC/AppData/Roaming/npm/node_modules/@anthropic-ai/claude-code\" -name \"*.schema.json\" -path \"*settings*\" 2>/dev/null | head -3)",
       "Read(//c/Users/PC/AppData/Roaming/npm/node_modules/@anthropic-ai/claude-code/**)",
       "Bash(find \"C:/Users/PC/.claude\" -name \"*.json\" -not -path \"*/projects/*\" | head -10)",
-      "Read(//c/Users/PC/.claude/**)"
+      "Read(//c/Users/PC/.claude/**)",
+      "Bash(git config *)",
+      "Bash(powershell *)",
+      "Bash(powershell.exe *)",
+      "Bash(python3 *)",
+      "Bash(cmd.exe /c \"mvnw.cmd compile -q 2>&1\")",
+      "Bash(cmd.exe /c \"mvnw.cmd compile 2>&1\")",
+      "Bash(cmd.exe /c \"mvnw.cmd compile\")",
+      "Bash(echo \"EXIT_CODE=$?\")"
     ]
   }
 }

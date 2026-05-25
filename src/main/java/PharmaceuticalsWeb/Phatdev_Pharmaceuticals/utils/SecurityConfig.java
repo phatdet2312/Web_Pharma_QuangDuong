@@ -95,6 +95,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/posts", "/api/posts/**",
                                                                 "/api/events", "/api/events/**",
                                                                 "/api/comments/posts/**",
+                                                                "/api/comments/events/**",
                                                                 "/api/comments/reaction-types")
                                                 .permitAll()
 

@@ -1,11 +1,11 @@
 # Comments & Moderation
-> Last updated: 2026-05-25
-> Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, `dto/request/EditContentRequest.java`, comment/report/moderation entities
-> Confidence: MEDIUM
+> Last updated: 2026-05-26
+> Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, `dto/request/EditContentRequest.java`, `utils/SecurityConfig.java`, comment/report/moderation entities, `templates/posts/detail.html`, `templates/events/detail.html`
+> Confidence: HIGH
 
 ## Mô tả chức năng
 
-Module comment xử lý comment/reply cho post và event session, reaction, lịch sử chỉnh sửa/xóa, public report và admin moderation. Bootstrap đã đọc endpoint map và file/module chính, chưa phân tích toàn bộ `CommentServiceImpl` vì file lớn.
+Module comment xử lý comment/reply cho post và event session, reaction, lịch sử chỉnh sửa/xóa, public report và admin moderation. Post detail và event detail chia sẻ cùng hệ thống comment (cùng DB `CMT`/`PH_CMT`, cùng backend `ApiCommentController`), UI JS/CSS giống nhau ~100% — khi sửa logic comment ở 1 bên cần kiểm tra bên kia.
 
 ## Luồng xử lý chính
 
@@ -38,6 +38,9 @@ Module comment xử lý comment/reply cho post và event session, reaction, lị
 - Truoc khi xoa report cua `CMT`/`PH_CMT`, phai xoa `CT_CMT_REPORT_MOD_LOG`/`CT_PH_CMT_REPORT_MOD_LOG` lien quan. Report mod log tham chieu report, nen xoa report truoc log se gay loi rang buoc.
 - Bulk delete comment phai di qua lifecycle `xoaCmtVatLy`, khong duoc xoa truc tiep link/action log/comment vi se bo sot reply, reaction, report, moderation log va cay `PH_CMT`.
 - Sau khi tao reply thanh cong tren frontend post detail, phai dong form reply dang mo va refresh dung nhanh lazy-load thay vi reload toan bo comment root.
+- SecurityConfig `permitAll()` phai co CA HAI `/api/comments/posts/**` VA `/api/comments/events/**` — thieu 1 trong 2 se gay 403 cho user chua co role.
+- Event detail va post detail co comment system tuong dong (~40 ham JS, CSS giong nhau). Khi sua comment logic o 1 file phai kiem tra file kia. Event dung `ctEventId` (session ID), post dung `maBaiVietHienTai` (post ID).
+- Event comment endpoint dung `/api/comments/events/{eventId}` (khong phai `/api/events/sessions/{id}/comments` cu cua ApiEventController).
 
 ## API Endpoints
 

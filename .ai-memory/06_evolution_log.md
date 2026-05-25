@@ -39,5 +39,7 @@ Moi dong = 1 thay doi quan trong.
 
 | 2026-05-25 | FEAT | User tu implement CSS tree branch kieu Facebook cho comment post detail: vach doc (trunk) va nhanh L (branch) noi avatar cha voi reply con, 2 cap, dung `:has()` selector va CSS variables. | `posts/detail.html` |
 | 2026-05-25 | CONFIG | User xoa toan bo file du lieu mau khoi repo: `DuLieuMau.sql` (367K dong), `BAO_CAO_KIEM_TRA_DULIEUMAU.md`, `DULIEUMAU_POST_SOURCE_MATRIX.md`, `TEST.MD`. Chi giu `FileKhoiTaoCSDL.sql` va Excel san pham. | `CSDL/DuLieuMau.sql`, `CSDL/BAO_CAO_KIEM_TRA_DULIEUMAU.md`, `CSDL/DULIEUMAU_POST_SOURCE_MATRIX.md`, `CSDL/TEST.MD` |
+| 2026-05-26 | FEAT | Nang cap comment event detail giong 100% post detail: CSS reaction picker/tree branch/author menu/inline edit/report modal, HTML comment form/list/load more/collapse, JS ~40 ham comment gom render 3 cap/lazy-load/reaction/author menu/inline edit/report/tag mention. Fix 5 loi escape quote JS trong onclick, 12 chuoi thieu dau tieng Viet. | `events/detail.html` |
+| 2026-05-26 | FIX | Fix 403 Forbidden khi user chua co role xem comment event: them `/api/comments/events/**` vao danh sach `permitAll()` trong SecurityConfig (truoc do chi co `/api/comments/posts/**`). | `SecurityConfig.java`, `.ai-memory/03_deep_knowledge/comments_moderation.md` |
 
 Type values: INIT | FEAT | FIX | REFACTOR | CONFIG | DOCS | DRIFT | ROLLBACK | LEARN | AUDIT

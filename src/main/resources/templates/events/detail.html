@@ -699,13 +699,1036 @@
                     margin-top: 3px;
                 }
 
-                /* Comments for event */
-                .event-comment-form {
+                /* ============================================================
+   REACTION PICKER (FACEBOOK-STYLE HOVER MENU)
+============================================================ */
+                .reaction-picker-wrapper {
+                    position: relative;
+                    display: inline-flex;
+                }
+
+                .reaction-picker {
+                    position: absolute;
+                    bottom: calc(100% + 5px);
+                    left: 0;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 50px;
+                    padding: 6px 12px;
+                    display: flex;
+                    gap: 12px;
+                    box-shadow: var(--shadow-md);
+                    opacity: 0;
+                    visibility: hidden;
+                    transform: translateY(10px);
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    z-index: 100;
+                }
+
+                .reaction-picker-wrapper:hover .reaction-picker {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translateY(0);
+                }
+
+                .reaction-emoji-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 2px;
+                    cursor: pointer;
+                    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                .reaction-emoji-item:hover {
+                    transform: scale(1.3) translateY(-3px);
+                }
+
+                .re-icon-menu {
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .re-icon-menu img {
+                    width: 28px;
+                    height: 28px;
+                    object-fit: contain;
+                }
+
+                .re-count {
+                    font-size: 0.68rem;
+                    font-weight: 700;
+                    color: var(--gray-500);
+                }
+
+                .reaction-btn,
+                .cia-btn,
+                .ria-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    background: white;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: 50px;
+                    font-weight: 600;
+                    color: var(--gray-600);
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                }
+
+                .reaction-btn {
+                    padding: 7px 14px;
+                    font-size: .82rem;
+                }
+
+                .cia-btn {
+                    padding: 3px 9px;
+                    font-size: .75rem;
+                }
+
+                .ria-btn {
+                    padding: 2px 8px;
+                    font-size: .72rem;
+                }
+
+                .reaction-btn:hover,
+                .cia-btn:hover,
+                .ria-btn:hover {
+                    border-color: var(--teal-400);
+                    color: var(--teal-600);
+                    background: var(--gray-50);
+                }
+
+                .reaction-btn.active,
+                .cia-btn.active,
+                .ria-btn.active {
+                    background: var(--teal-100) !important;
+                    border-color: var(--teal-500) !important;
+                    color: var(--teal-700) !important;
+                }
+
+                .reaction-btn.hearted.active,
+                .cia-btn.hearted.active,
+                .ria-btn.hearted.active {
+                    background: #fee2e2 !important;
+                    border-color: #fca5a5 !important;
+                    color: #dc2626 !important;
+                }
+
+                .reaction-btn.liked.active,
+                .cia-btn.liked.active,
+                .ria-btn.liked.active {
+                    background: #eff6ff !important;
+                    border-color: #93c5fd !important;
+                    color: #2563eb !important;
+                }
+
+                .btn-icon-small {
+                    display: inline-flex;
+                    align-items: center;
+                }
+
+                .btn-icon-small img {
+                    width: 16px;
+                    height: 16px;
+                    object-fit: contain;
+                }
+
+                /* ============================================================
+   COMMENT SYSTEM (CMT + PH_CMT)
+============================================================ */
+                .comments-section {
+                    padding: 24px;
+                }
+
+                .comments-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 28px;
+                }
+
+                .cs-title {
+                    font-size: 1.05rem;
+                    font-weight: 800;
+                    color: var(--ink-800);
+                }
+
+                .cs-count {
+                    background: var(--teal-500);
+                    color: white;
+                    padding: 2px 9px;
+                    border-radius: 50px;
+                    font-size: .72rem;
+                    font-weight: 700;
+                }
+
+                .comment-form-card {
                     background: var(--gray-50);
                     border: 1px solid var(--gray-200);
                     border-radius: var(--r-xl);
-                    padding: 16px;
-                    margin-bottom: 20px;
+                    padding: 20px;
+                    margin-bottom: 32px;
+                }
+
+                .cf-head {
+                    font-size: .85rem;
+                    font-weight: 700;
+                    color: var(--gray-700);
+                    margin-bottom: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                }
+
+                .cf-head i {
+                    color: var(--teal-500);
+                }
+
+                .cf-textarea {
+                    width: 100%;
+                    background: white;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: var(--r-lg);
+                    padding: 12px 16px;
+                    font-size: .88rem;
+                    color: var(--gray-800);
+                    outline: none;
+                    resize: vertical;
+                    min-height: 100px;
+                    font-family: inherit;
+                    transition: var(--t-fast);
+                    line-height: 1.6;
+                }
+
+                .cf-textarea:focus {
+                    border-color: var(--teal-400);
+                }
+
+                .cf-textarea::placeholder {
+                    color: var(--gray-400);
+                }
+
+                .cf-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 10px;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+
+                .cf-emotion-btns {
+                    display: flex;
+                    gap: 4px;
+                }
+
+                .ce-btn {
+                    padding: 4px 10px;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 50px;
+                    font-size: .75rem;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                }
+
+                .ce-btn:hover {
+                    background: var(--gray-100);
+                    transform: scale(1.1);
+                }
+
+                .cf-submit-btn {
+                    padding: 8px 20px;
+                    background: var(--ink-800);
+                    color: white;
+                    border: none;
+                    border-radius: var(--r-md);
+                    font-size: .855rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    font-family: inherit;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .cf-submit-btn:hover {
+                    background: var(--teal-600);
+                }
+
+                .cf-cancel-btn {
+                    padding: 8px 20px;
+                    background: white;
+                    color: var(--gray-600);
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-md);
+                    font-size: .855rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    font-family: inherit;
+                }
+
+                .cf-cancel-btn:hover {
+                    background: var(--gray-100);
+                }
+
+                .reply-form-wrapper {
+                    margin-top: 12px;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-lg);
+                    padding: 14px;
+                    width: 100%;
+                }
+
+                .reply-form-wrapper .cf-textarea {
+                    min-height: 60px;
+                    margin-bottom: 8px;
+                }
+
+                .reply-input-box {
+                    width: 100%;
+                    background: white;
+                    border: 1.5px solid var(--gray-200);
+                    border-radius: var(--r-lg);
+                    padding: 8px 10px 6px;
+                    margin-bottom: 8px;
+                    transition: var(--t-fast);
+                }
+
+                .reply-input-box:focus-within {
+                    border-color: var(--teal-400);
+                    box-shadow: 0 0 0 3px rgba(20, 184, 166, .12);
+                }
+
+                .reply-mention-token-row {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    margin-bottom: 4px;
+                }
+
+                .reply-mention-token {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 4px 9px;
+                    background: #E6F7F4;
+                    color: #0F766E;
+                    border: 1px solid #99E6DA;
+                    border-radius: 999px;
+                    font-size: .78rem;
+                    font-weight: 800;
+                    line-height: 1;
+                }
+
+                .reply-mention-token button {
+                    width: 16px;
+                    height: 16px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: none;
+                    border-radius: 50%;
+                    background: #CCF1EA;
+                    color: #0F766E;
+                    cursor: pointer;
+                    padding: 0;
+                    font-size: .62rem;
+                }
+
+                .reply-input-box .cf-textarea {
+                    border: none;
+                    border-radius: 0;
+                    padding: 4px 2px;
+                    min-height: 58px;
+                    margin-bottom: 0;
+                    box-shadow: none;
+                }
+
+                .reply-input-box .cf-textarea:focus {
+                    border-color: transparent;
+                }
+
+                .comment-guest-cta {
+                    background: var(--gray-50);
+                    border: 1.5px dashed var(--gray-300);
+                    border-radius: var(--r-xl);
+                    padding: 24px;
+                    text-align: center;
+                    margin-bottom: 24px;
+                }
+
+                .comment-guest-cta i {
+                    font-size: 1.5rem;
+                    color: var(--gray-300);
+                    margin-bottom: 10px;
+                }
+
+                .comment-guest-cta p {
+                    font-size: .88rem;
+                    color: var(--gray-500);
+                    margin-bottom: 12px;
+                }
+
+                .comment-item {
+                    display: flex;
+                    gap: 12px;
+                    margin-bottom: 24px;
+                }
+
+                .ci-avatar {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    background: linear-gradient(135deg, var(--teal-600), var(--ink-700));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .8rem;
+                    color: white;
+                    font-weight: 700;
+                }
+
+                .ci-bubble-wrapper {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .ci-bubble {
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 0 var(--r-lg) var(--r-lg) var(--r-lg);
+                    padding: 12px 16px;
+                }
+
+                .ci-bubble.moderated {
+                    background: #fffbeb;
+                    border-color: #fcd34d;
+                    opacity: .7;
+                }
+
+                .ci-bubble.hidden {
+                    background: #fef2f2;
+                    border-color: #fca5a5;
+                }
+
+                .ci-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 7px;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+
+                .ci-name {
+                    font-size: .84rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                }
+
+                .ci-role-badge {
+                    font-size: .65rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    padding: 1px 6px;
+                    border-radius: 3px;
+                    letter-spacing: .4px;
+                }
+
+                .ci-role-badge.doctor {
+                    background: rgba(0, 152, 152, .1);
+                    color: var(--teal-700);
+                }
+
+                .ci-role-badge.admin {
+                    background: rgba(0, 29, 61, .1);
+                    color: var(--ink-700);
+                }
+
+                .ci-date {
+                    font-size: .71rem;
+                    color: var(--gray-400);
+                }
+
+                .ci-content {
+                    font-size: .87rem;
+                    color: var(--gray-700);
+                    line-height: 1.65;
+                    margin-bottom: 10px;
+                }
+
+                .ci-moderation-banner {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: .73rem;
+                    color: #92400e;
+                    padding: 5px 8px;
+                    background: #fef3c7;
+                    border-radius: var(--r-sm);
+                    margin-bottom: 8px;
+                }
+
+                .ci-moderation-banner i {
+                    color: #d97706;
+                }
+
+                .ci-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    position: relative;
+                }
+
+                .cia-count {
+                    font-weight: 700;
+                }
+
+                .cia-reply {
+                    margin-left: auto;
+                }
+
+                .reply-thread {
+                    margin-top: 12px;
+                    position: relative;
+                }
+
+                .reply-thread:empty {
+                    margin-top: 0;
+                }
+
+                .reply-item {
+                    display: flex;
+                    gap: 10px;
+                    margin-bottom: 12px;
+                    position: relative;
+                }
+
+                .reply-level-3 {
+                    margin-left: 0;
+                }
+
+                .reply-nav-row {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin: 12px 0 12px 0;
+                    padding-left: 4px;
+                    position: relative;
+                }
+
+                .reply-nav-row:empty {
+                    display: none;
+                }
+
+                /* ============================================
+                   Facebook Tree Branch
+                   ============================================ */
+                :root {
+                    --avatar-size-l1: 36px;
+                    --gap-l1: 12px;
+                    --trunk-offset-l1: calc((var(--avatar-size-l1) / 2 + var(--gap-l1)) * -1);
+                    --avatar-size-l2: 28px;
+                    --gap-l2: 10px;
+                    --trunk-offset-l2: calc((var(--avatar-size-l2) / 2 + var(--gap-l2)) * -1);
+                    --trunk-start-gap: 6px;
+                }
+
+                .ci-bubble,
+                .ri-bubble,
+                .reply-form-wrapper {
+                    position: relative;
+                }
+
+                .comment-item.has-replies>.ci-bubble-wrapper>.ci-bubble::after,
+                .comment-item:has(> .ci-bubble-wrapper > .reply-nav-row:not(:empty))>.ci-bubble-wrapper>.ci-bubble::after {
+                    content: '';
+                    position: absolute;
+                    left: calc(var(--trunk-offset-l1) - 1px);
+                    top: calc(var(--avatar-size-l1) + var(--trunk-start-gap) - 1px);
+                    bottom: -13px;
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                .ci-bubble-wrapper>div>.reply-form-wrapper::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l1);
+                    top: 0;
+                    bottom: -12px;
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                .ri-bubble-wrapper>div>.reply-form-wrapper::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l2);
+                    top: 0;
+                    bottom: -12px;
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                .ci-bubble-wrapper>.reply-thread>.reply-item::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l1);
+                    top: 0;
+                    width: calc(var(--trunk-offset-l1) * -1 - 6px);
+                    height: 14px;
+                    border-left: 2px solid var(--gray-200);
+                    border-bottom: 2px solid var(--gray-200);
+                    border-bottom-left-radius: 12px;
+                    z-index: 1;
+                }
+
+                .ci-bubble-wrapper>.reply-thread>.reply-item::after {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l1);
+                    top: 0;
+                    height: calc(100% + 12px);
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                .ci-bubble-wrapper>.reply-thread>.reply-item:last-child::after {
+                    display: none;
+                }
+
+                .comment-item:not(.has-replies)>.ci-bubble-wrapper>.reply-nav-row:not(:empty)::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l1);
+                    top: 0;
+                    width: calc(var(--trunk-offset-l1) * -1 - 6px);
+                    height: 16px;
+                    border-left: 2px solid var(--gray-200);
+                    border-bottom: 2px solid var(--gray-200);
+                    border-bottom-left-radius: 12px;
+                }
+
+                .reply-item.has-replies>.ri-bubble-wrapper>.ri-bubble::after,
+                .reply-item:has(> .ri-bubble-wrapper > .reply-nav-row:not(:empty))>.ri-bubble-wrapper>.ri-bubble::after {
+                    content: '';
+                    position: absolute;
+                    left: calc(var(--trunk-offset-l2) - 1px);
+                    top: calc(var(--avatar-size-l2) + var(--trunk-start-gap) - 1px);
+                    bottom: -13px;
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                .ri-bubble-wrapper>.reply-thread>.reply-item::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l2);
+                    top: 0;
+                    width: calc(var(--trunk-offset-l2) * -1 - 6px);
+                    height: 14px;
+                    border-left: 2px solid var(--gray-200);
+                    border-bottom: 2px solid var(--gray-200);
+                    border-bottom-left-radius: 10px;
+                    z-index: 1;
+                }
+
+                .ri-bubble-wrapper>.reply-thread>.reply-item::after {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l2);
+                    top: 0;
+                    height: calc(100% + 12px);
+                    width: 2px;
+                    background: var(--gray-200);
+                    z-index: 0;
+                }
+
+                .ri-bubble-wrapper>.reply-thread>.reply-item:last-child::after {
+                    display: none;
+                }
+
+                .reply-item:not(.has-replies)>.ri-bubble-wrapper>.reply-nav-row:not(:empty)::before {
+                    content: '';
+                    position: absolute;
+                    left: var(--trunk-offset-l2);
+                    top: 0;
+                    width: calc(var(--trunk-offset-l2) * -1 - 6px);
+                    height: 16px;
+                    border-left: 2px solid var(--gray-200);
+                    border-bottom: 2px solid var(--gray-200);
+                    border-bottom-left-radius: 10px;
+                }
+
+                .ri-avatar {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    background: linear-gradient(135deg, var(--gold-500), var(--gold-700));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .68rem;
+                    color: white;
+                    font-weight: 700;
+                }
+
+                .ri-bubble-wrapper {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .ri-bubble {
+                    background: var(--gray-50);
+                    border: 1px solid var(--gray-100);
+                    border-radius: 0 var(--r-lg) var(--r-lg) var(--r-lg);
+                    padding: 10px 14px;
+                }
+
+                .ri-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 5px;
+                }
+
+                .ri-name {
+                    font-size: .8rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                }
+
+                .ri-date {
+                    font-size: .68rem;
+                    color: var(--gray-400);
+                }
+
+                .ri-content {
+                    font-size: .84rem;
+                    color: var(--gray-700);
+                    line-height: 1.6;
+                    margin-bottom: 7px;
+                }
+
+                .reply-mention-inline {
+                    display: inline-flex;
+                    align-items: center;
+                    max-width: 100%;
+                    margin-right: 4px;
+                    padding: 1px 7px;
+                    border-radius: 999px;
+                    background: #E6F7F4;
+                    color: #0F766E;
+                    border: 1px solid #99E6DA;
+                    font-size: .78rem;
+                    font-weight: 800;
+                    line-height: 1.35;
+                    vertical-align: baseline;
+                    word-break: break-word;
+                }
+
+                .ri-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    position: relative;
+                }
+
+                .ria-reply {
+                    margin-left: auto;
+                }
+
+                .load-replies-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 4px 12px;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 50px;
+                    font-size: .76rem;
+                    font-weight: 600;
+                    color: var(--teal-600);
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    margin-bottom: 16px;
+                }
+
+                .load-replies-btn:hover {
+                    background: var(--teal-100);
+                    border-color: var(--teal-400);
+                }
+
+                .comments-divider {
+                    border: none;
+                    border-top: 1px solid var(--gray-100);
+                    margin: 24px 0;
+                }
+
+                .ci-author-menu-wrap {
+                    position: relative;
+                    display: inline-block;
+                    margin-left: auto;
+                }
+
+                .ci-author-menu-btn {
+                    background: transparent;
+                    border: none;
+                    color: var(--gray-400);
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                }
+
+                .ci-author-menu-btn:hover {
+                    background: var(--gray-100);
+                    color: var(--gray-700);
+                }
+
+                .ci-author-dropdown {
+                    position: absolute;
+                    right: 0;
+                    top: 100%;
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--r-md);
+                    box-shadow: var(--shadow-md);
+                    width: 160px;
+                    z-index: 50;
+                    display: none;
+                    overflow: hidden;
+                }
+
+                .ci-author-dropdown.show {
+                    display: block;
+                }
+
+                .ci-author-action {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    width: 100%;
+                    padding: 8px 12px;
+                    border: none;
+                    background: transparent;
+                    text-align: left;
+                    font-size: .8rem;
+                    font-weight: 600;
+                    color: var(--gray-700);
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                }
+
+                .ci-author-action:hover {
+                    background: var(--gray-50);
+                    color: var(--teal-600);
+                }
+
+                .ci-author-action.danger {
+                    color: var(--danger);
+                }
+
+                .ci-author-action.danger:hover {
+                    background: #fef2f2;
+                }
+
+                .ci-header-main {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 8px;
+                    margin-bottom: 6px;
+                }
+
+                .ci-header-content {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex: 1;
+                    min-width: 0;
+                    row-gap: 4px;
+                    column-gap: 12px;
+                }
+
+                .ci-name-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    min-width: 0;
+                    flex-shrink: 1;
+                }
+
+                .ci-name {
+                    font-size: .84rem;
+                    font-weight: 700;
+                    color: var(--ink-800);
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 180px;
+                    cursor: default;
+                }
+
+                .ci-date-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    white-space: nowrap;
+                }
+
+                .inline-edit-box {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin-bottom: 10px;
+                }
+
+                .inline-edit-textarea {
+                    width: 100%;
+                    background: white;
+                    border: 1.5px solid var(--teal-400);
+                    border-radius: var(--r-md);
+                    padding: 10px 14px;
+                    font-size: .87rem;
+                    color: var(--gray-800);
+                    outline: none;
+                    resize: vertical;
+                    min-height: 60px;
+                    font-family: inherit;
+                }
+
+                .inline-edit-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 6px;
+                }
+
+                .ie-btn {
+                    padding: 4px 12px;
+                    border-radius: 50px;
+                    font-size: .78rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--t-fast);
+                    border: 1px solid transparent;
+                }
+
+                .ie-btn-cancel {
+                    background: var(--gray-100);
+                    color: var(--gray-600);
+                    border-color: var(--gray-200);
+                }
+
+                .ie-btn-cancel:hover {
+                    background: var(--gray-200);
+                }
+
+                .ie-btn-save {
+                    background: var(--ink-800);
+                    color: white;
+                }
+
+                .ie-btn-save:hover {
+                    background: var(--teal-600);
+                }
+
+                .cmt-edited-badge {
+                    font-size: .65rem;
+                    color: var(--gray-400);
+                    font-style: italic;
+                    margin-left: 6px;
+                    cursor: pointer;
+                }
+
+                .cmt-edited-badge:hover {
+                    text-decoration: underline;
+                    color: var(--teal-600);
+                }
+
+                /* ============================================================
+                   MODAL BÁO CÁO VI PHẠM (REPORT SYSTEM)
+                ============================================================ */
+                .report-modal-content {
+                    border-radius: 16px;
+                    border: none;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                }
+
+                .report-modal-header {
+                    border-bottom: 1px solid var(--gray-100);
+                    padding: 16px 20px;
+                }
+
+                .report-modal-title {
+                    font-size: 1.05rem;
+                    font-weight: 800;
+                    color: var(--ink-800);
+                }
+
+                .report-modal-title i {
+                    color: var(--warning);
+                    margin-right: 8px;
+                }
+
+                .report-modal-body {
+                    padding: 20px;
+                }
+
+                .report-modal-desc {
+                    font-size: .85rem;
+                    color: var(--gray-600);
+                    margin-bottom: 16px;
+                }
+
+                .report-modal-label {
+                    font-weight: 600;
+                    font-size: .85rem;
+                    margin-bottom: 8px;
+                    display: block;
+                    color: var(--gray-800);
+                }
+
+                .report-modal-req {
+                    color: var(--danger);
+                }
+
+                .report-modal-select {
+                    min-height: 44px;
+                    padding: 10px 14px;
+                    cursor: pointer;
+                }
+
+                .report-modal-footer {
+                    border-top: 1px solid var(--gray-100);
+                    padding: 16px 20px;
+                    background: var(--gray-50);
+                    border-radius: 0 0 16px 16px;
+                    display: flex;
+                    gap: 8px;
+                }
+
+                @media (max-width: 576px) {
+                    .ci-name {
+                        max-width: 130px;
+                    }
                 }
 
                 @media (max-width: 991px) {
@@ -992,37 +2015,50 @@
 
                             <!-- Comments -->
                             <div class="event-main-card reveal">
-                                <div class="emc-section-head"><i class="fas fa-comments"></i> Bình luận</div>
-                                <div class="emc-section-body">
-                                    <!-- Comment form: chỉ render khi đã đăng nhập -->
-                                    <div class="event-comment-form" sec:authorize="isAuthenticated()">
-                                        <textarea id="cmt-input" class="form-input"
-                                            style="min-height:80px;resize:vertical;"
-                                            placeholder="Đặt câu hỏi cho diễn giả hoặc chia sẻ kỳ vọng của bạn về buổi hội thảo..."></textarea>
-                                        <div style="display:flex;justify-content:flex-end;margin-top:8px;">
-                                            <button id="btn-gui-cmt" class="submit-btn"
-                                                style="width:auto;padding:7px 18px;font-size:.84rem;background:var(--ink-800);color:white;"
-                                                onclick="guiBinhLuan()">
-                                                <i class="fas fa-paper-plane fa-xs"></i> Gửi bình luận
+                                <div class="emc-section-head"><i class="fas fa-comments"></i> Bình luận <span class="cs-count" id="comment-count-badge" style="margin-left:auto;">0</span></div>
+                                <div class="emc-section-body" style="padding:0;">
+                                    <div class="comments-section">
+
+                                        <div class="comment-form-card" sec:authorize="isAuthenticated()">
+                                            <div class="cf-head"><i class="fas fa-pen-nib"></i> Viết bình luận của bạn</div>
+                                            <textarea id="mainCommentContent" class="cf-textarea"
+                                                placeholder="Đặt câu hỏi cho diễn giả hoặc chia sẻ kỳ vọng của bạn..."></textarea>
+                                            <div class="cf-footer">
+                                                <div class="cf-emotion-btns">
+                                                    <button class="ce-btn" onclick="dienBieuTuong('👍', 'mainCommentContent')">👍</button>
+                                                    <button class="ce-btn" onclick="dienBieuTuong('🔬', 'mainCommentContent')">🔬</button>
+                                                    <button class="ce-btn" onclick="dienBieuTuong('⚠️', 'mainCommentContent')">⚠️</button>
+                                                    <button class="ce-btn" onclick="dienBieuTuong('💊', 'mainCommentContent')">💊</button>
+                                                    <button class="ce-btn" onclick="dienBieuTuong('📊', 'mainCommentContent')">📊</button>
+                                                </div>
+                                                <button class="cf-submit-btn" onclick="guiBinhLuanGoc()"><i class="fas fa-paper-plane fa-xs"></i> Đăng bình luận</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="comment-guest-cta" sec:authorize="!isAuthenticated()">
+                                            <i class="fas fa-user-circle d-block"></i>
+                                            <p>Đăng nhập để tham gia thảo luận cùng chuyên gia y tế.</p>
+                                            <div class="d-flex gap-2 justify-content-center">
+                                                <a href="/login" class="btn-primary-pharma" style="padding:7px 18px;font-size:.84rem;"><i class="fas fa-sign-in-alt fa-xs"></i> Đăng nhập</a>
+                                                <a href="/register" class="btn-outline-pharma" style="padding:7px 18px;font-size:.84rem;"><i class="fas fa-user-plus fa-xs"></i> Đăng ký</a>
+                                            </div>
+                                        </div>
+
+                                        <div id="comment-list-container">
+                                            <div style="text-align:center;padding:20px;color:var(--gray-400);"><i class="fas fa-circle-notch fa-spin"></i> Đang tải bình luận...</div>
+                                        </div>
+
+                                        <div id="load-more-comments-container" style="text-align:center;margin-top:20px;display:none;">
+                                            <button onclick="taiThemBinhLuanGoc()" style="padding:10px 28px;background:white;border:1.5px solid var(--gray-200);border-radius:var(--r-md);font-size:.85rem;font-weight:600;color:var(--gray-600);cursor:pointer;transition:var(--t-fast);">
+                                                <i class="fas fa-chevron-down fa-xs me-2"></i> Tải thêm bình luận
                                             </button>
                                         </div>
-                                    </div>
-                                    <!-- CTA đăng nhập cho guest -->
-                                    <div sec:authorize="!isAuthenticated()"
-                                        style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--r-lg);padding:14px;margin-bottom:16px;text-align:center;font-size:.84rem;color:var(--gray-500);">
-                                        <i class="fas fa-sign-in-alt fa-xs me-1"></i>
-                                        <a href="/login" style="color:var(--teal-600);font-weight:600;">Đăng nhập</a> để
-                                        đặt câu hỏi cho diễn giả
-                                    </div>
-                                    <!-- Danh sách bình luận -->
-                                    <div id="comments-list"></div>
-                                    <!-- Load more -->
-                                    <div style="text-align:center;margin-top:10px;">
-                                        <button id="cmt-load-more"
-                                            style="display:none;padding:8px 20px;background:white;border:1px solid var(--gray-200);border-radius:var(--r-md);font-size:.82rem;color:var(--gray-600);cursor:pointer;font-weight:600;"
-                                            onclick="taiBinhLuan(cmtTrangHt + 1)">
-                                            Xem thêm bình luận <i class="fas fa-chevron-down fa-xs ms-1"></i>
-                                        </button>
+
+                                        <div id="collapse-comments-container" style="text-align:center;margin-top:10px;display:none;">
+                                            <button onclick="thuGonBinhLuanGoc()" style="padding:8px 20px;background:white;border:1.5px solid var(--gray-200);border-radius:var(--r-md);font-size:.82rem;font-weight:600;color:var(--gray-500);cursor:pointer;">
+                                                <i class="fas fa-chevron-up fa-xs me-2"></i> Thu gọn
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1161,6 +2197,56 @@
         </div>
     </div>
 
+    <!-- Modal Báo Cáo Vi Phạm (Report System) -->
+    <div class="modal fade" id="modalBaoCao" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content report-modal-content">
+
+                <div class="modal-header report-modal-header">
+                    <h5 class="modal-title report-modal-title">
+                        <i class="fas fa-flag"></i> Báo cáo vi phạm
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body report-modal-body">
+                    <input type="hidden" id="reportTargetId">
+                    <input type="hidden" id="reportTargetType">
+
+                    <p class="report-modal-desc">
+                        Vui lòng cho Quản trị viên biết nội dung này đang gặp vấn đề gì?
+                    </p>
+
+                    <div class="mf-group" style="margin-bottom: 12px;">
+                        <label class="report-modal-label">Lý do vi phạm <span class="report-modal-req">*</span></label>
+                        <select id="reportReasonSelect" class="cf-textarea report-modal-select">
+                            <option value="">-- Chọn lý do --</option>
+                            <option value="Ngôn từ đả kích, gây hấn, thiếu văn hóa">Ngôn từ đả kích, gây hấn, thiếu văn hóa</option>
+                            <option value="Thông tin y khoa sai lệch, chưa kiểm chứng">Thông tin y khoa sai lệch, chưa kiểm chứng</option>
+                            <option value="Spam, quảng cáo bán hàng trái phép">Spam, quảng cáo bán hàng trái phép</option>
+                            <option value="Vi phạm quyền riêng tư bệnh nhân">Vi phạm quyền riêng tư bệnh nhân</option>
+                            <option value="Khác">Lý do khác...</option>
+                        </select>
+                    </div>
+
+                    <div class="mf-group" id="reportReasonDetailGroup" style="display: none; margin-bottom: 0;">
+                        <label class="report-modal-label">Chi tiết lý do <span class="report-modal-req">*</span></label>
+                        <textarea id="reportReasonDetail" class="cf-textarea"
+                            placeholder="Mô tả cụ thể vấn đề bạn gặp phải..."
+                            style="min-height: 80px;"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer report-modal-footer">
+                    <button type="button" class="cf-cancel-btn" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="button" class="cf-submit-btn" id="btnSubmitReport"
+                        onclick="guiBaoCaoViPham()"><i class="fas fa-paper-plane fa-xs"></i> Gửi báo cáo</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <div th:replace="~{user_layout::user-footer}"></div>
     <div th:replace="~{user_layout::user-scripts}"></div>
 
@@ -1174,6 +2260,14 @@
         var ctEventId = null;
         var cmtTrangHt = 0;
         var cmtTongTrang = 0;
+
+        var trangBinhLuanHienTai = 0;
+        var kichThuocTrangBinhLuan = 10;
+        var kichThuocTrangPhanHoi = 5;
+        var conBinhLuanDeTai = false;
+        var danhSachLoaiCamXuc = [];
+        var khoTrangThaiBinhLuan = {};
+        var khoTrangThaiPhanHoi = {};
 
         // ------------------------------------------------------------
         // BỘ CÔNG CỤ TIỆN ÍCH (UTILITIES) - PHẢI KHAI BÁO ĐẦU TIÊN
@@ -1329,7 +2423,8 @@
             taiAgenda();
             taiDienGia();
             taiLichSuTrangThai();
-            taiBinhLuan(0);
+            taiDanhSachTuDienCamXuc();
+            taiDanhSachBinhLuan(0, true);
         }
 
         // ============================================================
@@ -1880,149 +2975,675 @@
         }
 
         // ============================================================
-        // BÌNH LUẬN
+        // KHOI LOGIC BINH LUAN V2
         // ============================================================
 
-        function taiBinhLuan(trang) {
-            if (trang === 0) {
-                document.getElementById('comments-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin"></i></div>';
+        function maHoaChuoiChoOnclick(giaTri) {
+            var chuoiCanMaHoa = '';
+            if (giaTri !== null && giaTri !== undefined) { chuoiCanMaHoa = String(giaTri); }
+            return encodeURIComponent(chuoiCanMaHoa).replace(/'/g, '%27');
+        }
+
+        function dinhDangNoiDungPhanHoiTheoTen(noiDung, tenNguoiNhan) {
+            var noiDungAnToan = lamSachChuoiHTML(noiDung);
+            if (tenNguoiNhan !== null && tenNguoiNhan !== undefined && tenNguoiNhan !== '') {
+                var tagNguoiNhanAnToan = '@' + lamSachChuoiHTML(tenNguoiNhan);
+                if (noiDungAnToan.indexOf(tagNguoiNhanAnToan) === 0) {
+                    var phanNoiDungSauTag = noiDungAnToan.substring(tagNguoiNhanAnToan.length);
+                    return '<span class="reply-mention-inline">' + tagNguoiNhanAnToan + '</span>' + phanNoiDungSauTag;
+                }
             }
-            callApi('/api/events/sessions/' + ctEventId + '/comments?page=' + trang + '&size=5', 'GET', null, null, function (res) {
-                var container = document.getElementById('comments-list');
-                if (res.status !== 200) {
-                    container.innerHTML = '<p style="font-size:.85rem;color:var(--danger);text-align:center;">Lỗi tải bình luận.</p>';
-                    return;
-                }
-                var page = res.data;
-                cmtTrangHt = page.number;
-                cmtTongTrang = page.totalPages;
+            return noiDungAnToan;
+        }
 
-                if (trang === 0) {
-                    container.innerHTML = '';
-                }
+        function dinhDangNoiDungPhanHoi(rp) {
+            return dinhDangNoiDungPhanHoiTheoTen(rp.content, rp.replyToUserFullName);
+        }
 
-                if (!page.content || page.content.length === 0) {
-                    if (trang === 0) {
-                        container.innerHTML = '<p style="font-size:.85rem;color:var(--gray-400);text-align:center;padding:20px;">Chưa có bình luận. Hãy là người đầu tiên!</p>';
-                    }
-                    document.getElementById('cmt-load-more').style.display = 'none';
-                    return;
-                }
+        function dinhDangThoiGianChiTiet(chuoiISO) {
+            if (chuoiISO === null || chuoiISO === undefined || chuoiISO === '') return '';
+            var ngay = new Date(chuoiISO);
+            if (isNaN(ngay.getTime())) return chuoiISO;
+            var d = String(ngay.getDate()).padStart(2, '0');
+            var m = String(ngay.getMonth() + 1).padStart(2, '0');
+            var h = String(ngay.getHours()).padStart(2, '0');
+            var phut = String(ngay.getMinutes()).padStart(2, '0');
+            return d + '/' + m + ' — ' + h + ':' + phut;
+        }
 
-                var html = '';
-                for (var i = 0; i < page.content.length; i++) {
-                    html += renderCmt(page.content[i]);
-                }
-                if (trang === 0) {
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML += html;
-                }
+        function dinhDangSoNganCach(soCanDinhDang) {
+            if (soCanDinhDang === null || soCanDinhDang === undefined) return '0';
+            return Number(soCanDinhDang).toLocaleString('vi-VN');
+        }
 
-                var loadMoreBtn = document.getElementById('cmt-load-more');
-                if ((page.number + 1) < page.totalPages) {
-                    var remaining = page.totalElements - (page.number + 1) * 5;
-                    loadMoreBtn.style.display = 'block';
-                    loadMoreBtn.innerHTML = 'Xem thêm ' + remaining + ' bình luận <i class="fas fa-chevron-down fa-xs ms-1"></i>';
-                } else {
-                    loadMoreBtn.style.display = 'none';
-                }
-            }, function () {
-                document.getElementById('comments-list').innerHTML = '<p style="font-size:.85rem;color:var(--danger);text-align:center;">Lỗi kết nối.</p>';
+        function layChuCaiDauTien(hoTen) {
+            if (hoTen === null || hoTen === undefined || hoTen.trim() === '') return '?';
+            var cacPhan = hoTen.trim().split(' ');
+            if (cacPhan.length === 1) return cacPhan[0].charAt(0).toUpperCase();
+            return (cacPhan[0].charAt(0) + cacPhan[cacPhan.length - 1].charAt(0)).toUpperCase();
+        }
+
+        function laDuongDanAnh(chuoi) {
+            if (chuoi === null || chuoi === undefined || chuoi === '') return false;
+            var t = chuoi.toLowerCase();
+            return t.indexOf('/') > -1 || t.indexOf('http') > -1 || t.indexOf('.png') > -1 || t.indexOf('.svg') > -1 || t.indexOf('.jpg') > -1 || t.indexOf('.gif') > -1;
+        }
+
+        function hienThiIconMenu(giaTri) {
+            if (giaTri === null || giaTri === undefined || giaTri === '') return '<div class="re-icon-menu">👍</div>';
+            if (laDuongDanAnh(giaTri) === true) { return '<div class="re-icon-menu"><img src="' + lamSachChuoiHTML(giaTri) + '" alt=""></div>'; }
+            return '<div class="re-icon-menu">' + lamSachChuoiHTML(giaTri) + '</div>';
+        }
+
+        function hienThiIconNutChinh(giaTri) {
+            if (giaTri === null || giaTri === undefined || giaTri === '') return '<i class="fas fa-thumbs-up fa-xs"></i>';
+            if (laDuongDanAnh(giaTri) === true) { return '<span class="btn-icon-small"><img src="' + lamSachChuoiHTML(giaTri) + '" alt=""></span>'; }
+            return lamSachChuoiHTML(giaTri);
+        }
+
+        function taiDanhSachTuDienCamXuc() {
+            callApi('/api/comments/reaction-types', 'GET', null, null, function (res) {
+                if (res.status === 200) { danhSachLoaiCamXuc = res.data || []; }
             });
         }
 
-        function renderCmt(cmt) {
-            var initial = cmt.userFullName ? cmt.userFullName.charAt(0).toUpperCase() : '?';
-            var avatarHtml = '';
-            if (cmt.userAvatar && (cmt.userAvatar.indexOf('http') === 0 || cmt.userAvatar.indexOf('/') === 0)) {
-                avatarHtml = '<img src="' + esc(cmt.userAvatar) + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" alt="">';
-            } else {
-                var av = cmt.userAvatar ? cmt.userAvatar : initial;
-                avatarHtml = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal-600),var(--ink-700));display:flex;align-items:center;justify-content:center;color:white;font-size:.75rem;font-weight:700;">' + esc(av) + '</div>';
+        function laySoLuongCamXuc(maCamXuc, mangThongKe) {
+            if (mangThongKe === null || mangThongKe === undefined) return 0;
+            if (mangThongKe[maCamXuc] !== undefined) { return mangThongKe[maCamXuc]; }
+            if (Array.isArray(mangThongKe)) {
+                for (var i = 0; i < mangThongKe.length; i = i + 1) {
+                    if (mangThongKe[i].code === maCamXuc) return mangThongKe[i].count;
+                }
             }
+            return 0;
+        }
 
-            var roleBadge = '';
-            if (cmt.userRoleName) {
-                roleBadge = ' <span style="font-size:.65rem;background:rgba(0,152,152,.1);color:var(--teal-700);padding:1px 6px;border-radius:3px;">' + esc(cmt.userRoleName) + '</span>';
+        function taoHoverMenuCamXuc(loaiDoiTuong, maDoiTuong, mangThongKe) {
+            if (danhSachLoaiCamXuc.length === 0) return '';
+            var theHTMLMenu = '<div class="reaction-picker">';
+            for (var m = 0; m < danhSachLoaiCamXuc.length; m = m + 1) {
+                var camXuc = danhSachLoaiCamXuc[m];
+                var soLuong = laySoLuongCamXuc(camXuc.code, mangThongKe);
+                var theHienSoLuong = '';
+                if (soLuong > 0) { theHienSoLuong = '<div class="re-count">' + dinhDangSoNganCach(soLuong) + '</div>'; }
+                theHTMLMenu += '<div class="reaction-emoji-item" onclick="guiThongTinCamXuc(\'' + loaiDoiTuong + '\', ' + maDoiTuong + ', \'' + camXuc.code + '\')" title="' + lamSachChuoiHTML(camXuc.name) + '">' +
+                    hienThiIconMenu(camXuc.iconUrl) + theHienSoLuong + '</div>';
             }
+            theHTMLMenu += '</div>';
+            return theHTMLMenu;
+        }
 
-            var reactHtml = '';
-            if (cmt.reactions && cmt.reactions.length > 0) {
-                reactHtml = '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">';
-                for (var i = 0; i < cmt.reactions.length; i++) {
-                    var r = cmt.reactions[i];
-                    if (r.count > 0) {
-                        var icon = r.iconUrl ? '<img src="' + esc(r.iconUrl) + '" style="width:13px;height:13px;vertical-align:middle;"> ' : '';
-                        reactHtml += '<span style="padding:2px 7px;background:var(--gray-100);border-radius:50px;font-size:.72rem;cursor:default;">' + icon + esc(r.name || r.code || '') + ' ' + r.count + '</span>';
+        function xdKhungCamXucThongMinh(loaiDoiTuong, maDoiTuong) {
+            var stateObj;
+            if (loaiDoiTuong === 'cmt') { stateObj = khoTrangThaiBinhLuan[maDoiTuong]; } else { stateObj = khoTrangThaiPhanHoi[maDoiTuong]; }
+            if (stateObj === undefined) return '';
+            var menuHover = taoHoverMenuCamXuc(loaiDoiTuong, maDoiTuong, stateObj.reactions);
+            var lopNutThich = (loaiDoiTuong === 'cmt') ? 'cia-btn' : 'ria-btn';
+            var iconChinh = '<i class="fas fa-thumbs-up fa-xs"></i> Thích';
+            var lopMauChinh = '';
+            var camXucCuaToi = stateObj.currentUserReaction;
+            if (camXucCuaToi !== null && camXucCuaToi !== undefined && camXucCuaToi !== '') {
+                for (var c = 0; c < danhSachLoaiCamXuc.length; c = c + 1) {
+                    if (danhSachLoaiCamXuc[c].code === camXucCuaToi) {
+                        iconChinh = hienThiIconNutChinh(danhSachLoaiCamXuc[c].iconUrl) + ' ' + danhSachLoaiCamXuc[c].name;
+                        lopMauChinh = (camXucCuaToi === 'LOVE') ? 'hearted active' : 'liked active';
+                        break;
                     }
                 }
-                reactHtml += '</div>';
             }
-
-            var repliesHtml = '';
-            if (cmt.replies && cmt.replies.length > 0) {
-                repliesHtml = '<div style="margin-left:42px;margin-top:4px;">';
-                for (var i = 0; i < cmt.replies.length; i++) {
-                    repliesHtml += renderReply(cmt.replies[i]);
-                }
-                repliesHtml += '</div>';
+            var tongSo = 0;
+            if (stateObj.reactions !== null && stateObj.reactions !== undefined) {
+                for (var r = 0; r < stateObj.reactions.length; r = r + 1) { tongSo = tongSo + stateObj.reactions[r].count; }
             }
-
-            var html = '<div style="display:flex;gap:10px;margin-bottom:16px;">';
-            html += '<div style="flex-shrink:0;">' + avatarHtml + '</div>';
-            html += '<div style="flex:1;background:var(--gray-50);border:1px solid var(--gray-100);border-radius:0 var(--r-lg) var(--r-lg) var(--r-lg);padding:10px 14px;">';
-            html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">';
-            html += '<span style="font-size:.82rem;font-weight:700;color:var(--ink-800);">' + esc(cmt.userFullName || 'Ẩn danh') + roleBadge + '</span>';
-            html += '<span style="font-size:.7rem;color:var(--gray-400);white-space:nowrap;">' + dinhDangNgayGio(cmt.createdAt) + '</span>';
-            html += '</div>';
-            html += '<div style="font-size:.85rem;color:var(--gray-700);line-height:1.6;">' + esc(cmt.content || '') + '</div>';
-            html += reactHtml;
-            html += '</div></div>';
-            html += repliesHtml;
-            return html;
+            var theHienTongSo = (tongSo > 0) ? '<span class="cia-count" style="margin-left:4px;">' + dinhDangSoNganCach(tongSo) + '</span>' : '';
+            var maCamXucMacDinh = 'LIKE';
+            if (danhSachLoaiCamXuc.length > 0) { maCamXucMacDinh = danhSachLoaiCamXuc[0].code; }
+            return '<div class="reaction-picker-wrapper">' +
+                '<button class="' + lopNutThich + ' ' + lopMauChinh + '" onclick="guiThongTinCamXuc(\'' + loaiDoiTuong + '\', ' + maDoiTuong + ', \'' + maCamXucMacDinh + '\')">' +
+                iconChinh + theHienTongSo + '</button>' + menuHover + '</div>';
         }
 
-        function renderReply(reply) {
-            var initial = reply.userFullName ? reply.userFullName.charAt(0).toUpperCase() : '?';
-            var avatarHtml = '';
-            if (reply.userAvatar && (reply.userAvatar.indexOf('http') === 0 || reply.userAvatar.indexOf('/') === 0)) {
-                avatarHtml = '<img src="' + esc(reply.userAvatar) + '" style="width:26px;height:26px;border-radius:50%;object-fit:cover;" alt="">';
+        function taiDanhSachBinhLuan(chiSoTrang, laLamMoiHoanToan) {
+            if (laLamMoiHoanToan === true) { trangBinhLuanHienTai = 0; } else { trangBinhLuanHienTai = chiSoTrang; }
+            if (ctEventId === null) return;
+            var duongDanGoiAPI = '/api/comments/events/' + ctEventId + '?page=' + trangBinhLuanHienTai + '&size=' + kichThuocTrangBinhLuan;
+            callApi(duongDanGoiAPI, 'GET', null, null, function (res) {
+                if (res.status === 200) {
+                    var duLieuTrang = res.data;
+                    var mangBinhLuan = duLieuTrang.content || [];
+                    conBinhLuanDeTai = !duLieuTrang.last;
+                    document.getElementById('comment-count-badge').textContent = dinhDangSoNganCach(duLieuTrang.totalElements);
+                    var khoiBaoBinhLuan = document.getElementById('comment-list-container');
+                    var theHTMLNoiDung = '';
+                    if (mangBinhLuan.length === 0 && trangBinhLuanHienTai === 0) {
+                        khoiBaoBinhLuan.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray-400);font-style:italic;">Chưa có bình luận nào. Khởi tạo cuộc thảo luận ngay!</div>';
+                    } else {
+                        for (var i = 0; i < mangBinhLuan.length; i = i + 1) {
+                            khoTrangThaiBinhLuan[mangBinhLuan[i].id] = { reactions: mangBinhLuan[i].reactions || [], currentUserReaction: mangBinhLuan[i].currentUserReaction };
+                            if (mangBinhLuan[i].replies) {
+                                for (var r = 0; r < mangBinhLuan[i].replies.length; r = r + 1) {
+                                    var rp = mangBinhLuan[i].replies[r];
+                                    khoTrangThaiPhanHoi[rp.id] = { reactions: rp.reactions || [], currentUserReaction: rp.currentUserReaction };
+                                }
+                            }
+                            theHTMLNoiDung += cauTrucHTMLBinhLuanGoc(mangBinhLuan[i]);
+                        }
+                        if (laLamMoiHoanToan === true) { khoiBaoBinhLuan.innerHTML = theHTMLNoiDung; } else { khoiBaoBinhLuan.insertAdjacentHTML('beforeend', theHTMLNoiDung); }
+                    }
+                    capNhatNutPhanTrangBinhLuanGoc();
+                } else { showToast('error', res.message); }
+            });
+        }
+
+        function capNhatNutPhanTrangBinhLuanGoc() {
+            var nutTaiThem = document.getElementById('load-more-comments-container');
+            if (nutTaiThem !== null) { nutTaiThem.style.display = (conBinhLuanDeTai === true) ? 'block' : 'none'; }
+            var nutThuGon = document.getElementById('collapse-comments-container');
+            if (nutThuGon !== null) { nutThuGon.style.display = (trangBinhLuanHienTai > 0) ? 'block' : 'none'; }
+        }
+
+        function taiThemBinhLuanGoc() {
+            if (conBinhLuanDeTai === true) { taiDanhSachBinhLuan(trangBinhLuanHienTai + 1, false); }
+        }
+
+        function thuGonBinhLuanGoc() {
+            if (trangBinhLuanHienTai <= 0) { return; }
+            taiDanhSachBinhLuan(0, true);
+            var khuBinhLuan = document.getElementById('comment-list-container');
+            if (khuBinhLuan !== null) { khuBinhLuan.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        }
+
+        function cauTrucHTMLBinhLuanGoc(cmt) {
+            var laBiAn = (cmt.currentStatus === 'HIDE' || cmt.currentStatus === 'DELETE');
+            if (laBiAn === true) {
+                return '<div class="comment-item"><div class="ci-avatar" style="background:#dee2e6;color:#6c757d;">?</div>' +
+                    '<div class="ci-bubble-wrapper"><div class="ci-bubble hidden">' +
+                    '<div class="ci-moderation-banner"><i class="fas fa-eye-slash"></i> Bình luận đã bị ẩn bởi Kiểm duyệt viên.</div>' +
+                    '<div class="ci-content" style="color:#adb5bd;font-style:italic;">[Nội dung đã bị chặn hiển thị]</div>' +
+                    '</div></div></div>';
+            }
+            var laBiCanhBao = (cmt.currentStatus === 'WARN');
+            var theHTMLLopMau = '';
+            var theHTMLCanhBao = '';
+            if (laBiCanhBao === true) {
+                theHTMLLopMau = ' moderated';
+                theHTMLCanhBao = '<div class="ci-moderation-banner"><i class="fas fa-exclamation-triangle"></i> Bình luận này đang bị cảnh báo do vi phạm tiêu chuẩn cộng đồng.</div>';
+            }
+            var theHTMLChucVu = '';
+            if (cmt.userRoleName === 'SUPERADMIN' || cmt.userRoleName === 'ADMIN') {
+                theHTMLChucVu = '<span class="ci-role-badge admin">Quản trị viên</span>';
+            } else if (cmt.userRoleName === 'DOCTOR' || cmt.userRoleName === 'PHARMACIST') {
+                theHTMLChucVu = '<span class="ci-role-badge doctor">Chuyên gia</span>';
+            }
+            var theHTMLCamXucCuaCmt = '<div id="react-wrap-cmt-' + cmt.id + '" style="display:inline-block;">' + xdKhungCamXucThongMinh('cmt', cmt.id) + '</div>';
+            var tenTacGiaCmtMaHoa = maHoaChuoiChoOnclick(cmt.userFullName);
+            var theHTMLPhanHoiCap2 = taoKhuVucPhanHoiCapHai(cmt);
+            var cmtMenuTacGia = '<div class="ci-author-menu-wrap"><button class="ci-author-menu-btn" onclick="toggleAuthorMenu(this)"><i class="fas fa-ellipsis-h"></i></button><div class="ci-author-dropdown">';
+            if (cmt.author === true) {
+                cmtMenuTacGia += '<button class="ci-author-action" onclick="kichHoatSua(\'cmt\', ' + cmt.id + ')"><i class="fas fa-pen fa-fw"></i> Chỉnh sửa</button>' +
+                    '<button class="ci-author-action" onclick="xemLichSu(\'cmt\', ' + cmt.id + ')"><i class="fas fa-history fa-fw"></i> Lịch sử sửa</button>' +
+                    '<button class="ci-author-action danger" onclick="xoaBinhLuan(\'cmt\', ' + cmt.id + ')"><i class="fas fa-trash fa-fw"></i> Xóa bình luận</button>';
             } else {
-                var av = reply.userAvatar ? reply.userAvatar : initial;
-                avatarHtml = '<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--teal-600),var(--ink-700));display:flex;align-items:center;justify-content:center;color:white;font-size:.65rem;font-weight:700;">' + esc(av) + '</div>';
+                cmtMenuTacGia += '<button class="ci-author-action" onclick="moFormBaoCao(\'CMT\', ' + cmt.id + ')"><i class="fas fa-flag fa-fw"></i> Báo cáo vi phạm</button>';
             }
-            var html = '<div style="display:flex;gap:8px;margin-bottom:8px;">';
-            html += '<div style="flex-shrink:0;">' + avatarHtml + '</div>';
-            html += '<div style="flex:1;background:white;border:1px solid var(--gray-100);border-radius:0 var(--r-md) var(--r-md) var(--r-md);padding:8px 12px;">';
-            html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;">';
-            html += '<span style="font-size:.79rem;font-weight:700;color:var(--ink-800);">' + esc(reply.userFullName || 'Ẩn danh') + '</span>';
-            html += '<span style="font-size:.68rem;color:var(--gray-400);white-space:nowrap;">' + dinhDangNgayGio(reply.createdAt) + '</span>';
-            html += '</div>';
-            html += '<div style="font-size:.82rem;color:var(--gray-700);line-height:1.55;">' + esc(reply.content || '') + '</div>';
-            html += '</div></div>';
-            return html;
+            cmtMenuTacGia += '</div></div>';
+            var cmtDaSua = '';
+            if (cmt.createdAt !== cmt.updatedAt) {
+                cmtDaSua = '<span class="cmt-edited-badge" onclick="xemLichSu(\'cmt\', ' + cmt.id + ')">(đã chỉnh sửa)</span>';
+            }
+            return '<div class="comment-item" id="cmt-' + cmt.id + '">' +
+                '<div class="ci-avatar">' + layChuCaiDauTien(cmt.userFullName) + '</div>' +
+                '<div class="ci-bubble-wrapper"><div class="ci-bubble' + theHTMLLopMau + '">' + theHTMLCanhBao +
+                '<div class="ci-header-main"><div class="ci-header-content">' +
+                '<div class="ci-name-group"><span class="ci-name" title="' + lamSachChuoiHTML(cmt.userFullName) + '">' + lamSachChuoiHTML(cmt.userFullName) + '</span>' + theHTMLChucVu + '</div>' +
+                '<div class="ci-date-group"><span class="ci-date">' + dinhDangThoiGianChiTiet(cmt.createdAt) + '</span>' + cmtDaSua + '</div>' +
+                '</div>' + cmtMenuTacGia + '</div>' +
+                '<div class="ci-content" id="content-cmt-' + cmt.id + '" data-raw="' + lamSachChuoiHTML(cmt.content) + '">' + lamSachChuoiHTML(cmt.content) + '</div>' +
+                '<div class="ci-actions">' + theHTMLCamXucCuaCmt + '<button class="cia-btn cia-reply" onclick="hienThiFormPhanHoi(\'cmt\', ' + cmt.id + ', null, decodeURIComponent(\'' + tenTacGiaCmtMaHoa + '\'))"><i class="fas fa-reply fa-xs"></i> Phản hồi</button></div>' +
+                '</div><div id="reply-container-cmt-' + cmt.id + '"></div>' + theHTMLPhanHoiCap2 + '</div></div>';
         }
 
-        function guiBinhLuan() {
-            var input = document.getElementById('cmt-input');
-            if (!input) { return; }
-            var content = input.value.trim();
-            if (!content) {
-                input.focus();
-                return;
+        function taoKhuVucPhanHoiCapHai(cmt) {
+            var soPhanHoi = 0;
+            if (cmt.replyCount !== null && cmt.replyCount !== undefined) {
+                soPhanHoi = Number(cmt.replyCount);
             }
-            var body = { targetId: ctEventId, content: content };
-            callApi('/api/events/sessions/' + ctEventId + '/comments', 'POST', body, '#btn-gui-cmt', function (res) {
-                if (res.status === 200 || res.status === 201) {
-                    input.value = '';
-                    cmtTrangHt = 0;
-                    taiBinhLuan(0);
-                } else {
-                    alert(res.message || 'Gửi bình luận thất bại. Vui lòng thử lại.');
+            var theHTMLNut = '';
+            if (soPhanHoi > 0) {
+                theHTMLNut = taoNutXemPhanHoiCapHai(cmt.id, soPhanHoi);
+            }
+            return '<div class="reply-thread" id="reply-thread-cmt-' + cmt.id + '" style="display:none;"></div>' +
+                '<div class="reply-nav-row" id="reply-actions-cmt-' + cmt.id + '" data-total="' + soPhanHoi + '">' + theHTMLNut + '</div>';
+        }
+
+        function cauTrucHTMLPhanHoi(rp, maCmtGoc) {
+            if (rp.currentStatus === 'HIDE' || rp.currentStatus === 'DELETE') { return ''; }
+            var lopItem = 'reply-item';
+            if (rp.displayLevel === 3) {
+                lopItem = 'reply-item reply-level-3';
+            }
+            var rpCamXuc = '<div id="react-wrap-reply-' + rp.id + '" style="display:inline-block;">' + xdKhungCamXucThongMinh('reply', rp.id) + '</div>';
+            var rpMenuTacGia = '<div class="ci-author-menu-wrap"><button class="ci-author-menu-btn" onclick="toggleAuthorMenu(this)"><i class="fas fa-ellipsis-v"></i></button><div class="ci-author-dropdown">';
+            if (rp.author === true) {
+                rpMenuTacGia += '<button class="ci-author-action" onclick="kichHoatSua(\'reply\', ' + rp.id + ')"><i class="fas fa-pen fa-fw"></i> Chỉnh sửa</button>' +
+                    '<button class="ci-author-action" onclick="xemLichSu(\'reply\', ' + rp.id + ')"><i class="fas fa-history fa-fw"></i> Lịch sử sửa</button>' +
+                    '<button class="ci-author-action danger" onclick="xoaBinhLuan(\'reply\', ' + rp.id + ')"><i class="fas fa-trash fa-fw"></i> Xóa phản hồi</button>';
+            } else {
+                rpMenuTacGia += '<button class="ci-author-action" onclick="moFormBaoCao(\'PH_CMT\', ' + rp.id + ')"><i class="fas fa-flag fa-fw"></i> Báo cáo vi phạm</button>';
+            }
+            rpMenuTacGia += '</div></div>';
+            var rpDaSua = '';
+            if (rp.createdAt !== rp.updatedAt) {
+                rpDaSua = '<span class="cmt-edited-badge" onclick="xemLichSu(\'reply\', ' + rp.id + ')">(đã chỉnh sửa)</span>';
+            }
+            var theHTMLPhanHoiCon = taoKhuVucPhanHoiCapBa(rp, maCmtGoc);
+            var tenTacGia = lamSachChuoiHTML(rp.userFullName);
+            var tenTacGiaMaHoa = maHoaChuoiChoOnclick(rp.userFullName);
+            var noiDungPhanHoi = dinhDangNoiDungPhanHoi(rp);
+            return '<div class="' + lopItem + '" id="reply-item-' + rp.id + '" data-root-cmt-id="' + maCmtGoc + '" data-thread-anchor-id="' + rp.threadAnchorPhId + '" data-display-level="' + rp.displayLevel + '">' +
+                '<div class="ri-avatar">' + layChuCaiDauTien(rp.userFullName) + '</div>' +
+                '<div class="ri-bubble-wrapper"><div class="ri-bubble"><div class="ci-header-main"><div class="ci-header-content">' +
+                '<div class="ci-name-group"><span class="ri-name ci-name" title="' + tenTacGia + '">' + tenTacGia + '</span></div>' +
+                '<div class="ci-date-group"><span class="ri-date">' + dinhDangThoiGianChiTiet(rp.createdAt) + '</span>' + rpDaSua + '</div>' +
+                '</div>' + rpMenuTacGia + '</div>' +
+                '<div class="ri-content" id="content-reply-' + rp.id + '" data-raw="' + lamSachChuoiHTML(rp.content) + '" data-reply-to-name="' + lamSachChuoiHTML(rp.replyToUserFullName) + '">' + noiDungPhanHoi + '</div>' +
+                '<div class="ri-actions">' + rpCamXuc + '<button class="ria-btn ria-reply" onclick="hienThiFormPhanHoi(\'reply\', ' + maCmtGoc + ', ' + rp.id + ', decodeURIComponent(\'' + tenTacGiaMaHoa + '\'))"><i class="fas fa-reply fa-xs"></i> Trả lời</button></div>' +
+                '</div><div id="reply-container-phcmt-' + rp.id + '"></div>' + theHTMLPhanHoiCon + '</div></div>';
+        }
+
+        function taoKhuVucPhanHoiCapBa(rp, maCmtGoc) {
+            if (rp.displayLevel !== 2) { return ''; }
+            var soPhanHoi = 0;
+            if (rp.replyCount !== null && rp.replyCount !== undefined) {
+                soPhanHoi = Number(rp.replyCount);
+            }
+            var theHTMLNut = '';
+            if (soPhanHoi > 0) {
+                theHTMLNut = taoNutXemPhanHoiCapBa(maCmtGoc, rp.id, soPhanHoi);
+            }
+            return '<div class="reply-thread" id="reply-thread-phcmt-' + rp.id + '" style="display:none;"></div>' +
+                '<div class="reply-nav-row" id="reply-actions-phcmt-' + rp.id + '" data-total="' + soPhanHoi + '">' + theHTMLNut + '</div>';
+        }
+
+        function layTongSoPhanHoiTuTrang(duLieuTrang) {
+            if (duLieuTrang === null || duLieuTrang === undefined || duLieuTrang.totalElements === null || duLieuTrang.totalElements === undefined) return 0;
+            var tongSo = Number(duLieuTrang.totalElements);
+            return isNaN(tongSo) ? 0 : tongSo;
+        }
+
+        function anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) {
+            if (tongSo > 0) { return false; }
+            if (vungPhanHoi !== null) {
+                vungPhanHoi.innerHTML = ''; vungPhanHoi.style.display = 'none';
+                var idThread = vungPhanHoi.id || '';
+                if (idThread.indexOf('reply-thread-cmt-') === 0) {
+                    var cmtEl = document.getElementById('cmt-' + idThread.replace('reply-thread-cmt-', ''));
+                    if (cmtEl !== null) { cmtEl.classList.remove('has-replies'); }
+                } else if (idThread.indexOf('reply-thread-phcmt-') === 0) {
+                    var rpEl = document.getElementById('reply-item-' + idThread.replace('reply-thread-phcmt-', ''));
+                    if (rpEl !== null) { rpEl.classList.remove('has-replies'); }
                 }
-            }, function () {
-                alert('Lỗi kết nối. Vui lòng thử lại.');
+            }
+            if (vungDieuHuong !== null) { vungDieuHuong.setAttribute('data-total', 0); vungDieuHuong.innerHTML = ''; }
+            return true;
+        }
+
+        function taoNutXemPhanHoiCapHai(maCmtGoc, tongSo) {
+            return '<button class="load-replies-btn" onclick="taiPhanHoiCapHai(' + maCmtGoc + ', 0, true)"><i class="fas fa-comment-dots fa-xs"></i> Xem ' + dinhDangSoNganCach(tongSo) + ' câu trả lời</button>';
+        }
+
+        function taoNutXemPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, tongSo) {
+            return '<button class="load-replies-btn" onclick="taiPhanHoiCapBa(' + maCmtGoc + ', ' + maPhanHoiNeo + ', 0, true)"><i class="fas fa-comment-dots fa-xs"></i> Xem ' + dinhDangSoNganCach(tongSo) + ' câu trả lời</button>';
+        }
+
+        function taiPhanHoiCapHai(maCmtGoc, chiSoTrang, laLamMoi) {
+            var vungPhanHoi = document.getElementById('reply-thread-cmt-' + maCmtGoc);
+            if (vungPhanHoi === null) { return; }
+            callApi('/api/comments/' + maCmtGoc + '/replies?page=' + chiSoTrang + '&size=' + kichThuocTrangPhanHoi, 'GET', null, null, function (res) {
+                if (res.status !== 200) { showToast('error', res.message); return; }
+                var duLieuTrang = res.data;
+                var danhSachPhanHoi = duLieuTrang.content || [];
+                var theHTMLNoiDung = '';
+                for (var i = 0; i < danhSachPhanHoi.length; i = i + 1) {
+                    khoTrangThaiPhanHoi[danhSachPhanHoi[i].id] = { reactions: danhSachPhanHoi[i].reactions || [], currentUserReaction: danhSachPhanHoi[i].currentUserReaction };
+                    theHTMLNoiDung += cauTrucHTMLPhanHoi(danhSachPhanHoi[i], maCmtGoc);
+                }
+                vungPhanHoi.style.display = 'block';
+                if (laLamMoi === true) { vungPhanHoi.innerHTML = theHTMLNoiDung; } else { vungPhanHoi.insertAdjacentHTML('beforeend', theHTMLNoiDung); }
+                var cmtItem = document.getElementById('cmt-' + maCmtGoc);
+                if (cmtItem !== null) { cmtItem.classList.add('has-replies'); }
+                capNhatDieuHuongPhanHoiCapHai(maCmtGoc, duLieuTrang);
+            });
+        }
+
+        function taiPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, chiSoTrang, laLamMoi) {
+            var vungPhanHoi = document.getElementById('reply-thread-phcmt-' + maPhanHoiNeo);
+            if (vungPhanHoi === null) { return; }
+            callApi('/api/comments/reply/' + maPhanHoiNeo + '/replies?page=' + chiSoTrang + '&size=' + kichThuocTrangPhanHoi, 'GET', null, null, function (res) {
+                if (res.status !== 200) { showToast('error', res.message); return; }
+                var duLieuTrang = res.data;
+                var danhSachPhanHoi = duLieuTrang.content || [];
+                var theHTMLNoiDung = '';
+                for (var i = 0; i < danhSachPhanHoi.length; i = i + 1) {
+                    khoTrangThaiPhanHoi[danhSachPhanHoi[i].id] = { reactions: danhSachPhanHoi[i].reactions || [], currentUserReaction: danhSachPhanHoi[i].currentUserReaction };
+                    theHTMLNoiDung += cauTrucHTMLPhanHoi(danhSachPhanHoi[i], maCmtGoc);
+                }
+                vungPhanHoi.style.display = 'block';
+                if (laLamMoi === true) { vungPhanHoi.innerHTML = theHTMLNoiDung; } else { vungPhanHoi.insertAdjacentHTML('beforeend', theHTMLNoiDung); }
+                var replyParent = document.getElementById('reply-item-' + maPhanHoiNeo);
+                if (replyParent !== null) { replyParent.classList.add('has-replies'); }
+                capNhatDieuHuongPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, duLieuTrang);
+            });
+        }
+
+        function capNhatDieuHuongPhanHoiCapHai(maCmtGoc, duLieuTrang) {
+            var vungDieuHuong = document.getElementById('reply-actions-cmt-' + maCmtGoc);
+            if (vungDieuHuong === null) { return; }
+            var tongSo = layTongSoPhanHoiTuTrang(duLieuTrang);
+            var vungPhanHoi = document.getElementById('reply-thread-cmt-' + maCmtGoc);
+            if (anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) === true) { return; }
+            vungDieuHuong.setAttribute('data-total', tongSo);
+            var theHTMLNut = '';
+            if (duLieuTrang.last === false) {
+                theHTMLNut += '<button class="load-replies-btn" onclick="taiPhanHoiCapHai(' + maCmtGoc + ', ' + (duLieuTrang.number + 1) + ', false)"><i class="fas fa-chevron-down fa-xs"></i> Tải thêm câu trả lời</button>';
+            }
+            theHTMLNut += '<button class="load-replies-btn" onclick="anPhanHoiCuaBinhLuan(' + maCmtGoc + ')"><i class="fas fa-chevron-up fa-xs"></i> Ẩn câu trả lời</button>';
+            vungDieuHuong.innerHTML = theHTMLNut;
+        }
+
+        function capNhatDieuHuongPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, duLieuTrang) {
+            var vungDieuHuong = document.getElementById('reply-actions-phcmt-' + maPhanHoiNeo);
+            if (vungDieuHuong === null) { return; }
+            var tongSo = layTongSoPhanHoiTuTrang(duLieuTrang);
+            var vungPhanHoi = document.getElementById('reply-thread-phcmt-' + maPhanHoiNeo);
+            if (anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) === true) { return; }
+            vungDieuHuong.setAttribute('data-total', tongSo);
+            var theHTMLNut = '';
+            if (duLieuTrang.last === false) {
+                theHTMLNut += '<button class="load-replies-btn" onclick="taiPhanHoiCapBa(' + maCmtGoc + ', ' + maPhanHoiNeo + ', ' + (duLieuTrang.number + 1) + ', false)"><i class="fas fa-chevron-down fa-xs"></i> Tải thêm câu trả lời</button>';
+            }
+            theHTMLNut += '<button class="load-replies-btn" onclick="anPhanHoiCuaPhanHoi(' + maCmtGoc + ', ' + maPhanHoiNeo + ')"><i class="fas fa-chevron-up fa-xs"></i> Ẩn câu trả lời</button>';
+            vungDieuHuong.innerHTML = theHTMLNut;
+        }
+
+        function anPhanHoiCuaBinhLuan(maCmtGoc) {
+            var vungPhanHoi = document.getElementById('reply-thread-cmt-' + maCmtGoc);
+            var vungDieuHuong = document.getElementById('reply-actions-cmt-' + maCmtGoc);
+            if (vungPhanHoi !== null) {
+                vungPhanHoi.innerHTML = ''; vungPhanHoi.style.display = 'none';
+                var cmtItem = document.getElementById('cmt-' + maCmtGoc);
+                if (cmtItem !== null) { cmtItem.classList.remove('has-replies'); }
+            }
+            if (vungDieuHuong !== null) {
+                var tongSo = Number(vungDieuHuong.getAttribute('data-total'));
+                if (isNaN(tongSo)) { tongSo = 0; }
+                if (anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) === true) { return; }
+                vungDieuHuong.innerHTML = taoNutXemPhanHoiCapHai(maCmtGoc, tongSo);
+            }
+        }
+
+        function anPhanHoiCuaPhanHoi(maCmtGoc, maPhanHoiNeo) {
+            var vungPhanHoi = document.getElementById('reply-thread-phcmt-' + maPhanHoiNeo);
+            var vungDieuHuong = document.getElementById('reply-actions-phcmt-' + maPhanHoiNeo);
+            if (vungPhanHoi !== null) {
+                vungPhanHoi.innerHTML = ''; vungPhanHoi.style.display = 'none';
+                var replyParent = document.getElementById('reply-item-' + maPhanHoiNeo);
+                if (replyParent !== null) { replyParent.classList.remove('has-replies'); }
+            }
+            if (vungDieuHuong !== null) {
+                var tongSo = Number(vungDieuHuong.getAttribute('data-total'));
+                if (isNaN(tongSo)) { tongSo = 0; }
+                if (anThreadVaDieuHuongNeuKhongConPhanHoi(vungPhanHoi, vungDieuHuong, tongSo) === true) { return; }
+                vungDieuHuong.innerHTML = taoNutXemPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, tongSo);
+            }
+        }
+
+        function moFormBaoCao(loaiTarget, targetId) {
+            document.body.click();
+            document.getElementById('reportTargetId').value = targetId;
+            document.getElementById('reportTargetType').value = loaiTarget;
+            document.getElementById('reportReasonSelect').value = '';
+            document.getElementById('reportReasonDetail').value = '';
+            document.getElementById('reportReasonDetailGroup').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('modalBaoCao')).show();
+        }
+
+        document.getElementById('reportReasonSelect').addEventListener('change', function () {
+            document.getElementById('reportReasonDetailGroup').style.display = (this.value === 'Khác') ? 'block' : 'none';
+        });
+
+        function guiBaoCaoViPham() {
+            var targetId = document.getElementById('reportTargetId').value;
+            var targetType = document.getElementById('reportTargetType').value;
+            var reasonSelect = document.getElementById('reportReasonSelect').value;
+            var reasonDetail = document.getElementById('reportReasonDetail').value.trim();
+            if (reasonSelect === '') { showToast('warning', 'Vui lòng chọn một lý do vi phạm.'); return; }
+            if (reasonSelect === 'Khác' && reasonDetail === '') { showToast('warning', 'Vui lòng nhập chi tiết lý do vi phạm.'); return; }
+            var finalReason = (reasonSelect === 'Khác') ? reasonDetail : reasonSelect;
+            var btn = document.getElementById('btnSubmitReport');
+            var originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin fa-xs"></i> Đang xử lý...'; btn.disabled = true;
+            callApi('/api/reports/comments', 'POST', { targetId: parseInt(targetId), targetType: targetType, reason: finalReason }, null, function (res) {
+                btn.innerHTML = originalHtml; btn.disabled = false;
+                if (res.status === 200) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalBaoCao')).hide();
+                    showToast('success', res.message || 'Đã gửi báo cáo thành công.');
+                } else { showToast('error', res.message || 'Có lỗi xảy ra, vui lòng thử lại.'); }
+            }, function () { btn.innerHTML = originalHtml; btn.disabled = false; });
+        }
+
+        function toggleAuthorMenu(btn) {
+            var dropdown = btn.nextElementSibling;
+            var tatCaDrop = document.querySelectorAll('.ci-author-dropdown');
+            for (var i = 0; i < tatCaDrop.length; i = i + 1) {
+                if (tatCaDrop[i] !== dropdown) tatCaDrop[i].classList.remove('show');
+            }
+            dropdown.classList.toggle('show');
+        }
+
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.ci-author-menu-wrap') === null) {
+                var tatCaDrop = document.querySelectorAll('.ci-author-dropdown');
+                for (var i = 0; i < tatCaDrop.length; i = i + 1) { tatCaDrop[i].classList.remove('show'); }
+            }
+        });
+
+        function kichHoatSua(loai, id) {
+            var contentDiv = document.getElementById('content-' + loai + '-' + id);
+            if (contentDiv === null) return;
+            var rawText = contentDiv.getAttribute('data-raw');
+            contentDiv.innerHTML = '<div class="inline-edit-box"><textarea id="edit-input-' + loai + '-' + id + '" class="inline-edit-textarea">' + lamSachChuoiHTML(rawText) + '</textarea>' +
+                '<div class="inline-edit-actions"><button class="ie-btn ie-btn-cancel" onclick="huySua(\'' + loai + '\', ' + id + ')">Hủy</button>' +
+                '<button class="ie-btn ie-btn-save" onclick="luuSua(\'' + loai + '\', ' + id + ')">Lưu thay đổi</button></div></div>';
+            document.body.click();
+        }
+
+        function huySua(loai, id) {
+            var contentDiv = document.getElementById('content-' + loai + '-' + id);
+            if (contentDiv === null) return;
+            var rawText = contentDiv.getAttribute('data-raw');
+            if (loai === 'reply') { contentDiv.innerHTML = dinhDangNoiDungPhanHoiTheoTen(rawText, contentDiv.getAttribute('data-reply-to-name')); }
+            else { contentDiv.innerHTML = lamSachChuoiHTML(rawText); }
+        }
+
+        function lamMoiSauThaoTacBinhLuan(loai, id) {
+            if (loai !== 'reply') { taiDanhSachBinhLuan(trangBinhLuanHienTai, true); return; }
+            var phanHoiItem = document.getElementById('reply-item-' + id);
+            if (phanHoiItem === null) { taiDanhSachBinhLuan(trangBinhLuanHienTai, true); return; }
+            var maCmtGoc = Number(phanHoiItem.getAttribute('data-root-cmt-id'));
+            var maPhanHoiNeo = Number(phanHoiItem.getAttribute('data-thread-anchor-id'));
+            var tangHienThi = Number(phanHoiItem.getAttribute('data-display-level'));
+            if (isNaN(maCmtGoc) || isNaN(tangHienThi)) { taiDanhSachBinhLuan(trangBinhLuanHienTai, true); return; }
+            if (tangHienThi === 2) { taiPhanHoiCapHai(maCmtGoc, 0, true); return; }
+            if (!isNaN(maPhanHoiNeo)) { taiPhanHoiCapBa(maCmtGoc, maPhanHoiNeo, 0, true); return; }
+            taiDanhSachBinhLuan(trangBinhLuanHienTai, true);
+        }
+
+        function luuSua(loai, id) {
+            var inputEl = document.getElementById('edit-input-' + loai + '-' + id);
+            if (inputEl === null) return;
+            var noiDungMoi = inputEl.value.trim();
+            if (noiDungMoi === '') { showToast('warning', 'Nội dung không được để trống.'); return; }
+            callApi((loai === 'cmt') ? '/api/comments/' + id : '/api/comments/reply/' + id, 'PUT', { content: noiDungMoi, targetId: id }, null, function (res) {
+                if (res.status === 200) { showToast('success', 'Đã lưu chỉnh sửa.'); lamMoiSauThaoTacBinhLuan(loai, id); }
+                else { showToast('error', res.message); }
+            });
+        }
+
+        function xoaBinhLuan(loai, id) {
+            Swal.fire({ title: 'Xóa bình luận?', text: 'Bạn có chắc chắn muốn gỡ bỏ bình luận này vĩnh viễn không?',
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Xóa vĩnh viễn', cancelButtonText: 'Hủy'
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    callApi((loai === 'cmt') ? '/api/comments/' + id : '/api/comments/reply/' + id, 'DELETE', null, null, function (res) {
+                        if (res.status === 200) { showToast('success', 'Đã xóa bình luận.'); lamMoiSauThaoTacBinhLuan(loai, id); }
+                        else { showToast('error', res.message); }
+                    });
+                }
+            });
+        }
+
+        function xemLichSu(loai, id) {
+            callApi((loai === 'cmt') ? '/api/comments/' + id + '/history' : '/api/comments/reply/' + id + '/history', 'GET', null, null, function (res) {
+                if (res.status !== 200) return;
+                var logs = res.data;
+                if (!logs || logs.length === 0) { showToast('info', 'Không có lịch sử chỉnh sửa nào.'); return; }
+                var htmlLichSu = '<div style="text-align:left;max-height:400px;overflow-y:auto;">';
+                for (var i = 0; i < logs.length; i = i + 1) {
+                    var log = logs[i];
+                    if (log.actionCode === 'UPDATE_CMT' || log.actionCode === 'UPDATE_PH_CMT') {
+                        var objCu = JSON.parse(log.oldPayload || '{}');
+                        htmlLichSu += '<div style="border-bottom:1px dashed #e2e8f0;padding-bottom:12px;margin-bottom:12px;">' +
+                            '<div style="font-size:.75rem;color:var(--gray-500);margin-bottom:4px;"><i class="fas fa-clock"></i> ' + dinhDangThoiGianChiTiet(log.createdAt) + '</div>' +
+                            '<div style="background:#fef2f2;border-left:3px solid #ef4444;padding:8px 10px;font-size:.85rem;color:#991b1b;margin-bottom:6px;text-decoration:line-through;">' + lamSachChuoiHTML(objCu.content || '[Trong]') + '</div>' +
+                            '<div style="background:#f0fdf4;border-left:3px solid #22c55e;padding:8px 10px;font-size:.85rem;color:#166534;">' + lamSachChuoiHTML(log.newPayload ? JSON.parse(log.newPayload).content : '') + '</div></div>';
+                    }
+                }
+                htmlLichSu += '</div>';
+                if (htmlLichSu === '<div style="text-align:left;max-height:400px;overflow-y:auto;"></div>') { showToast('info', 'Bình luận này chưa bị sửa văn bản.'); return; }
+                Swal.fire({ title: 'Lịch sử chỉnh sửa', html: htmlLichSu, width: '600px', showConfirmButton: true, confirmButtonText: 'Đóng', confirmButtonColor: '#004080' });
+            });
+        }
+        function dienBieuTuong(bieuTuong, idTextArea) {
+            var oNhap = document.getElementById(idTextArea);
+            if (oNhap !== null) { oNhap.value = oNhap.value + bieuTuong; oNhap.focus(); }
+        }
+
+        function guiBinhLuanGoc() {
+            var theNhap = document.getElementById('mainCommentContent');
+            var noiDung = theNhap.value.trim();
+            if (noiDung === '') { showToast('warning', 'Vui lòng nhập nội dung.'); return; }
+            callApi('/api/comments/events/' + ctEventId, 'POST', { targetId: ctEventId, content: noiDung }, null, function (res) {
+                if (res.status === 200) { theNhap.value = ''; showToast('success', 'Đăng tải thành công.'); taiDanhSachBinhLuan(0, true); }
+                else { showToast('error', res.message || 'Vui lòng đăng nhập để bình luận.'); }
+            });
+        }
+
+        function xoaTagPhanHoi() {
+            var vungTag = document.getElementById('reply-mention-token-wrapper');
+            if (vungTag !== null) { vungTag.remove(); }
+            var oNhapPhanHoi = document.getElementById('reply-input-dynamic');
+            if (oNhapPhanHoi !== null) { oNhapPhanHoi.focus(); }
+        }
+
+        function dongFormPhanHoi(idKhuVuc) {
+            var khoiChua = document.getElementById(idKhuVuc);
+            if (khoiChua !== null) khoiChua.innerHTML = '';
+        }
+
+        function capNhatCamXucCucBo(loaiDich, idDich, maLoaiCamXuc) {
+            var stateObj;
+            if (loaiDich === 'cmt') { stateObj = khoTrangThaiBinhLuan[idDich]; } else { stateObj = khoTrangThaiPhanHoi[idDich]; }
+            if (stateObj === undefined) return;
+            var camXucCu = stateObj.currentUserReaction;
+            if (camXucCu !== null && camXucCu !== undefined && camXucCu !== '') {
+                for (var i = 0; i < stateObj.reactions.length; i = i + 1) {
+                    if (stateObj.reactions[i].code === camXucCu) { stateObj.reactions[i].count = stateObj.reactions[i].count - 1; break; }
+                }
+            }
+            if (camXucCu === maLoaiCamXuc) {
+                stateObj.currentUserReaction = null;
+            } else {
+                stateObj.currentUserReaction = maLoaiCamXuc;
+                var daCoSan = false;
+                for (var j = 0; j < stateObj.reactions.length; j = j + 1) {
+                    if (stateObj.reactions[j].code === maLoaiCamXuc) { stateObj.reactions[j].count = stateObj.reactions[j].count + 1; daCoSan = true; break; }
+                }
+                if (daCoSan === false) { stateObj.reactions.push({ code: maLoaiCamXuc, count: 1 }); }
+            }
+            var vungId = (loaiDich === 'cmt') ? 'react-wrap-cmt-' + idDich : 'react-wrap-reply-' + idDich;
+            var theBao = document.getElementById(vungId);
+            if (theBao !== null) { theBao.innerHTML = xdKhungCamXucThongMinh(loaiDich, idDich); }
+        }
+
+        function guiThongTinCamXuc(loaiDich, idDich, maLoaiCamXuc) {
+            var duongDanGoiAPI = (loaiDich === 'cmt') ? '/api/comments/like/cmt' : '/api/comments/like/reply';
+            callApi(duongDanGoiAPI, 'POST', { targetId: idDich, loaiLikeCode: maLoaiCamXuc }, null, function (res) {
+                if (res.status === 200) { capNhatCamXucCucBo(loaiDich, idDich, maLoaiCamXuc); }
+                else { showToast('error', res.message || 'Vui lòng đăng nhập để tương tác.'); }
+            });
+        }
+
+        function hienThiFormPhanHoi(loaiGoi, maCmtGoc, maPhCmtCha, tenNguoiNhan) {
+            var cacFormCu = document.querySelectorAll('[id^="reply-container-"]');
+            for (var fIdx = 0; fIdx < cacFormCu.length; fIdx = fIdx + 1) { cacFormCu[fIdx].innerHTML = ''; }
+            var idKhuVuc;
+            if (loaiGoi !== 'cmt') { idKhuVuc = 'reply-container-phcmt-' + maPhCmtCha; } else { idKhuVuc = 'reply-container-cmt-' + maCmtGoc; }
+            var khoiChua = document.getElementById(idKhuVuc);
+            if (khoiChua === null) return;
+            var thePhCha = 'null';
+            if (maPhCmtCha !== null && maPhCmtCha !== undefined) { thePhCha = maPhCmtCha; }
+            var tenNguoiNhanAnToan = lamSachChuoiHTML(tenNguoiNhan);
+            var theHTMLTagNguoiNhan = '';
+            if (tenNguoiNhanAnToan !== '') {
+                theHTMLTagNguoiNhan = '<div class="reply-mention-token-row" id="reply-mention-token-wrapper" data-mention-name="' + tenNguoiNhanAnToan + '">' +
+                    '<span class="reply-mention-token"><i class="fas fa-at fa-xs"></i>' + tenNguoiNhanAnToan +
+                    '<button type="button" onclick="xoaTagPhanHoi()" aria-label="Xoa tag"><i class="fas fa-times"></i></button></span></div>';
+            }
+            var theHTMLForm = '<div class="reply-form-wrapper" style="display:flex;flex-direction:column;">' +
+                '<div class="reply-input-box">' + theHTMLTagNguoiNhan +
+                '<textarea id="reply-input-dynamic" class="cf-textarea" placeholder="Nhập câu trả lời..."></textarea></div>' +
+                '<div class="cf-footer"><div class="cf-emotion-btns">' +
+                '<button class="ce-btn" onclick="dienBieuTuong(\'👍\', \'reply-input-dynamic\')">👍</button>' +
+                '<button class="ce-btn" onclick="dienBieuTuong(\'🔬\', \'reply-input-dynamic\')">🔬</button>' +
+                '<button class="ce-btn" onclick="dienBieuTuong(\'⚠️\', \'reply-input-dynamic\')">⚠️</button>' +
+                '<button class="ce-btn" onclick="dienBieuTuong(\'💊\', \'reply-input-dynamic\')">💊</button>' +
+                '<button class="ce-btn" onclick="dienBieuTuong(\'📊\', \'reply-input-dynamic\')">📊</button>' +
+                '</div><div style="display:flex;gap:8px;">' +
+                '<button class="cf-cancel-btn" onclick="dongFormPhanHoi(\'' + idKhuVuc + '\')">Hủy</button>' +
+                '<button class="cf-submit-btn" onclick="guiLenhPhanHoi(' + maCmtGoc + ',' + thePhCha + ')"><i class="fas fa-paper-plane fa-xs"></i> Gửi</button>' +
+                '</div></div></div>';
+            khoiChua.innerHTML = theHTMLForm;
+            var oNhapPhanHoi = document.getElementById('reply-input-dynamic');
+            if (oNhapPhanHoi !== null) {
+                oNhapPhanHoi.focus();
+                oNhapPhanHoi.addEventListener('keydown', function (suKien) {
+                    if (suKien.key === 'Backspace' && oNhapPhanHoi.value === '') { xoaTagPhanHoi(); }
+                });
+            }
+        }
+
+        function guiLenhPhanHoi(maCmtGoc, maPhCmtCha) {
+            var theNhap = document.getElementById('reply-input-dynamic');
+            if (theNhap === null) return;
+            var noiDungNguoiDungNhap = theNhap.value.trim();
+            if (noiDungNguoiDungNhap === '') { showToast('warning', 'Nội dung phản hồi không được để trống.'); return; }
+            var noiDung = noiDungNguoiDungNhap;
+            var vungTag = document.getElementById('reply-mention-token-wrapper');
+            if (vungTag !== null) {
+                var tenNguoiNhan = vungTag.getAttribute('data-mention-name');
+                if (tenNguoiNhan !== null && tenNguoiNhan.trim() !== '') { noiDung = '@' + tenNguoiNhan.trim() + ' ' + noiDungNguoiDungNhap; }
+            }
+            var idKhuVucCanDong;
+            if (maPhCmtCha !== null && maPhCmtCha !== undefined) { idKhuVucCanDong = 'reply-container-phcmt-' + maPhCmtCha; } else { idKhuVucCanDong = 'reply-container-cmt-' + maCmtGoc; }
+            callApi('/api/comments/reply', 'POST', { rootCmtId: maCmtGoc, parentPhId: maPhCmtCha, content: noiDung }, null, function (res) {
+                if (res.status === 200) {
+                    showToast('success', 'Đã ghi nhận phản hồi.'); dongFormPhanHoi(idKhuVucCanDong);
+                    var phanHoiMoi = res.data;
+                    if (phanHoiMoi !== null && phanHoiMoi !== undefined && phanHoiMoi.displayLevel === 3) { taiPhanHoiCapBa(maCmtGoc, phanHoiMoi.threadAnchorPhId, 0, true); }
+                    else { taiPhanHoiCapHai(maCmtGoc, 0, true); }
+                } else { showToast('error', res.message || 'Vui lòng đăng nhập để phản hồi.'); }
             });
         }
 
@@ -2042,11 +3663,8 @@
 
             var urgencyBlock = document.getElementById('reg-urgency-block');
 
-            // [MARKETING ENGINE]: Luôn hiển thị trạng thái Slot (nếu có giới hạn) để tạo sự cấp bách
             if (s.totalSlots > 0) {
                 document.getElementById('reg-slots-text').textContent = dinhDangSo(s.availableSlots || 0) + ' slot còn lại!';
-
-                // Nếu bị khóa, báo cho biết là "Chỉ còn X chỗ, mau nâng cấp đi!"
                 if (s.hasFullAccess === false) {
                     document.getElementById('reg-urgency').textContent = 'Chỉ còn ' + dinhDangSo(s.availableSlots || 0) + ' chỗ — Định danh tài khoản để giữ slot!';
                 } else {
@@ -2090,13 +3708,11 @@
         }
 
         function kiemTraDaDangKy() {
-            // ĐÃ SỬA: Gọi API truy vấn trực tiếp vé của session này (O(1)), thay vì gọi API danh sách
             callApi('/api/events/sessions/' + ctEventId + '/my-ticket', 'GET', null, null, function (res) {
-                // Nếu res.data có tồn tại (tức là có vé)
                 if (res.status === 200 && res.data) {
                     hienDaDangKy(res.data);
                 }
-            }, null); // Bỏ qua lỗi âm thầm nếu khách chưa đăng nhập
+            }, null);
         }
 
         function hienDaDangKy(reg) {
@@ -2188,60 +3804,6 @@
             preview.style.display = 'flex';
         }
 
-        // ============================================================
-        // TIỆN ÍCH
-        // ============================================================
-
-        function hienLoiChinh(msg) {
-            var body = document.querySelector('.event-detail-body');
-            if (body) {
-                body.innerHTML = '<div class="container" style="text-align:center;padding:80px 20px;"><i class="fas fa-exclamation-triangle fa-3x" style="color:var(--danger);display:block;margin-bottom:16px;"></i><div style="font-size:1rem;color:var(--gray-600);">' + esc(msg) + '</div><a href="/hoi-thao" style="margin-top:20px;display:inline-block;padding:10px 24px;background:var(--teal-600);color:white;border-radius:var(--r-md);text-decoration:none;font-weight:600;">Quay lại danh sách</a></div>';
-            }
-        }
-
-        function dinhDangNgay(iso) {
-            if (!iso) { return '—'; }
-            var d = new Date(iso);
-            return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
-        }
-
-        function dinhDangNgayGio(iso) {
-            if (!iso) { return '—'; }
-            var d = new Date(iso);
-            return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + ' — ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
-        }
-
-        function dinhDangNgayDayDu(iso) {
-            if (!iso) { return '—'; }
-            var d = new Date(iso);
-            var thu = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
-            return thu[d.getDay()] + ', ' + pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
-        }
-
-        function layGio(iso) {
-            if (!iso) { return '—'; }
-            var d = new Date(iso);
-            return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
-        }
-
-        function dinhDangSo(n) {
-            if (n === null || n === undefined) { return '0'; }
-            return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        }
-
-        function pad2(n) {
-            return n < 10 ? '0' + n : '' + n;
-        }
-
-        function esc(s) {
-            if (!s) { return ''; }
-            return String(s)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
     </script>
 
 </body>

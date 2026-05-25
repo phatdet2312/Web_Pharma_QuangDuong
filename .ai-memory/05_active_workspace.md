@@ -1,33 +1,28 @@
 # Active Workspace - Ban lam viec hien tai
-> Last updated: 2026-05-25
+> Last updated: 2026-05-26
 
 ## Trang thai hien tai
 
-- Code backend comment/event da on dinh sau OOP refactor + EditContentRequest fix (commit c101490, 2026-05-24).
-- UI comment post detail co tree branch CSS kieu Facebook do user tu implement (commit ebf0b89, 2026-05-25): vach doc va nhanh L noi avatar cha voi reply con, 2 cap (L1->L2, L2->L3).
-- User commit "DONG BO TRUOC KHI SUA CMT CUA EVENT" (52b6709) — cho thay user sap sua comment cua event (khac post).
+- Comment event detail da duoc nang cap giong 100% post detail: CSS/HTML/JS ~40 ham, 3 cap comment, lazy-load, reaction, inline edit, report, tag mention.
+- SecurityConfig da bo sung `/api/comments/events/**` vao `permitAll()` — fix 403 cho user chua co role.
+- Compile pass, chua test tren browser.
 
 ## Thay doi quan trong gan day
 
-### CSDL/ folder da don dep (2026-05-25)
-- **DA XOA**: `DuLieuMau.sql` (367K dong), `BAO_CAO_KIEM_TRA_DULIEUMAU.md`, `DULIEUMAU_POST_SOURCE_MATRIX.md`, `TEST.MD`
-- **CON GIU**: `FileKhoiTaoCSDL.sql` (schema), `THONG TIN HAN DUNG SAN PHAM_20260413.xlsx` (Excel san pham)
-- Ly do: user quyet dinh xoa du lieu mau khoi repo
+### Event Comment System (2026-05-26)
+- `events/detail.html`: CSS reaction picker/tree branch/author menu/inline edit/report modal, HTML comment section, JS comment system ~40 ham
+- `SecurityConfig.java`: them `/api/comments/events/**` vao permitAll
+- Fix 5 loi escape quote JS, 12 chuoi thieu dau tieng Viet
+- Event va post chia se cung backend API (`ApiCommentController`), cung DB (`CMT`, `PH_CMT`)
 
 ### OOP Refactor (2026-05-24, commit c101490)
 - `NguCanhNguoiDung` + `NguCanhNguoiDungFactory` trong `service/support`
-- 9 method `IEventService`/`EventServiceImpl` doi `Long userId` -> `NguCanhNguoiDung`
-- Controller inject factory, tao context 1 lan/request
 - `EditContentRequest` thay ReplyRequest/CommentRequest cho PUT comment endpoints
-
-### UI Tree Branch CSS (2026-05-25, commit ebf0b89)
-- CSS variables cho avatar/gap/trunk offset 2 cap
-- Selector dung `:has()` va `:last-child` de ve/cat nhanh
-- Class DOM can bao ton: `.has-replies`, `.ci-bubble-wrapper`, `.ri-bubble-wrapper`, `.reply-form-wrapper`
 
 ## Context cho phien sau
 
-- User sap lam viec voi comment event (khac voi comment post da hoan thanh).
+- Can test event comment tren browser de xac nhan UI/UX hoat dong dung.
+- Hai file `posts/detail.html` va `events/detail.html` gio co comment system tuong dong — khi sua 1 ben nen kiem tra ben kia.
 - Comment event dung cung `CommentServiceImpl` nhung endpoint la `/api/comments/events/{eventId}`.
 - Event comment co them kiem tra quyen truy cap session qua `coQuyenTruyCapBuoi(nguCanh, ctEventId)`.
 - `.codexignore` van ton tai; `CSDL/` chi doc file cu the khi task yeu cau.
