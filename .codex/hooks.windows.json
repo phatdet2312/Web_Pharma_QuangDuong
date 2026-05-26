@@ -1,5 +1,5 @@
 {
-  "_comment": "Codex hooks framework — spec: https://developers.openai.com/codex/hooks. Codex tự load file này song song với hooks ở ~/.codex/hooks.json.",
+  "_comment": "Hooks variant cho Windows PowerShell native (không cần Git Bash/WSL). Cách dùng: Rename-Item -LiteralPath \".codex\\hooks.json\" -NewName \"hooks.unix.json\"; Rename-Item -LiteralPath \".codex\\hooks.windows.json\" -NewName \"hooks.json\". Yêu cầu PowerShell 5.1+ hoặc pwsh 7+. Chạy lần đầu: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned.",
 
   "hooks": {
     "PreToolUse": [
@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/scripts/pre-bash-firewall.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/pre-bash-firewall.ps1",
             "statusMessage": "Firewall kiểm tra pattern lệnh nguy hiểm",
             "timeout": 10
           }
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/scripts/pre-edit-protect.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/pre-edit-protect.ps1",
             "statusMessage": "Kiểm tra file protected",
             "timeout": 10
           }
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/scripts/pre-bash-firewall.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/pre-bash-firewall.ps1",
             "statusMessage": "Firewall kiểm tra approval request nguy hiểm",
             "timeout": 10
           }
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/scripts/pre-edit-protect.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/pre-edit-protect.ps1",
             "statusMessage": "Kiểm tra approval request protected file",
             "timeout": 10
           }
@@ -58,23 +58,23 @@
 
     "PostToolUse": [
       {
-        "_comment": "Ghi log + auto-typecheck sau khi apply_patch/Edit/Write",
+        "_comment": "Log + auto-typecheck + detect rework sau khi sửa file",
         "matcher": "^(apply_patch|Edit|Write|MultiEdit)$",
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/scripts/post-edit-log.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/post-edit-log.ps1",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "bash .codex/scripts/post-edit-typecheck.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/post-edit-typecheck.ps1",
             "statusMessage": "Auto compile/lint",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "bash .codex/scripts/post-edit-detect-rework.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/post-edit-detect-rework.ps1",
             "timeout": 5
           }
         ]
@@ -86,9 +86,9 @@
         "matcher": "startup|resume",
         "hooks": [
           {
-            "_comment": "Đầu phiên: drift check + rework alert + memory size check",
+            "_comment": "Đầu phiên: drift + rework + memory size",
             "type": "command",
-            "command": "bash .codex/scripts/session-start.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/session-start.ps1",
             "statusMessage": "Kiểm tra drift + rework alerts",
             "timeout": 15
           }
@@ -100,9 +100,9 @@
       {
         "hooks": [
           {
-            "_comment": "Quét prompt user xem có lộ secret không (API key, password trong text)",
+            "_comment": "Quét prompt user xem có lộ secret không",
             "type": "command",
-            "command": "bash .codex/scripts/scan-secret-in-prompt.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/scan-secret-in-prompt.ps1",
             "timeout": 5
           }
         ]
@@ -116,7 +116,7 @@
           {
             "_comment": "Bắt đầu subagent: ghi mốc bắt đầu để tính ROI từng subagent.",
             "type": "command",
-            "command": "bash .codex/scripts/log-subagent-start.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/log-subagent-start.ps1",
             "timeout": 5
           }
         ]
@@ -130,7 +130,7 @@
           {
             "_comment": "Kết thúc subagent: ghi telemetry agent_id/agent_type vào .codex/subagent-metrics.csv.",
             "type": "command",
-            "command": "bash .codex/scripts/log-subagent-stop.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/log-subagent-stop.ps1",
             "timeout": 5
           }
         ]
@@ -141,9 +141,9 @@
       {
         "hooks": [
           {
-            "_comment": "Cuối turn: ghi telemetry agent (cho /agent-roi). Hook không tự tiếp tục turn, chỉ log.",
+            "_comment": "Cuối turn: ghi telemetry agent (cho $agent-roi)",
             "type": "command",
-            "command": "bash .codex/scripts/log-agent-turn.sh",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/log-agent-turn.ps1",
             "timeout": 5
           }
         ]
