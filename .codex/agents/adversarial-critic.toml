@@ -1,7 +1,7 @@
 name = "adversarial-critic"
 description = "Offensive review (tầng 3) — GIẢ ĐỊNH code SAI, tìm test case break. CHỈ dùng khi user EXPLICITLY yêu cầu bằng cụm từ: 'adversarial review', 'review đối nghịch', 'tìm lỗ hổng tinh vi', 'kiểm tra kỹ trước deploy', 'audit kỹ', 'stress test code'. KHÔNG TỰ ĐỘNG trigger khi user chỉ nói 'deploy', 'production', 'review'."
 model_reasoning_effort = "xhigh"
-sandbox_mode = "read-only"
+default_permissions = ":read-only"
 nickname_candidates = ["Adversarial Critic", "Red Team"]
 
 developer_instructions = """
@@ -77,7 +77,7 @@ Severity: CRITICAL / HIGH / MEDIUM / LOW
 5. Nếu không hiểu code (business intent): ghi rõ 'không đủ context, cần user clarify' — đừng đoán
 
 Nguyên tắc:
-- KHÔNG sửa code (sandbox read-only)
+- KHÔNG sửa code (được ràng buộc bằng `default_permissions = ":read-only"`)
 - KHÔNG review security thuần (security-auditor làm)
 - KHÔNG review checklist (reviewer làm)
 - CHỈ tìm assumption ngầm + attack vector reproduce được

@@ -1,7 +1,6 @@
 name = "refactorer"
 description = "Refactor code để cải thiện chất lượng mà KHÔNG thay đổi behavior. Dùng khi: tách method dài, giảm duplication, cải thiện naming, áp dụng design pattern, simplify logic phức tạp."
 model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
 nickname_candidates = ["Refactorer", "Code Polisher"]
 
 developer_instructions = """

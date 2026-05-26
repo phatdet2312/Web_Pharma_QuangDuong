@@ -1,7 +1,7 @@
-# .codex/launch — Project-local Codex launchers
+# .codex/launch — Launcher Codex cấp project
 
-Codex 0.130.0 ignores active `[profiles.*]` in project-local `.codex/config.toml`.
-This folder provides portable launch presets without requiring users to edit `~/.codex/config.toml`.
+Thư mục này chứa launcher portable cho Codex 0.133.x. Mục tiêu là giữ preset
+ngay trong project, không bắt từng máy sửa `~/.codex/config.toml`.
 
 ## Windows PowerShell
 ```powershell
@@ -24,12 +24,12 @@ chmod +x .codex/launch/*.sh
 .codex/launch/codex-review-deep.sh
 ```
 
-## Preset mapping
-- `codex` — default project config (`model_reasoning_effort = "xhigh"`)
+## Bảng preset
+- `codex` — config mặc định của project (`model_reasoning_effort = "xhigh"`)
 - `codex-xhigh` — xhigh reasoning
 - `codex-high` — high reasoning
 - `codex-low` — low reasoning
-- `codex-fast` — minimal reasoning + read-only sandbox
-- `codex-review-deep` — high reasoning + on-request approval
+- `codex-fast` — low reasoning + `default_permissions = ":read-only"`
+- `codex-review-deep` — high reasoning + `approval_policy = "on-request"`
 
-All launchers pass `-C <project-root>` automatically, so Codex opens at the correct project root.
+Tất cả launcher tự truyền `-C <project-root>`, nên Codex mở đúng root của project.

@@ -27,6 +27,14 @@ Trước MỌI task, kiểm tra `.ai-memory/01_system_architecture.md`:
 4. Đọc `.ai-memory/02_project_map.md` → xác định tọa độ file cần sửa
 5. Đọc `.ai-memory/03_deep_knowledge/INDEX.md` → chỉ mở file được trỏ đến
 
+## Checkpoint planner → active plan
+- Sau mọi lần gọi `planner`, KHÔNG tiếp tục implement ngay.
+- Orchestrator phải nhận Task Breakdown / Active Plan Update từ `planner`, sau đó gọi `memory-keeper` hoặc tự cập nhật `.ai-memory/04_active_plan.md`.
+- `04_active_plan.md` không bị ép format cứng. Planner/memory-keeper được dùng checklist, phase, milestone, bảng, hoặc narrative plan tùy task.
+- Nội dung tối thiểu theo ý nghĩa điều phối: mục tiêu hiện tại, hướng làm/bước chính, trạng thái hiện tại, dependency/risk/blocker/câu hỏi nếu có, agent/subagent dự kiến nếu cần.
+- Sau khi ghi, đọc lại `04_active_plan.md` để verify nội dung đã persist và đủ ý nghĩa điều phối. Nếu chưa đủ → sửa ngay trước khi gọi executor.
+- Luồng chuẩn: `planner → persist 04_active_plan.md → executor agents → tester → memory-keeper`.
+
 ## Chiến lược đọc file
 - ƯU TIÊN memory trước, mở code CHỈ KHI cần sửa hoặc memory không đủ
 - Đọc INDEX.md trước → chỉ drill vào file liên quan (Progressive Disclosure)

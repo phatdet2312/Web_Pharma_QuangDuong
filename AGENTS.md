@@ -125,48 +125,50 @@ Khi user giao task có yêu cầu rõ về subagent/parallel agent, gọi subage
 Subagents chạy thread riêng, kết quả gộp về phản hồi chính.
 
 ### Phân loại Role (analyst vs executor) & Decision Memory routing
-**ANALYST agents (sandbox = read-only)** — chỉ phân tích, đề xuất, KHÔNG tự ghi memory:
+**ANALYST agents (`default_permissions = ":read-only"`)** — chỉ phân tích, đề xuất, KHÔNG tự ghi memory:
 - `architect`, `planner`, `deep-reviewer`, `adversarial-critic`, `reviewer`, `security-auditor`, `performance-analyst`, `explorer`, `debugger`
 - Khi có decision (2+ phương án cân nhắc): trả **Decision Note** trong output → orchestrator gọi `memory-keeper` để ghi vào deep_knowledge (module-specific) hoặc `01_system_architecture.md` (cross-cutting)
 
-**EXECUTOR agents (sandbox = workspace-write)** — có quyền sửa file, tự ghi memory khi cần:
+**EXECUTOR agents (kế thừa profile `workspace-secure` của phiên chính)** — có quyền sửa file, tự ghi memory khi cần:
 - `implementer`, `tester`, `refactorer`, `db-specialist`, `api-designer`, `doc-writer`, `config-manager`, `memory-keeper`
 - `db-specialist` + `api-designer`: tự ghi Decision Log vào deep_knowledge tương ứng (vì có Write)
 - `memory-keeper`: trung tâm — nhận output từ analyst → ghi vào memory (đảm bảo format chuẩn 5 cột: Quyết định | Phương án | Lý do | Ngày ghi | Hết hạn)
 
 **Quy tắc decision routing:**
 1. Analyst phát hiện cần ghi memory → trả Decision Note → orchestrator → memory-keeper (BẮT BUỘC qua memory-keeper, không skip)
-2. Executor (db-specialist, api-designer) phát hiện cần ghi → tự ghi vào file trực tiếp (nhanh hơn, đỡ overhead)
-3. Cross-cutting decision (ảnh hưởng nhiều module) → BẮT BUỘC qua memory-keeper để ghi `01_system_architecture.md` → Architecture Decisions
+2. Riêng `planner`: khi trả Task Breakdown / Critical Path / Risk, orchestrator BẮT BUỘC persist vào `.ai-memory/04_active_plan.md` trước khi gọi executor. Đây là active plan, không phải Decision Note.
+3. Executor (db-specialist, api-designer) phát hiện cần ghi → tự ghi vào file trực tiếp (nhanh hơn, đỡ overhead)
+4. Cross-cutting decision (ảnh hưởng nhiều module) → BẮT BUỘC qua memory-keeper để ghi `01_system_architecture.md` → Architecture Decisions
 
-## Quy tắc điều phối (8 quy tắc — orchestrator BẮT BUỘC tuân thủ)
+## Quy tắc điều phối (9 quy tắc — orchestrator BẮT BUỘC tuân thủ)
 1. **Task đơn giản** (1 agent đủ): delegate trực tiếp, nhận kết quả, báo cáo user
 2. **Task phức tạp** (cần nhiều agent): gọi `planner` TRƯỚC để phân rã, rồi delegate tuần tự
-   - VD: "Thêm chức năng thanh toán" → planner → db-specialist → api-designer → implementer → tester → memory-keeper
-3. **Task mơ hồ** (chưa rõ cần gì): gọi `explorer` tìm context TRƯỚC, rồi quyết định agent tiếp theo
-4. **Sau mỗi task hoàn thành**: gọi `memory-keeper` cập nhật `.ai-memory/` (BẮT BUỘC, không skip)
-5. **KHÔNG gọi 2 agent cùng lúc** cho cùng 1 file — tuần tự để tránh xung đột write (Codex `agents.max_threads=6` cho phép song song, nhưng phải khác file)
-6. **Ưu tiên `low` effort** cho việc nhỏ (tìm file, đọc config, viết README) — tiết kiệm token
-7. **Ưu tiên `high`/`xhigh` effort** CHỈ khi cần suy nghĩ sâu (kiến trúc, bảo mật, deep review, adversarial) — chi phí cao
-8. **Khi user sửa lại output** (correction): tự trigger `$reflect` **TRƯỚC khi làm tiếp** — đảm bảo learning được ghi trước khi context lỗi mất
+   - VD: "Thêm chức năng thanh toán" → planner → memory-keeper (persist `.ai-memory/04_active_plan.md`) → db-specialist → api-designer → implementer → tester → memory-keeper
+3. **Persist Planner Output (BẮT BUỘC, không rập khuôn format)**: sau mọi lần gọi `planner`, orchestrator KHÔNG được tiếp tục implement ngay. Phải nhận kế hoạch từ `planner`, gọi `memory-keeper` hoặc tự cập nhật `.ai-memory/04_active_plan.md`, rồi verify file đã có đủ ý nghĩa điều phối: mục tiêu, hướng làm, trạng thái hiện tại, dependency/risk/blocker/câu hỏi nếu có, agent/subagent dự kiến nếu cần. Không ép bảng cố định; planner được chọn checklist, phase, milestone, bảng, hoặc narrative plan tùy task. Nếu chưa persist plan → KHÔNG gọi `implementer` / `db-specialist` / `api-designer` / `tester`.
+4. **Task mơ hồ** (chưa rõ cần gì): gọi `explorer` tìm context TRƯỚC, rồi quyết định agent tiếp theo
+5. **Sau mỗi task hoàn thành**: gọi `memory-keeper` cập nhật `.ai-memory/` (BẮT BUỘC, không skip)
+6. **KHÔNG gọi 2 agent cùng lúc** cho cùng 1 file — tuần tự để tránh xung đột ghi (Codex `agents.max_threads=6` cho phép song song, nhưng phải khác file)
+7. **Ưu tiên `low` effort** cho việc nhỏ (tìm file, đọc config, viết README) — tiết kiệm token
+8. **Ưu tiên `high`/`xhigh` effort** CHỈ khi cần suy nghĩ sâu (kiến trúc, bảo mật, deep review, adversarial) — chi phí cao
+9. **Khi user sửa lại output** (correction): tự trigger `$reflect` **TRƯỚC khi làm tiếp** — đảm bảo learning được ghi trước khi context lỗi mất, không lặp lại sai lầm
 
 ## Luồng mẫu cho task phổ biến
 
 **"Thêm API mới":**
 ```
-planner → db-specialist (nếu cần entity) → api-designer → implementer → tester
+planner → memory-keeper (persist 04_active_plan.md) → db-specialist (nếu cần entity) → api-designer → implementer → tester
   ├── test FAIL: $reflect ghi learning → implementer fix → tester (max 3 vòng)
   └── test PASS: memory-keeper
 ```
 
 **"Sửa bug":**
 ```
-explorer (tìm file liên quan) → debugger (analyst — đề xuất fix, sandbox=read-only)
+explorer (tìm file liên quan) → debugger (analyst — đề xuất fix, `default_permissions = ":read-only"`)
    → implementer (thực hiện fix) → tester (verify)
   ├── test FAIL: $reflect → debugger phân tích lại → implementer fix → tester (max 3 vòng)
   └── test PASS: memory-keeper
 ```
-> Tách rõ analyst/executor: `debugger` chỉ ĐỀ XUẤT fix (read-only), `implementer` mới THỰC HIỆN fix. Đồng bộ với `debugger.toml` (sandbox=read-only).
+> Tách rõ analyst/executor: `debugger` chỉ ĐỀ XUẤT fix (quyền chỉ đọc), `implementer` mới THỰC HIỆN fix. Đồng bộ với `debugger.toml` (`default_permissions = ":read-only"`).
 
 **"Review module X" (Two-Tier Review):**
 ```
@@ -201,7 +203,7 @@ reviewer (đánh giá hiện trạng) → refactorer (thực hiện) → tester 
 ## Memory Health (định kỳ)
 - Khi `06_evolution_log.md` > 50KB hoặc mỗi tháng 1 lần: ĐỀ XUẤT user chạy `$compact-memory` (không tự chạy)
 - Decision Half-Life: mọi decision có "Hết hạn" (+3 tháng module / +6 tháng cross-cutting). Quá hạn → KHÔNG tự áp dụng, hỏi user re-evaluate
-- Token usage: user có thể gõ `$agent-roi` để xem agent nào tốn token, agent nào ít dùng → tinh chỉnh routing
+- Token usage / chi phí: user có thể gõ `$agent-roi` để xem agent nào tốn token, agent nào ít dùng → tinh chỉnh routing
 
 ## Self-improving / Self-healing
 - User sửa output / nói "sai rồi" / test fail 2+ vòng → chạy `$reflect` **TRƯỚC khi làm tiếp** (đảm bảo learning được ghi trước khi context lỗi mất, không lặp lại sai lầm)

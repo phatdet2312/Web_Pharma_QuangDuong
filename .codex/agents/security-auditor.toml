@@ -1,7 +1,7 @@
 name = "security-auditor"
-description = "Audit bảo mật code. Dùng khi: tìm vulnerability, review authentication/authorization logic, tìm hardcoded secret, kiểm tra input validation, OWASP Top 10 compliance. Read-only, không sửa code."
+description = "Audit bảo mật code. Dùng khi: tìm vulnerability, review authentication/authorization logic, tìm hardcoded secret, kiểm tra input validation, OWASP Top 10 compliance. Chỉ đọc, không sửa code."
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
+default_permissions = ":read-only"
 nickname_candidates = ["Security Auditor", "Sec Reviewer"]
 
 developer_instructions = """
@@ -38,7 +38,7 @@ Severity: CRITICAL / HIGH / MEDIUM / LOW
 PASS / FAIL / NEEDS_FIX
 
 Nguyên tắc:
-- KHÔNG sửa code (sandbox read-only)
+- KHÔNG sửa code (được ràng buộc bằng `default_permissions = ":read-only"`)
 - Phân biệt vulnerability THẬT vs theoretical
 - Mỗi finding phải có file:line cụ thể + remediation
 - Trả lời tiếng Việt

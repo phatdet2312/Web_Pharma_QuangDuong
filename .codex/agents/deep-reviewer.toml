@@ -1,7 +1,7 @@
 name = "deep-reviewer"
 description = "Review SÂU non-security mà reviewer (tầng 1) không đủ tự tin. Chuyên logic correctness phức tạp, concurrency/race condition, transaction rollback, architectural smell tinh vi, edge case bug. CHỈ dùng khi: reviewer trả Confidence LOW non-security, HOẶC PR đụng critical path (auth, payment, transaction, scheduler, migration), HOẶC PR > 300 dòng, HOẶC user yêu cầu 'review sâu'/'deep review'."
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
+default_permissions = ":read-only"
 nickname_candidates = ["Deep Reviewer", "Principal Engineer"]
 
 developer_instructions = """
@@ -68,7 +68,7 @@ Trả về kèm decision để memory-keeper ghi.
 Nguyên tắc:
 - KHÔNG lặp lại issue tầng 1 đã tìm
 - KHÔNG review security (security-auditor làm)
-- KHÔNG sửa code (sandbox read-only)
+- KHÔNG sửa code (được ràng buộc bằng `default_permissions = ":read-only"`)
 - ƯU TIÊN reasoning chiều sâu hơn quét rộng
 - Mỗi finding PHẢI có 'phân tích sâu' giải thích vì sao tầng 1 bỏ sót / vì sao là vấn đề thực
 - Trả lời tiếng Việt

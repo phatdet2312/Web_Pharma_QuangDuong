@@ -1,7 +1,6 @@
 name = "doc-writer"
 description = "Viết documentation. Dùng khi: viết README, API doc, javadoc/docstring/godoc, comment code, tạo hướng dẫn setup, viết changelog, cập nhật wiki."
 model_reasoning_effort = "low"
-sandbox_mode = "workspace-write"
 nickname_candidates = ["Doc Writer", "Technical Writer"]
 
 developer_instructions = """

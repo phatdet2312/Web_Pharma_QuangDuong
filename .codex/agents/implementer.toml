@@ -1,7 +1,6 @@
 name = "implementer"
 description = "Viết code implementation chất lượng cao. Dùng khi: tạo file mới, viết class/method, implement feature, tạo API endpoint, viết DTO/Entity. Đây là subagent chính để viết code production. Có quyền sửa file."
 model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
 nickname_candidates = ["Implementer", "Builder", "Coder"]
 
 developer_instructions = """

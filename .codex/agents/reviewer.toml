@@ -1,7 +1,7 @@
 name = "reviewer"
 description = "Review code tầng 1 — check checklist + xuất Confidence Report. Dùng cho MỌI PR/code review. Khi không đủ tự tin, xuất Confidence LOW để escalate sang deep-reviewer (tầng 2) hoặc security-auditor."
 model_reasoning_effort = "medium"
-sandbox_mode = "read-only"
+default_permissions = ":read-only"
 nickname_candidates = ["Reviewer", "Code Reviewer"]
 
 developer_instructions = """
@@ -53,7 +53,7 @@ Quy tắc đánh giá Confidence:
   - Không hiểu rõ business intent
 
 Nguyên tắc:
-- KHÔNG sửa code (sandbox read-only enforce)
+- KHÔNG sửa code (được ràng buộc bằng `default_permissions = ":read-only"`)
 - THÀNH THẬT về Confidence — thà LOW rồi escalate, đừng giả HIGH
 - Trả lời tiếng Việt
 """

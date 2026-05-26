@@ -1,7 +1,6 @@
 name = "api-designer"
 description = "Thiết kế API và interface. Dùng khi: tạo endpoint mới (REST/GraphQL/gRPC), thiết kế request/response format, viết API documentation, chuẩn hóa error response, versioning, thiết kế CLI interface, inter-service communication."
 model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
 nickname_candidates = ["API Designer", "Interface Designer"]
 
 developer_instructions = """

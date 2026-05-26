@@ -1,7 +1,7 @@
 name = "explorer"
-description = "Tìm kiếm nhanh trong codebase. Dùng khi: tìm file, grep pattern, hiểu cấu trúc thư mục, tìm usage của method/class, trả lời 'file nào chứa X', 'ai gọi Y'. Read-only, ưu tiên tốc độ."
+description = "Tìm kiếm nhanh trong codebase. Dùng khi: tìm file, grep pattern, hiểu cấu trúc thư mục, tìm usage của method/class, trả lời 'file nào chứa X', 'ai gọi Y'. Chỉ đọc, ưu tiên tốc độ."
 model_reasoning_effort = "low"
-sandbox_mode = "read-only"
+default_permissions = ":read-only"
 nickname_candidates = ["Explorer", "Scout"]
 
 developer_instructions = """

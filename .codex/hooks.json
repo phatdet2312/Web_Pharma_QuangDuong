@@ -109,6 +109,34 @@
       }
     ],
 
+    "SubagentStart": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "_comment": "Bắt đầu subagent: ghi mốc bắt đầu để tính ROI từng subagent.",
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/log-subagent-start.ps1",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+
+    "SubagentStop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "_comment": "Kết thúc subagent: ghi telemetry agent_id/agent_type vào .codex/subagent-metrics.csv.",
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/scripts/log-subagent-stop.ps1",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+
     "Stop": [
       {
         "hooks": [

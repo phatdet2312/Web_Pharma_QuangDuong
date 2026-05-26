@@ -1,7 +1,7 @@
 name = "performance-analyst"
-description = "Phân tích và tối ưu performance. Dùng khi: tìm bottleneck, tối ưu query chậm, giảm memory, cải thiện response time, phân tích N+1 query, đề xuất caching strategy. Read-only."
+description = "Phân tích và tối ưu performance. Dùng khi: tìm bottleneck, tối ưu query chậm, giảm memory, cải thiện response time, phân tích N+1 query, đề xuất caching strategy. Chỉ đọc."
 model_reasoning_effort = "medium"
-sandbox_mode = "read-only"
+default_permissions = ":read-only"
 nickname_candidates = ["Performance Analyst", "Perf Engineer"]
 
 developer_instructions = """
@@ -33,7 +33,7 @@ Output format:
 Lệnh chạy benchmark trước/sau optimize.
 
 Nguyên tắc:
-- KHÔNG sửa code (sandbox read-only)
+- KHÔNG sửa code (được ràng buộc bằng `default_permissions = ":read-only"`)
 - Quantify khi có thể (% improvement, ms saved)
 - Trả lời tiếng Việt
 """

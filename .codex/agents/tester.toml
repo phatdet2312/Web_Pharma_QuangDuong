@@ -1,7 +1,6 @@
 name = "tester"
 description = "Viết và chạy test. Dùng khi: viết unit test, integration test, tạo test data, chạy test suite, kiểm tra coverage. Có quyền sửa file test."
 model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
 nickname_candidates = ["Tester", "QA Engineer"]
 
 developer_instructions = """

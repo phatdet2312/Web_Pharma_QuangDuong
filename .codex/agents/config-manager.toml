@@ -1,7 +1,6 @@
 name = "config-manager"
 description = "Quản lý configuration và DevOps. Dùng khi: sửa application.yml, cấu hình Docker, CI/CD pipeline, environment variable, dependency management, cập nhật pom.xml/package.json/go.mod."
 model_reasoning_effort = "low"
-sandbox_mode = "workspace-write"
 nickname_candidates = ["Config Manager", "DevOps"]
 
 developer_instructions = """

@@ -1,6 +1,6 @@
 # Learnings — Bài học từ sai lầm
 > Last updated: 2026-05-24
-> Tổng entries: 10
+> Tổng entries: 11
 > Entries sẵn sàng promote (Lần >= 3): 2
 
 <!-- File này là nơi agent ghi nhận PATTERN sai lầm đã mắc -->
@@ -20,6 +20,7 @@
 | 2026-05-23 | LOGIC | Sai: biến cơ chế tag/mention người được trả lời thành nhãn hiển thị bị backend/frontend ép gắn ngoài nội dung. Đúng: LUÔN phân biệt mention do người dùng chỉnh được trong ô nhập với metadata hỗ trợ hiển thị; chỉ ép nhãn khi nghiệp vụ có bảng mention riêng và user không yêu cầu quyền xóa tag. | 1 |
 | 2026-05-23 | FRONTEND | Sai: cải tiến luồng UI đang hoạt động nhưng chỉ kiểm tra compile/parse, không kiểm tra đủ trạng thái render thực tế như tag, nút mở/ẩn và chuỗi `onclick`, dẫn đến regression trải nghiệm. Đúng: LUÔN kiểm tra cả cú pháp, trạng thái DOM chính và visual affordance của control trước khi bàn giao UI tương tác. | 2 |
 | 2026-05-23 | LOGIC | Sai: mở rộng mô hình cây nhiều tầng nhưng không audit lại toàn bộ vòng đời create/update/delete theo ràng buộc FK tự tham chiếu. Đúng: LUÔN kiểm tra thứ tự xóa con-trước-cha, dữ liệu vệ tinh, bulk action và trạng thái UI sau success khi đổi cấu trúc cây hoặc lazy-load. | 1 |
+| 2026-05-26 | CONVENTION | Sai: phân rã task bằng planner nhưng tiếp tục implement mà không persist kế hoạch vào active memory. Đúng: LUÔN ghi `.ai-memory/04_active_plan.md` có mục tiêu, hướng làm, trạng thái, dependency/risk/blocker trước khi gọi executor hoặc sửa code. | 1 |
 
 <!-- Loại: LOGIC | CONVENTION | ARCHITECTURE | PERFORMANCE | SECURITY -->
 <!-- Pattern: "Sai: [pattern sai]. Đúng: LUÔN/KHÔNG BAO GIỜ [rule]" -->

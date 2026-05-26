@@ -1,7 +1,7 @@
-# .codex/agents/ — Đội subagent chuyên biệt (Codex 2026)
+# .codex/agents/ — Đội subagent chuyên biệt (Codex 0.133.x)
 
 ## Mục đích
-Mỗi subagent là 1 chuyên gia với `model_reasoning_effort` riêng, `sandbox_mode` riêng, chạy trong thread riêng (context window cách ly).
+Mỗi subagent là 1 chuyên gia với `model_reasoning_effort` riêng, quyền đọc/ghi riêng qua `default_permissions` hoặc kế thừa parent, chạy trong thread riêng (context window cách ly).
 Orchestrator (phiên chính) đọc AGENTS.md → quyết định delegate qua `/agent <name>` cho subagent nào.
 
 ## Cấu trúc
@@ -33,7 +33,7 @@ Orchestrator (phiên chính) đọc AGENTS.md → quyết định delegate qua `
 └── memory-keeper.toml            ← Đồng bộ `.ai-memory/` với code
 ```
 
-## Phân bổ reasoning effort (Codex 2026 dùng 1 model ghim ở `.codex/config.toml` + `model_reasoning_effort` per agent thay 3-model của Claude)
+## Phân bổ reasoning effort (Codex 0.133.x dùng 1 model ghim ở `.codex/config.toml` + `model_reasoning_effort` per agent thay 3-model của Claude)
 | Effort | Subagents | Khi nào dùng | Chi phí |
 |--------|-----------|-------------|---------|
 | high (5) | architect, security-auditor, planner, deep-reviewer, adversarial-critic (xhigh) | Cần suy nghĩ sâu, escalation, offensive thinking | $$$$ |
@@ -41,7 +41,7 @@ Orchestrator (phiên chính) đọc AGENTS.md → quyết định delegate qua `
 | low (4) | explorer, doc-writer, config-manager, memory-keeper | Việc nhanh, đơn giản | $ |
 
 ## Two-Tier Review Pattern
-**Tầng 1 — `reviewer` (medium effort, sandbox=read-only)**: chạy cho MỌI PR. Xuất Confidence Report (HIGH/MEDIUM/LOW) cho từng lĩnh vực.
+**Tầng 1 — `reviewer` (medium effort, `default_permissions = ":read-only"`)**: chạy cho MỌI PR. Xuất Confidence Report (HIGH/MEDIUM/LOW) cho từng lĩnh vực.
 
 **Tầng 2 — Escalation (high effort)**: orchestrator đọc Confidence Report → chỉ gọi tầng 2 khi cần:
 - Security LOW → `security-auditor`
@@ -72,23 +72,25 @@ Orchestrator (phiên chính) đọc AGENTS.md → quyết định delegate qua `
 **Anti-fabrication:** Mỗi finding PHẢI có test case reproduce cụ thể. Không có test case = không phải finding.
 
 ## Decision Memory (Role analyst vs executor)
-**ANALYST agents (sandbox = read-only)** — trả decision trong output, KHÔNG tự ghi:
+**ANALYST agents (`default_permissions = ":read-only"`)** — trả decision trong output, KHÔNG tự ghi:
 - architect, planner, deep-reviewer, adversarial-critic, reviewer, security-auditor, performance-analyst, explorer, debugger
 - Khi có decision → orchestrator → memory-keeper ghi vào deep knowledge / Architecture Decisions
+- Riêng planner: Task Breakdown / Active Plan Update phải được persist vào `.ai-memory/04_active_plan.md` trước khi gọi executor
 
-**EXECUTOR agents (sandbox = workspace-write)** — có quyền sửa file:
+**EXECUTOR agents (kế thừa profile `workspace-secure` của phiên chính)** — có quyền sửa file:
 - implementer, tester, refactorer, db-specialist, api-designer, doc-writer, config-manager, memory-keeper
 - `db-specialist`, `api-designer`: tự ghi Decision Log vào deep knowledge (có Write)
-- `memory-keeper`: trung tâm — nhận decision từ analyst → ghi với format chuẩn 5 cột
+- `memory-keeper`: trung tâm — nhận decision từ analyst → ghi với format chuẩn 5 cột; nhận Task Breakdown từ planner → ghi `04_active_plan.md`
 
 ## Cách hoạt động
 1. User giao task → orchestrator đọc bảng routing trong AGENTS.md
 2. Orchestrator delegate qua `/agent <name>` cho subagent phù hợp
 3. Subagent chạy trong thread riêng → không ô nhiễm context chính
 4. Subagent trả kết quả → orchestrator tổng hợp báo cáo user
+5. Nếu subagent là `planner` → persist `.ai-memory/04_active_plan.md` trước khi gọi executor
 
 ## Luồng mẫu
-- **"Thêm API mới"**: planner → db-specialist → api-designer → implementer → tester → memory-keeper
+- **"Thêm API mới"**: planner → memory-keeper (persist `04_active_plan.md`) → db-specialist → api-designer → implementer → tester → memory-keeper
 - **"Sửa bug"**: explorer → debugger → implementer (thực hiện fix) → tester → memory-keeper
 - **"Review module X"** (two-tier):
   ```
@@ -103,13 +105,13 @@ Orchestrator (phiên chính) đọc AGENTS.md → quyết định delegate qua `
 - **"Deep review thủ công"**: user nói "review sâu module X" / "deep review" → orchestrator nhận diện → gọi thẳng deep-reviewer (bỏ qua tầng 1)
 
 ## Giới hạn
-- Codex 2026 max_threads = 6; bộ này đặt max_depth = 1 để phiên chính spawn subagent trực tiếp và tránh recursive fan-out ngoài ý muốn
+- Codex 0.133.x hỗ trợ `agents.max_threads = 6`; bộ này đặt `max_depth = 1` để phiên chính spawn subagent trực tiếp và tránh spawn lồng nhau ngoài ý muốn
 - Orchestrator là phiên chính
 - Model version ghim ở `.codex/config.toml` (field `model`). Override per-agent qua field `model` trong TOML
-- Codex 2026 KHÔNG có event `SubagentStop` riêng — telemetry per-turn qua `Stop` event
+- Codex 0.133.x có `SubagentStart` và `SubagentStop`; telemetry per-subagent được ghi vào `.codex/subagent-metrics.csv`.
 
 ## Tùy chỉnh
 - Xóa subagent không cần (VD: xóa frontend agents nếu chỉ làm backend)
-- Thêm subagent mới: tạo file `.toml` với fields `name`, `description`, `developer_instructions`, optional `model`, `model_reasoning_effort`, `sandbox_mode`, `mcp_servers`, `nickname_candidates`
+- Thêm subagent mới: tạo file `.toml` với fields `name`, `description`, `developer_instructions`, optional `model`, `model_reasoning_effort`, `default_permissions`, `mcp_servers`, `nickname_candidates`
 - Sửa `description` để giúp user/orchestrator chọn đúng role khi đã yêu cầu dùng subagent; không claim Codex tự spawn chỉ nhờ description
 - Tối ưu: 12-18 subagents là vùng hiệu quả nhất, >20 tăng overhead routing
