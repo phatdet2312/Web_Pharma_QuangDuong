@@ -36,12 +36,12 @@ public class CtEventStatusHistory {
     private CtEvent ctEvent;
 
     /** Mã trạng thái mới: DRAFT|OPEN|UPCOMING|ONGOING|FULL|CANCELLED|FINISHED|ENDED */
-    @Column(name = "STATUS_CODE", nullable = false, length = 30)
+    @Column(name = "STATUS_CODE", nullable = false, length = 50)
     private String statusCode;
 
     /** Người thực hiện thay đổi (FK → USERS) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CHANGED_BY_USER_ID")
+    @JoinColumn(name = "CHANGED_BY_USER_ID", nullable = false)
     private User changedByUser;
 
     @Builder.Default
@@ -49,6 +49,6 @@ public class CtEventStatusHistory {
     private LocalDateTime changedAt = LocalDateTime.now();
 
     /** Ghi chú lý do thay đổi trạng thái */
-    @Column(name = "NOTE", length = 500)
+    @Column(name = "NOTE", length = 255)
     private String note;
 }

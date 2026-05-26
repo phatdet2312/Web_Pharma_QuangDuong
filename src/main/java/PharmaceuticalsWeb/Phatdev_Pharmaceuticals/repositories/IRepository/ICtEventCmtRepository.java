@@ -22,6 +22,11 @@ public interface ICtEventCmtRepository extends JpaRepository<CtEventCmt, CtEvent
     @Query("DELETE FROM CtEventCmt cec WHERE cec.cmt.id = :cmtId")
     void xoaLienKetTheoCmt(@Param("cmtId") Long cmtId);
 
+    /** Xóa toàn bộ liên kết comment của một phiên khi admin xóa vật lý phiên đó. */
+    @Modifying
+    @Query("DELETE FROM CtEventCmt cec WHERE cec.ctEvent.id = :ctEventId")
+    void xoaLienKetTheoBuoi(@Param("ctEventId") Long ctEventId);
+
     /** Kiểm tra comment đã thuộc buổi này chưa */
     boolean existsById_CtEventIdAndId_CmtId(Long ctEventId, Long cmtId);
 

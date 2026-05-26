@@ -62,14 +62,20 @@ public interface IEventRepository extends JpaRepository<Event, Long> {
         @Query("SELECT e FROM Event e WHERE " +
                      "(:keyword IS NULL OR LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
                      "AND (:eventTypeId IS NULL OR e.eventType.id = :eventTypeId) " +
-                     "AND EXISTS (SELECT 1 FROM CtEvent ce1 WHERE ce1.event.id = e.id AND ce1.startTime >= :startDate AND ce1.startTime <= :endDate) " +
-                     "AND (:locationId IS NULL OR EXISTS (SELECT 1 FROM CtEvent ce3 WHERE ce3.event.id = e.id AND ce3.location.id = :locationId)) " +
-                     "AND (:roleId IS NULL OR EXISTS (SELECT 1 FROM CtEvent ce4 JOIN CtEventSessionRole cesr ON ce4.id = cesr.ctEvent.id WHERE ce4.event.id = e.id AND cesr.role.id = :roleId)) ")
+                     "AND (:sessionFilterActive = false OR EXISTS (" +
+                     "SELECT 1 FROM CtEvent ce WHERE ce.event.id = e.id " +
+                     "AND ce.startTime >= :startDate AND ce.startTime <= :endDate " +
+                     "AND (:locationId IS NULL OR ce.location.id = :locationId) " +
+                     "AND (:roleId IS NULL OR EXISTS (" +
+                     "SELECT 1 FROM CtEventSessionRole cesr " +
+                     "WHERE cesr.ctEvent.id = ce.id AND cesr.role.id = :roleId" +
+                     ")))) ")
         // +
         // "ORDER BY e.createdAt DESC"
         Page<Event> timKiemChienDich(
                         @Param("keyword") String keyword,
                         @Param("eventTypeId") Integer eventTypeId,
+                        @Param("sessionFilterActive") boolean sessionFilterActive,
                         @Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate,
                         @Param("locationId") Integer locationId,

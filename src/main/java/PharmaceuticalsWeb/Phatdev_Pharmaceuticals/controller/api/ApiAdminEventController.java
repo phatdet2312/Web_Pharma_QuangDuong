@@ -8,6 +8,8 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventStatusRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventTypeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LocationRequest;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventDictionaryResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventMediaResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ApiResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CtEventResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventRegistrationResponse;
@@ -23,6 +25,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,6 +61,24 @@ public class ApiAdminEventController {
     @GetMapping("/stats")
     public ApiResponse<EventStatsResponse> layThongKe() {
         return ApiResponse.thanhCong(adminEventService.layThongKeAdmin(), "Lấy thống kê thành công");
+    }
+
+    /** Trả danh mục trạng thái để giao diện quản trị không tự hardcode mã nghiệp vụ. */
+    @GetMapping("/dictionaries/statuses")
+    public ApiResponse<AdminEventDictionaryResponse> layDanhMucTrangThai() {
+        return ApiResponse.thanhCong(adminEventService.layDanhMucTrangThai(), "Lấy danh mục trạng thái thành công");
+    }
+
+    /** Upload ảnh đại diện chiến dịch, trả URL public do server cấp. */
+    @PostMapping(value = "/media/campaign-thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<AdminEventMediaResponse> uploadAnhChienDich(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.thanhCong(adminEventService.uploadAnhChienDich(file), "Upload ảnh chiến dịch thành công");
+    }
+
+    /** Upload ảnh đại diện diễn giả, trả URL public do server cấp. */
+    @PostMapping(value = "/media/speaker-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<AdminEventMediaResponse> uploadAnhDienGia(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.thanhCong(adminEventService.uploadAnhDienGia(file), "Upload ảnh diễn giả thành công");
     }
 
     // === CRUD CHIẾN DỊCH (EVENTS) ===

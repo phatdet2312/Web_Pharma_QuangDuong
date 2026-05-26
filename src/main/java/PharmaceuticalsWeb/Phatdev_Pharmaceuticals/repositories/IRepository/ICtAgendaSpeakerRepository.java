@@ -23,6 +23,11 @@ public interface ICtAgendaSpeakerRepository extends JpaRepository<CtAgendaSpeake
     @Query("DELETE FROM CtAgendaSpeaker cas WHERE cas.agenda.id = :agendaId")
     void xoaLienKetTheoLichTrinh(@Param("agendaId") Long agendaId);
 
+    /** Dọn toàn bộ liên kết diễn giả-lịch trình của một phiên trước khi xóa phiên. */
+    @Modifying
+    @Query("DELETE FROM CtAgendaSpeaker cas WHERE cas.agenda.ctEvent.id = :ctEventId")
+    void xoaLienKetTheoBuoi(@Param("ctEventId") Long ctEventId);
+
     /** Dọn dẹp liên kết khi XÓA Diễn giả khỏi hệ thống */
     @Modifying
     @Query("DELETE FROM CtAgendaSpeaker cas WHERE cas.speaker.id = :speakerId")

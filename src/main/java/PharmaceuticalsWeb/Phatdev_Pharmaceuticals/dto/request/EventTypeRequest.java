@@ -18,6 +18,6 @@ public class EventTypeRequest {
     @Size(max = 100)
     private String name;
 
-    @Size(max = 500)
+    @Size(max = 255, message = "Mô tả loại sự kiện tối đa 255 ký tự")
     private String description;
 }

@@ -17,6 +17,7 @@ public interface ISpeakerAgendaService {
     
     // --- NGHIỆP VỤ DIỄN GIẢ ---
     List<EventSpeakerResponse> layDSDienGiaCuaBuoi(Long ctEventId);
+    List<EventSpeakerResponse> layDSDienGiaCuaBuoi(Long ctEventId, boolean coQuyenXemChiTiet);
     EventSpeakerResponse themDienGia(Long ctEventId, EventSpeakerRequest request);
     EventSpeakerResponse capNhatDienGia(Long speakerId, EventSpeakerRequest request);
     void xoaDienGia(Long speakerId);

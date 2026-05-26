@@ -25,6 +25,7 @@ public class EventSpeakerRequest {
     @Size(max = 255, message = "Cơ quan công tác tối đa 255 ký tự")
     private String organization;
 
+    @Size(max = 255, message = "Đường dẫn ảnh đại diện tối đa 255 ký tự")
     private String avatarUrl;
 
     private String bio;

@@ -45,6 +45,14 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
 
     @Override
     public List<EventSpeakerResponse> layDSDienGiaCuaBuoi(Long ctEventId) {
+        return layDSDienGiaCuaBuoi(ctEventId, true);
+    }
+
+    @Override
+    public List<EventSpeakerResponse> layDSDienGiaCuaBuoi(Long ctEventId, boolean coQuyenXemChiTiet) {
+        if (coQuyenXemChiTiet == false) {
+            return new ArrayList<>();
+        }
         List<EventSpeaker> dsThucThe = speakerRepository.findByCtEventIdOrderByIdAsc(ctEventId);
         List<EventSpeakerResponse> dsKetQua = new ArrayList<>();
 
@@ -69,7 +77,7 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
         speaker.setFullName(request.getFullName().trim());
         speaker.setAcademicTitle(request.getAcademicTitle());
         speaker.setOrganization(request.getOrganization());
-        speaker.setAvatarUrl(request.getAvatarUrl());
+        speaker.setAvatarUrl(chuanHoaDuongDanAnh(request.getAvatarUrl()));
         speaker.setBio(request.getBio());
 
         EventSpeaker saved = speakerRepository.save(speaker);
@@ -88,7 +96,7 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
         speaker.setFullName(request.getFullName().trim());
         speaker.setAcademicTitle(request.getAcademicTitle());
         speaker.setOrganization(request.getOrganization());
-        speaker.setAvatarUrl(request.getAvatarUrl());
+        speaker.setAvatarUrl(chuanHoaDuongDanAnh(request.getAvatarUrl()));
         speaker.setBio(request.getBio());
 
         EventSpeaker saved = speakerRepository.save(speaker);
@@ -136,9 +144,8 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện để lập Lịch trình.");
         }
 
-        if (request.getEndTime().isBefore(request.getStartTime())) {
-            throw new AppException(400, "Thời gian kết thúc không thể diễn ra trước thời gian bắt đầu.");
-        }
+        kiemTraThoiGianLichTrinhHopLe(request);
+        kiemTraDanhSachDienGiaHopLe(optCtEvent.get(), request.getSpeakerIds());
 
         EventAgenda agenda = new EventAgenda();
         agenda.setCtEvent(optCtEvent.get());
@@ -167,11 +174,9 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
             throw new AppException(404, "Không tìm thấy mốc Lịch trình để cập nhật.");
         }
 
-        if (request.getEndTime().isBefore(request.getStartTime())) {
-            throw new AppException(400, "Xung đột thời gian: Kết thúc trước khi Bắt đầu.");
-        }
-
         EventAgenda agenda = optAgenda.get();
+        kiemTraThoiGianLichTrinhHopLe(request);
+        kiemTraDanhSachDienGiaHopLe(agenda.getCtEvent(), request.getSpeakerIds());
         agenda.setStartTime(request.getStartTime());
         agenda.setEndTime(request.getEndTime());
         agenda.setSessionTitle(request.getSessionTitle().trim());
@@ -204,6 +209,67 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
     // =====================================================================
     // CÁC HÀM TIỆN ÍCH NỘI BỘ (INTERNAL HELPERS)
     // =====================================================================
+
+    /** Chặn lịch trình có thời điểm kết thúc không sau thời điểm bắt đầu. */
+    private void kiemTraThoiGianLichTrinhHopLe(EventAgendaRequest request) {
+        if (request.getStartTime() == null || request.getEndTime() == null) {
+            throw new AppException(400, "Thời gian bắt đầu và kết thúc lịch trình không được để trống.");
+        }
+        if (request.getEndTime().isAfter(request.getStartTime()) == false) {
+            throw new AppException(400, "Thời gian kết thúc lịch trình phải sau thời gian bắt đầu.");
+        }
+    }
+
+    /** Validate speakerIds trước khi thay cầu nối để không ignore ID sai âm thầm. */
+    private void kiemTraDanhSachDienGiaHopLe(CtEvent ctEvent, List<Long> speakerIds) {
+        if (speakerIds == null || speakerIds.isEmpty() == true) {
+            return;
+        }
+        kiemTraIdLongKhongLap(speakerIds, "diễn giả của lịch trình");
+        Object[] mangId = speakerIds.toArray();
+        for (int i = 0; i < mangId.length; i = i + 1) {
+            Long speakerId = (Long) mangId[i];
+            Optional<EventSpeaker> optSpeaker = speakerRepository.findById(speakerId);
+            if (optSpeaker.isPresent() == false) {
+                throw new AppException(400, "Không tìm thấy diễn giả có ID: " + speakerId);
+            }
+            if (optSpeaker.get().getCtEvent().getId().equals(ctEvent.getId()) == false) {
+                throw new AppException(400, "Diễn giả không thuộc phiên sự kiện của lịch trình này.");
+            }
+        }
+    }
+
+    /** Chặn cùng một speakerId xuất hiện nhiều lần trong payload. */
+    private void kiemTraIdLongKhongLap(List<Long> ids, String tenNghiepVu) {
+        Object[] arr = ids.toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            Long idHienTai = (Long) arr[i];
+            if (idHienTai == null) {
+                throw new AppException(400, "Danh sách " + tenNghiepVu + " chứa ID rỗng.");
+            }
+            for (int j = i + 1; j < arr.length; j = j + 1) {
+                Long idSoSanh = (Long) arr[j];
+                if (idHienTai.equals(idSoSanh) == true) {
+                    throw new AppException(400, "Danh sách " + tenNghiepVu + " chứa ID lặp: " + idHienTai);
+                }
+            }
+        }
+    }
+
+    /** Validate avatar speaker gửi qua API; chỉ nhận URL do upload server sự kiện cấp. */
+    private String chuanHoaDuongDanAnh(String rawUrl) {
+        if (rawUrl == null || rawUrl.trim().isEmpty() == true) {
+            return null;
+        }
+        String url = rawUrl.trim();
+        if (url.length() > 255) {
+            throw new AppException(400, "Đường dẫn ảnh đại diện diễn giả vượt quá 255 ký tự.");
+        }
+        if (url.startsWith("/uploads/events/speakers/") == true) {
+            return url;
+        }
+        throw new AppException(400, "Ảnh diễn giả phải được tải lên qua hệ thống quản trị.");
+    }
 
     /** Gắn danh sách ID chuyên gia vào một mốc Lịch trình */
     private void ganDienGiaVaoLichTrinh(EventAgenda agenda, List<Long> speakerIds) {

@@ -11,6 +11,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * =========================================================================
  * API QUẢN TRỊ LỊCH TRÌNH VÀ DIỄN GIẢ
@@ -25,6 +27,12 @@ public class ApiAdminSpeakerAgendaController {
     private final ISpeakerAgendaService service;
 
     // --- QUẢN LÝ DIỄN GIẢ ---
+    /** Lấy toàn bộ diễn giả của một phiên cho màn hình quản trị. */
+    @GetMapping("/events/sessions/{ctEventId}/speakers")
+    public ApiResponse<List<EventSpeakerResponse>> layDanhSachDienGia(@PathVariable Long ctEventId) {
+        return ApiResponse.thanhCong(service.layDSDienGiaCuaBuoi(ctEventId), "Tải danh sách Diễn giả thành công");
+    }
+
     @PostMapping("/events/sessions/{ctEventId}/speakers")
     public ApiResponse<EventSpeakerResponse> themDienGia(
             @PathVariable Long ctEventId, 
@@ -46,6 +54,12 @@ public class ApiAdminSpeakerAgendaController {
     }
 
     // --- QUẢN LÝ LỊCH TRÌNH ---
+    /** Lấy lịch trình đầy đủ cho admin, bỏ qua paywall public vì đã qua route quản trị. */
+    @GetMapping("/events/sessions/{ctEventId}/agenda")
+    public ApiResponse<List<EventAgendaResponse>> layDanhSachLichTrinh(@PathVariable Long ctEventId) {
+        return ApiResponse.thanhCong(service.layDSLichTrinhCuaBuoi(ctEventId), "Tải lịch trình thành công");
+    }
+
     @PostMapping("/events/sessions/{ctEventId}/agenda")
     public ApiResponse<EventAgendaResponse> themLichTrinh(
             @PathVariable Long ctEventId, 

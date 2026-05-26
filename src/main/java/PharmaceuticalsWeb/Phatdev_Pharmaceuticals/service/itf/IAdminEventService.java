@@ -7,6 +7,8 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventStatusRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventTypeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LocationRequest;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventDictionaryResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventMediaResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CtEventResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventRegistrationResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventResponse;
@@ -15,6 +17,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventStatusHistor
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventTypeResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.LocationResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,6 +33,15 @@ public interface IAdminEventService {
 
     /** Trích xuất Bảng chỉ số (KPIs) vận hành sự kiện */
     EventStatsResponse layThongKeAdmin();
+
+    /** Trả danh mục trạng thái được backend cho phép để frontend không hardcode. */
+    AdminEventDictionaryResponse layDanhMucTrangThai();
+
+    /** Lưu ảnh đại diện chiến dịch vào vùng upload sự kiện. */
+    AdminEventMediaResponse uploadAnhChienDich(MultipartFile file);
+
+    /** Lưu ảnh đại diện diễn giả vào vùng upload sự kiện. */
+    AdminEventMediaResponse uploadAnhDienGia(MultipartFile file);
 
     /** Trích xuất danh sách Chiến dịch phân trang thông qua Cỗ máy tìm kiếm đa chiều */
     Page<EventResponse> layDanhSachChienDich(

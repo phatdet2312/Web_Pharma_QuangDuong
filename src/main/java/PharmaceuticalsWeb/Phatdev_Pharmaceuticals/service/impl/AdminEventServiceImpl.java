@@ -7,6 +7,8 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventStatusRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventTypeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LocationRequest;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventDictionaryResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventMediaResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CtEventResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventRegistrationResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventResponse;
@@ -15,12 +17,14 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventStatusHistor
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.EventTypeResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.LocationResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PostResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.StatusOptionResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.TagResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEvent;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventRegistration;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventSessionRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventStatusHistory;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventTag;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtPostEvent;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Event;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.EventType;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Location;
@@ -29,21 +33,27 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Tag;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.UserRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtAgendaSpeakerRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventCmtRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventRegistrationRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventSessionRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventStatusHistoryRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventTagRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtPostEventRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IEventAgendaRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IEventRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IEventSpeakerRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IEventTypeRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ILocationRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPostRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ITagRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAdminEventService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.EventStatusDisplayPolicy;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -51,7 +61,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -59,6 +74,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -76,6 +92,18 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class AdminEventServiceImpl implements IAdminEventService {
 
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 50;
+    private static final long MAX_EVENT_IMAGE_BYTES = 5L * 1024L * 1024L;
+
+    private static final String[] EVENT_STATUS_CODES = {
+            "DRAFT", "OPEN", "UPCOMING", "ONGOING", "FULL", "CANCELLED", "FINISHED", "ENDED"
+    };
+
+    private static final String[] REGISTRATION_STATUS_CODES = {
+            "PENDING", "CONFIRMED", "APPROVED", "ATTENDED", "CANCELLED"
+    };
+
     private final IEventRepository eventRepository;
     private final ICtEventRepository ctEventRepository;
     private final IEventTypeRepository eventTypeRepository;
@@ -84,11 +112,19 @@ public class AdminEventServiceImpl implements IAdminEventService {
     private final ICtEventStatusHistoryRepository statusHistoryRepository;
     private final ICtEventRegistrationRepository registrationRepository;
     private final ICtPostEventRepository ctPostEventRepository;
+    private final ICtEventCmtRepository ctEventCmtRepository;
+    private final ICtAgendaSpeakerRepository ctAgendaSpeakerRepository;
+    private final IEventAgendaRepository eventAgendaRepository;
+    private final IEventSpeakerRepository eventSpeakerRepository;
+    private final IPostRepository postRepository;
     private final ITagRepository tagRepository;
     private final IUserRepository userRepository;
     private final ICtEventSessionRoleRepository ctEventSessionRoleRepository;
     private final IUserRoleRepository userRoleRepository;
     private final EventStatusDisplayPolicy eventStatusDisplayPolicy;
+
+    @Value("${pharma.upload.base-path:./uploads}")
+    private String uploadBasePath;
 
     /**
      * Đo lường sức khỏe toàn diện của Hệ sinh thái Sự kiện trong tháng hiện tại.
@@ -137,6 +173,34 @@ public class AdminEventServiceImpl implements IAdminEventService {
     }
 
     /**
+     * Trả toàn bộ mã trạng thái mà admin được phép chọn.
+     * Frontend chỉ render danh sách này, không tự duy trì enum riêng.
+     */
+    @Override
+    public AdminEventDictionaryResponse layDanhMucTrangThai() {
+        AdminEventDictionaryResponse response = new AdminEventDictionaryResponse();
+        response.setEventStatuses(taoDanhSachTrangThaiBuoi());
+        response.setRegistrationStatuses(taoDanhSachTrangThaiDangKy());
+        return response;
+    }
+
+    /**
+     * Lưu ảnh đại diện chiến dịch vào namespace upload riêng của phân hệ sự kiện.
+     */
+    @Override
+    public AdminEventMediaResponse uploadAnhChienDich(MultipartFile file) {
+        return luuAnhSuKien(file, "campaigns");
+    }
+
+    /**
+     * Lưu ảnh đại diện diễn giả vào namespace upload riêng của phân hệ sự kiện.
+     */
+    @Override
+    public AdminEventMediaResponse uploadAnhDienGia(MultipartFile file) {
+        return luuAnhSuKien(file, "speakers");
+    }
+
+    /**
      * Truy xuất danh sách Chiến dịch Marketing (Events) kết hợp bộ lọc và phân
      * trang.
      * Cấu trúc lồng nhau: Mỗi Chiến dịch sẽ tự động quét và đính kèm các Phiên con
@@ -154,15 +218,29 @@ public class AdminEventServiceImpl implements IAdminEventService {
             LocalDateTime startDate, LocalDateTime endDate,
             Integer locationId, Integer roleId, int page, int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        int pageDaKiemSoat = chuanHoaPage(page);
+        int sizeDaKiemSoat = chuanHoaSize(size);
+        Pageable pageable = PageRequest.of(pageDaKiemSoat, sizeDaKiemSoat, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         String kw = null;
         if (keyword != null && keyword.trim().isEmpty() == false) {
             kw = keyword.trim();
         }
 
-        Page<Event> eventsPage = eventRepository.timKiemChienDich(kw, eventTypeId, startDate, endDate, locationId,
-                roleId, pageable);
+        boolean canLocTheoBuoi = startDate != null || endDate != null || locationId != null || roleId != null;
+
+        LocalDateTime ngayBatDauLoc = startDate;
+        if (ngayBatDauLoc == null) {
+            ngayBatDauLoc = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
+        }
+
+        LocalDateTime ngayKetThucLoc = endDate;
+        if (ngayKetThucLoc == null) {
+            ngayKetThucLoc = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
+        }
+
+        Page<Event> eventsPage = eventRepository.timKiemChienDich(
+                kw, eventTypeId, canLocTheoBuoi, ngayBatDauLoc, ngayKetThucLoc, locationId, roleId, pageable);
         List<Event> eventList = eventsPage.getContent();
         List<EventResponse> responseList = new ArrayList<>();
 
@@ -192,16 +270,12 @@ public class AdminEventServiceImpl implements IAdminEventService {
         event.setTitle(request.getTitle());
         event.setSlug(slug);
         event.setDescription(request.getDescription());
-        event.setThumbnailUrl(request.getThumbnailUrl());
+        event.setThumbnailUrl(chuanHoaDuongDanAnh(
+                request.getThumbnailUrl(), 255, "/uploads/events/campaigns/"));
         event.setCreatedAt(LocalDateTime.now());
         event.setUpdatedAt(LocalDateTime.now());
 
-        if (request.getEventTypeId() != null) {
-            Optional<EventType> optType = eventTypeRepository.findById(request.getEventTypeId());
-            if (optType.isPresent() == true) {
-                event.setEventType(optType.get());
-            }
-        }
+        event.setEventType(layLoaiSuKienBatBuoc(request.getEventTypeId()));
 
         Event saved = eventRepository.save(event);
         return xayDungEventResponse(saved);
@@ -222,15 +296,11 @@ public class AdminEventServiceImpl implements IAdminEventService {
         Event event = optEvent.get();
         event.setTitle(request.getTitle());
         event.setDescription(request.getDescription());
-        event.setThumbnailUrl(request.getThumbnailUrl());
+        event.setThumbnailUrl(chuanHoaDuongDanAnh(
+                request.getThumbnailUrl(), 255, "/uploads/events/campaigns/"));
         event.setUpdatedAt(LocalDateTime.now());
 
-        if (request.getEventTypeId() != null) {
-            Optional<EventType> optType = eventTypeRepository.findById(request.getEventTypeId());
-            if (optType.isPresent() == true) {
-                event.setEventType(optType.get());
-            }
-        }
+        event.setEventType(layLoaiSuKienBatBuoc(request.getEventTypeId()));
 
         // Logic bảo vệ tính toàn vẹn của Slug: Chỉ kiểm tra trùng lặp nếu có sự thay
         // đổi
@@ -256,6 +326,12 @@ public class AdminEventServiceImpl implements IAdminEventService {
         if (eventRepository.existsById(eventId) == false) {
             throw new AppException(404, "Không tìm thấy Chiến dịch cần xóa.");
         }
+        List<CtEvent> sessions = ctEventRepository.findByEventIdOrderByStartTimeAsc(eventId);
+        Object[] sessionArr = sessions.toArray();
+        for (int i = 0; i < sessionArr.length; i = i + 1) {
+            CtEvent ctEvent = (CtEvent) sessionArr[i];
+            xoaBuoi(ctEvent.getId());
+        }
         eventRepository.deleteById(eventId);
     }
 
@@ -267,19 +343,15 @@ public class AdminEventServiceImpl implements IAdminEventService {
     @Override
     @Transactional
     public CtEventResponse taoBuoi(CtEventRequest request, Long moderatorId) {
-        Optional<Event> optEvent = eventRepository.findById(request.getEventId());
-        if (optEvent.isPresent() == false) {
-            throw new AppException(404, "Không tìm thấy Chiến dịch cha để gán phiên này vào.");
-        }
-
-        // Ràng buộc tính hợp lý của không gian thời gian
-        if (request.getEndTime().isBefore(request.getStartTime()) == true
-                || request.getEndTime().isEqual(request.getStartTime()) == true) {
-            throw new AppException(400, "Xung đột thời gian: Giờ bế mạc phải diễn ra sau giờ khai mạc.");
-        }
+        Event eventCha = layChienDichBatBuoc(request.getEventId());
+        Location diaDiem = layDiaDiemBatBuoc(request.getLocationId());
+        kiemTraThoiGianBuoiHopLe(request.getStartTime(), request.getEndTime());
+        kiemTraDanhSachRoleHopLe(request.getRoleIds());
+        kiemTraDanhSachTagHopLe(request.getTagIds());
+        kiemTraDanhSachBaiVietHopLe(request.getRelatedPostIds());
 
         CtEvent ctEvent = new CtEvent();
-        ctEvent.setEvent(optEvent.get());
+        ctEvent.setEvent(eventCha);
         ctEvent.setStartTime(request.getStartTime());
         ctEvent.setEndTime(request.getEndTime());
         ctEvent.setTotalSlots(request.getTotalSlots());
@@ -288,32 +360,25 @@ public class AdminEventServiceImpl implements IAdminEventService {
         ctEvent.setSeoTitle(request.getSeoTitle());
         ctEvent.setSeoDescription(request.getSeoDescription());
 
-        if (request.getLocationId() != null) {
-            Optional<Location> optLoc = locationRepository.findById(request.getLocationId());
-            if (optLoc.isPresent() == true) {
-                ctEvent.setLocation(optLoc.get());
-            }
-        }
+        ctEvent.setLocation(diaDiem);
 
         CtEvent saved = ctEventRepository.save(ctEvent);
 
         // Khởi tạo Sổ tay trạng thái (Event Sourcing Pattern)
         // Việc lưu vết này đảm bảo mọi sự thay đổi vòng đời đều có thể truy vết được.
-        Optional<User> optModerator = userRepository.findById(moderatorId);
+        User moderator = layModeratorBatBuoc(moderatorId);
         CtEventStatusHistory history = new CtEventStatusHistory();
         history.setCtEvent(saved);
         history.setStatusCode("DRAFT");
         history.setChangedAt(LocalDateTime.now());
         history.setNote("Khởi tạo cấu trúc phiên sự kiện mới.");
-
-        if (optModerator.isPresent() == true) {
-            history.setChangedByUser(optModerator.get());
-        }
+        history.setChangedByUser(moderator);
         statusHistoryRepository.save(history);
 
         ganQuyenChoBuoi(saved, request.getRoleIds());
         // Nối mảng thẻ chủ đề (Tags) vào bảng trung gian
         ganTagChoBuoi(saved, request.getTagIds());
+        ganBaiVietChoBuoi(saved, request.getRelatedPostIds());
 
         return xayDungCtEventResponse(saved);
     }
@@ -330,11 +395,14 @@ public class AdminEventServiceImpl implements IAdminEventService {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện để cập nhật.");
         }
 
-        if (request.getEndTime().isBefore(request.getStartTime()) == true) {
-            throw new AppException(400, "Xung đột thời gian: Giờ bế mạc không thể trước giờ khai mạc.");
-        }
-
         CtEvent ctEvent = optCtEvent.get();
+        kiemTraEventIdKhongDoi(ctEvent, request.getEventId());
+        Location diaDiem = layDiaDiemBatBuoc(request.getLocationId());
+        kiemTraThoiGianBuoiHopLe(request.getStartTime(), request.getEndTime());
+        kiemTraDanhSachRoleHopLe(request.getRoleIds());
+        kiemTraDanhSachTagHopLe(request.getTagIds());
+        kiemTraDanhSachBaiVietHopLe(request.getRelatedPostIds());
+
         ctEvent.setStartTime(request.getStartTime());
         ctEvent.setEndTime(request.getEndTime());
         ctEvent.setTotalSlots(request.getTotalSlots());
@@ -343,12 +411,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         ctEvent.setSeoTitle(request.getSeoTitle());
         ctEvent.setSeoDescription(request.getSeoDescription());
 
-        if (request.getLocationId() != null) {
-            Optional<Location> optLoc = locationRepository.findById(request.getLocationId());
-            if (optLoc.isPresent() == true) {
-                ctEvent.setLocation(optLoc.get());
-            }
-        }
+        ctEvent.setLocation(diaDiem);
 
         CtEvent saved = ctEventRepository.save(ctEvent);
 
@@ -357,6 +420,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
         // Quy trình thay máu Tag: Hủy liên kết cũ, xây dựng liên kết mới.
         ctEventTagRepository.xoaHetTagCuaBuoi(saved.getId());
         ganTagChoBuoi(saved, request.getTagIds());
+        ctPostEventRepository.xoaHetBaiVietCuaBuoi(saved.getId());
+        ganBaiVietChoBuoi(saved, request.getRelatedPostIds());
 
         return xayDungCtEventResponse(saved);
     }
@@ -371,6 +436,13 @@ public class AdminEventServiceImpl implements IAdminEventService {
         if (ctEventRepository.existsById(ctEventId) == false) {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện để xóa.");
         }
+        ctEventCmtRepository.xoaLienKetTheoBuoi(ctEventId);
+        ctAgendaSpeakerRepository.xoaLienKetTheoBuoi(ctEventId);
+        eventAgendaRepository.xoaLichTrinhTheoBuoi(ctEventId);
+        eventSpeakerRepository.xoaDienGiaTheoBuoi(ctEventId);
+        registrationRepository.xoaDangKyTheoBuoi(ctEventId);
+        statusHistoryRepository.xoaLichSuTheoBuoi(ctEventId);
+        ctPostEventRepository.xoaHetBaiVietCuaBuoi(ctEventId);
         ctEventTagRepository.xoaHetTagCuaBuoi(ctEventId);
         ctEventSessionRoleRepository.xoaHetQuyenCuaBuoi(ctEventId);
         ctEventRepository.deleteById(ctEventId);
@@ -413,21 +485,19 @@ public class AdminEventServiceImpl implements IAdminEventService {
     @Override
     @Transactional
     public void doiTrangThaiBuoi(EventStatusRequest request, Long moderatorId) {
+        kiemTraTrangThaiBuoiHopLe(request.getStatusCode());
         Optional<CtEvent> optCtEvent = ctEventRepository.findById(request.getCtEventId());
         if (optCtEvent.isPresent() == false) {
             throw new AppException(404, "Không tìm thấy Phiên sự kiện để tác động.");
         }
+        User moderator = layModeratorBatBuoc(moderatorId);
 
         CtEventStatusHistory history = new CtEventStatusHistory();
         history.setCtEvent(optCtEvent.get());
-        history.setStatusCode(request.getStatusCode());
+        history.setStatusCode(request.getStatusCode().trim().toUpperCase());
         history.setChangedAt(LocalDateTime.now());
         history.setNote(request.getNote());
-
-        Optional<User> optModerator = userRepository.findById(moderatorId);
-        if (optModerator.isPresent() == true) {
-            history.setChangedByUser(optModerator.get());
-        }
+        history.setChangedByUser(moderator);
 
         statusHistoryRepository.save(history);
     }
@@ -440,11 +510,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
     @Override
     @Transactional
     public void doiTrangThaiNhieuChienDich(BulkActionRequest request, Long moderatorId) {
-        Optional<User> optModerator = userRepository.findById(moderatorId);
-        if (optModerator.isPresent() == false) {
-            throw new AppException(401, "Danh tính Quản trị viên không hợp lệ.");
-        }
-        User moderator = optModerator.get();
+        kiemTraTrangThaiBuoiHopLe(request.getAction());
+        User moderator = layModeratorBatBuoc(moderatorId);
 
         Object[] arr = request.getIds().toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
@@ -460,7 +527,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
                     CtEvent ctEvent = (CtEvent) sessionArr[j];
                     CtEventStatusHistory history = new CtEventStatusHistory();
                     history.setCtEvent(ctEvent);
-                    history.setStatusCode(request.getAction());
+                    history.setStatusCode(request.getAction().trim().toUpperCase());
                     history.setChangedByUser(moderator);
                     history.setChangedAt(LocalDateTime.now());
                     history.setNote("Thiết lập trạng thái hàng loạt từ Trung tâm Điều phối.");
@@ -528,12 +595,15 @@ public class AdminEventServiceImpl implements IAdminEventService {
     @Override
     @Transactional
     public void capNhatTrangThaiDangKy(Long registrationId, String newStatus) {
+        kiemTraTrangThaiDangKyHopLe(newStatus);
         Optional<CtEventRegistration> opt = registrationRepository.findById(registrationId);
         if (opt.isPresent() == false) {
             throw new AppException(404, "Không thể tìm thấy Hồ sơ vé điện tử này.");
         }
         CtEventRegistration reg = opt.get();
-        reg.setStatus(newStatus);
+        String trangThaiMoi = newStatus.trim().toUpperCase();
+        kiemTraSucChuaKhiDoiTrangThaiDangKy(reg, trangThaiMoi);
+        reg.setStatus(trangThaiMoi);
         registrationRepository.save(reg);
     }
 
@@ -600,6 +670,10 @@ public class AdminEventServiceImpl implements IAdminEventService {
         if (eventTypeRepository.existsById(typeId) == false) {
             throw new AppException(404, "Không tìm thấy Loại sự kiện để xóa.");
         }
+        long soChienDichDangDung = eventRepository.countByEventTypeId(typeId);
+        if (soChienDichDangDung > 0) {
+            throw new AppException(409, "Không thể xóa loại sự kiện đang được chiến dịch sử dụng.");
+        }
         eventTypeRepository.deleteById(typeId);
     }
 
@@ -650,6 +724,10 @@ public class AdminEventServiceImpl implements IAdminEventService {
         if (locationRepository.existsById(locationId) == false) {
             throw new AppException(404, "Không tìm thấy Địa điểm để xóa.");
         }
+        long soPhienDangDung = ctEventRepository.countByLocationId(locationId);
+        if (soPhienDangDung > 0) {
+            throw new AppException(409, "Không thể xóa địa điểm đang được phiên sự kiện sử dụng.");
+        }
         locationRepository.deleteById(locationId);
     }
 
@@ -657,11 +735,221 @@ public class AdminEventServiceImpl implements IAdminEventService {
     // HÀM BỔ TRỢ NỘI BỘ (INTERNAL HELPERS)
     // =========================================================================
 
+    /** Lấy loại sự kiện bắt buộc để tránh lỗi ràng buộc NOT NULL từ database. */
+    private EventType layLoaiSuKienBatBuoc(Integer eventTypeId) {
+        if (eventTypeId == null) {
+            throw new AppException(400, "Loại sự kiện không được để trống.");
+        }
+        Optional<EventType> optType = eventTypeRepository.findById(eventTypeId);
+        if (optType.isPresent() == false) {
+            throw new AppException(404, "Không tìm thấy loại sự kiện đã chọn.");
+        }
+        return optType.get();
+    }
+
+    /** Lấy địa điểm bắt buộc để bảo vệ đúng ràng buộc LOCATION_ID của CT_EVENTS. */
+    private Location layDiaDiemBatBuoc(Integer locationId) {
+        if (locationId == null) {
+            throw new AppException(400, "Địa điểm tổ chức không được để trống.");
+        }
+        Optional<Location> optLocation = locationRepository.findById(locationId);
+        if (optLocation.isPresent() == false) {
+            throw new AppException(404, "Không tìm thấy địa điểm đã chọn.");
+        }
+        return optLocation.get();
+    }
+
+    /** Lấy chiến dịch cha bắt buộc trước khi tạo hoặc kiểm tra phiên. */
+    private Event layChienDichBatBuoc(Long eventId) {
+        if (eventId == null) {
+            throw new AppException(400, "ID chiến dịch không được để trống.");
+        }
+        Optional<Event> optEvent = eventRepository.findById(eventId);
+        if (optEvent.isPresent() == false) {
+            throw new AppException(404, "Không tìm thấy Chiến dịch cha để gán phiên này vào.");
+        }
+        return optEvent.get();
+    }
+
+    /** Lấy tài khoản admin đang thao tác để ghi audit status history. */
+    private User layModeratorBatBuoc(Long moderatorId) {
+        if (moderatorId == null) {
+            throw new AppException(401, "Phiên quản trị không hợp lệ.");
+        }
+        Optional<User> optModerator = userRepository.findById(moderatorId);
+        if (optModerator.isPresent() == false) {
+            throw new AppException(401, "Danh tính Quản trị viên không hợp lệ.");
+        }
+        return optModerator.get();
+    }
+
+    /** Chặn khoảng thời gian không hợp lệ trước khi chạm DB CHECK constraint. */
+    private void kiemTraThoiGianBuoiHopLe(LocalDateTime startTime, LocalDateTime endTime) {
+        if (startTime == null || endTime == null) {
+            throw new AppException(400, "Giờ bắt đầu và giờ kết thúc không được để trống.");
+        }
+        if (endTime.isAfter(startTime) == false) {
+            throw new AppException(400, "Xung đột thời gian: Giờ bế mạc phải diễn ra sau giờ khai mạc.");
+        }
+    }
+
+    /** Update phiên không được âm thầm chuyển sang chiến dịch khác. */
+    private void kiemTraEventIdKhongDoi(CtEvent ctEvent, Long requestEventId) {
+        if (requestEventId == null) {
+            throw new AppException(400, "ID chiến dịch không được để trống.");
+        }
+        if (ctEvent.getEvent() == null || ctEvent.getEvent().getId().equals(requestEventId) == false) {
+            throw new AppException(400, "Không hỗ trợ chuyển phiên sang chiến dịch khác trong thao tác cập nhật.");
+        }
+    }
+
+    /** Chặn mọi mã trạng thái buổi ngoài vòng đời được hệ thống hỗ trợ. */
+    private void kiemTraTrangThaiBuoiHopLe(String statusCode) {
+        if (statusCode == null || statusCode.trim().isEmpty() == true) {
+            throw new AppException(400, "Mã trạng thái buổi không được để trống.");
+        }
+        String status = statusCode.trim().toUpperCase();
+        if (status.equals("DRAFT") || status.equals("OPEN") || status.equals("UPCOMING")
+                || status.equals("ONGOING") || status.equals("FULL") || status.equals("CANCELLED")
+                || status.equals("FINISHED") || status.equals("ENDED")) {
+            return;
+        }
+        throw new AppException(400, "Mã trạng thái buổi không hợp lệ: " + statusCode);
+    }
+
+    /** Chặn trạng thái vé không nằm trong tập nghiệp vụ đăng ký sự kiện. */
+    private void kiemTraTrangThaiDangKyHopLe(String status) {
+        if (status == null || status.trim().isEmpty() == true) {
+            throw new AppException(400, "Trạng thái đăng ký không được để trống.");
+        }
+        String normalizedStatus = status.trim().toUpperCase();
+        if (normalizedStatus.equals("PENDING") || normalizedStatus.equals("CONFIRMED")
+                || normalizedStatus.equals("APPROVED") || normalizedStatus.equals("ATTENDED")
+                || normalizedStatus.equals("CANCELLED")) {
+            return;
+        }
+        throw new AppException(400, "Trạng thái đăng ký không hợp lệ: " + status);
+    }
+
+    /** Chỉ cho phép cập nhật trạng thái vé nếu không vượt sức chứa phiên. */
+    private void kiemTraSucChuaKhiDoiTrangThaiDangKy(CtEventRegistration registration, String statusMoi) {
+        CtEvent ctEvent = registration.getCtEvent();
+        if (ctEvent == null || ctEvent.getTotalSlots() == null || ctEvent.getTotalSlots() <= 0) {
+            return;
+        }
+        if (trangThaiDangKyChiemSlot(statusMoi) == false) {
+            return;
+        }
+        if (trangThaiDangKyChiemSlot(registration.getStatus()) == true) {
+            return;
+        }
+        long soSlotDangChiem = ctEventRepository.demSlotDaDangKy(ctEvent.getId());
+        if (soSlotDangChiem >= ctEvent.getTotalSlots()) {
+            throw new AppException(409, "Phiên sự kiện đã hết chỗ, không thể chuyển vé sang trạng thái chiếm slot.");
+        }
+    }
+
+    /** Giữ cùng định nghĩa slot với repository demSlotDaDangKy. */
+    private boolean trangThaiDangKyChiemSlot(String status) {
+        if (status == null) {
+            return false;
+        }
+        String normalizedStatus = status.trim().toUpperCase();
+        if (normalizedStatus.equals("PENDING") || normalizedStatus.equals("CONFIRMED")
+                || normalizedStatus.equals("APPROVED") || normalizedStatus.equals("ATTENDED")) {
+            return true;
+        }
+        return false;
+    }
+
+    /** Validate toàn bộ roleIds trước khi xóa/gắn bảng quyền để tránh fail-open. */
+    private void kiemTraDanhSachRoleHopLe(List<Integer> roleIds) {
+        if (roleIds == null || roleIds.isEmpty() == true) {
+            if (userRoleRepository.findByRoleName("PUBLIC").isPresent() == false) {
+                throw new AppException(500, "Hệ thống chưa cấu hình quyền PUBLIC cho sự kiện.");
+            }
+            return;
+        }
+        kiemTraIdIntegerKhongLap(roleIds, "quyền truy cập phiên");
+        Object[] roleIdArr = roleIds.toArray();
+        for (int i = 0; i < roleIdArr.length; i = i + 1) {
+            Integer roleId = (Integer) roleIdArr[i];
+            if (userRoleRepository.existsById(roleId) == false) {
+                throw new AppException(400, "Không tìm thấy quyền truy cập phiên có ID: " + roleId);
+            }
+        }
+    }
+
+    /** Validate toàn bộ tagIds trước khi thay liên kết tag. */
+    private void kiemTraDanhSachTagHopLe(List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty() == true) {
+            return;
+        }
+        kiemTraIdLongKhongLap(tagIds, "tag của phiên");
+        Object[] tagIdArr = tagIds.toArray();
+        for (int i = 0; i < tagIdArr.length; i = i + 1) {
+            Long tagId = (Long) tagIdArr[i];
+            if (tagRepository.existsById(tagId) == false) {
+                throw new AppException(400, "Không tìm thấy tag sự kiện có ID: " + tagId);
+            }
+        }
+    }
+
+    /** Validate toàn bộ relatedPostIds trước khi thay liên kết bài viết. */
+    private void kiemTraDanhSachBaiVietHopLe(List<Long> postIds) {
+        if (postIds == null || postIds.isEmpty() == true) {
+            return;
+        }
+        kiemTraIdLongKhongLap(postIds, "bài viết liên quan");
+        Object[] postIdArr = postIds.toArray();
+        for (int i = 0; i < postIdArr.length; i = i + 1) {
+            Long postId = (Long) postIdArr[i];
+            if (postRepository.existsById(postId) == false) {
+                throw new AppException(400, "Không tìm thấy bài viết liên quan có ID: " + postId);
+            }
+        }
+    }
+
+    /** Chặn payload lặp cùng một role ID trong cùng request. */
+    private void kiemTraIdIntegerKhongLap(List<Integer> ids, String tenNghiepVu) {
+        Object[] arr = ids.toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            Integer idHienTai = (Integer) arr[i];
+            if (idHienTai == null) {
+                throw new AppException(400, "Danh sách " + tenNghiepVu + " chứa ID rỗng.");
+            }
+            for (int j = i + 1; j < arr.length; j = j + 1) {
+                Integer idSoSanh = (Integer) arr[j];
+                if (idHienTai.equals(idSoSanh) == true) {
+                    throw new AppException(400, "Danh sách " + tenNghiepVu + " chứa ID lặp: " + idHienTai);
+                }
+            }
+        }
+    }
+
+    /** Chặn payload lặp cùng một ID Long trong cùng request. */
+    private void kiemTraIdLongKhongLap(List<Long> ids, String tenNghiepVu) {
+        Object[] arr = ids.toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            Long idHienTai = (Long) arr[i];
+            if (idHienTai == null) {
+                throw new AppException(400, "Danh sách " + tenNghiepVu + " chứa ID rỗng.");
+            }
+            for (int j = i + 1; j < arr.length; j = j + 1) {
+                Long idSoSanh = (Long) arr[j];
+                if (idHienTai.equals(idSoSanh) == true) {
+                    throw new AppException(400, "Danh sách " + tenNghiepVu + " chứa ID lặp: " + idHienTai);
+                }
+            }
+        }
+    }
+
     private void ganQuyenChoBuoi(CtEvent ctEvent, List<Integer> roleIds) {
         if (roleIds == null || roleIds.isEmpty() == true) {
             UserRole publicRole = userRoleRepository.findByRoleName("PUBLIC").orElse(null);
             if (publicRole != null) {
-                CtEventSessionRole.CtEventSessionRoleId pkId = new CtEventSessionRole.CtEventSessionRoleId(ctEvent.getId(), publicRole.getId());
+                CtEventSessionRole.CtEventSessionRoleId pkId =
+                        new CtEventSessionRole.CtEventSessionRoleId(ctEvent.getId(), publicRole.getId());
                 CtEventSessionRole bridge = new CtEventSessionRole();
                 bridge.setId(pkId);
                 bridge.setCtEvent(ctEvent);
@@ -676,7 +964,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
             Integer rId = (Integer) roleIdArr[i];
             Optional<UserRole> optRole = userRoleRepository.findById(rId);
             if (optRole.isPresent() == true) {
-                CtEventSessionRole.CtEventSessionRoleId pkId = new CtEventSessionRole.CtEventSessionRoleId(ctEvent.getId(), rId);
+                CtEventSessionRole.CtEventSessionRoleId pkId =
+                        new CtEventSessionRole.CtEventSessionRoleId(ctEvent.getId(), rId);
                 CtEventSessionRole bridge = new CtEventSessionRole();
                 bridge.setId(pkId);
                 bridge.setCtEvent(ctEvent);
@@ -708,6 +997,31 @@ public class AdminEventServiceImpl implements IAdminEventService {
                 bridge.setTag(optTag.get());
 
                 ctEventTagRepository.save(bridge);
+            }
+        }
+    }
+
+    /**
+     * Gắn các bài viết chuyên môn vào phiên sự kiện thông qua CT_POST_EVENTS.
+     * Frontend chỉ truyền ID bài viết; service chịu trách nhiệm kiểm tra thực thể tồn tại.
+     */
+    private void ganBaiVietChoBuoi(CtEvent ctEvent, List<Long> postIds) {
+        if (postIds == null || postIds.isEmpty() == true) {
+            return;
+        }
+
+        Object[] postIdArr = postIds.toArray();
+        for (int i = 0; i < postIdArr.length; i = i + 1) {
+            Long postId = (Long) postIdArr[i];
+            Optional<Post> optPost = postRepository.findById(postId);
+
+            if (optPost.isPresent() == true) {
+                CtPostEvent.CtPostEventId pkId = new CtPostEvent.CtPostEventId(ctEvent.getId(), postId);
+                CtPostEvent bridge = new CtPostEvent();
+                bridge.setId(pkId);
+                bridge.setCtEvent(ctEvent);
+                bridge.setPost(optPost.get());
+                ctPostEventRepository.save(bridge);
             }
         }
     }
@@ -774,7 +1088,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         }
 
         // Kỹ thuật tính Toán sức chứa (Capacity Analysis)
-        // Ghế trống khả dụng = Tổng Slot - (Đã đăng ký PENDING/CONFIRMED)
+        // Ghế trống khả dụng = Tổng Slot - các trạng thái còn chiếm chỗ.
         long registered = ctEventRepository.demSlotDaDangKy(ctEvent.getId());
         resp.setRegisteredCount(registered);
 
@@ -791,6 +1105,24 @@ public class AdminEventServiceImpl implements IAdminEventService {
         } else {
             resp.setCurrentStatus("DRAFT"); // Giao thức an toàn mặc định
         }
+
+        List<UserRole> roles = ctEventSessionRoleRepository.layDanhSachQuyenCuaBuoi(ctEvent.getId());
+        List<String> roleNames = new ArrayList<>();
+        List<CtEventResponse.RoleInfo> roleInfos = new ArrayList<>();
+        Object[] roleArr = roles.toArray();
+
+        for (int i = 0; i < roleArr.length; i = i + 1) {
+            UserRole role = (UserRole) roleArr[i];
+            roleNames.add(role.getRoleName());
+
+            CtEventResponse.RoleInfo roleInfo = new CtEventResponse.RoleInfo();
+            roleInfo.setRoleId(role.getId());
+            roleInfo.setRoleName(role.getRoleName());
+            roleInfo.setDescription(role.getDescription());
+            roleInfos.add(roleInfo);
+        }
+        resp.setAllowedRoleNames(roleNames);
+        resp.setRequiredRoles(roleInfos);
 
         // Kéo mảng Thẻ phân tích (CT_EVENT_TAGS)
         List<Tag> tags = ctEventTagRepository.layTagCuaBuoi(ctEvent.getId());
@@ -845,6 +1177,156 @@ public class AdminEventServiceImpl implements IAdminEventService {
         resp.setAddress(loc.getAddress());
         resp.setOnline(loc.isOnline());
         return resp;
+    }
+
+    /** Tạo danh mục trạng thái phiên sự kiện theo thứ tự vận hành admin. */
+    private List<StatusOptionResponse> taoDanhSachTrangThaiBuoi() {
+        List<StatusOptionResponse> result = new ArrayList<>();
+        for (int i = 0; i < EVENT_STATUS_CODES.length; i = i + 1) {
+            String code = EVENT_STATUS_CODES[i];
+            result.add(taoStatusOption(code, eventStatusDisplayPolicy.layNhanAdmin(code)));
+        }
+        return result;
+    }
+
+    /** Tạo danh mục trạng thái đăng ký tham dự theo contract backend đang validate. */
+    private List<StatusOptionResponse> taoDanhSachTrangThaiDangKy() {
+        List<StatusOptionResponse> result = new ArrayList<>();
+        for (int i = 0; i < REGISTRATION_STATUS_CODES.length; i = i + 1) {
+            String code = REGISTRATION_STATUS_CODES[i];
+            result.add(taoStatusOption(code, layNhanTrangThaiDangKy(code)));
+        }
+        return result;
+    }
+
+    /** Đóng gói một option trạng thái dùng chung cho dictionary API. */
+    private StatusOptionResponse taoStatusOption(String code, String label) {
+        StatusOptionResponse response = new StatusOptionResponse();
+        response.setCode(code);
+        response.setLabel(label);
+        return response;
+    }
+
+    /** Dịch mã trạng thái đăng ký sang nhãn quản trị. */
+    private String layNhanTrangThaiDangKy(String status) {
+        if ("PENDING".equals(status) == true) {
+            return "Chờ xác nhận";
+        }
+        if ("CONFIRMED".equals(status) == true || "APPROVED".equals(status) == true) {
+            return "Đã duyệt";
+        }
+        if ("ATTENDED".equals(status) == true) {
+            return "Đã tham dự";
+        }
+        if ("CANCELLED".equals(status) == true) {
+            return "Đã hủy";
+        }
+        return status;
+    }
+
+    /** Chuẩn hóa page để request xấu không biến thành lỗi 500 từ PageRequest. */
+    private int chuanHoaPage(int page) {
+        if (page < 0) {
+            return 0;
+        }
+        return page;
+    }
+
+    /** Chuẩn hóa page size theo ngưỡng quản trị để tránh response quá lớn. */
+    private int chuanHoaSize(int size) {
+        if (size <= 0) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        if (size > MAX_PAGE_SIZE) {
+            return MAX_PAGE_SIZE;
+        }
+        return size;
+    }
+
+    /** Lưu ảnh sự kiện do admin upload vào thư mục con đã kiểm soát. */
+    private AdminEventMediaResponse luuAnhSuKien(MultipartFile file, String thuMucCon) {
+        String phanMoRong = kiemTraFileAnhUpload(file);
+        String tenFile = UUID.randomUUID().toString() + phanMoRong;
+        Path thuMucLuu = Paths.get(uploadBasePath, "events", thuMucCon).normalize();
+        Path duongDanLuu = thuMucLuu.resolve(tenFile).normalize();
+
+        if (duongDanLuu.startsWith(thuMucLuu) == false) {
+            throw new AppException(400, "Đường dẫn upload ảnh sự kiện không hợp lệ.");
+        }
+        try {
+            Files.createDirectories(thuMucLuu);
+            file.transferTo(duongDanLuu);
+        } catch (IOException ex) {
+            throw new AppException(500, "Không thể lưu file ảnh sự kiện trên server.");
+        }
+
+        AdminEventMediaResponse response = new AdminEventMediaResponse();
+        response.setFileName(tenFile);
+        response.setUrl("/uploads/events/" + thuMucCon + "/" + tenFile);
+        return response;
+    }
+
+    /** Kiểm tra định dạng và dung lượng ảnh trước khi ghi xuống ổ đĩa server. */
+    private String kiemTraFileAnhUpload(MultipartFile file) {
+        if (file == null || file.isEmpty() == true) {
+            throw new AppException(400, "Vui lòng chọn file ảnh cần upload.");
+        }
+        if (file.getSize() > MAX_EVENT_IMAGE_BYTES) {
+            throw new AppException(400, "Ảnh sự kiện không được vượt quá 5MB.");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || laContentTypeAnhHopLe(contentType) == false) {
+            throw new AppException(400, "Chỉ hỗ trợ ảnh JPG, PNG, GIF hoặc WEBP.");
+        }
+        return layPhanMoRongAnh(file.getOriginalFilename());
+    }
+
+    /** Chỉ cho phép các MIME type ảnh phổ biến mà trình duyệt và server đang phục vụ. */
+    private boolean laContentTypeAnhHopLe(String contentType) {
+        if ("image/jpeg".equals(contentType) == true || "image/png".equals(contentType) == true) {
+            return true;
+        }
+        if ("image/gif".equals(contentType) == true || "image/webp".equals(contentType) == true) {
+            return true;
+        }
+        return false;
+    }
+
+    /** Rút phần mở rộng an toàn từ tên file gốc; tên file lưu thực tế do server sinh. */
+    private String layPhanMoRongAnh(String originalFileName) {
+        if (originalFileName == null) {
+            throw new AppException(400, "Tên file ảnh không hợp lệ.");
+        }
+        String tenFileThuong = originalFileName.toLowerCase();
+        if (tenFileThuong.endsWith(".jpg") == true || tenFileThuong.endsWith(".jpeg") == true) {
+            return ".jpg";
+        }
+        if (tenFileThuong.endsWith(".png") == true) {
+            return ".png";
+        }
+        if (tenFileThuong.endsWith(".gif") == true) {
+            return ".gif";
+        }
+        if (tenFileThuong.endsWith(".webp") == true) {
+            return ".webp";
+        }
+        throw new AppException(400, "Định dạng file ảnh không hợp lệ.");
+    }
+
+    /** Validate URL ảnh từ API để chỉ nhận file do upload server sự kiện cấp. */
+    private String chuanHoaDuongDanAnh(String rawUrl, int maxLength, String prefixHopLe) {
+        if (rawUrl == null || rawUrl.trim().isEmpty() == true) {
+            return null;
+        }
+        String url = rawUrl.trim();
+        if (url.length() > maxLength) {
+            throw new AppException(400, "Đường dẫn ảnh vượt quá giới hạn " + maxLength + " ký tự.");
+        }
+        if (url.startsWith(prefixHopLe) == true) {
+            return url;
+        }
+        throw new AppException(400, "Ảnh sự kiện phải được tải lên qua hệ thống quản trị.");
     }
 
     /**

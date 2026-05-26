@@ -206,7 +206,8 @@ public class ApiEventController {
         Long userId = layUserIdTuAuthentication(authentication);
         NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
         if (eventService.coQuyenTruyCapBuoi(ctEventId, nguCanh) == false) {
-            Page<CmtResponse> emptyPage = new PageImpl<>(new ArrayList<>(), PageRequest.of(page, size), 0);
+            Page<CmtResponse> emptyPage = new PageImpl<>(
+                    new ArrayList<>(), PageRequest.of(chuanHoaPage(page), chuanHoaSize(size)), 0);
             return ApiResponse.thanhCong(emptyPage, "Bình luận chỉ mở cho tài khoản đủ quyền tham dự.");
         }
         Page<CmtResponse> result = commentService.layCmtCuaBuoi(ctEventId, sortBy, page, size, userId);
@@ -270,5 +271,24 @@ public class ApiEventController {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /** Chuẩn hóa page để endpoint public không trả 500 khi client truyền số âm. */
+    private int chuanHoaPage(int page) {
+        if (page < 0) {
+            return 0;
+        }
+        return page;
+    }
+
+    /** Giới hạn size khi controller tự tạo empty page cho dữ liệu bị khóa quyền. */
+    private int chuanHoaSize(int size) {
+        if (size <= 0) {
+            return 10;
+        }
+        if (size > 50) {
+            return 50;
+        }
+        return size;
     }
 }

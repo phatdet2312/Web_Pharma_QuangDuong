@@ -38,7 +38,7 @@ public class CtEvent {
 
     /** Địa điểm tổ chức (FK → LOCATIONS) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "LOCATION_ID")
+    @JoinColumn(name = "LOCATION_ID", nullable = false)
     private Location location;
 
     /** Tên riêng của từng buổi (VD: Buổi 1: Carbapenem thế hệ mới) */
@@ -63,6 +63,6 @@ public class CtEvent {
     @Column(name = "SEO_TITLE", length = 200)
     private String seoTitle;
 
-    @Column(name = "SEO_DESCRIPTION", length = 500)
+    @Column(name = "SEO_DESCRIPTION", length = 255)
     private String seoDescription;
 }

@@ -15,9 +15,10 @@ import lombok.Setter;
 public class LocationRequest {
 
     @NotBlank(message = "Tên địa điểm không được để trống")
-    @Size(max = 200)
+    @Size(max = 150, message = "Tên địa điểm tối đa 150 ký tự")
     private String name;
 
+    @NotBlank(message = "Địa chỉ hoặc đường dẫn phòng họp không được để trống")
     @Size(max = 500)
     private String address;
 

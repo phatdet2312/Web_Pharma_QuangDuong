@@ -31,6 +31,7 @@ public class CtEventRequest {
     private String content;
 
     /** Địa điểm tổ chức (FK → LOCATIONS) */
+    @NotNull(message = "Địa điểm tổ chức không được để trống")
     private Integer locationId;
 
     @NotNull(message = "Giờ bắt đầu không được để trống")
@@ -42,8 +43,10 @@ public class CtEventRequest {
     @Min(value = 0, message = "Số slot phải >= 0 (0 = không giới hạn)")
     private int totalSlots = 0;
 
+    @Size(max = 200, message = "SEO title tối đa 200 ký tự")
     private String seoTitle;
 
+    @Size(max = 255, message = "SEO description tối đa 255 ký tự")
     private String seoDescription;
 
     /** Danh sách ID các Nhóm quyền (USER_ROLES) được phép đăng ký/xem buổi này */
@@ -51,4 +54,7 @@ public class CtEventRequest {
 
     /** Danh sách ID tag gán cho buổi */
     private List<Long> tagIds;
+
+    /** Danh sách ID bài viết/tài liệu liên quan gắn qua CT_POST_EVENTS */
+    private List<Long> relatedPostIds;
 }

@@ -31,21 +31,21 @@ public class Event {
 
     /** Loại sự kiện (FK → EVENT_TYPES) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "EVENT_TYPE_ID")
+    @JoinColumn(name = "EVENT_TYPE_ID", nullable = false)
     private EventType eventType;
 
-    @Column(name = "TITLE", nullable = false, length = 500)
+    @Column(name = "TITLE", nullable = false, length = 255)
     private String title;
 
     /** Slug URL-friendly cho trang chiến dịch */
-    @Column(name = "SLUG", nullable = false, unique = true, length = 550)
+    @Column(name = "SLUG", nullable = false, unique = true, length = 255)
     private String slug;
 
     /** Mô tả tổng quan chiến dịch */
     @Column(name = "DESCRIPTION", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
-    @Column(name = "THUMBNAIL_URL", length = 500)
+    @Column(name = "THUMBNAIL_URL", length = 255)
     private String thumbnailUrl;
 
     @Builder.Default

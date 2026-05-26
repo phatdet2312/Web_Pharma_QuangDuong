@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -44,12 +45,14 @@ public class EventServiceImpl implements IEventService {
     private static final String LOCKED_ACCESS_TITLE = "Phiên chuyên môn giới hạn";
     private static final String LOCKED_ACCESS_MESSAGE =
             "Một số thông tin chi tiết chỉ mở cho tài khoản có quyền phù hợp. "
-            + "Danh sách diễn giả, chủ đề và bài viết liên quan vẫn được hiển thị để bạn đánh giá mức độ phù hợp.";
+            + "Vui lòng đăng nhập bằng tài khoản đủ quyền để xem lịch trình và tài nguyên chuyên môn.";
     private static final String LOCKED_REGISTRATION_MESSAGE =
             "Đăng ký cho phiên này chỉ mở sau khi tài khoản đủ quyền chuyên môn. "
             + "Vui lòng đăng nhập bằng tài khoản đã được xác minh hoặc liên hệ quản trị viên.";
     private static final String LOCKED_LOCATION_MESSAGE =
             "Chi tiết địa điểm/link tham gia sẽ mở sau khi hồ sơ đủ điều kiện.";
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final IEventRepository eventRepository;
     private final ICtEventRepository ctEventRepository;
@@ -75,48 +78,9 @@ public class EventServiceImpl implements IEventService {
      */
     @Override
     public EventStatsResponse layThongKeTrangSuKien(Integer type, String time) {
-
-        // 1. KHỞI TẠO MỐC THỜI GIAN AN TOÀN (Bao phủ toàn bộ Kỷ nguyên)
-        LocalDateTime startDate = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
-        LocalDateTime endDate = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
-
-        // 2. PHÂN GIẢI THAM SỐ THỜI GIAN (Đảm bảo logic y hệt Cỗ máy tìm kiếm)
-        if ("THIS_MONTH".equals(time) == true) {
-            LocalDateTime now = LocalDateTime.now();
-            startDate = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDate = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59)
-                    .withNano(0);
-        } else if ("UPCOMING".equals(time) == true) {
-            startDate = LocalDateTime.now();
-        } else if ("THIS_WEEK".equals(time) == true) {
-            LocalDateTime now = LocalDateTime.now();
-            int thuTrongTuan = now.getDayOfWeek().getValue();
-            startDate = now.minusDays(thuTrongTuan - 1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDate = now.plusDays(7 - thuTrongTuan).withHour(23).withMinute(59).withSecond(59).withNano(0);
-        } else if ("NEXT_MONTH".equals(time) == true) {
-            YearMonth thangSau = YearMonth.now().plusMonths(1);
-            startDate = thangSau.atDay(1).atStartOfDay();
-            endDate = thangSau.atEndOfMonth().atTime(23, 59, 59);
-        }
-        // [QUAN TRỌNG] Nhánh này bắt chuỗi ngày YYYY-MM-DD từ sự kiện Click Lịch Mini
-        // của Frontend
-        else if (time != null && time.contains("-") == true) {
-            String[] cacPhan = time.split("-");
-            int nam = Integer.parseInt(cacPhan[0]);
-            int thang = Integer.parseInt(cacPhan[1]);
-
-            if (cacPhan.length == 3) {
-                // Xử lý Ngày cụ thể
-                int ngay = Integer.parseInt(cacPhan[2]);
-                startDate = LocalDateTime.of(nam, thang, ngay, 0, 0, 0);
-                endDate = LocalDateTime.of(nam, thang, ngay, 23, 59, 59);
-            } else if (cacPhan.length == 2) {
-                // Xử lý nguyên Tháng
-                YearMonth targetMonth = YearMonth.of(nam, thang);
-                startDate = targetMonth.atDay(1).atStartOfDay();
-                endDate = targetMonth.atEndOfMonth().atTime(23, 59, 59);
-            }
-        }
+        KhoangThoiGianSuKien khoangThoiGian = phanGiaiKhoangThoiGianSuKien(time);
+        LocalDateTime startDate = khoangThoiGian.startDate;
+        LocalDateTime endDate = khoangThoiGian.endDate;
 
         // 3. TỔNG HỢP DỮ LIỆU
         EventStatsResponse stats = new EventStatsResponse();
@@ -221,49 +185,12 @@ public class EventServiceImpl implements IEventService {
         if ("popular".equals(sort) == true) {
             // Sắp xếp theo phổ biến nếu cần
         }
-        Pageable pageable = PageRequest.of(page, size, sortOrder);
+        Pageable pageable = PageRequest.of(chuanHoaPage(page), chuanHoaSize(size), sortOrder);
 
-        // 2. Phân giải tham số thời gian — luôn gán giá trị thực, KHÔNG truyền null
-        // LocalDateTime
-        // vào JPQL vì SQL Server JDBC (Hibernate 7) không resolve SQL type cho temporal
-        // null.
-        // Sentinel: 2000-01-01 đến 2099-12-31 → bao phủ toàn bộ khi không lọc ngày.
-        LocalDateTime startDate = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
-        LocalDateTime endDate = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
-
-        if ("THIS_MONTH".equals(time) == true) {
-            LocalDateTime now = LocalDateTime.now();
-            startDate = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDate = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59)
-                    .withNano(0);
-        } else if ("UPCOMING".equals(time) == true) {
-            startDate = LocalDateTime.now();
-        } else if ("THIS_WEEK".equals(time) == true) {
-            LocalDateTime now = LocalDateTime.now();
-            int thuTrongTuan = now.getDayOfWeek().getValue(); // 1=T2, 7=CN
-            startDate = now.minusDays(thuTrongTuan - 1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDate = now.plusDays(7 - thuTrongTuan).withHour(23).withMinute(59).withSecond(59).withNano(0);
-        } else if ("NEXT_MONTH".equals(time) == true) {
-            YearMonth thangSau = YearMonth.now().plusMonths(1);
-            startDate = thangSau.atDay(1).atStartOfDay();
-            endDate = thangSau.atEndOfMonth().atTime(23, 59, 59);
-        } else if (time != null && time.contains("-") == true) {
-            String[] cacPhan = time.split("-");
-            int nam = Integer.parseInt(cacPhan[0]);
-            int thang = Integer.parseInt(cacPhan[1]);
-
-            if (cacPhan.length == 3) {
-                // Xử lý Ngày cụ thể
-                int ngay = Integer.parseInt(cacPhan[2]);
-                startDate = LocalDateTime.of(nam, thang, ngay, 0, 0, 0);
-                endDate = LocalDateTime.of(nam, thang, ngay, 23, 59, 59);
-            } else if (cacPhan.length == 2) {
-                // Xử lý nguyên Tháng
-                YearMonth targetMonth = YearMonth.of(nam, thang);
-                startDate = targetMonth.atDay(1).atStartOfDay();
-                endDate = targetMonth.atEndOfMonth().atTime(23, 59, 59);
-            }
-        }
+        // 2. Phân giải tham số thời gian dùng chung với phần thống kê để tránh lệch số liệu.
+        KhoangThoiGianSuKien khoangThoiGian = phanGiaiKhoangThoiGianSuKien(time);
+        LocalDateTime startDate = khoangThoiGian.startDate;
+        LocalDateTime endDate = khoangThoiGian.endDate;
 
         // Xử lý từ khóa an toàn
         String kw = null;
@@ -347,7 +274,7 @@ public class EventServiceImpl implements IEventService {
     @Override
     @Transactional
     public Page<EventRegistrationResponse> layDangKyCuaToi(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(chuanHoaPage(page), chuanHoaSize(size));
         Page<CtEventRegistration> trangDuLieu = registrationRepository.findByUserIdOrderByRegisteredAtDesc(userId,
                 pageable);
 
@@ -543,6 +470,13 @@ public class EventServiceImpl implements IEventService {
      */
     public EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId, NguCanhNguoiDung nguCanh) {
 
+        if (coQuyenTruyCapBuoi(ctEventId, nguCanh) == false) {
+            EventAttendeePublicResponse response = new EventAttendeePublicResponse();
+            response.setTotalCount(0);
+            response.setAttendees(new ArrayList<>());
+            return response;
+        }
+
         // 1. Đếm tổng số lượng (Tái sử dụng hàm đếm Slot để đồng bộ 100% với
         // thanh Tiến độ)
         long total = ctEventRepository.demSlotDaDangKy(ctEventId);
@@ -618,6 +552,100 @@ public class EventServiceImpl implements IEventService {
         return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 2);
     }
 
+    /** Chuẩn hóa page để request public xấu không tạo lỗi 500 từ PageRequest. */
+    private int chuanHoaPage(int page) {
+        if (page < 0) {
+            return 0;
+        }
+        return page;
+    }
+
+    /** Giới hạn page size public để tránh truy vấn/response quá lớn. */
+    private int chuanHoaSize(int size) {
+        if (size <= 0) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        if (size > MAX_PAGE_SIZE) {
+            return MAX_PAGE_SIZE;
+        }
+        return size;
+    }
+
+    /** Phân giải filter thời gian dùng chung cho list và stats để số liệu luôn khớp. */
+    private KhoangThoiGianSuKien phanGiaiKhoangThoiGianSuKien(String time) {
+        LocalDateTime startDate = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
+
+        if ("THIS_MONTH".equals(time) == true) {
+            LocalDateTime now = LocalDateTime.now();
+            startDate = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endDate = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59)
+                    .withNano(0);
+        } else if ("UPCOMING".equals(time) == true) {
+            startDate = LocalDateTime.now();
+        } else if ("THIS_WEEK".equals(time) == true) {
+            LocalDateTime now = LocalDateTime.now();
+            int thuTrongTuan = now.getDayOfWeek().getValue();
+            startDate = now.minusDays(thuTrongTuan - 1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endDate = now.plusDays(7 - thuTrongTuan).withHour(23).withMinute(59).withSecond(59).withNano(0);
+        } else if ("NEXT_MONTH".equals(time) == true) {
+            YearMonth thangSau = YearMonth.now().plusMonths(1);
+            startDate = thangSau.atDay(1).atStartOfDay();
+            endDate = thangSau.atEndOfMonth().atTime(23, 59, 59);
+        } else if (time != null && time.contains("-") == true) {
+            return phanGiaiKhoangThoiGianTuNgayThang(time);
+        }
+
+        return new KhoangThoiGianSuKien(startDate, endDate);
+    }
+
+    /** Parse YYYY-MM hoặc YYYY-MM-DD từ mini-calendar; lỗi format trả 400 có kiểm soát. */
+    private KhoangThoiGianSuKien phanGiaiKhoangThoiGianTuNgayThang(String time) {
+        String[] cacPhan = time.split("-");
+        if (cacPhan.length < 2 || cacPhan.length > 3) {
+            throw new AppException(400, "Bộ lọc thời gian sự kiện không hợp lệ.");
+        }
+
+        try {
+            int nam = parseTimeFilterNumber(cacPhan[0]);
+            int thang = parseTimeFilterNumber(cacPhan[1]);
+
+            if (cacPhan.length == 3) {
+                int ngay = parseTimeFilterNumber(cacPhan[2]);
+                LocalDateTime startDate = LocalDateTime.of(nam, thang, ngay, 0, 0, 0);
+                LocalDateTime endDate = LocalDateTime.of(nam, thang, ngay, 23, 59, 59);
+                return new KhoangThoiGianSuKien(startDate, endDate);
+            }
+
+            YearMonth targetMonth = YearMonth.of(nam, thang);
+            LocalDateTime startDate = targetMonth.atDay(1).atStartOfDay();
+            LocalDateTime endDate = targetMonth.atEndOfMonth().atTime(23, 59, 59);
+            return new KhoangThoiGianSuKien(startDate, endDate);
+        } catch (DateTimeException ex) {
+            throw new AppException(400, "Bộ lọc thời gian sự kiện không hợp lệ.");
+        }
+    }
+
+    /** Parse số trong bộ lọc thời gian và trả lỗi nghiệp vụ rõ thay vì NumberFormatException. */
+    private int parseTimeFilterNumber(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ex) {
+            throw new AppException(400, "Bộ lọc thời gian sự kiện không hợp lệ.");
+        }
+    }
+
+    /** Value object nội bộ cho khoảng thời gian đã chuẩn hóa của bộ lọc sự kiện. */
+    private static class KhoangThoiGianSuKien {
+        private final LocalDateTime startDate;
+        private final LocalDateTime endDate;
+
+        private KhoangThoiGianSuKien(LocalDateTime startDate, LocalDateTime endDate) {
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
+    }
+
     // =========================================================================
     // HÀM TIỆN ÍCH BÓC TÁCH DỮ LIỆU
     // =========================================================================
@@ -647,6 +675,7 @@ public class EventServiceImpl implements IEventService {
             UserRole role = (UserRole) roleArr[i];
 
             CtEventResponse.RoleInfo roleInfo = new CtEventResponse.RoleInfo();
+            roleInfo.setRoleId(role.getId());
             roleInfo.setRoleName(role.getRoleName());
             roleInfo.setDescription(role.getDescription());
             decision.requiredRolesInfo.add(roleInfo);
@@ -903,10 +932,10 @@ public class EventServiceImpl implements IEventService {
         }
         resp.setTags(ketQuaTags);
 
-        // 7. NẠP DANH SÁCH BÀI VIẾT Y KHOA LIÊN QUAN (POSTS)
-        List<Post> danhSachBaiViet = ctPostEventRepository.layBaiVietLienQuan(ctEvent.getId());
         List<PostResponse> ketQuaPosts = new ArrayList<>();
-        if (danhSachBaiViet != null) {
+        if (access.hasFullAccess == true) {
+            // 7. NẠP DANH SÁCH BÀI VIẾT Y KHOA LIÊN QUAN (POSTS)
+            List<Post> danhSachBaiViet = ctPostEventRepository.layBaiVietLienQuan(ctEvent.getId());
             Object[] mangPost = danhSachBaiViet.toArray();
             for (int j = 0; j < mangPost.length; j = j + 1) {
                 Post p = (Post) mangPost[j];

@@ -1,5 +1,5 @@
 # Events & Registration
-> Last updated: 2026-05-25
+> Last updated: 2026-05-26
 > Source files: `controller/view/EventViewController.java`, `controller/api/ApiEventController.java`, `controller/api/ApiCommentController.java`, `controller/api/ApiPublicSpeakerAgendaController.java`, `controller/api/ApiAdminEventController.java`, `service/itf/IEventService.java`, `service/impl/EventServiceImpl.java`, `service/impl/SpeakerAgendaServiceImpl.java`, `service/support/EventStatusDisplayPolicy.java`, `service/support/NguCanhNguoiDung.java`, `service/support/NguCanhNguoiDungFactory.java`, `entities/Event.java`, `entities/CtEvent.java`, `entities/CtEventRegistration.java`
 > Confidence: HIGH
 
@@ -73,6 +73,49 @@ Refactor 3 vi pham OOP trong event service:
 | POST | `/api/events/sessions/{ctEventId}/comments` | Gui comment session | Yes, 403 if locked |
 | GET | `/api/events/sessions/{ctEventId}/status-history` | Timeline status | No, empty if locked |
 | GET | `/api/events/sessions/{ctEventId}/attendees-summary` | Social proof masked attendees | No, empty if locked |
+
+## Admin Events Integration (2026-05-26)
+
+Trang `admin/events.html` khong con la demo tinh; trang nay goi `callApi` toi JSON API admin va chi render DTO, khong doc/cung ma hoa truc tiep cau truc bang SQL.
+
+### Admin endpoint contract dang duoc UI dung
+
+| Method | Path | Mo ta |
+|--------|------|-------|
+| GET | `/api/admin/events/stats` | Thong ke campaign/session/registration/location |
+| GET | `/api/admin/events` | List campaign co filter keyword/type/location/role/start/end va pagination |
+| POST/PUT/DELETE | `/api/admin/events` + `/{eventId}` | CRUD campaign `EVENTS` |
+| POST/PUT/DELETE | `/api/admin/events/sessions` + `/{ctEventId}` | CRUD session `CT_EVENTS` |
+| POST | `/api/admin/events/bulk/status` | Doi status tat ca session thuoc nhieu campaign |
+| GET/POST | `/api/admin/events/sessions/{ctEventId}/status-history`, `/api/admin/events/sessions/status` | Xem/ghi `CT_EVENT_STATUS_HISTORY` |
+| GET/PATCH | `/api/admin/events/sessions/{ctEventId}/registrations`, `/api/admin/events/registrations/{id}/status` | Xem va cap nhat `CT_EVENT_REGISTRATIONS` |
+| GET/POST/PUT/DELETE | `/api/admin/events/sessions/{ctEventId}/speakers`, `/api/admin/events/speakers/{speakerId}` | Quan ly `EVENT_SPEAKERS` |
+| GET/POST/PUT/DELETE | `/api/admin/events/sessions/{ctEventId}/agenda`, `/api/admin/events/agenda/{agendaId}` | Quan ly `EVENT_AGENDA` va `CT_AGENDA_SPEAKERS` |
+| GET/POST/PUT/DELETE | `/api/admin/events/types`, `/api/admin/events/locations` | Quan ly `EVENT_TYPES`, `LOCATIONS` |
+| GET | `/api/admin/posts/tags`, `/api/admin/posts`, `/api/admin/role-management/roles` | Nap tag, related posts, role gates cho session |
+| GET | `/api/comments/events/{ctEventId}` | Xem nhanh comment session, dieu huong sang moderation khi can |
+
+### Backend rules moi
+
+- `EventRequest.eventTypeId`, `CtEventRequest.locationId`, `EventStatusRequest.ctEventId`, `LocationRequest.address` duoc validate bat buoc de loi tra ve ro thay vi de DB constraint phat no.
+- Admin list phai default `startDate/endDate` thanh range rong `2000-01-01` den `2099-12-31` khi request khong co filter ngay. Khong duoc truyen null vao `timKiemChienDich` vi query co dieu kien `ce.startTime >= :startDate AND <= :endDate`, se lam trang admin render rong khi vua vao.
+- `CtEventRequest.relatedPostIds` gan session voi bai viet qua `CT_POST_EVENTS`.
+- `CtEventResponse.requiredRoles` co them `roleId` de admin UI edit role gates chinh xac, khong phai map bang ten.
+- Xoa campaign di qua tung session va don cac bang phu thuoc truoc khi xoa: comment link, agenda-speaker bridge, agenda, speaker, registrations, status history, post links, tags, roles.
+- Admin GET speakers/agenda dung route admin rieng de xem du lich trinh/dien gia, khong dung public route co paywall.
+- Status session duoc validate trong tap `DRAFT`, `OPEN`, `UPCOMING`, `ONGOING`, `FULL`, `CANCELLED`, `FINISHED`, `ENDED`; registration status trong tap `PENDING`, `CONFIRMED`, `APPROVED`, `ATTENDED`, `CANCELLED`.
+
+### Admin Events Production Fix (2026-05-26)
+
+- `admin/events.html` da bo hardcode `EVENT_STATUSES`/`REG_STATUSES`; status select va bulk status action lay tu `/api/admin/events/dictionaries/statuses`.
+- Media event/speaker dung file picker + upload endpoint admin; backend chi chap nhan URL trong namespace server `/uploads/events/campaigns/` va `/uploads/events/speakers/`.
+- Type/location co CRUD that qua `/api/admin/events/types` va `/api/admin/events/locations`, co empty state ro. Khong duoc sua duplicate bang cach dedupe ten/noi dung; hai record khac nhau nhung cung ten la du lieu nghiep vu, cung mot record render nhieu lan moi la bug query/state/render.
+- Admin campaign query khong join truc tiep tao duplicate; khi khong loc theo session thi campaign chua co session van hien. Khi loc ngay/location/role thi tat ca dieu kien phai khop tren cung mot `CT_EVENTS` record.
+- DTO/entity length da doi theo `FileKhoiTaoCSDL.sql` cho title/slug/thumbnail/type description/location/session SEO/agenda/speaker/status note.
+- `AdminEventServiceImpl` validate atomic `roleIds`, `tagIds`, `relatedPostIds`, session time, unchanged `eventId`, FK delete type/location, overbooking khi doi registration status.
+- `SpeakerAgendaServiceImpl` validate agenda `endTime > startTime`, speakerIds ton tai va speaker thuoc dung session.
+- Public locked session khong tra speaker/agenda/related posts/attendee summary trai quyen; public stats/list dung chung helper parse time va tra 400 voi filter ngay thang sai.
+- Verify cuoi: `bash mvnw -q -DskipTests compile`, `bash mvnw -q test`, Node parse inline script `admin/events.html`, `git diff --check`.
 
 ## Ghi chu
 

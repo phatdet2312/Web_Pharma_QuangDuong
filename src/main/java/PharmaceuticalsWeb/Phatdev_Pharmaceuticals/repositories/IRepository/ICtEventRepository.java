@@ -21,6 +21,9 @@ public interface ICtEventRepository extends JpaRepository<CtEvent, Long> {
         /** Lấy tất cả buổi của một chiến dịch sắp xếp theo giờ bắt đầu */
         List<CtEvent> findByEventIdOrderByStartTimeAsc(Long eventId);
 
+        /** Đếm số phiên đang sử dụng một địa điểm để chặn xóa gây lỗi khóa ngoại. */
+        long countByLocationId(Integer locationId);
+
         /**
          * Đếm số slot đã đăng ký (trạng thái PENDING, CONFIRMED, APPROVED hoặc ATTENDED).
          * Slot trống = TOTAL_SLOTS - số đăng ký này.

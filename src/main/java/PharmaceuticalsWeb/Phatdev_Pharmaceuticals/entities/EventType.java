@@ -29,6 +29,6 @@ public class EventType {
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "DESCRIPTION", length = 500)
+    @Column(name = "DESCRIPTION", length = 255)
     private String description;
 }

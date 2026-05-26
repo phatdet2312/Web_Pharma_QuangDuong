@@ -94,6 +94,7 @@ public class CtEventResponse {
     @NoArgsConstructor 
     @AllArgsConstructor
     public static class RoleInfo {
+        private Integer roleId;
         private String roleName;
         private String description;
     }

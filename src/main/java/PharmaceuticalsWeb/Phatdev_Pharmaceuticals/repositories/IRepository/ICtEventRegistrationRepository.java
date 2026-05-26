@@ -6,6 +6,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventRegistration;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -24,6 +25,11 @@ public interface ICtEventRegistrationRepository extends JpaRepository<CtEventReg
 
        /** Trích xuất danh sách khách mời của một Phiên sự kiện cụ thể */
        List<CtEventRegistration> findByCtEventIdOrderByRegisteredAtDesc(Long ctEventId);
+
+       /** Xóa toàn bộ hồ sơ đăng ký thuộc một phiên khi admin xóa vật lý phiên đó. */
+       @Modifying
+       @Query("DELETE FROM CtEventRegistration r WHERE r.ctEvent.id = :ctEventId")
+       void xoaDangKyTheoBuoi(@Param("ctEventId") Long ctEventId);
 
        /** Trích xuất lịch sử tham gia sự kiện của một Tài khoản */
        //List<CtEventRegistration> findByUserIdOrderByRegisteredAtDesc(Long userId);

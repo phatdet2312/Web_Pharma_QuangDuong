@@ -4,6 +4,7 @@ package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEventStatusHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,4 +29,9 @@ public interface ICtEventStatusHistoryRepository extends JpaRepository<CtEventSt
     @Query("SELECT h FROM CtEventStatusHistory h WHERE h.ctEvent.id = :ctEventId " +
            "AND h.changedAt = (SELECT MAX(h2.changedAt) FROM CtEventStatusHistory h2 WHERE h2.ctEvent.id = :ctEventId)")
     Optional<CtEventStatusHistory> layTrangThaiHienTai(@Param("ctEventId") Long ctEventId);
+
+    /** Xóa lịch sử trạng thái khi admin xóa vật lý một phiên sự kiện. */
+    @Modifying
+    @Query("DELETE FROM CtEventStatusHistory h WHERE h.ctEvent.id = :ctEventId")
+    void xoaLichSuTheoBuoi(@Param("ctEventId") Long ctEventId);
 }

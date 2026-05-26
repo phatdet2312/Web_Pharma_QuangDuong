@@ -26,11 +26,11 @@ public class Location {
     @Column(name = "ID")
     private Integer id;
 
-    @Column(name = "NAME", nullable = false, length = 200)
+    @Column(name = "NAME", nullable = false, length = 150)
     private String name;
 
     /** Địa chỉ đầy đủ hoặc URL nếu là sự kiện online */
-    @Column(name = "ADDRESS", length = 500)
+    @Column(name = "ADDRESS", nullable = false, length = 500)
     private String address;
 
     /** Cờ phân biệt địa điểm tổ chức trực tuyến (1) hay trực tiếp (0) */
