@@ -52,6 +52,8 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUser
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAdminEventService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.EventStatusDisplayPolicy;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.utils.ImagePathUtil;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.utils.PagingUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -92,8 +94,6 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class AdminEventServiceImpl implements IAdminEventService {
 
-    private static final int DEFAULT_PAGE_SIZE = 10;
-    private static final int MAX_PAGE_SIZE = 50;
     private static final long MAX_EVENT_IMAGE_BYTES = 5L * 1024L * 1024L;
 
     private static final String[] EVENT_STATUS_CODES = {
@@ -218,8 +218,8 @@ public class AdminEventServiceImpl implements IAdminEventService {
             LocalDateTime startDate, LocalDateTime endDate,
             Integer locationId, Integer roleId, int page, int size) {
 
-        int pageDaKiemSoat = chuanHoaPage(page);
-        int sizeDaKiemSoat = chuanHoaSize(size);
+        int pageDaKiemSoat = PagingUtil.chuanHoaPage(page);
+        int sizeDaKiemSoat = PagingUtil.chuanHoaSize(size);
         Pageable pageable = PageRequest.of(pageDaKiemSoat, sizeDaKiemSoat, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         String kw = null;
@@ -270,7 +270,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         event.setTitle(request.getTitle());
         event.setSlug(slug);
         event.setDescription(request.getDescription());
-        event.setThumbnailUrl(chuanHoaDuongDanAnh(
+        event.setThumbnailUrl(ImagePathUtil.chuanHoaDuongDanAnh(
                 request.getThumbnailUrl(), 255, "/uploads/events/campaigns/"));
         event.setCreatedAt(LocalDateTime.now());
         event.setUpdatedAt(LocalDateTime.now());
@@ -296,7 +296,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         Event event = optEvent.get();
         event.setTitle(request.getTitle());
         event.setDescription(request.getDescription());
-        event.setThumbnailUrl(chuanHoaDuongDanAnh(
+        event.setThumbnailUrl(ImagePathUtil.chuanHoaDuongDanAnh(
                 request.getThumbnailUrl(), 255, "/uploads/events/campaigns/"));
         event.setUpdatedAt(LocalDateTime.now());
 
@@ -1224,24 +1224,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         return status;
     }
 
-    /** Chuẩn hóa page để request xấu không biến thành lỗi 500 từ PageRequest. */
-    private int chuanHoaPage(int page) {
-        if (page < 0) {
-            return 0;
-        }
-        return page;
-    }
 
-    /** Chuẩn hóa page size theo ngưỡng quản trị để tránh response quá lớn. */
-    private int chuanHoaSize(int size) {
-        if (size <= 0) {
-            return DEFAULT_PAGE_SIZE;
-        }
-        if (size > MAX_PAGE_SIZE) {
-            return MAX_PAGE_SIZE;
-        }
-        return size;
-    }
 
     /** Lưu ảnh sự kiện do admin upload vào thư mục con đã kiểm soát. */
     private AdminEventMediaResponse luuAnhSuKien(MultipartFile file, String thuMucCon) {
@@ -1314,20 +1297,7 @@ public class AdminEventServiceImpl implements IAdminEventService {
         throw new AppException(400, "Định dạng file ảnh không hợp lệ.");
     }
 
-    /** Validate URL ảnh từ API để chỉ nhận file do upload server sự kiện cấp. */
-    private String chuanHoaDuongDanAnh(String rawUrl, int maxLength, String prefixHopLe) {
-        if (rawUrl == null || rawUrl.trim().isEmpty() == true) {
-            return null;
-        }
-        String url = rawUrl.trim();
-        if (url.length() > maxLength) {
-            throw new AppException(400, "Đường dẫn ảnh vượt quá giới hạn " + maxLength + " ký tự.");
-        }
-        if (url.startsWith(prefixHopLe) == true) {
-            return url;
-        }
-        throw new AppException(400, "Ảnh sự kiện phải được tải lên qua hệ thống quản trị.");
-    }
+
 
     /**
      * Thuật toán tạo định danh tĩnh (Slug) phục vụ chiến lược SEO Marketing.

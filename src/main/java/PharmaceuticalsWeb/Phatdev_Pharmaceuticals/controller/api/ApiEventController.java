@@ -18,6 +18,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.ICommentService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.utils.PagingUtil;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDung;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDungFactory;
 import jakarta.validation.Valid;
@@ -207,7 +208,7 @@ public class ApiEventController {
         NguCanhNguoiDung nguCanh = nguCanhFactory.taoNguCanh(userId);
         if (eventService.coQuyenTruyCapBuoi(ctEventId, nguCanh) == false) {
             Page<CmtResponse> emptyPage = new PageImpl<>(
-                    new ArrayList<>(), PageRequest.of(chuanHoaPage(page), chuanHoaSize(size)), 0);
+                    new ArrayList<>(), PageRequest.of(PagingUtil.chuanHoaPage(page), PagingUtil.chuanHoaSize(size)), 0);
             return ApiResponse.thanhCong(emptyPage, "Bình luận chỉ mở cho tài khoản đủ quyền tham dự.");
         }
         Page<CmtResponse> result = commentService.layCmtCuaBuoi(ctEventId, sortBy, page, size, userId);
@@ -273,22 +274,5 @@ public class ApiEventController {
         }
     }
 
-    /** Chuẩn hóa page để endpoint public không trả 500 khi client truyền số âm. */
-    private int chuanHoaPage(int page) {
-        if (page < 0) {
-            return 0;
-        }
-        return page;
-    }
 
-    /** Giới hạn size khi controller tự tạo empty page cho dữ liệu bị khóa quyền. */
-    private int chuanHoaSize(int size) {
-        if (size <= 0) {
-            return 10;
-        }
-        if (size > 50) {
-            return 50;
-        }
-        return size;
-    }
 }

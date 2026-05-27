@@ -10,6 +10,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtEvent;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.EventAgenda;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.EventSpeaker;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.utils.ImagePathUtil;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtAgendaSpeakerRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtEventRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IEventAgendaRepository;
@@ -77,7 +78,7 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
         speaker.setFullName(request.getFullName().trim());
         speaker.setAcademicTitle(request.getAcademicTitle());
         speaker.setOrganization(request.getOrganization());
-        speaker.setAvatarUrl(chuanHoaDuongDanAnh(request.getAvatarUrl()));
+        speaker.setAvatarUrl(ImagePathUtil.chuanHoaDuongDanAnh(request.getAvatarUrl()));
         speaker.setBio(request.getBio());
 
         EventSpeaker saved = speakerRepository.save(speaker);
@@ -96,7 +97,7 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
         speaker.setFullName(request.getFullName().trim());
         speaker.setAcademicTitle(request.getAcademicTitle());
         speaker.setOrganization(request.getOrganization());
-        speaker.setAvatarUrl(chuanHoaDuongDanAnh(request.getAvatarUrl()));
+        speaker.setAvatarUrl(ImagePathUtil.chuanHoaDuongDanAnh(request.getAvatarUrl()));
         speaker.setBio(request.getBio());
 
         EventSpeaker saved = speakerRepository.save(speaker);
@@ -256,20 +257,7 @@ public class SpeakerAgendaServiceImpl implements ISpeakerAgendaService {
         }
     }
 
-    /** Validate avatar speaker gửi qua API; chỉ nhận URL do upload server sự kiện cấp. */
-    private String chuanHoaDuongDanAnh(String rawUrl) {
-        if (rawUrl == null || rawUrl.trim().isEmpty() == true) {
-            return null;
-        }
-        String url = rawUrl.trim();
-        if (url.length() > 255) {
-            throw new AppException(400, "Đường dẫn ảnh đại diện diễn giả vượt quá 255 ký tự.");
-        }
-        if (url.startsWith("/uploads/events/speakers/") == true) {
-            return url;
-        }
-        throw new AppException(400, "Ảnh diễn giả phải được tải lên qua hệ thống quản trị.");
-    }
+
 
     /** Gắn danh sách ID chuyên gia vào một mốc Lịch trình */
     private void ganDienGiaVaoLichTrinh(EventAgenda agenda, List<Long> speakerIds) {

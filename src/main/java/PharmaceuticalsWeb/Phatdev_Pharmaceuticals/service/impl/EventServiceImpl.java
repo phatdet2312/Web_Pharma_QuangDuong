@@ -8,6 +8,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.*;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.*;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IEventService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.utils.PagingUtil;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.EventStatusDisplayPolicy;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.support.NguCanhNguoiDung;
 import lombok.RequiredArgsConstructor;
@@ -51,8 +52,7 @@ public class EventServiceImpl implements IEventService {
             + "Vui lòng đăng nhập bằng tài khoản đã được xác minh hoặc liên hệ quản trị viên.";
     private static final String LOCKED_LOCATION_MESSAGE =
             "Chi tiết địa điểm/link tham gia sẽ mở sau khi hồ sơ đủ điều kiện.";
-    private static final int DEFAULT_PAGE_SIZE = 10;
-    private static final int MAX_PAGE_SIZE = 50;
+
 
     private final IEventRepository eventRepository;
     private final ICtEventRepository ctEventRepository;
@@ -185,7 +185,7 @@ public class EventServiceImpl implements IEventService {
         if ("popular".equals(sort) == true) {
             // Sắp xếp theo phổ biến nếu cần
         }
-        Pageable pageable = PageRequest.of(chuanHoaPage(page), chuanHoaSize(size), sortOrder);
+        Pageable pageable = PageRequest.of(PagingUtil.chuanHoaPage(page), PagingUtil.chuanHoaSize(size), sortOrder);
 
         // 2. Phân giải tham số thời gian dùng chung với phần thống kê để tránh lệch số liệu.
         KhoangThoiGianSuKien khoangThoiGian = phanGiaiKhoangThoiGianSuKien(time);
@@ -274,7 +274,7 @@ public class EventServiceImpl implements IEventService {
     @Override
     @Transactional
     public Page<EventRegistrationResponse> layDangKyCuaToi(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(chuanHoaPage(page), chuanHoaSize(size));
+        Pageable pageable = PageRequest.of(PagingUtil.chuanHoaPage(page), PagingUtil.chuanHoaSize(size));
         Page<CtEventRegistration> trangDuLieu = registrationRepository.findByUserIdOrderByRegisteredAtDesc(userId,
                 pageable);
 
@@ -467,15 +467,10 @@ public class EventServiceImpl implements IEventService {
     /**
      * Thuật toán trích xuất tóm tắt khách mời phục vụ Social Proof tại Frontend.
      * Áp dụng cơ chế che giấu dữ liệu (Masking) bằng vòng lặp For truyền thống.
+     * Ý đồ nghiệp vụ: Luôn trả danh sách kể cả phiên bị khóa quyền,
+     * nhằm phục vụ marketing — kích thích tò mò và thu hút đăng ký.
      */
     public EventAttendeePublicResponse layTomTatKhachMoiPublic(Long ctEventId, NguCanhNguoiDung nguCanh) {
-
-        if (coQuyenTruyCapBuoi(ctEventId, nguCanh) == false) {
-            EventAttendeePublicResponse response = new EventAttendeePublicResponse();
-            response.setTotalCount(0);
-            response.setAttendees(new ArrayList<>());
-            return response;
-        }
 
         // 1. Đếm tổng số lượng (Tái sử dụng hàm đếm Slot để đồng bộ 100% với
         // thanh Tiến độ)
@@ -552,24 +547,7 @@ public class EventServiceImpl implements IEventService {
         return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 2);
     }
 
-    /** Chuẩn hóa page để request public xấu không tạo lỗi 500 từ PageRequest. */
-    private int chuanHoaPage(int page) {
-        if (page < 0) {
-            return 0;
-        }
-        return page;
-    }
 
-    /** Giới hạn page size public để tránh truy vấn/response quá lớn. */
-    private int chuanHoaSize(int size) {
-        if (size <= 0) {
-            return DEFAULT_PAGE_SIZE;
-        }
-        if (size > MAX_PAGE_SIZE) {
-            return MAX_PAGE_SIZE;
-        }
-        return size;
-    }
 
     /** Phân giải filter thời gian dùng chung cho list và stats để số liệu luôn khớp. */
     private KhoangThoiGianSuKien phanGiaiKhoangThoiGianSuKien(String time) {
@@ -932,29 +910,29 @@ public class EventServiceImpl implements IEventService {
         }
         resp.setTags(ketQuaTags);
 
+        // 7. NẠP DANH SÁCH BÀI VIẾT Y KHOA LIÊN QUAN (POSTS)
+        // Ý đồ nghiệp vụ: Luôn hiển thị bài viết liên quan kể cả phiên bị khóa quyền,
+        // nhằm kích thích tò mò — bài viết có cơ chế chặn xem riêng tại PostService.
         List<PostResponse> ketQuaPosts = new ArrayList<>();
-        if (access.hasFullAccess == true) {
-            // 7. NẠP DANH SÁCH BÀI VIẾT Y KHOA LIÊN QUAN (POSTS)
-            List<Post> danhSachBaiViet = ctPostEventRepository.layBaiVietLienQuan(ctEvent.getId());
-            Object[] mangPost = danhSachBaiViet.toArray();
-            for (int j = 0; j < mangPost.length; j = j + 1) {
-                Post p = (Post) mangPost[j];
-                PostResponse pr = new PostResponse();
-                pr.setId(p.getId());
-                pr.setTitle(p.getTitle());
-                pr.setSlug(p.getSlug());
-                pr.setSummary(p.getSummary());
-                pr.setThumbnailUrl(p.getThumbnailUrl());
-                // pr.setAccessLevel(p.getAccessLevel());
+        List<Post> danhSachBaiViet = ctPostEventRepository.layBaiVietLienQuan(ctEvent.getId());
+        Object[] mangPost = danhSachBaiViet.toArray();
+        for (int j = 0; j < mangPost.length; j = j + 1) {
+            Post p = (Post) mangPost[j];
+            PostResponse pr = new PostResponse();
+            pr.setId(p.getId());
+            pr.setTitle(p.getTitle());
+            pr.setSlug(p.getSlug());
+            pr.setSummary(p.getSummary());
+            pr.setThumbnailUrl(p.getThumbnailUrl());
+            // pr.setAccessLevel(p.getAccessLevel());
 
-                if (p.getCategory() != null) {
-                    pr.setCategoryName(p.getCategory().getName());
-                }
-                if (p.getAuthor() != null) {
-                    pr.setAuthorName(p.getAuthor().getFullName());
-                }
-                ketQuaPosts.add(pr);
+            if (p.getCategory() != null) {
+                pr.setCategoryName(p.getCategory().getName());
             }
+            if (p.getAuthor() != null) {
+                pr.setAuthorName(p.getAuthor().getFullName());
+            }
+            ketQuaPosts.add(pr);
         }
         resp.setRelatedPosts(ketQuaPosts);
 
