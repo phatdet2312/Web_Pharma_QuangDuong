@@ -1,0 +1,190 @@
+/* static/css/page-transitions.css */
+/* Hệ thống chống nháy trang — Skeleton loading + Fade-swap content.
+   Dùng cho tất cả trang admin và user khi load dữ liệu từ API.
+   Prefix "ptm-" để tránh xung đột với .skeleton (posts/detail) và .reveal (4 trang user). */
+
+/* ================================================================
+   1. SKELETON — Hiệu ứng pulse cho placeholder khi chờ dữ liệu
+   ================================================================ */
+
+/* Animation nhấp nháy nhẹ giống loading placeholder */
+@keyframes ptm-pulse {
+    0%   { opacity: 0.55; }
+    50%  { opacity: 0.85; }
+    100% { opacity: 0.55; }
+}
+
+/* Class gốc cho mọi skeleton element */
+.ptm-skeleton {
+    background: var(--border-light, #f0f2fa);
+    border-radius: var(--radius-sm, 8px);
+    animation: ptm-pulse 1.5s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shimmer overlay — hiệu ứng sóng chạy ngang qua skeleton */
+.ptm-skeleton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.35) 50%,
+        transparent 100%
+    );
+    animation: ptm-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes ptm-shimmer {
+    0%   { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* ================================================================
+   2. SKELETON SHAPES — Các hình dạng skeleton theo loại nội dung
+   ================================================================ */
+
+/* Dòng text ngắn (tiêu đề phụ, label, meta) */
+.ptm-skeleton-text {
+    height: 14px;
+    width: 70%;
+    margin-bottom: 10px;
+}
+
+/* Tiêu đề lớn (heading) */
+.ptm-skeleton-title {
+    height: 22px;
+    width: 55%;
+    margin-bottom: 14px;
+}
+
+/* Thẻ card placeholder (campaign card, article card) */
+.ptm-skeleton-card {
+    height: 180px;
+    width: 100%;
+    margin-bottom: 16px;
+    border-radius: var(--radius, 12px);
+}
+
+/* Ô thống kê nhỏ (stat box) */
+.ptm-skeleton-stat {
+    height: 80px;
+    width: 100%;
+    border-radius: var(--radius-sm, 8px);
+}
+
+/* Dòng bảng (table row) */
+.ptm-skeleton-row {
+    height: 48px;
+    width: 100%;
+    margin-bottom: 8px;
+    border-radius: var(--radius-sm, 8px);
+}
+
+/* Hình tròn (avatar placeholder) */
+.ptm-skeleton-circle {
+    border-radius: 50%;
+}
+
+/* Ảnh hero lớn (event/post detail) */
+.ptm-skeleton-hero {
+    height: 260px;
+    width: 100%;
+    border-radius: var(--radius, 12px);
+    margin-bottom: 20px;
+}
+
+/* Đoạn văn bản dài (body content) */
+.ptm-skeleton-paragraph {
+    height: 12px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+/* ================================================================
+   3. FADE TRANSITION — Hiệu ứng chuyển đổi mượt khi swap nội dung
+   ================================================================ */
+
+/* Container bọc nội dung cần fade */
+.ptm-fade-container {
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+}
+
+/* Trạng thái ẩn — container trong suốt trước khi nội dung mới sẵn sàng */
+.ptm-fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Trạng thái hiện — nội dung mới đã sẵn sàng, fade vào */
+.ptm-fade-in {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ================================================================
+   4. SKELETON GRID LAYOUTS — Bố cục skeleton cho từng loại trang
+   ================================================================ */
+
+/* Grid 5 ô stat ngang (admin events stats) */
+.ptm-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    padding: 8px 0;
+}
+
+/* Grid card dạng list dọc (admin campaigns) */
+.ptm-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Grid card dạng lưới (posts/events list) */
+.ptm-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* Layout detail: hero + body + sidebar */
+.ptm-detail-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ================================================================
+   5. RESPONSIVE — Skeleton hiển thị tốt trên mobile
+   ================================================================ */
+
+@media (max-width: 768px) {
+    .ptm-stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .ptm-card-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ptm-skeleton-hero {
+        height: 160px;
+    }
+
+    .ptm-skeleton-card {
+        height: 140px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ptm-stat-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -557,7 +557,7 @@
     .modal-overlay {
         position: fixed;
         inset: 0;
-        z-index: 2000;
+        z-index: 1000;
         display: none;
         align-items: center;
         justify-content: center;
@@ -777,7 +777,7 @@
     </div>
 </div>
 
-<div class="ev-grid" aria-label="Thống kê quản trị sự kiện">
+<div id="statsGrid" class="ev-grid ptm-fade-container ptm-fade-out" aria-label="Thống kê quản trị sự kiện">
     <div class="ev-stat">
         <div class="ev-stat-icon" style="background:#e8f0ff;">
             <i class="fas fa-bullhorn" style="color:#0061ff;"></i>
@@ -1751,9 +1751,16 @@ function uploadSpeakerAvatar() {
         });
 }
 
+/* Tải thống kê tổng quan sự kiện từ API và cập nhật các ô stat.
+   Stats dùng surgical update (setText) nên KHÔNG thay innerHTML.
+   Lần đầu: fade-in grid stats sau khi có dữ liệu (ẩn giá trị "0" ban đầu).
+   Các lần sau: cập nhật trực tiếp không fade. */
 function loadStats() {
     api('/api/admin/events/stats', 'GET', null, null).then(function(res) {
         var stats = res.data || {};
+        var statsGrid = byId('statsGrid');
+
+        /* Ghi giá trị vào các ô stat */
         setText('statCampaigns', numberText(stats.totalCampaigns));
         setText('statActiveCampaigns', numberText(stats.activeCampaigns) + ' đang hoạt động');
         setText('statSessions', numberText(stats.totalSessions));
@@ -1764,34 +1771,51 @@ function loadStats() {
         setText('statAttended', numberText(stats.totalAttended) + ' đã tham dự');
         setText('statLocations', numberText(stats.totalLocations));
         setText('statOnlineLocations', numberText(stats.onlineLocations) + ' trực tuyến');
+
+        /* Lần đầu tải: bỏ trạng thái ẩn, fade-in grid stats */
+        if (statsGrid !== null && statsGrid.classList.contains('ptm-fade-out') === true) {
+            statsGrid.classList.remove('ptm-fade-out');
+            statsGrid.classList.add('ptm-fade-in');
+        }
     });
 }
 
-function loadCampaigns(pageIndex) {
+/* Tải danh sách chiến dịch từ API.
+   Hai chế độ:
+   - anLang = false (mặc định): hiện skeleton → dùng cho load đầu, filter, pagination.
+   - anLang = true: KHÔNG hiện skeleton → dùng sau CRUD thành công, tránh nháy trang.
+   @param {number} pageIndex — Trang cần tải (0-based). undefined = giữ trang hiện tại.
+   @param {boolean} [anLang=false] — true = cập nhật im lặng, không skeleton. */
+function loadCampaigns(pageIndex, anLang) {
     if (pageIndex !== undefined && pageIndex !== null) {
         state.currentPage = pageIndex;
     }
     clearBulkSelection(false);
 
-    byId('campaignsWrapper').innerHTML = [
-        '<div class="loading-state">',
-        '<i class="fas fa-circle-notch fa-spin"></i>',
-        'Đang tải dữ liệu sự kiện...',
-        '</div>'
-    ].join('');
+    /* Chỉ hiện skeleton khi KHÔNG phải chế độ ẩn (load đầu, filter, pagination) */
+    if (anLang !== true) {
+        PageTransitionManager.showSkeleton('campaignsWrapper', 'cardList', 4);
+    }
 
     api(buildFilterUrl(state.currentPage), 'GET', null, null).then(function(res) {
         var page = normalizePage(res.data || {});
         state.campaigns = page.content;
         state.totalElements = page.totalElements;
         state.totalPages = page.totalPages;
-        renderCampaigns();
-        renderPager();
+
+        /* Fade-swap từ skeleton sang nội dung campaigns thật */
+        PageTransitionManager.swapContent('campaignsWrapper', function() {
+            renderCampaigns();
+            renderPager();
+        });
     }).catch(function(message) {
-        byId('campaignsWrapper').innerHTML = renderEmptyState(
-            'fas fa-triangle-exclamation',
-            message || 'Không thể tải dữ liệu sự kiện.'
-        );
+        /* Lỗi API: fade-swap sang thông báo lỗi thay vì hiện đột ngột */
+        PageTransitionManager.swapContent('campaignsWrapper', function() {
+            byId('campaignsWrapper').innerHTML = renderEmptyState(
+                'fas fa-triangle-exclamation',
+                message || 'Không thể tải dữ liệu sự kiện.'
+            );
+        });
     });
 }
 
@@ -2238,7 +2262,7 @@ function executeBulkStatus(statusCode) {
         }, null).then(function() {
             showToast('success', 'Cập nhật trạng thái hàng loạt thành công');
             loadStats();
-            loadCampaigns(state.currentPage);
+            loadCampaigns(state.currentPage, true);
         });
     });
 }
@@ -2307,7 +2331,7 @@ function saveCampaign() {
             closeModal('campaignModal');
             showToast('success', successMessage);
             loadStats();
-            loadCampaigns(state.currentPage);
+            loadCampaigns(state.currentPage, true);
         });
     });
 }
@@ -2323,7 +2347,7 @@ function deleteCampaign(id) {
         api('/api/admin/events/' + id, 'DELETE', null, null).then(function() {
             showToast('success', 'Đã xóa chiến dịch');
             loadStats();
-            loadCampaigns(0);
+            loadCampaigns(0, true);
         });
     });
 }
@@ -2477,7 +2501,7 @@ function saveSession() {
             closeModal('sessionModal');
             showToast('success', successMessage);
             loadStats();
-            loadCampaigns(state.currentPage);
+            loadCampaigns(state.currentPage, true);
         });
     });
 }
@@ -2487,7 +2511,7 @@ function deleteSession(id) {
         api('/api/admin/events/sessions/' + id, 'DELETE', null, null).then(function() {
             showToast('success', 'Đã xóa phiên sự kiện');
             loadStats();
-            loadCampaigns(state.currentPage);
+            loadCampaigns(state.currentPage, true);
         });
     });
 }
@@ -2564,7 +2588,7 @@ function saveSessionStatus() {
             showToast('success', 'Đã ghi trạng thái mới');
             loadStatusHistory(state.activeSession.id);
             loadStats();
-            loadCampaigns(state.currentPage);
+            loadCampaigns(state.currentPage, true);
         });
     });
 }
@@ -3075,7 +3099,6 @@ function saveEventType() {
             resetTypeForm();
             loadDictionaries(function() {
                 renderTypeList();
-                loadCampaigns(state.currentPage);
             });
         });
     });
@@ -3087,7 +3110,6 @@ function deleteEventType(id) {
             showToast('success', 'Đã xóa loại sự kiện');
             loadDictionaries(function() {
                 renderTypeList();
-                loadCampaigns(state.currentPage);
             });
         });
     });
@@ -3190,7 +3212,6 @@ function saveLocation() {
             resetLocationForm();
             loadDictionaries(function() {
                 renderLocationList();
-                loadCampaigns(state.currentPage);
             });
         });
     });
@@ -3202,7 +3223,6 @@ function deleteLocation(id) {
             showToast('success', 'Đã xóa địa điểm');
             loadDictionaries(function() {
                 renderLocationList();
-                loadCampaigns(state.currentPage);
             });
         });
     });

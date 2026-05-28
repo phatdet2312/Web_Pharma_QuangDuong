@@ -524,9 +524,9 @@
                     </div>
                 </div>
 
-                <div id="featured-container"></div>
+                <div id="featured-container" class="ptm-fade-container"></div>
 
-                <div id="article-grid" class="row g-3 mb-4"></div>
+                <div id="article-grid" class="row g-3 mb-4 ptm-fade-container"></div>
                 <div id="list-divider" style="display:none;align-items:center;gap:12px;margin:28px 0 20px;" class="reveal">
                     <div style="flex:1;height:1px;background:var(--gray-200);"></div>
                     <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gray-400);">Danh sách bài viết</span>
@@ -838,7 +838,10 @@
         });
     }
 
+    /* Tải bài viết nổi bật từ API, hiện skeleton trước khi có dữ liệu */
     function loadFeatured() {
+        PageTransitionManager.showSkeleton('featured-container', 'detailHero', 1);
+
         callApi('/api/posts/featured', 'GET', null, null, function (response) {
             var p = response.data;
             var container = document.getElementById('featured-container');
@@ -891,7 +894,10 @@
                 '</div><div style="display:flex;align-items:center;gap:4px;font-size:.8rem;font-weight:600;color:var(--teal-600);">' +
                 'Đọc bài <i class="fas fa-arrow-right fa-xs"></i></div></div></div></a>';
             
-            container.innerHTML = html;
+            /* Fade-swap từ skeleton sang bài viết nổi bật */
+            PageTransitionManager.swapContent('featured-container', function() {
+                container.innerHTML = html;
+            }, kichHoatHieuUngXuatHien);
         });
     }
 
@@ -992,14 +998,18 @@
             '<span class="alc-meta"><i class="fas fa-clock"></i> ~' + readMins(p.summary) + ' phút</span></div></div></a></div>';
     }
 
-    /**
-     * TẢI DANH SÁCH BÀI VIẾT VÀ TÁI KÍCH HOẠT HIỆU ỨNG
-     */
+    /* Tải danh sách bài viết từ API.
+       Hiện skeleton trước khi gọi API, fade-swap khi có dữ liệu.
+       Giữ nguyên reveal animation cho từng card sau khi fade-in. */
     function loadPosts() {
         var url = '/api/posts?page=' + state.page + '&size=' + state.size + '&sort=' + encodeURIComponent(state.sort);
         if (state.keyword !== '') { url += '&keyword=' + encodeURIComponent(state.keyword); }
         if (state.category !== '') { url += '&category=' + encodeURIComponent(state.category); }
         if (state.roleId !== '') { url += '&roleId=' + encodeURIComponent(state.roleId); }
+
+        /* Hiện skeleton ở container đang active trước khi gọi API */
+        var containerId = (state.view === 'grid') ? 'article-grid' : 'list-cards';
+        PageTransitionManager.showSkeleton(containerId, 'cardGrid', 6);
 
         callApi(url, 'GET', null, null, function (response) {
             var pageData = response.data;
@@ -1010,38 +1020,38 @@
             var tc = document.getElementById('toolbar-count');
             if (tc !== null) { tc.innerHTML = 'Hiển thị <strong>' + posts.length + '</strong> / <strong>' + fmt(total) + '</strong> bài viết'; }
 
-            var grid = document.getElementById('article-grid');
-            var listCards = document.getElementById('list-cards');
-            var divider = document.getElementById('list-divider');
+            /* Fade-swap từ skeleton sang nội dung bài viết thật */
+            PageTransitionManager.swapContent(containerId, function () {
+                var grid = document.getElementById('article-grid');
+                var listCards = document.getElementById('list-cards');
+                var divider = document.getElementById('list-divider');
 
-            if (state.view === 'grid') {
-                if (listCards !== null) { listCards.innerHTML = ''; listCards.style.display = 'none'; }
-                if (divider !== null) { divider.style.display = 'none'; }
-                if (grid !== null) {
-                    grid.style.display = '';
-                    var htmlGrid = '';
-                    for (var i = 0; i < posts.length; i = i + 1) {
-                        htmlGrid += buildGridCard(posts[i], i);
+                if (state.view === 'grid') {
+                    if (listCards !== null) { listCards.innerHTML = ''; listCards.style.display = 'none'; }
+                    if (divider !== null) { divider.style.display = 'none'; }
+                    if (grid !== null) {
+                        grid.style.display = '';
+                        var htmlGrid = '';
+                        for (var i = 0; i < posts.length; i = i + 1) {
+                            htmlGrid += buildGridCard(posts[i], i);
+                        }
+                        grid.innerHTML = htmlGrid || '<div class="col-12 text-center py-5" style="color:var(--gray-400);">Không tìm thấy bài viết y khoa phù hợp.</div>';
                     }
-                    grid.innerHTML = htmlGrid || '<div class="col-12 text-center py-5" style="color:var(--gray-400);">Không tìm thấy bài viết y khoa phù hợp.</div>';
-                }
-            } else {
-                if (grid !== null) { grid.innerHTML = ''; grid.style.display = 'none'; }
-                if (divider !== null) { divider.style.display = (posts.length > 0) ? 'flex' : 'none'; }
-                if (listCards !== null) {
-                    listCards.style.display = '';
-                    var htmlList = '';
-                    for (var j = 0; j < posts.length; j = j + 1) {
-                        htmlList += buildListCard(posts[j]);
+                } else {
+                    if (grid !== null) { grid.innerHTML = ''; grid.style.display = 'none'; }
+                    if (divider !== null) { divider.style.display = (posts.length > 0) ? 'flex' : 'none'; }
+                    if (listCards !== null) {
+                        listCards.style.display = '';
+                        var htmlList = '';
+                        for (var j = 0; j < posts.length; j = j + 1) {
+                            htmlList += buildListCard(posts[j]);
+                        }
+                        listCards.innerHTML = htmlList || '<p style="text-align:center;color:var(--gray-400);padding:40px 0;">Không tìm thấy bài viết y khoa phù hợp.</p>';
                     }
-                    listCards.innerHTML = htmlList || '<p style="text-align:center;color:var(--gray-400);padding:40px 0;">Không tìm thấy bài viết y khoa phù hợp.</p>';
                 }
-            }
 
-            renderPagination(totalPages);
-            
-            // Kích hoạt lại bộ lắng nghe sau khi vẽ HTML xong để các thẻ bài viết hiện ra
-            setTimeout(kichHoatHieuUngXuatHien, 50);
+                renderPagination(totalPages);
+            }, kichHoatHieuUngXuatHien);
         });
     }
 

@@ -36,6 +36,8 @@ project-root/
 │   │   │   └── validators/
 │   │   └── resources/
 │   │       ├── static/
+│   │       │   ├── css/page-transitions.css    # Skeleton + fade CSS (prefix ptm-)
+│   │       │   └── js/page-transition-manager.js # Utility chống nháy trang (IIFE)
 │   │       ├── templates/
 │   │       │   ├── admin/
 │   │       │   ├── auth/

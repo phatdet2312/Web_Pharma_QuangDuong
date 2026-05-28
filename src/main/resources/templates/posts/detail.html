@@ -1957,7 +1957,17 @@
                             <div class="article-body">
 
                                 <div class="article-body-inner">
-                                    <div class="prose" id="post-content"></div>
+                                    <div class="prose ptm-fade-container" id="post-content">
+                                        <!-- Skeleton body: hiển thị khi chờ API trả nội dung bài viết -->
+                                        <div class="ptm-skeleton ptm-skeleton-paragraph" style="width:100%"></div>
+                                        <div class="ptm-skeleton ptm-skeleton-paragraph" style="width:95%"></div>
+                                        <div class="ptm-skeleton ptm-skeleton-paragraph" style="width:88%"></div>
+                                        <div class="ptm-skeleton ptm-skeleton-paragraph" style="width:100%"></div>
+                                        <div class="ptm-skeleton ptm-skeleton-paragraph" style="width:72%"></div>
+                                        <div class="ptm-skeleton ptm-skeleton-paragraph" style="width:92%;margin-top:20px"></div>
+                                        <div class="ptm-skeleton ptm-skeleton-paragraph" style="width:100%"></div>
+                                        <div class="ptm-skeleton ptm-skeleton-paragraph" style="width:80%"></div>
+                                    </div>
 
                                     <div id="post-paywall-container" style="display: none;">
                                         <div class="post-paywall">
@@ -2406,7 +2416,12 @@
                     callApi('/api/posts/' + maBaiVietHienTai + '/view', 'POST', null, null, function () { }, function () { });
 
                     veKhuVucTieuDe(baiViet);
-                    veKhuVucNoiDung(baiViet);
+
+                    /* Fade-swap body nội dung từ skeleton sang bài viết thật */
+                    PageTransitionManager.swapContent('post-content', function() {
+                        veKhuVucNoiDung(baiViet);
+                    });
+
                     veKhuVucCotPhu(baiViet);
 
                     var mangCamXucBaiViet = [];

@@ -31,7 +31,11 @@
       "Bash(cmd.exe /c \"mvnw.cmd compile -q 2>&1\")",
       "Bash(cmd.exe /c \"mvnw.cmd compile 2>&1\")",
       "Bash(cmd.exe /c \"mvnw.cmd compile\")",
-      "Bash(echo \"EXIT_CODE=$?\")"
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(curl -s http://localhost:8080/tin-tuc)",
+      "Bash(curl -s http://localhost:8080/hoi-thao)",
+      "Bash(curl -s http://localhost:8080/login)",
+      "Bash(curl *)"
     ]
   }
 }

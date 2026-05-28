@@ -1692,12 +1692,17 @@
             /**
              * Nhiệm vụ: Đẩy tham số bộ lọc lên Server, tải danh sách Chiến dịch.
              */
+            /* Tải danh sách chiến dịch sự kiện từ API.
+               Hiện skeleton trước khi gọi API, fade-swap khi có dữ liệu.
+               Giữ nguyên reveal animation cho từng card sau khi fade-in. */
             function taiDanhSachChienDich(trang) {
                 var vungChua = document.getElementById('campaigns-container');
                 if (vungChua === null) {
                     return;
                 }
-                vungChua.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--teal-400);"></i></div>';
+
+                /* Hiện skeleton thay vì spinner xóa trắng nội dung cũ */
+                PageTransitionManager.showSkeleton('campaigns-container', 'cardList', 4);
 
                 var urlApi = '/api/events?page=' + trang + '&size=6&sort=' + boLocHienTai.sort;
                 if (boLocHienTai.keyword !== null) {
@@ -1715,7 +1720,10 @@
 
                 callApi(urlApi, 'GET', null, null, function (res) {
                     if (res.status !== 200) {
-                        vungChua.innerHTML = '<div class="text-center py-5 text-muted">Hệ thống đang bận. Không thể tải danh sách sự kiện.</div>';
+                        /* Lỗi API: fade-swap sang thông báo lỗi */
+                        PageTransitionManager.swapContent('campaigns-container', function() {
+                            vungChua.innerHTML = '<div class="text-center py-5 text-muted">Hệ thống đang bận. Không thể tải danh sách sự kiện.</div>';
+                        });
                         return;
                     }
 
@@ -1733,22 +1741,27 @@
                         theHienTongSo.textContent = dinhDangSo(duLieuTrang.totalElements);
                     }
 
-                    if (danhSach === null || danhSach === undefined || danhSach.length === 0) {
-                        vungChua.innerHTML = '<div class="text-center py-5" style="background:white;border-radius:var(--r-xl);border:1px solid var(--gray-200);padding:48px;"><i class="fas fa-calendar-times fa-3x" style="color:var(--gray-300);margin-bottom:16px;"></i><div style="font-weight:700;color:var(--gray-500);">Không tìm thấy sự kiện phù hợp</div><div style="font-size:.84rem;color:var(--gray-400);margin-top:6px;">Vui lòng điều chỉnh lại điều kiện lọc</div></div>';
-                        veThanhPhanTrang(0, 0);
-                        return;
-                    }
+                    /* Fade-swap từ skeleton sang nội dung chiến dịch thật */
+                    PageTransitionManager.swapContent('campaigns-container', function() {
+                        if (danhSach === null || danhSach === undefined || danhSach.length === 0) {
+                            vungChua.innerHTML = '<div class="text-center py-5" style="background:white;border-radius:var(--r-xl);border:1px solid var(--gray-200);padding:48px;"><i class="fas fa-calendar-times fa-3x" style="color:var(--gray-300);margin-bottom:16px;"></i><div style="font-weight:700;color:var(--gray-500);">Không tìm thấy sự kiện phù hợp</div><div style="font-size:.84rem;color:var(--gray-400);margin-top:6px;">Vui lòng điều chỉnh lại điều kiện lọc</div></div>';
+                            veThanhPhanTrang(0, 0);
+                            return;
+                        }
 
-                    var theHTML = '';
-                    for (var i = 0; i < danhSach.length; i = i + 1) {
-                        theHTML += xayDungHTMLChienDich(danhSach[i]);
-                    }
-                    vungChua.innerHTML = theHTML;
+                        var theHTML = '';
+                        for (var i = 0; i < danhSach.length; i = i + 1) {
+                            theHTML += xayDungHTMLChienDich(danhSach[i]);
+                        }
+                        vungChua.innerHTML = theHTML;
+                        veThanhPhanTrang(boLocHienTai.page, tongSoTrang);
+                    }, kichHoatHieuUngXuatHien);
 
-                    veThanhPhanTrang(boLocHienTai.page, tongSoTrang);
-                    setTimeout(kichHoatHieuUngXuatHien, 50);
                 }, function (msg) {
-                    vungChua.innerHTML = '<div class="text-center py-5" style="color:var(--danger);">' + lamSachChuoiHTML(msg) + '</div>';
+                    /* Lỗi mạng: fade-swap sang thông báo lỗi */
+                    PageTransitionManager.swapContent('campaigns-container', function() {
+                        vungChua.innerHTML = '<div class="text-center py-5" style="color:var(--danger);">' + lamSachChuoiHTML(msg) + '</div>';
+                    });
                 });
             }
 

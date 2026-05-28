@@ -1,11 +1,91 @@
-# Active Plan - IDLE
+# Active Plan - PageTransitionManager (Hệ thống chống nháy trang)
 > Last updated: 2026-05-28
-> Status: IDLE — sẵn sàng nhận task mới
-> Drift sync: 2026-05-28 — đã đồng bộ 5 commit ngoài Claude/Codex
+> Status: IN_PROGRESS
+> Drift sync: 2026-05-28
 
-## Tóm tắt drift đã xử lý (2026-05-27 ~ 2026-05-28)
+## Mục tiêu
 
-5 commit ngoài Claude: `a1ea9dc` (LapDieuKienCode), `6b6cfe0` (codex agents mới), `34335b6` (codex hooks), `871f7dd` (Codex admin/event lớn: +49 files, entities/DTOs/services/repositories/template), `2d64c50` (fix codex: tách `ImagePathUtil` + `PagingUtil`). 5 file đang sửa chưa commit: `admin_layout.html` (reformat CSS), `admin/events.html`, `admin/posts.html`, `admin/user-details.html`, `.claude/agents/15-planner.md`.
+Xây dựng `PageTransitionManager` — 1 utility JS chung + 1 file CSS chung — giảm/xóa hiện tượng nháy trang khi load data từ API trên 5 template HTML.
+
+## Phạm vi
+
+| Trang | Hiện trạng | Mục tiêu |
+|-------|-----------|---------|
+| admin/events.html | Đã có fade-swap + skeleton. Đã fix coupling: 4 chỗ CRUD Type/Location bỏ loadCampaigns, 6 chỗ CRUD Campaign/Session/Status dùng silent refresh (anLang=true). 7/10 | Fade-swap khi load danh sách. Skeleton cho stats. GIỮ logic render hiện có |
+| posts/list.html | Reveal animation (IntersectionObserver). 6/10 | THÊM skeleton cho lần load đầu. GIỮ reveal animation |
+| posts/detail.html | Skeleton loading có sẵn (chỉ header). Surgical .textContent cho stats. 7/10 | MỞ RỘNG skeleton cho body/sidebar. KHÔNG đổi logic cập nhật số liệu |
+| events/list.html | Reveal animation tương tự posts/list. 6/10 | THÊM skeleton cho lần load đầu. GIỮ reveal animation |
+| events/detail.html | 61 chỗ innerHTML, không có cơ chế chuyên dụng. 4/10 | Skeleton cho hero/body. Fade-swap khi chuyển session |
+
+## KHÔNG làm
+
+- Partial DOM update cho admin/events.html (rủi ro quá cao, 3300 dòng code)
+- Thay đổi logic surgical update (.textContent) ở posts/detail.html cho stats
+- Thay đổi cấu trúc API hoặc backend
+- Sửa logic nghiệp vụ của bất kỳ trang nào
+
+## Danh sách Task
+
+| # | Task | Agent | File | Trạng thái |
+|---|------|-------|------|-----------|
+| T1 | Tạo `page-transitions.css` — skeleton + fade CSS, prefix `ptm-` | implementer | TẠO: static/css/page-transitions.css | DONE |
+| T2 | Tạo `page-transition-manager.js` — IIFE + prototype, 4 method chính | implementer | TẠO: static/js/page-transition-manager.js | DONE |
+| T3 | Tích hợp vào `admin_layout.html` — link CSS + script JS | implementer | SỬA: templates/admin_layout.html | DONE |
+| T4 | Tích hợp vào `user_layout.html` — link CSS + script JS | implementer | SỬA: templates/user_layout.html | DONE |
+| T5 | admin/events.html — Stats fade-in lần load đầu (giữ surgical setText) | implementer | SỬA: templates/admin/events.html | DONE |
+| T6 | admin/events.html — Campaigns skeleton + fade-swap thay nuke-rebuild | implementer | SỬA: templates/admin/events.html | DONE |
+| T6b | admin/events.html — Fix nháy: xóa loadCampaigns khỏi Type/Location CRUD, thêm anLang silent refresh cho Campaign/Session/Status CRUD | implementer | SỬA: templates/admin/events.html | DONE |
+| T7 | posts/list.html — Skeleton + fade-swap cho featured + article grid | implementer | SỬA: templates/posts/list.html | DONE |
+| T8 | posts/detail.html — Skeleton body + swapContent, giữ surgical stats | implementer | SỬA: templates/posts/detail.html | DONE |
+| T9 | events/list.html — Skeleton + fade-swap cho campaigns-container | implementer | SỬA: templates/events/list.html | DONE |
+| T10 | events/detail.html — Body fade-in khi load chiến dịch | implementer | SỬA: templates/events/detail.html | DONE |
+| T11 | Test toàn bộ 5 trang | tester | Tất cả | PENDING — cần chạy trên browser |
+| T12 | Cập nhật memory | memory-keeper | .ai-memory/ | TODO |
+
+## Thứ tự thực hiện
+
+```
+Phase 0 (NỀN TẢNG):
+  T1 (CSS) --> T2 (JS) --> T3 + T4 (layouts, song song)
+
+Phase 1 (ADMIN — tuần tự vì cùng file):
+  T5 (stats skeleton) --> T6 (campaigns fade-swap)
+
+Phase 2 (USER PAGES — song song vì khác file):
+  T7 (posts/list) | T8 (posts/detail) | T9 (events/list) | T10 (events/detail)
+
+Phase 3 (NGHIỆM THU):
+  T11 (test) --> T12 (memory)
+```
+
+## Decisions
+
+| Quyết định | Phương án chọn | Lý do | Ngày | Hết hạn |
+|-----------|---------------|-------|------|---------|
+| Prefix `ptm-` cho CSS class mới | ptm- prefix | Tránh xung đột với `.skeleton` (posts/detail) và `.reveal` (4 trang) | 2026-05-28 | 2026-08-28 |
+| IIFE + prototype cho JS | Không dùng ES6 class/arrow | Nhất quán với code hiện có, tuân thủ DieuKienCode | 2026-05-28 | 2026-08-28 |
+| Chỉ fade-swap, KHÔNG partial DOM update cho admin/events | Fade-swap toàn container | 3300 dòng, 25+ hàm render lồng nhau, partial update rủi ro quá cao | 2026-05-28 | 2026-08-28 |
+| loadCampaigns silent refresh bằng tham số anLang | Thêm param anLang vào hàm hiện có | DRY — 1 hàm duy nhất, không copy logic fetch. CRUD Type/Location bỏ hẳn loadCampaigns vì không liên quan | 2026-05-28 | 2026-08-28 |
+| Load ở LAYOUT không ở từng trang | Layout load 1 lần | Giống pattern callApi/showToast, trang mới tự động có | 2026-05-28 | 2026-08-28 |
+| CSS dùng `--transition` từ design-system | Không dùng --t-fast của user_layout | design-system.css load trong CẢ HAI layout | 2026-05-28 | 2026-08-28 |
+
+## Risk
+
+| Risk | Mức độ | Giảm thiểu |
+|------|--------|-----------|
+| admin/events.html 3300 dòng — sửa sai sẽ break nhiều chức năng | CAO | Chỉ sửa 2 hàm (loadStats, loadCampaigns), wrap BÊN NGOÀI render function |
+| CSS class trùng tên | TRUNG BÌNH | Prefix ptm- cho tất cả class mới |
+| Làm vỡ reveal animation khi thêm fade | TRUNG BÌNH | Fade-swap gọi kichHoatHieuUngXuatHien() SAU khi content visible |
+
+## Tiêu chí nghiệm thu tổng thể
+
+1. Zero flicker: 5 trang load/filter/navigate không nháy
+2. Skeleton visible: mỗi trang hiện skeleton trước khi data API về
+3. Fade smooth: transition 200-300ms mượt
+4. Zero regression: CRUD, filter, pagination, comment, registration, reveal, surgical stats đều hoạt động
+5. Zero JS error: console không có error mới
+6. Convention: comment tiếng Việt, không ternary, không arrow function, không Stream
+7. Responsive: skeleton + fade hoạt động trên mobile/tablet/desktop
 
 ---
 

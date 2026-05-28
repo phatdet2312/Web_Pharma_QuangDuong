@@ -1899,8 +1899,8 @@
                 </div>
             </div>
 
-            <!-- Body -->
-            <div class="event-detail-body">
+            <!-- Body — fade-in khi API trả dữ liệu chiến dịch -->
+            <div id="eventDetailBody" class="event-detail-body ptm-fade-container ptm-fade-out">
                 <div class="container">
                     <div class="row g-4">
 
@@ -2425,6 +2425,13 @@
             taiLichSuTrangThai();
             taiDanhSachTuDienCamXuc();
             taiDanhSachBinhLuan(0, true);
+
+            /* Fade-in body sau khi render xong dữ liệu chiến dịch */
+            var khoiBody = document.getElementById('eventDetailBody');
+            if (khoiBody !== null && khoiBody.classList.contains('ptm-fade-out') === true) {
+                khoiBody.classList.remove('ptm-fade-out');
+                khoiBody.classList.add('ptm-fade-in');
+            }
         }
 
         // ============================================================
