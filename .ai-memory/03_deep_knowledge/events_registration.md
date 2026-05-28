@@ -1,6 +1,6 @@
 # Events & Registration
-> Last updated: 2026-05-26
-> Source files: `controller/view/EventViewController.java`, `controller/api/ApiEventController.java`, `controller/api/ApiCommentController.java`, `controller/api/ApiPublicSpeakerAgendaController.java`, `controller/api/ApiAdminEventController.java`, `service/itf/IEventService.java`, `service/impl/EventServiceImpl.java`, `service/impl/SpeakerAgendaServiceImpl.java`, `service/support/EventStatusDisplayPolicy.java`, `service/support/NguCanhNguoiDung.java`, `service/support/NguCanhNguoiDungFactory.java`, `entities/Event.java`, `entities/CtEvent.java`, `entities/CtEventRegistration.java`
+> Last updated: 2026-05-28
+> Source files: `controller/view/EventViewController.java`, `controller/api/ApiEventController.java`, `controller/api/ApiCommentController.java`, `controller/api/ApiPublicSpeakerAgendaController.java`, `controller/api/ApiAdminEventController.java`, `service/itf/IEventService.java`, `service/itf/IAdminEventService.java`, `service/impl/EventServiceImpl.java`, `service/impl/AdminEventServiceImpl.java`, `service/impl/SpeakerAgendaServiceImpl.java`, `service/support/EventStatusDisplayPolicy.java`, `service/support/NguCanhNguoiDung.java`, `service/support/NguCanhNguoiDungFactory.java`, `utils/ImagePathUtil.java`, `utils/PagingUtil.java`, `entities/Event.java`, `entities/CtEvent.java`, `entities/CtEventRegistration.java`
 > Confidence: HIGH
 
 ## Mo ta chuc nang
@@ -82,6 +82,9 @@ Trang `admin/events.html` khong con la demo tinh; trang nay goi `callApi` toi JS
 
 | Method | Path | Mo ta |
 |--------|------|-------|
+| GET | `/api/admin/events/dictionaries/statuses` | Danh muc trang thai event + registration cho frontend |
+| POST | `/api/admin/events/upload/campaign-image` | Upload anh dai dien campaign (max 5MB) |
+| POST | `/api/admin/events/upload/speaker-image` | Upload anh dai dien dien gia (max 5MB) |
 | GET | `/api/admin/events/stats` | Thong ke campaign/session/registration/location |
 | GET | `/api/admin/events` | List campaign co filter keyword/type/location/role/start/end va pagination |
 | POST/PUT/DELETE | `/api/admin/events` + `/{eventId}` | CRUD campaign `EVENTS` |
@@ -97,13 +100,39 @@ Trang `admin/events.html` khong con la demo tinh; trang nay goi `callApi` toi JS
 
 ### Backend rules moi
 
-- `EventRequest.eventTypeId`, `CtEventRequest.locationId`, `EventStatusRequest.ctEventId`, `LocationRequest.address` duoc validate bat buoc de loi tra ve ro thay vi de DB constraint phat no.
+- `EventRequest.eventTypeId` (`@NotNull`), `EventRequest.title` (`@Size(max=255)`), `EventRequest.slug` (`@Size(max=255)`), `EventRequest.thumbnailUrl` (`@Size(max=255)`), `CtEventRequest.locationId` (`@NotNull`), `CtEventRequest.seoTitle` (`@Size(max=200)`), `CtEventRequest.seoDescription` (`@Size(max=255)`), `CtEventRequest.relatedPostIds` (field moi), `EventStatusRequest.ctEventId` (`@NotNull`), `EventStatusRequest.statusCode` (`@Size(max=50)`), `EventStatusRequest.note` (`@Size(max=255)`), `LocationRequest.address` duoc validate bat buoc de loi tra ve ro thay vi de DB constraint phat no.
 - Admin list phai default `startDate/endDate` thanh range rong `2000-01-01` den `2099-12-31` khi request khong co filter ngay. Khong duoc truyen null vao `timKiemChienDich` vi query co dieu kien `ce.startTime >= :startDate AND <= :endDate`, se lam trang admin render rong khi vua vao.
 - `CtEventRequest.relatedPostIds` gan session voi bai viet qua `CT_POST_EVENTS`.
 - `CtEventResponse.requiredRoles` co them `roleId` de admin UI edit role gates chinh xac, khong phai map bang ten.
 - Xoa campaign di qua tung session va don cac bang phu thuoc truoc khi xoa: comment link, agenda-speaker bridge, agenda, speaker, registrations, status history, post links, tags, roles.
 - Admin GET speakers/agenda dung route admin rieng de xem du lich trinh/dien gia, khong dung public route co paywall.
 - Status session duoc validate trong tap `DRAFT`, `OPEN`, `UPCOMING`, `ONGOING`, `FULL`, `CANCELLED`, `FINISHED`, `ENDED`; registration status trong tap `PENDING`, `CONFIRMED`, `APPROVED`, `ATTENDED`, `CANCELLED`.
+
+### Utility Classes (2026-05-28 — commit `2d64c50`)
+
+Sau khi Codex them nhieu logic duplicate trong services, user tach ra 2 utility class:
+
+- **`ImagePathUtil`** (`utils/ImagePathUtil.java`): Validate va chuan hoa URL anh upload event. `chuanHoaDuongDanAnh(rawUrl, maxLength, prefixHopLe)` — null/empty tra null, vuot maxLength throw 400, prefix sai throw 400. Overload `chuanHoaDuongDanAnh(rawUrl)` mac dinh 255 ky tu va prefix `/uploads/events/speakers/`. Dung trong `AdminEventServiceImpl` va `SpeakerAgendaServiceImpl`.
+- **`PagingUtil`** (`utils/PagingUtil.java`): `chuanHoaPage(page)` clamp >= 0, `chuanHoaSize(size)` clamp [1, 100] voi default 12. Dung trong controllers va services thay vi inline validation.
+
+### Entity Column Length Sync (2026-05-27 — commit `871f7dd`)
+
+Entity da duoc dong bo voi `FileKhoiTaoCSDL.sql`:
+- `Event.title`: 500 → 255, `Event.slug`: 550 → 255, `Event.thumbnailUrl`: 500 → 255, `Event.eventType`: nullable → `nullable=false`
+- `CtEvent.location`: nullable → `nullable=false`, `CtEvent.seoDescription`: 500 → 255
+- `CtEventStatusHistory.statusCode`: 30 → 50, `CtEventStatusHistory.changedByUser`: nullable → `nullable=false`, `CtEventStatusHistory.note`: 500 → 255
+- `EventType.description`: 500 → 255
+- `Location.name`: 200 → 150, `Location.address`: nullable → `nullable=false`
+
+### Admin Service Interface Expansion (2026-05-27 — commit `871f7dd`)
+
+`IAdminEventService` them 3 method moi:
+- `layDanhMucTrangThai()` → `AdminEventDictionaryResponse` (event statuses + registration statuses)
+- `uploadAnhChienDich(MultipartFile)` → `AdminEventMediaResponse` (url + fileName)
+- `uploadAnhDienGia(MultipartFile)` → `AdminEventMediaResponse`
+- `doiTrangThaiNhieuChienDich(BulkActionRequest, Long moderatorId)` — bulk status change
+
+`AdminEventServiceImpl` them constants: `MAX_EVENT_IMAGE_BYTES = 5MB`, `EVENT_STATUS_CODES[]`, `REGISTRATION_STATUS_CODES[]`. Inject them `ICtEventCmtRepository`, `ICtAgendaSpeakerRepository`, `IEventAgendaRepository`, `IEventSpeakerRepository`, `IPostRepository`. Dung `@Value("${pharma.upload.base-path:./uploads}")` cho upload path.
 
 ### Admin Events Production Fix (2026-05-26)
 

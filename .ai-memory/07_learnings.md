@@ -1,5 +1,5 @@
 # Learnings — Bài học từ sai lầm
-> Last updated: 2026-05-26
+> Last updated: 2026-05-28
 > Tổng entries: 15
 > Entries sẵn sàng promote (Lần >= 3): 3
 

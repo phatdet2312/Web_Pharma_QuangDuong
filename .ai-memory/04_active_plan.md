@@ -1,9 +1,19 @@
-# Active Plan - Admin Events Production Fix
+# Active Plan - IDLE
+> Last updated: 2026-05-28
+> Status: IDLE — sẵn sàng nhận task mới
+> Drift sync: 2026-05-28 — đã đồng bộ 5 commit ngoài Claude/Codex
+
+## Tóm tắt drift đã xử lý (2026-05-27 ~ 2026-05-28)
+
+5 commit ngoài Claude: `a1ea9dc` (LapDieuKienCode), `6b6cfe0` (codex agents mới), `34335b6` (codex hooks), `871f7dd` (Codex admin/event lớn: +49 files, entities/DTOs/services/repositories/template), `2d64c50` (fix codex: tách `ImagePathUtil` + `PagingUtil`). 5 file đang sửa chưa commit: `admin_layout.html` (reformat CSS), `admin/events.html`, `admin/posts.html`, `admin/user-details.html`, `.claude/agents/15-planner.md`.
+
+---
+
+# Historical Plan - Admin Events Production Fix
 > Last updated: 2026-05-26
 > Status: DONE
-> Planner persisted before implementation: YES
 
-## Mục tiêu hiện tại
+## Mục tiêu đã hoàn thành
 
 Fix toàn diện các lỗi admin events đã audit: backend integrity/security, public locked-session privacy, media upload flow, frontend enum/API/UX/readability, và duplicate-render root cause. Không sửa bằng dedupe chống chế theo nội dung; chỉ xử lý khi cùng một record ID bị render lặp.
 

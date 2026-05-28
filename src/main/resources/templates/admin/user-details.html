@@ -1365,18 +1365,12 @@
                     return;
                 }
 
-                Swal.fire({
+                confirmAction({
                     title: 'Xác nhận lưu phân quyền?',
                     html: 'Tài khoản sẽ được cập nhật chức vụ: <strong>' + danhSachDuocChon.join(', ') + '</strong>',
                     icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3b82f6',
-                    cancelButtonColor: '#94a3b8',
-                    confirmButtonText: '<i class="fas fa-check me-1"></i>Xác nhận',
-                    cancelButtonText: 'Hủy'
-                }).then(function (result) {
-                    if (result.isConfirmed !== true) return;
-
+                    confirmButtonText: '<i class="fas fa-check me-1"></i>Xác nhận'
+                }, function () {
                     var requestData = { roles: danhSachDuocChon };
                     callApi('/api/admin/users/' + targetUserId + '/roles', 'POST', requestData, '#btnLuuPhanQuyen', function () {
                         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Lưu phân quyền thành công!', showConfirmButton: false, timer: 2000 });

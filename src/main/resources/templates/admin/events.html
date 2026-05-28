@@ -1251,6 +1251,8 @@
 </div>
 
 <script>
+
+
 var state = {
     activeAgenda: [],
     activeSession: null,
@@ -1470,6 +1472,7 @@ function openModal(id) {
     }
 
     modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 
     var firstControl = modal.querySelector('input, select, textarea, button');
     if (firstControl !== null) {
@@ -1483,6 +1486,7 @@ function closeModal(id) {
     var modal = byId(id);
     if (modal !== null) {
         modal.style.display = 'none';
+        document.body.style.overflow = '';
     }
 }
 
@@ -2227,17 +2231,15 @@ function executeBulkStatus(statusCode) {
         + statusLabel(statusCode)
         + '"?';
 
-    if (confirm(message) === false) {
-        return;
-    }
-
-    api('/api/admin/events/bulk/status', 'POST', {
-        action: statusCode,
-        ids: state.selectedCampaignIds
-    }, null).then(function() {
-        showToast('success', 'Cập nhật trạng thái hàng loạt thành công');
-        loadStats();
-        loadCampaigns(state.currentPage);
+    confirmAction(message, function() {
+        api('/api/admin/events/bulk/status', 'POST', {
+            action: statusCode,
+            ids: state.selectedCampaignIds
+        }, null).then(function() {
+            showToast('success', 'Cập nhật trạng thái hàng loạt thành công');
+            loadStats();
+            loadCampaigns(state.currentPage);
+        });
     });
 }
 
@@ -2300,11 +2302,13 @@ function saveCampaign() {
         successMessage = 'Cập nhật chiến dịch thành công';
     }
 
-    api(url, method, payload, '#btnSaveCampaign').then(function() {
-        closeModal('campaignModal');
-        showToast('success', successMessage);
-        loadStats();
-        loadCampaigns(state.currentPage);
+    confirmAction('Bạn có chắc chắn muốn lưu thông tin chiến dịch này?', function() {
+        api(url, method, payload, '#btnSaveCampaign').then(function() {
+            closeModal('campaignModal');
+            showToast('success', successMessage);
+            loadStats();
+            loadCampaigns(state.currentPage);
+        });
     });
 }
 
@@ -2315,14 +2319,12 @@ function deleteCampaign(id) {
         title = campaign.title;
     }
 
-    if (confirm('Xóa vĩnh viễn "' + title + '" và các phiên trực thuộc?') === false) {
-        return;
-    }
-
-    api('/api/admin/events/' + id, 'DELETE', null, null).then(function() {
-        showToast('success', 'Đã xóa chiến dịch');
-        loadStats();
-        loadCampaigns(0);
+    confirmAction('Xóa vĩnh viễn "' + title + '" và các phiên trực thuộc?', function() {
+        api('/api/admin/events/' + id, 'DELETE', null, null).then(function() {
+            showToast('success', 'Đã xóa chiến dịch');
+            loadStats();
+            loadCampaigns(0);
+        });
     });
 }
 
@@ -2470,23 +2472,23 @@ function saveSession() {
         successMessage = 'Cập nhật phiên thành công';
     }
 
-    api(url, method, payload, '#btnSaveSession').then(function() {
-        closeModal('sessionModal');
-        showToast('success', successMessage);
-        loadStats();
-        loadCampaigns(state.currentPage);
+    confirmAction('Bạn có chắc chắn muốn lưu thông tin phiên sự kiện này?', function() {
+        api(url, method, payload, '#btnSaveSession').then(function() {
+            closeModal('sessionModal');
+            showToast('success', successMessage);
+            loadStats();
+            loadCampaigns(state.currentPage);
+        });
     });
 }
 
 function deleteSession(id) {
-    if (confirm('Xóa vĩnh viễn phiên sự kiện này cùng dữ liệu liên quan?') === false) {
-        return;
-    }
-
-    api('/api/admin/events/sessions/' + id, 'DELETE', null, null).then(function() {
-        showToast('success', 'Đã xóa phiên sự kiện');
-        loadStats();
-        loadCampaigns(state.currentPage);
+    confirmAction('Xóa vĩnh viễn phiên sự kiện này cùng dữ liệu liên quan?', function() {
+        api('/api/admin/events/sessions/' + id, 'DELETE', null, null).then(function() {
+            showToast('success', 'Đã xóa phiên sự kiện');
+            loadStats();
+            loadCampaigns(state.currentPage);
+        });
     });
 }
 
@@ -2557,11 +2559,13 @@ function saveSessionStatus() {
         statusCode: byId('statusCode').value
     };
 
-    api('/api/admin/events/sessions/status', 'POST', payload, '#btnSaveStatus').then(function() {
-        showToast('success', 'Đã ghi trạng thái mới');
-        loadStatusHistory(state.activeSession.id);
-        loadStats();
-        loadCampaigns(state.currentPage);
+    confirmAction('Xác nhận cập nhật trạng thái phiên sự kiện?', function() {
+        api('/api/admin/events/sessions/status', 'POST', payload, '#btnSaveStatus').then(function() {
+            showToast('success', 'Đã ghi trạng thái mới');
+            loadStatusHistory(state.activeSession.id);
+            loadStats();
+            loadCampaigns(state.currentPage);
+        });
     });
 }
 
@@ -2644,12 +2648,14 @@ function saveRegistrationStatus(id) {
     }
 
     var url = '/api/admin/events/registrations/' + id + '/status?status=' + encodeURIComponent(select.value);
-    api(url, 'PATCH', null, null).then(function() {
-        showToast('success', 'Đã cập nhật trạng thái đăng ký');
-        if (state.activeSession !== null) {
-            loadRegistrations(state.activeSession.id);
-        }
-        loadStats();
+    confirmAction('Xác nhận cập nhật trạng thái đăng ký này?', function() {
+        api(url, 'PATCH', null, null).then(function() {
+            showToast('success', 'Đã cập nhật trạng thái đăng ký');
+            if (state.activeSession !== null) {
+                loadRegistrations(state.activeSession.id);
+            }
+            loadStats();
+        });
     });
 }
 
@@ -2774,23 +2780,23 @@ function saveSpeaker() {
         url = '/api/admin/events/speakers/' + id;
     }
 
-    api(url, method, payload, '#btnSaveSpeaker').then(function() {
-        showToast('success', 'Đã lưu diễn giả');
-        resetSpeakerForm();
-        loadSpeakersAndAgenda(state.activeSession.id);
+    confirmAction('Bạn có chắc chắn muốn lưu thông tin diễn giả này?', function() {
+        api(url, method, payload, '#btnSaveSpeaker').then(function() {
+            showToast('success', 'Đã lưu diễn giả');
+            resetSpeakerForm();
+            loadSpeakersAndAgenda(state.activeSession.id);
+        });
     });
 }
 
 function deleteSpeaker(id) {
-    if (confirm('Xóa diễn giả này khỏi phiên?') === false) {
-        return;
-    }
-
-    api('/api/admin/events/speakers/' + id, 'DELETE', null, null).then(function() {
-        showToast('success', 'Đã xóa diễn giả');
-        if (state.activeSession !== null) {
-            loadSpeakersAndAgenda(state.activeSession.id);
-        }
+    confirmAction('Xóa diễn giả này khỏi phiên?', function() {
+        api('/api/admin/events/speakers/' + id, 'DELETE', null, null).then(function() {
+            showToast('success', 'Đã xóa diễn giả');
+            if (state.activeSession !== null) {
+                loadSpeakersAndAgenda(state.activeSession.id);
+            }
+        });
     });
 }
 
@@ -2912,23 +2918,23 @@ function saveAgenda() {
         url = '/api/admin/events/agenda/' + id;
     }
 
-    api(url, method, payload, '#btnSaveAgenda').then(function() {
-        showToast('success', 'Đã lưu lịch trình');
-        resetAgendaForm();
-        loadSpeakersAndAgenda(state.activeSession.id);
+    confirmAction('Bạn có chắc chắn muốn lưu thông tin lịch trình này?', function() {
+        api(url, method, payload, '#btnSaveAgenda').then(function() {
+            showToast('success', 'Đã lưu lịch trình');
+            resetAgendaForm();
+            loadSpeakersAndAgenda(state.activeSession.id);
+        });
     });
 }
 
 function deleteAgenda(id) {
-    if (confirm('Xóa mốc lịch trình này?') === false) {
-        return;
-    }
-
-    api('/api/admin/events/agenda/' + id, 'DELETE', null, null).then(function() {
-        showToast('success', 'Đã xóa lịch trình');
-        if (state.activeSession !== null) {
-            loadSpeakersAndAgenda(state.activeSession.id);
-        }
+    confirmAction('Xóa mốc lịch trình này?', function() {
+        api('/api/admin/events/agenda/' + id, 'DELETE', null, null).then(function() {
+            showToast('success', 'Đã xóa lịch trình');
+            if (state.activeSession !== null) {
+                loadSpeakersAndAgenda(state.activeSession.id);
+            }
+        });
     });
 }
 
@@ -3063,26 +3069,26 @@ function saveEventType() {
         url = '/api/admin/events/types/' + id;
     }
 
-    api(url, method, payload, '#btnSaveType').then(function() {
-        showToast('success', 'Đã lưu loại sự kiện');
-        resetTypeForm();
-        loadDictionaries(function() {
-            renderTypeList();
-            loadCampaigns(state.currentPage);
+    confirmAction('Bạn có chắc chắn muốn lưu loại sự kiện này?', function() {
+        api(url, method, payload, '#btnSaveType').then(function() {
+            showToast('success', 'Đã lưu loại sự kiện');
+            resetTypeForm();
+            loadDictionaries(function() {
+                renderTypeList();
+                loadCampaigns(state.currentPage);
+            });
         });
     });
 }
 
 function deleteEventType(id) {
-    if (confirm('Xóa loại sự kiện này? Chỉ thực hiện được khi chưa có chiến dịch phụ thuộc.') === false) {
-        return;
-    }
-
-    api('/api/admin/events/types/' + id, 'DELETE', null, null).then(function() {
-        showToast('success', 'Đã xóa loại sự kiện');
-        loadDictionaries(function() {
-            renderTypeList();
-            loadCampaigns(state.currentPage);
+    confirmAction('Xóa loại sự kiện này? Chỉ thực hiện được khi chưa có chiến dịch phụ thuộc.', function() {
+        api('/api/admin/events/types/' + id, 'DELETE', null, null).then(function() {
+            showToast('success', 'Đã xóa loại sự kiện');
+            loadDictionaries(function() {
+                renderTypeList();
+                loadCampaigns(state.currentPage);
+            });
         });
     });
 }
@@ -3178,26 +3184,26 @@ function saveLocation() {
         url = '/api/admin/events/locations/' + id;
     }
 
-    api(url, method, payload, '#btnSaveLocation').then(function() {
-        showToast('success', 'Đã lưu địa điểm');
-        resetLocationForm();
-        loadDictionaries(function() {
-            renderLocationList();
-            loadCampaigns(state.currentPage);
+    confirmAction('Bạn có chắc chắn muốn lưu địa điểm này?', function() {
+        api(url, method, payload, '#btnSaveLocation').then(function() {
+            showToast('success', 'Đã lưu địa điểm');
+            resetLocationForm();
+            loadDictionaries(function() {
+                renderLocationList();
+                loadCampaigns(state.currentPage);
+            });
         });
     });
 }
 
 function deleteLocation(id) {
-    if (confirm('Xóa địa điểm này? Chỉ thực hiện được khi chưa có phiên phụ thuộc.') === false) {
-        return;
-    }
-
-    api('/api/admin/events/locations/' + id, 'DELETE', null, null).then(function() {
-        showToast('success', 'Đã xóa địa điểm');
-        loadDictionaries(function() {
-            renderLocationList();
-            loadCampaigns(state.currentPage);
+    confirmAction('Xóa địa điểm này? Chỉ thực hiện được khi chưa có phiên phụ thuộc.', function() {
+        api('/api/admin/events/locations/' + id, 'DELETE', null, null).then(function() {
+            showToast('success', 'Đã xóa địa điểm');
+            loadDictionaries(function() {
+                renderLocationList();
+                loadCampaigns(state.currentPage);
+            });
         });
     });
 }
@@ -3275,6 +3281,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (evt.target.classList.contains('modal-overlay') === true) {
             evt.target.style.display = 'none';
+            document.body.style.overflow = '';
         }
     });
 
@@ -3282,6 +3289,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (evt.which === 27) {
             document.querySelectorAll('.modal-overlay').forEach(function(modal) {
                 modal.style.display = 'none';
+                document.body.style.overflow = '';
             });
         }
     });

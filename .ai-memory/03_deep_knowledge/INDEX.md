@@ -1,5 +1,5 @@
 # Deep Knowledge Index - Router
-> Last updated: 2026-05-18
+> Last updated: 2026-05-28
 > Status: BOOTSTRAPPED
 
 Đọc file này trước, chỉ mở file chi tiết đúng module đang cần sửa.

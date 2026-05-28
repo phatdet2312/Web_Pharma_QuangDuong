@@ -552,14 +552,13 @@
     };
 
     window.deletePost = function(id) {
-        if (confirm('Bạn có chắc chắn muốn xóa vĩnh viễn bài viết này? Dữ liệu không thể khôi phục.') === false) {
-            return;
-        }
-        callApi('/api/admin/posts/' + id, 'DELETE', null, null, function(res) {
-            showToast('success', 'Xóa bài viết thành công');
-            loadPostStats();
-            loadPosts(currentPage);
-        });
+        confirmAction('Bạn có chắc chắn muốn xóa vĩnh viễn bài viết này? Dữ liệu không thể khôi phục.', function() {
+            callApi('/api/admin/posts/' + id, 'DELETE', null, null, function(res) {
+                showToast('success', 'Xóa bài viết thành công');
+                loadPostStats();
+                loadPosts(currentPage);
+            });
+        }, true);
     };
 
     // =========================================================================
@@ -630,13 +629,14 @@
         if (selectedPostIds.length === 0) return;
 
         if (actionType === 'delete') {
-            if (confirm('Xóa vĩnh viễn ' + selectedPostIds.length + ' bài viết đã chọn?') === false) return;
-            var reqDelete = { ids: selectedPostIds };
-            callApi('/api/admin/posts/bulk', 'DELETE', reqDelete, null, function(res) {
-                showToast('success', 'Xóa hàng loạt thành công');
-                loadPostStats();
-                loadPosts(0);
-            });
+            confirmAction('Xóa vĩnh viễn ' + selectedPostIds.length + ' bài viết đã chọn?', function() {
+                var reqDelete = { ids: selectedPostIds };
+                callApi('/api/admin/posts/bulk', 'DELETE', reqDelete, null, function(res) {
+                    showToast('success', 'Xóa hàng loạt thành công');
+                    loadPostStats();
+                    loadPosts(0);
+                });
+            }, true);
         } else if (actionType === 'publish') {
             var reqPublish = { ids: selectedPostIds, published: publishValue };
             callApi('/api/admin/posts/bulk/publish', 'PATCH', reqPublish, null, function(res) {
