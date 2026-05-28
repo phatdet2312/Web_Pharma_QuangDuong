@@ -1,91 +1,163 @@
-# Active Plan - PageTransitionManager (Hệ thống chống nháy trang)
+# Active Plan - Admin Comments Real Integration
 > Last updated: 2026-05-28
 > Status: IN_PROGRESS
-> Drift sync: 2026-05-28
+> Planner persisted before implementation: YES
 
 ## Mục tiêu
 
-Xây dựng `PageTransitionManager` — 1 utility JS chung + 1 file CSS chung — giảm/xóa hiện tượng nháy trang khi load data từ API trên 5 template HTML.
+Chuyển `src/main/resources/templates/admin/comments.html` (968 dòng demo HTML tĩnh) thành trang quản trị bình luận hoạt động đầy đủ bằng JSON API. Quản lý tối thiểu 100% chức năng comment user side đang có + khai thác tối đa 16 bảng CSDL comment/moderation/reaction/report.
 
 ## Phạm vi
 
-| Trang | Hiện trạng | Mục tiêu |
-|-------|-----------|---------|
-| admin/events.html | Đã có fade-swap + skeleton. Đã fix coupling: 4 chỗ CRUD Type/Location bỏ loadCampaigns, 6 chỗ CRUD Campaign/Session/Status dùng silent refresh (anLang=true). 7/10 | Fade-swap khi load danh sách. Skeleton cho stats. GIỮ logic render hiện có |
-| posts/list.html | Reveal animation (IntersectionObserver). 6/10 | THÊM skeleton cho lần load đầu. GIỮ reveal animation |
-| posts/detail.html | Skeleton loading có sẵn (chỉ header). Surgical .textContent cho stats. 7/10 | MỞ RỘNG skeleton cho body/sidebar. KHÔNG đổi logic cập nhật số liệu |
-| events/list.html | Reveal animation tương tự posts/list. 6/10 | THÊM skeleton cho lần load đầu. GIỮ reveal animation |
-| events/detail.html | 61 chỗ innerHTML, không có cơ chế chuyên dụng. 4/10 | Skeleton cho hero/body. Fade-swap khi chuyển session |
+| Tầng | Phạm vi | File |
+|------|---------|------|
+| Backend bổ sung | 1 DTO mới + 2 service method + 2 endpoint GET moderation log | `CmtModerationLogResponse.java`, `ICommentService.java`, `CommentServiceImpl.java`, `ApiAdminCommentController.java` |
+| Frontend rewrite | Toàn bộ `comments.html` — thay demo data bằng API call thật | `templates/admin/comments.html` |
+| KHÔNG sửa | Public comment endpoints, CommentServiceImpl methods cũ, ultraSecureLibrary | — |
+
+## Gap Analysis
+
+### API đã có (sẵn sàng dùng)
+
+| Chức năng | Endpoint | Trạng thái |
+|-----------|----------|------------|
+| Thống kê tổng quan | `GET /api/admin/comments/stats` | CÓ — CommentStatsResponse |
+| Tìm kiếm đa chiều + phân trang | `GET /api/admin/comments` (keyword, status, startDate, endDate, targetId, targetType, page, size) | CÓ — Page AdminCmtContextResponse |
+| Comment chờ duyệt | `GET /api/admin/comments/pending` | CÓ |
+| Kiểm duyệt đơn lẻ | `POST /api/admin/comments/moderate` (targetId, targetType, actionId, reason) | CÓ |
+| Kiểm duyệt hàng loạt | `POST /api/admin/comments/bulk/moderate` | CÓ — BulkActionRequest |
+| Xóa vật lý CMT | `DELETE /api/admin/comments/cmt/{cmtId}` | CÓ — cascade reply+reaction |
+| Xóa vật lý PH_CMT | `DELETE /api/admin/comments/reply/{phCmtId}` | CÓ |
+| Xóa hàng loạt | `DELETE /api/admin/comments/bulk` | CÓ |
+| LOAI_LIKE CRUD | `GET/POST/PUT/DELETE /api/admin/comments/reaction-types` | CÓ |
+| Danh sách report | `GET /api/admin/reports/comments` (targetType, status) | CÓ |
+| Xử lý report | `PATCH /api/admin/reports/comments/resolve` | CÓ |
+| Lịch sử xử lý report | `GET /api/admin/reports/comments/{reportId}/history` | CÓ |
+| Danh mục moderation actions | `GET /api/admin/audit/moderation-actions` | CÓ |
+| Lazy-load replies cấp 2 | `GET /api/comments/{cmtId}/replies` | CÓ (public, reuse) |
+| Lazy-load replies cấp 3 | `GET /api/comments/reply/{phCmtId}/replies` | CÓ (public, reuse) |
+| Lịch sử sửa CMT | `GET /api/comments/{cmtId}/history` | CÓ (public, authenticated) |
+| Lịch sử sửa PH_CMT | `GET /api/comments/reply/{phCmtId}/history` | CÓ (public, authenticated) |
+| Reaction types | `GET /api/comments/reaction-types` | CÓ (public) |
+
+### API cần bổ sung
+
+| # | Gap | Mô tả | Repository đã có | Cần làm |
+|---|-----|-------|-------------------|---------|
+| G1 | Admin xem moderation log cho CMT | Lịch sử kiểm duyệt (CT_CMT_MODERATION_LOG) của 1 comment | `findByCmtIdOrderByCreatedAtDesc` đã có | Thêm endpoint + service method + DTO |
+| G2 | Admin xem moderation log cho PH_CMT | Tương tự G1 cho reply | `findByPhCmtIdOrderByCreatedAtDesc` đã có | Thêm endpoint + service method |
+| G3 | DTO CmtModerationLogResponse | Chưa có DTO trả moderation log về frontend | Entity có đủ field | Tạo DTO mới |
+
+### KHÔNG cần bổ sung (đã đủ hoặc reuse)
+
+| Chức năng | Lý do |
+|-----------|-------|
+| Admin xem action log (lịch sử sửa user) | Reuse public `/api/comments/{cmtId}/history` — trả CmtActionLogResponse đầy đủ |
+| Admin xem replies | Reuse public lazy-load endpoint — READ-ONLY |
+| Filter REPORTED | `AdminCmtContextResponse.cmtData.reportCount > 0` — filter client-side đủ nhanh (10-20 items/page) |
+| MODERATION_ACTIONS view | Đã có `GET /api/admin/audit/moderation-actions` |
 
 ## KHÔNG làm
 
-- Partial DOM update cho admin/events.html (rủi ro quá cao, 3300 dòng code)
-- Thay đổi logic surgical update (.textContent) ở posts/detail.html cho stats
-- Thay đổi cấu trúc API hoặc backend
-- Sửa logic nghiệp vụ của bất kỳ trang nào
+- Settings modal backend (DB không có bảng COMMENT_SETTINGS — ngoài scope)
+- Sửa CommentServiceImpl methods cũ
+- Sửa public comment endpoints
+- Sửa ultraSecureLibrary
+- Tạo admin endpoint riêng cho replies/history (reuse public)
 
 ## Danh sách Task
 
+### Phase 0: Backend Bổ Sung (tuần tự — cùng service file)
+
 | # | Task | Agent | File | Trạng thái |
 |---|------|-------|------|-----------|
-| T1 | Tạo `page-transitions.css` — skeleton + fade CSS, prefix `ptm-` | implementer | TẠO: static/css/page-transitions.css | DONE |
-| T2 | Tạo `page-transition-manager.js` — IIFE + prototype, 4 method chính | implementer | TẠO: static/js/page-transition-manager.js | DONE |
-| T3 | Tích hợp vào `admin_layout.html` — link CSS + script JS | implementer | SỬA: templates/admin_layout.html | DONE |
-| T4 | Tích hợp vào `user_layout.html` — link CSS + script JS | implementer | SỬA: templates/user_layout.html | DONE |
-| T5 | admin/events.html — Stats fade-in lần load đầu (giữ surgical setText) | implementer | SỬA: templates/admin/events.html | DONE |
-| T6 | admin/events.html — Campaigns skeleton + fade-swap thay nuke-rebuild | implementer | SỬA: templates/admin/events.html | DONE |
-| T6b | admin/events.html — Fix nháy: xóa loadCampaigns khỏi Type/Location CRUD, thêm anLang silent refresh cho Campaign/Session/Status CRUD | implementer | SỬA: templates/admin/events.html | DONE |
-| T7 | posts/list.html — Skeleton + fade-swap cho featured + article grid | implementer | SỬA: templates/posts/list.html | DONE |
-| T8 | posts/detail.html — Skeleton body + swapContent, giữ surgical stats | implementer | SỬA: templates/posts/detail.html | DONE |
-| T9 | events/list.html — Skeleton + fade-swap cho campaigns-container | implementer | SỬA: templates/events/list.html | DONE |
-| T10 | events/detail.html — Body fade-in khi load chiến dịch | implementer | SỬA: templates/events/detail.html | DONE |
-| T11 | Test toàn bộ 5 trang | tester | Tất cả | PENDING — cần chạy trên browser |
-| T12 | Cập nhật memory | memory-keeper | .ai-memory/ | TODO |
+| T1 | Tạo DTO `CmtModerationLogResponse` (id, targetId, actionCode, actionName, moderatorName, reason, createdAt) | implementer | TẠO: `dto/response/CmtModerationLogResponse.java` | TODO |
+| T2 | Thêm 2 service method `layLichSuKiemDuyetCmt(Long cmtId)` + `layLichSuKiemDuyetPhCmt(Long phCmtId)` | implementer | SỬA: `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java` | TODO |
+| T3 | Thêm 2 endpoint: `GET /api/admin/comments/cmt/{cmtId}/moderation-log` + `GET /api/admin/comments/reply/{phCmtId}/moderation-log` | implementer | SỬA: `controller/api/ApiAdminCommentController.java` | TODO |
+| T4 | Build + test backend | tester | — | TODO |
+
+### Phase 1: Frontend Rewrite (tuần tự — cùng file comments.html)
+
+| # | Task | Agent | Scope | Trạng thái |
+|---|------|-------|-------|-----------|
+| T5 | Stats row load từ API + Toolbar search/filter hoạt động + Tab bar switch params | implementer | Stats + Toolbar + Tabs | TODO |
+| T6 | Danh sách comment render từ API tìm kiếm đa chiều + Pagination thật | implementer | List + Paging | TODO |
+| T7 | Checkbox chọn + Bulk bar + Moderation đơn lẻ (approve/hide/unhide/warn/delete) gọi API | implementer | Bulk + Mod actions | TODO |
+| T8 | Modal chi tiết: nội dung, author, target link, reactions, tab lịch sử kiểm duyệt + lịch sử sửa, quick mod | implementer | Detail Modal | TODO |
+| T9 | Modal Report: list reports, filter, resolve/reject, history | implementer | Report Modal | TODO |
+| T10 | Modal LOAI_LIKE CRUD + MODERATION_ACTIONS read-only list | implementer | LOAI_LIKE + Actions Modal | TODO |
+| T11 | Reply toggle + lazy-load replies cấp 2/3 trong comment card + mod actions trên reply | implementer | Replies lazy-load | TODO |
+
+### Phase 2: Nghiệm Thu
+
+| # | Task | Agent | File | Trạng thái |
+|---|------|-------|------|-----------|
+| T12 | Audit convention DieuKienCode (comment, no ternary, no lambda, full code, tính mù) | reviewer | Tất cả files mới/sửa | TODO |
+| T13 | Build + test toàn bộ (`mvnw compile`, `mvnw test`, `git diff --check`, console JS) | tester | — | TODO |
+| T14 | Cập nhật memory (plan DONE, deep knowledge, evolution log, project map) | memory-keeper | `.ai-memory/` | TODO |
 
 ## Thứ tự thực hiện
 
 ```
-Phase 0 (NỀN TẢNG):
-  T1 (CSS) --> T2 (JS) --> T3 + T4 (layouts, song song)
+Phase 0 (BACKEND — tuần tự vì cùng service file):
+  T1 (DTO) --> T2 (Service) --> T3 (Controller) --> T4 (Build+Test)
 
-Phase 1 (ADMIN — tuần tự vì cùng file):
-  T5 (stats skeleton) --> T6 (campaigns fade-swap)
+Phase 1 (FRONTEND — tuần tự vì cùng file comments.html):
+  T5 (Stats+Toolbar+Tabs) --> T6 (List+Paging) --> T7 (Bulk+Mod)
+  --> T8 (Detail Modal) --> T9 (Report Modal) --> T10 (LOAI_LIKE+Actions)
+  --> T11 (Replies lazy-load)
 
-Phase 2 (USER PAGES — song song vì khác file):
-  T7 (posts/list) | T8 (posts/detail) | T9 (events/list) | T10 (events/detail)
-
-Phase 3 (NGHIỆM THU):
-  T11 (test) --> T12 (memory)
+Phase 2 (NGHIỆM THU — tuần tự):
+  T12 (Convention audit) --> T13 (Full test) --> T14 (Memory)
 ```
+
+**KHÔNG song song:** Phase 1 tuần tự vì cùng sửa 1 file `comments.html`.
 
 ## Decisions
 
-| Quyết định | Phương án chọn | Lý do | Ngày | Hết hạn |
-|-----------|---------------|-------|------|---------|
-| Prefix `ptm-` cho CSS class mới | ptm- prefix | Tránh xung đột với `.skeleton` (posts/detail) và `.reveal` (4 trang) | 2026-05-28 | 2026-08-28 |
-| IIFE + prototype cho JS | Không dùng ES6 class/arrow | Nhất quán với code hiện có, tuân thủ DieuKienCode | 2026-05-28 | 2026-08-28 |
-| Chỉ fade-swap, KHÔNG partial DOM update cho admin/events | Fade-swap toàn container | 3300 dòng, 25+ hàm render lồng nhau, partial update rủi ro quá cao | 2026-05-28 | 2026-08-28 |
-| loadCampaigns silent refresh bằng tham số anLang | Thêm param anLang vào hàm hiện có | DRY — 1 hàm duy nhất, không copy logic fetch. CRUD Type/Location bỏ hẳn loadCampaigns vì không liên quan | 2026-05-28 | 2026-08-28 |
-| Load ở LAYOUT không ở từng trang | Layout load 1 lần | Giống pattern callApi/showToast, trang mới tự động có | 2026-05-28 | 2026-08-28 |
-| CSS dùng `--transition` từ design-system | Không dùng --t-fast của user_layout | design-system.css load trong CẢ HAI layout | 2026-05-28 | 2026-08-28 |
+| Quyết định | Phương án chọn | Phương án bỏ | Lý do | Ngày | Hết hạn |
+|-----------|---------------|-------------|-------|------|---------|
+| Reuse public endpoint cho admin xem replies | Gọi `/api/comments/{cmtId}/replies` (public READ-ONLY) | Tạo endpoint admin riêng | Public endpoint đã trả đủ data, tạo riêng là duplicate code | 2026-05-28 | 2026-08-28 |
+| Reuse public endpoint cho admin xem edit history | Gọi `/api/comments/{cmtId}/history` (authenticated) | Tạo endpoint admin riêng | CmtActionLogResponse đã có old/new payload, IP, user-agent | 2026-05-28 | 2026-08-28 |
+| Filter REPORTED ở frontend | `cmtData.reportCount > 0` client-side | Thêm status=REPORTED vào backend JPQL | reportCount đã có trong response, 10-20 items/page đủ nhanh | 2026-05-28 | 2026-08-28 |
+| 1 DTO moderation log dùng chung CMT + PH_CMT | `CmtModerationLogResponse` có targetId | Tạo 2 DTO riêng | Hai entity cùng structure, khác FK — gom vào 1 field targetId | 2026-05-28 | 2026-08-28 |
+| Settings modal disabled (chưa có backend) | Giữ layout, disabled/ẩn, ghi chú "Chưa có API" | Implement backend cho settings | DB không có bảng COMMENT_SETTINGS — ngoài scope | 2026-05-28 | 2026-08-28 |
+| Giữ CSS hiện có | Giữ CSS demo (prefix cm-/cmt-/mod-), chỉ thay data + JS | Rewrite CSS từ đầu | CSS đã đẹp và nhất quán, rewrite là công vô ích | 2026-05-28 | 2026-08-28 |
+| Frontend chia 7 phần tuần tự | Mỗi task có tiêu chí riêng, compile check | Rewrite 1 lần toàn bộ | 968 dòng, chia nhỏ dễ kiểm soát và review | 2026-05-28 | 2026-08-28 |
 
 ## Risk
 
-| Risk | Mức độ | Giảm thiểu |
-|------|--------|-----------|
-| admin/events.html 3300 dòng — sửa sai sẽ break nhiều chức năng | CAO | Chỉ sửa 2 hàm (loadStats, loadCampaigns), wrap BÊN NGOÀI render function |
-| CSS class trùng tên | TRUNG BÌNH | Prefix ptm- cho tất cả class mới |
-| Làm vỡ reveal animation khi thêm fade | TRUNG BÌNH | Fade-swap gọi kichHoatHieuUngXuatHien() SAU khi content visible |
+| Risk | Mức độ | File | Blast radius | Giảm thiểu |
+|------|--------|------|-------------|------------|
+| comments.html rewrite lớn (968→~1500-2000 dòng) | CAO | `templates/admin/comments.html` | Chỉ trang admin comments | Chia 7 phần, mỗi phần compile check. Giữ CSS cũ |
+| Sửa CommentServiceImpl (1400+ dòng) | THẤP | `service/impl/CommentServiceImpl.java` | Admin + Public comment | Chỉ THÊM 2 method readonly, KHÔNG sửa method cũ |
+| Sửa ApiAdminCommentController | THẤP | `controller/api/ApiAdminCommentController.java` | Admin comment API | Chỉ THÊM 2 endpoint GET, không sửa endpoint cũ |
+| CSS xung đột | THẤP | `templates/admin/comments.html` | Trang admin comments | CSS scoped trong style tag, prefix cm-/cmt-/mod- |
+
+## 16 bảng DB khai thác
+
+CMT, PH_CMT, CT_POST_CMT, CT_EVENT_CMT, LOAI_LIKE, CT_LIKECMT, CT_LIKEPHCMT, CT_CMT_REPORTS, CT_PH_CMT_REPORTS, CT_CMT_REPORT_MOD_LOG, CT_PH_CMT_REPORT_MOD_LOG, CT_CMT_ACTION_LOG, CT_PH_CMT_ACTION_LOG, CT_CMT_MODERATION_LOG, CT_PH_CMT_MODERATION_LOG, MODERATION_ACTIONS
 
 ## Tiêu chí nghiệm thu tổng thể
 
-1. Zero flicker: 5 trang load/filter/navigate không nháy
-2. Skeleton visible: mỗi trang hiện skeleton trước khi data API về
-3. Fade smooth: transition 200-300ms mượt
-4. Zero regression: CRUD, filter, pagination, comment, registration, reveal, surgical stats đều hoạt động
-5. Zero JS error: console không có error mới
-6. Convention: comment tiếng Việt, không ternary, không arrow function, không Stream
-7. Responsive: skeleton + fade hoạt động trên mobile/tablet/desktop
+1. **Zero hardcoded data**: Không còn số liệu, tên, nội dung demo nào trong HTML
+2. **100% user feature coverage**: Đọc/tạo/sửa/xóa/reaction/report/lịch sử — admin đều quản lý được
+3. **16 bảng DB khai thác**: Tất cả hiển thị hoặc sử dụng qua API
+4. **Convention DieuKienCode**: Comment đầy đủ, không ternary phức tạp, không lambda, format rõ ràng
+5. **Tính mù**: Frontend chỉ gọi API + render JSON, không biết DB structure
+6. **Zero trust**: Mọi moderation action gửi backend validate, frontend không tự quyết
+7. **Build pass**: `bash mvnw -q -DskipTests compile` + `bash mvnw -q test` + `git diff --check`
+8. **Zero JS error**: Console không có error mới
+9. **Toast trung thực**: Success chỉ khi API thành công, error khi API lỗi
+10. **Responsive**: Giữ nguyên responsive CSS hiện có
+
+---
+
+# Historical Plan - PageTransitionManager (Hệ thống chống nháy trang)
+> Last updated: 2026-05-28
+> Status: DONE (T1-T10), PENDING browser test (T11), TODO memory (T12)
+
+Xây dựng `PageTransitionManager` — 1 utility JS chung + 1 file CSS chung — giảm/xóa hiện tượng nháy trang khi load data từ API trên 5 template HTML. T1-T10 hoàn thành, T11 cần browser test, T12 cần memory sync.
 
 ---
 

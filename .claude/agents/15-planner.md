@@ -18,7 +18,7 @@ Khi được gọi:
 1. Đọc `.ai-memory/04_active_plan.md` để biết kế hoạch hiện tại
 2. Phân tích yêu cầu mới
 3. Phân rã thành task nhỏ, xác định thứ tự + dependency
-4. Không tự ghi kế hoạch vào `04_active_plan.md` mà phải trả luồn kế hoạch chi tiết trong output để memory-keeper ghi lại. 
+4. Không tự ghi kế hoạch vào `04_active_plan.md` mà phải trả luồn kế hoạch chi tiết trong output để memory-keeper ghi lại.
 
 Output format:
 | # | Task | Agent phù hợp | Dependency | Effort |
