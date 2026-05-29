@@ -9,7 +9,9 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LoaiLikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.ReplyRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminCmtContextResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventMediaResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtActionLogResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtModerationLogResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CommentStatsResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.LoaiLikeResponse;
@@ -22,6 +24,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.ICommentService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -30,7 +33,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * =========================================================================
@@ -57,6 +66,9 @@ public class CommentServiceImpl implements ICommentService {
 
     private static final int TANG_HIEN_THI_PHAN_HOI_CAP_HAI = 2;
     private static final int TANG_HIEN_THI_PHAN_HOI_TOI_DA = 3;
+
+    @Value("${pharma.upload.base-path:./uploads}")
+    private String uploadBasePath;
     private final ICmtRepository cmtRepository;
     private final IPhCmtRepository phCmtRepository;
     private final ICtPostCmtRepository ctPostCmtRepository;
@@ -751,6 +763,12 @@ public class CommentServiceImpl implements ICommentService {
         stats.setTotalReactions(totalReactions);
         stats.setReportedCmt(reportedCmt);
 
+        // Đếm bình luận phân theo nguồn gốc (bài viết / sự kiện)
+        long postCmt = ctPostCmtRepository.demTong();
+        long eventCmt = ctEventCmtRepository.demTong();
+        stats.setPostCmt(postCmt);
+        stats.setEventCmt(eventCmt);
+
         return stats;
     }
 
@@ -1441,7 +1459,7 @@ public class CommentServiceImpl implements ICommentService {
     private List<LoaiLikeResponse> layReactionsPhCmt(Long phCmtId) {
         List<Object[]> rows = ctLikePhCmtRepository.demReactionTheLoai(phCmtId);
         List<LoaiLikeResponse> result = new ArrayList<>();
-        
+
         Object[] arr = rows.toArray();
         for (int i = 0; i < arr.length; i = i + 1) {
             Object[] row = (Object[]) arr[i];
@@ -1451,5 +1469,127 @@ public class CommentServiceImpl implements ICommentService {
             result.add(resp);
         }
         return result;
+    }
+
+    // =========================================================================
+    // KHỐI NHẬT KÝ KIỂM DUYỆT (MODERATION LOG)
+    // =========================================================================
+
+    /**
+     * Trích xuất toàn bộ lịch sử kiểm duyệt của một Bình luận gốc.
+     * Mỗi bản ghi phản ánh một hành động APPROVE/HIDE/WARN/DELETE do Admin thực hiện.
+     */
+    @Override
+    public List<CmtModerationLogResponse> layLichSuKiemDuyetCmt(Long cmtId) {
+        List<CtCmtModerationLog> logs = cmtModerationLogRepository.findByCmtIdOrderByCreatedAtDesc(cmtId);
+        List<CmtModerationLogResponse> responseList = new ArrayList<>();
+
+        Object[] arr = logs.toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            CtCmtModerationLog log = (CtCmtModerationLog) arr[i];
+
+            CmtModerationLogResponse dto = new CmtModerationLogResponse();
+            dto.setId(log.getId());
+            dto.setTargetId(log.getCmt().getId());
+            dto.setTargetType("CMT");
+            dto.setActionCode(log.getAction().getCode());
+            dto.setActionName(log.getAction().getName());
+            dto.setModeratorId(log.getModerator().getId());
+
+            String moderatorName = log.getModerator().getFullName();
+            if (moderatorName == null) {
+                moderatorName = log.getModerator().getUsername();
+            }
+            dto.setModeratorName(moderatorName);
+            dto.setReason(log.getReason());
+            dto.setCreatedAt(log.getCreatedAt());
+
+            responseList.add(dto);
+        }
+        return responseList;
+    }
+
+    /**
+     * Trích xuất toàn bộ lịch sử kiểm duyệt của một Phản hồi thứ cấp.
+     * Tương tự layLichSuKiemDuyetCmt nhưng dành cho bảng CT_PH_CMT_MODERATION_LOG.
+     */
+    @Override
+    public List<CmtModerationLogResponse> layLichSuKiemDuyetPhCmt(Long phCmtId) {
+        List<CtPhCmtModerationLog> logs = phCmtModerationLogRepository.findByPhCmtIdOrderByCreatedAtDesc(phCmtId);
+        List<CmtModerationLogResponse> responseList = new ArrayList<>();
+
+        Object[] arr = logs.toArray();
+        for (int i = 0; i < arr.length; i = i + 1) {
+            CtPhCmtModerationLog log = (CtPhCmtModerationLog) arr[i];
+
+            CmtModerationLogResponse dto = new CmtModerationLogResponse();
+            dto.setId(log.getId());
+            dto.setTargetId(log.getPhCmt().getId());
+            dto.setTargetType("PH_CMT");
+            dto.setActionCode(log.getAction().getCode());
+            dto.setActionName(log.getAction().getName());
+            dto.setModeratorId(log.getModerator().getId());
+
+            String moderatorName = log.getModerator().getFullName();
+            if (moderatorName == null) {
+                moderatorName = log.getModerator().getUsername();
+            }
+            dto.setModeratorName(moderatorName);
+            dto.setReason(log.getReason());
+            dto.setCreatedAt(log.getCreatedAt());
+
+            responseList.add(dto);
+        }
+        return responseList;
+    }
+
+    // =========================================================================
+    // KHỐI UPLOAD MEDIA: ICON CẢM XÚC
+    // =========================================================================
+
+    /**
+     * Tải lên ảnh icon cho loại cảm xúc (reaction type).
+     * Lưu vào thư mục uploads/comments/reaction-icons/ và trả URL public.
+     */
+    @Override
+    public AdminEventMediaResponse uploadIconReaction(MultipartFile file) {
+        String phanMoRong = kiemTraFileAnhUploadCmt(file);
+        String tenFile = UUID.randomUUID().toString() + phanMoRong;
+        Path thuMucLuu = Paths.get(uploadBasePath, "comments", "reaction-icons").normalize();
+        Path duongDanLuu = thuMucLuu.resolve(tenFile).normalize();
+        if (duongDanLuu.startsWith(thuMucLuu) == false) {
+            throw new AppException(400, "Đường dẫn upload không hợp lệ.");
+        }
+        try {
+            Files.createDirectories(thuMucLuu);
+            file.transferTo(duongDanLuu);
+        } catch (IOException e) {
+            throw new AppException(500, "Không thể lưu file ảnh icon: " + e.getMessage());
+        }
+        AdminEventMediaResponse response = new AdminEventMediaResponse();
+        response.setFileName(tenFile);
+        response.setUrl("/uploads/comments/reaction-icons/" + tenFile);
+        return response;
+    }
+
+    /**
+     * Kiểm tra file ảnh hợp lệ: không rỗng, đúng định dạng ảnh.
+     * Trả về phần mở rộng (VD: ".jpg") để dùng khi đặt tên file.
+     */
+    private String kiemTraFileAnhUploadCmt(MultipartFile file) {
+        if (file == null || file.isEmpty() == true) {
+            throw new AppException(400, "Vui lòng chọn file ảnh để tải lên.");
+        }
+        String tenGoc = file.getOriginalFilename();
+        if (tenGoc == null || tenGoc.trim().isEmpty() == true) {
+            throw new AppException(400, "Tên file không hợp lệ.");
+        }
+        String tenGocLower = tenGoc.toLowerCase();
+        if (tenGocLower.endsWith(".jpg") == true) { return ".jpg"; }
+        if (tenGocLower.endsWith(".jpeg") == true) { return ".jpeg"; }
+        if (tenGocLower.endsWith(".png") == true) { return ".png"; }
+        if (tenGocLower.endsWith(".gif") == true) { return ".gif"; }
+        if (tenGocLower.endsWith(".webp") == true) { return ".webp"; }
+        throw new AppException(400, "Chỉ chấp nhận file ảnh: JPG, PNG, GIF, WEBP.");
     }
 }

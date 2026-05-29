@@ -9,12 +9,15 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LoaiLikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.ReplyRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminCmtContextResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventMediaResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtActionLogResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtModerationLogResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CommentStatsResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.LoaiLikeResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PhCmtResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -92,6 +95,9 @@ public interface ICommentService {
      */
     Page<AdminCmtContextResponse> timKiemBinhLuanAdmin(String keyword, String status, LocalDateTime startDate, LocalDateTime endDate, Long targetId, int page, int size);
 
+    /** ADMIN: Tải lên icon cảm xúc dạng ảnh */
+    AdminEventMediaResponse uploadIconReaction(MultipartFile file);
+
     /** ADMIN G2: Tạo mới Loại Phản ứng */
     LoaiLikeResponse taoLoaiLike(LoaiLikeRequest request);
 
@@ -115,4 +121,10 @@ public interface ICommentService {
 
     /** ADMIN: Xóa hàng loạt comment gốc */
     void xoaNhieuCmt(BulkActionRequest request);
+
+    /** ADMIN: Trích xuất lịch sử kiểm duyệt của Bình luận gốc */
+    List<CmtModerationLogResponse> layLichSuKiemDuyetCmt(Long cmtId);
+
+    /** ADMIN: Trích xuất lịch sử kiểm duyệt của Phản hồi thứ cấp */
+    List<CmtModerationLogResponse> layLichSuKiemDuyetPhCmt(Long phCmtId);
 }

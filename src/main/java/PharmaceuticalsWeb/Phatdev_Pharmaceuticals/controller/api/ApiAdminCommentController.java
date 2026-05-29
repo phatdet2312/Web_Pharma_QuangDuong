@@ -5,7 +5,9 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.BulkActionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentModerationRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LoaiLikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminCmtContextResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AdminEventMediaResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ApiResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtModerationLogResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CommentStatsResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.LoaiLikeResponse;
@@ -16,8 +18,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -49,6 +53,12 @@ public class ApiAdminCommentController {
     @GetMapping("/reaction-types")
     public ApiResponse<List<LoaiLikeResponse>> layLoaiLike() {
         return ApiResponse.thanhCong(commentService.layTatCaLoaiLike(), "Lấy loại reaction thành công");
+    }
+
+    /** Tải lên ảnh icon cho loại cảm xúc */
+    @PostMapping(value = "/reaction-types/upload-icon", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<AdminEventMediaResponse> uploadIconReaction(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.thanhCong(commentService.uploadIconReaction(file), "Tải ảnh icon thành công");
     }
 
     /** G2: Tạo mới loại reaction */
@@ -156,7 +166,25 @@ public class ApiAdminCommentController {
     }
 
     /**
-     * Thuật toán Định danh Chuyên sâu: 
+     * Truy xuất lịch sử kiểm duyệt của Bình luận gốc theo ID.
+     * Trả về danh sách log sắp xếp từ mới nhất đến cũ nhất.
+     */
+    @GetMapping("/cmt/{cmtId}/moderation-log")
+    public ApiResponse<List<CmtModerationLogResponse>> layLichSuKiemDuyetCmt(@PathVariable Long cmtId) {
+        return ApiResponse.thanhCong(commentService.layLichSuKiemDuyetCmt(cmtId), "Lấy lịch sử kiểm duyệt bình luận thành công");
+    }
+
+    /**
+     * Truy xuất lịch sử kiểm duyệt của Phản hồi thứ cấp theo ID.
+     * Trả về danh sách log sắp xếp từ mới nhất đến cũ nhất.
+     */
+    @GetMapping("/reply/{phCmtId}/moderation-log")
+    public ApiResponse<List<CmtModerationLogResponse>> layLichSuKiemDuyetPhCmt(@PathVariable Long phCmtId) {
+        return ApiResponse.thanhCong(commentService.layLichSuKiemDuyetPhCmt(phCmtId), "Lấy lịch sử kiểm duyệt phản hồi thành công");
+    }
+
+    /**
+     * Thuật toán Định danh Chuyên sâu:
      * Ủy thác hoàn toàn cho UserService để đọc Principal bất chấp Oauth2 hay JWT.
      */
     private Long layUserIdTuAuthentication(Authentication authentication) {

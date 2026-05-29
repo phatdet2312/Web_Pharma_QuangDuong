@@ -1,6 +1,6 @@
 # Comments & Moderation
-> Last updated: 2026-05-26
-> Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, `dto/request/EditContentRequest.java`, `utils/SecurityConfig.java`, comment/report/moderation entities, `templates/posts/detail.html`, `templates/events/detail.html`
+> Last updated: 2026-05-30
+> Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, `dto/request/EditContentRequest.java`, `dto/response/CmtModerationLogResponse.java`, `dto/response/CommentStatsResponse.java`, `repositories/IRepository/ICtPostCmtRepository.java`, `repositories/IRepository/ICtEventCmtRepository.java`, `utils/SecurityConfig.java`, comment/report/moderation entities, `templates/posts/detail.html`, `templates/events/detail.html`, `templates/admin/comments.html`
 > Confidence: HIGH
 
 ## Mô tả chức năng
@@ -63,6 +63,9 @@ Module comment xử lý comment/reply cho post và event session, reaction, lị
 | POST | `/api/comments/like/cmt` | Reaction comment | Yes |
 | POST | `/api/comments/like/reply` | Reaction reply | Yes |
 | POST | `/api/reports/comments` | Report comment/reply | Yes |
+| GET | `/api/admin/comments/cmt/{cmtId}/moderation-log` | Lịch sử kiểm duyệt CMT | Admin |
+| GET | `/api/admin/comments/reply/{phCmtId}/moderation-log` | Lịch sử kiểm duyệt PH_CMT | Admin |
+| POST | `/api/admin/comments/reaction-types/upload-icon` | Upload ảnh icon cảm xúc (multipart) | Admin |
 | GET/POST/PUT/DELETE | `/api/admin/comments/**` | Admin moderation/comment tooling | Admin |
 | GET/PATCH | `/api/admin/reports/comments/**` | Admin xử lý report | Admin |
 
@@ -98,6 +101,27 @@ User tự implement CSS vẽ nhánh cây kiểu Facebook cho comment post detail
 - Selector dùng `:has()` cho trường hợp chưa mở reply nhưng có nút navigation
 
 **Quy tắc khi sửa UI comment:** Không xóa/đổi class `.has-replies`, `.ci-bubble-wrapper`, `.ri-bubble-wrapper`, `.reply-form-wrapper` vì tree branch CSS phụ thuộc vào cấu trúc DOM này.
+
+## Admin Comments Page (admin/comments.html)
+
+Admin comments đã chuyển từ demo tĩnh sang API-driven hoàn chỉnh (2026-05-28/29), khai thác 16 bảng DB. Các tính năng chính:
+- Stats hero bar: tổng comment, reply, pending, hidden, reactions, reported, post/event count (dùng `CommentStatsResponse` với `postCmt`/`eventCmt`).
+- Search đa chiều + pagination, tab filter theo status/targetType.
+- Bulk moderation (APPROVE/HIDE/WARN) + single moderate + chi tiết comment modal.
+- Report modal: list/filter/resolve/reject.
+- LOAI_LIKE CRUD modal: toggle emoji text / upload ảnh, preview ảnh trước submit. Endpoint upload: `POST /api/admin/comments/reaction-types/upload-icon` (multipart). Icon được lưu tại `/uploads/comments/reaction-icons/`.
+- Reply lazy-load cấp 2/3 + mod actions (APPROVE/HIDE/UNHIDE/WARN/DELETE/Chi tiết).
+- Reply DOM dùng `adm-ri-bubble-wrapper` + tree branch CSS (trục dọc + nhánh L) theo pattern `posts/detail.html`.
+- Tích hợp `PageTransitionManager` skeleton + swapContent + anLang cho CRUD không nháy trang.
+- Admin luôn thấy nội dung gốc khi HIDE, không che giấu thông tin.
+
+**Quy tắc khi sửa admin comments:** Đối chiếu `admin/events.html` để giữ pattern UX đồng bộ (modal confirm, toast, loading, upload flow). Không dùng logic hiển thị user (ẩn/che nội dung) cho admin. Mọi user-generated content (noiDung, userFullName, reason, targetTitle) phải qua `lamSachChuoiHTML()` trước khi gán innerHTML — hàm này đã có trong file (2026-05-30). Trạng thái kiểm duyệt dùng lookup map `cauHinhTrangThaiCmt` + `cauHinhTrangThaiReport` (data-driven, đồng bộ với admin/events), fallback `danhSachHanhDong` cho code mới. Hộp thoại xác nhận dùng `confirmAction()` từ layout chung, wording chứa "lưu"/"xóa" để auto-detect chế độ SAVE/DELETE.
+
+## Repository Methods cho Stats
+
+- `ICtPostCmtRepository.demTong()`: đếm tổng bình luận gốc thuộc bài viết.
+- `ICtEventCmtRepository.demTong()`: đếm tổng bình luận gốc thuộc sự kiện.
+- Dùng trong `CommentServiceImpl.layThongKeBinhLuan()` để fill `postCmt`/`eventCmt`.
 
 ## Ghi chú
 

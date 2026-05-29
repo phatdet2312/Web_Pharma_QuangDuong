@@ -30,6 +30,10 @@ public interface ICtEventCmtRepository extends JpaRepository<CtEventCmt, CtEvent
     /** Kiểm tra comment đã thuộc buổi này chưa */
     boolean existsById_CtEventIdAndId_CmtId(Long ctEventId, Long cmtId);
 
+    /** Đếm tổng bình luận gốc thuộc sự kiện */
+    @Query("SELECT COUNT(cec) FROM CtEventCmt cec")
+    long demTong();
+
     /**
      * Truy vấn Batch: Ánh xạ danh sách cmtId sang thông tin Chiến dịch sự kiện nguồn gốc.
      * Trả về mảng Object[]{cmtId, ctEventId, eventTitle, eventSlug} cho mỗi liên kết.

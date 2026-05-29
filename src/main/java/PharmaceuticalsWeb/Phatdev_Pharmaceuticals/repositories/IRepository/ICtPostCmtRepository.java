@@ -25,6 +25,10 @@ public interface ICtPostCmtRepository extends JpaRepository<CtPostCmt, CtPostCmt
     /** Kiểm tra comment đã thuộc bài viết này chưa */
     boolean existsById_PostIdAndId_CmtId(Long postId, Long cmtId);
 
+    /** Đếm tổng bình luận gốc thuộc bài viết */
+    @Query("SELECT COUNT(cpc) FROM CtPostCmt cpc")
+    long demTong();
+
     /**
      * Truy vấn Batch: Ánh xạ danh sách cmtId sang thông tin Bài viết nguồn gốc.
      * Trả về mảng Object[]{cmtId, postId, postTitle, postSlug} cho mỗi liên kết.

@@ -39,4 +39,10 @@ public class CommentStatsResponse {
 
     /** Số bình luận gốc đang có ít nhất một báo cáo chờ xử lý (PENDING) */
     private long reportedCmt;
+
+    /** Số bình luận gốc thuộc bài viết (qua CT_POST_CMT) */
+    private long postCmt;
+
+    /** Số bình luận gốc thuộc sự kiện (qua CT_EVENT_CMT) */
+    private long eventCmt;
 }

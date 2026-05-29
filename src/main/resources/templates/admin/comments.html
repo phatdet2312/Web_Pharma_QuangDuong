@@ -5,963 +5,2616 @@
 <head th:replace="~{admin_layout::admin-head('Kiểm duyệt Bình luận')}"></head>
 
 <th:block th:replace="~{admin_layout::layout(~{::#admin-content-wrapper})}">
-<div id="admin-content-wrapper">
+    <div id="admin-content-wrapper">
 
-<style>
-/* ===== ADMIN COMMENTS PAGE ===== */
-.cm-stat-row { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:24px; }
-.cm-stat { background:#fff; border:1px solid #eee; border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:10px; }
-.cm-stat-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:.88rem; flex-shrink:0; }
-.cm-stat-num { font-size:1.3rem; font-weight:800; line-height:1; }
-.cm-stat-label { font-size:.67rem; color:#6c757d; font-weight:600; margin-top:3px; text-transform:uppercase; letter-spacing:.5px; }
+        <style>
+            /* ===== ADMIN COMMENTS PAGE — REWRITE JSON API ===== */
+            .cm-stat-row {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 12px;
+                margin-bottom: 24px;
+            }
 
-/* Toolbar */
-.cm-toolbar { background:#fff; border:1px solid #eee; border-radius:14px; padding:12px 18px; margin-bottom:18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.cm-search { flex:1; min-width:220px; position:relative; }
-.cm-search i { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#adb5bd; font-size:.8rem; }
-.cm-search input { width:100%; padding:8px 12px 8px 32px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.84rem; outline:none; font-family:inherit; }
-.cm-search input:focus { border-color:#0061ff; }
-.cm-filter { padding:8px 14px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.83rem; outline:none; cursor:pointer; font-family:inherit; color:#495057; background:#fff; }
-.cm-filter:focus { border-color:#0061ff; }
-.cm-btn { display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:.84rem; font-weight:600; cursor:pointer; transition:all .15s; border:none; font-family:inherit; }
-.cm-btn-primary { background:#0061ff; color:#fff; }
-.cm-btn-primary:hover { background:#0048c2; }
-.cm-btn-ghost { background:#fff; border:1.5px solid #e9ecef; color:#495057; }
-.cm-btn-ghost:hover { border-color:#0061ff; color:#0061ff; }
+            .cm-stat {
+                background: #fff;
+                border: 1px solid #eee;
+                border-radius: 14px;
+                padding: 14px 16px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
 
-/* Tab bar */
-.cm-tabs { display:flex; border-bottom:2px solid #f0f2fa; margin-bottom:18px; gap:0; }
-.cm-tab { padding:10px 20px; font-size:.85rem; font-weight:600; color:#6c757d; border-bottom:2.5px solid transparent; cursor:pointer; margin-bottom:-2px; display:flex; align-items:center; gap:6px; transition:color .15s; }
-.cm-tab.active { color:#0061ff; border-bottom-color:#0061ff; }
-.cm-tab .tab-count { background:#e8f0ff; color:#0061ff; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:10px; }
-.cm-tab.active .tab-count { background:#0061ff; color:#fff; }
-.cm-tab .tab-warn { background:#ffebe6; color:#de350b; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:10px; }
+            .cm-stat-icon {
+                width: 38px;
+                height: 38px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: .88rem;
+                flex-shrink: 0;
+            }
 
-/* Bulk bar */
-.bulk-bar { background:linear-gradient(90deg,#0061ff,#2d8cf0); color:#fff; border-radius:12px; padding:10px 20px; margin-bottom:16px; display:none; align-items:center; gap:16px; flex-wrap:wrap; }
-.bulk-bar.visible { display:flex; }
-.bulk-count { font-size:.85rem; font-weight:700; }
-.bulk-actions { display:flex; gap:8px; margin-left:auto; }
-.bulk-btn { padding:6px 14px; border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer; border:none; font-family:inherit; display:flex; align-items:center; gap:5px; }
-.bulk-btn-white  { background:rgba(255,255,255,.9); color:#0061ff; }
-.bulk-btn-yellow { background:rgba(249,168,37,.85); color:#fff; }
-.bulk-btn-red    { background:rgba(222,53,11,.8); color:#fff; }
-.bulk-btn-clear  { background:transparent; color:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.3); }
+            .cm-stat-num {
+                font-size: 1.3rem;
+                font-weight: 800;
+                line-height: 1;
+            }
 
-/* Comment Cards — CMT + PH_CMT */
-.cmt-list { display:flex; flex-direction:column; gap:12px; }
-.cmt-card { background:#fff; border:1px solid #eee; border-radius:14px; overflow:hidden; transition:box-shadow .18s; }
-.cmt-card:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); }
-.cmt-card.reported { border-left:3px solid #de350b; }
-.cmt-card.hidden   { border-left:3px solid #6c757d; opacity:.75; }
-.cmt-card.approved { border-left:3px solid #00875a; }
-.cmt-card.pending  { border-left:3px solid #ff8b00; }
+            .cm-stat-label {
+                font-size: .67rem;
+                color: #6c757d;
+                font-weight: 600;
+                margin-top: 3px;
+                text-transform: uppercase;
+                letter-spacing: .5px;
+            }
 
-.cmt-card-header { padding:12px 16px; display:flex; align-items:flex-start; gap:12px; }
-.cmt-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#0061ff,#2d8cf0); color:#fff; display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:700; flex-shrink:0; }
-.cmt-meta { flex:1; min-width:0; }
-.cmt-meta-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.cmt-author { font-size:.87rem; font-weight:700; color:#1a2040; }
-.cmt-time { font-size:.72rem; color:#adb5bd; }
-.cmt-type-badge { padding:1px 8px; border-radius:5px; font-size:.65rem; font-weight:700; }
-.ctb-post  { background:#e8f0ff; color:#0061ff; }
-.ctb-event { background:#e3fcf7; color:#00875a; }
-.ctb-reply { background:#f0f2fa; color:#6c757d; }
-.cmt-target { font-size:.75rem; color:#6c757d; margin-top:3px; }
-.cmt-target a { color:#0061ff; text-decoration:none; font-weight:600; }
-.cmt-target a:hover { text-decoration:underline; }
-.cmt-status-pill { padding:2px 9px; border-radius:6px; font-size:.67rem; font-weight:700; display:inline-block; }
-.csp-approved  { background:#e3fcf7; color:#00875a; }
-.csp-pending   { background:#fff8e1; color:#f9a825; }
-.csp-hidden    { background:#f0f2fa; color:#6c757d; }
-.csp-reported  { background:#ffebe6; color:#de350b; }
-.cmt-actions   { display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+            /* Toolbar */
+            .cm-toolbar {
+                background: #fff;
+                border: 1px solid #eee;
+                border-radius: 14px;
+                padding: 12px 18px;
+                margin-bottom: 18px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
 
-.cmt-body { padding:0 16px 12px 64px; }
-.cmt-text { font-size:.87rem; color:#344054; line-height:1.6; }
-.cmt-text.hidden-text { color:#adb5bd; font-style:italic; }
+            .cm-search {
+                flex: 1;
+                min-width: 220px;
+                position: relative;
+            }
 
-/* Reactions row — CT_LIKECMT + CT_LIKEPHCMT + LOAI_LIKE */
-.cmt-reactions { display:flex; align-items:center; gap:10px; padding:8px 16px 12px 64px; border-top:1px solid #f8f9ff; flex-wrap:wrap; }
-.reaction-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:8px; font-size:.75rem; font-weight:600; background:#f8f9ff; color:#495057; border:1px solid #f0f2fa; }
-.reaction-chip .rc-count { font-weight:800; color:#1a2040; }
-.cmt-footer-meta { margin-left:auto; display:flex; align-items:center; gap:12px; }
-.cmt-ip { font-size:.7rem; color:#adb5bd; font-family:monospace; }
-.cmt-report-flag { display:inline-flex; align-items:center; gap:4px; font-size:.72rem; color:#de350b; font-weight:600; cursor:pointer; }
+            .cm-search i {
+                position: absolute;
+                left: 11px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #adb5bd;
+                font-size: .8rem;
+            }
 
-/* Reply comments (PH_CMT) */
-.replies-toggle { padding:6px 16px 6px 64px; border-top:1px dashed #f0f2fa; }
-.replies-toggle-btn { background:none; border:none; font-size:.78rem; color:#0061ff; font-weight:600; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:5px; padding:0; }
-.replies-panel { background:#fafbff; border-top:1px solid #f0f2fa; }
-.reply-item { padding:10px 16px 10px 56px; border-bottom:1px dashed #f0f2fa; display:flex; align-items:flex-start; gap:10px; }
-.reply-item:last-child { border-bottom:none; }
-.reply-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#00875a,#2db86f); color:#fff; display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700; flex-shrink:0; }
-.reply-body { flex:1; min-width:0; }
-.reply-meta { display:flex; align-items:center; gap:8px; margin-bottom:3px; flex-wrap:wrap; }
-.reply-author { font-size:.82rem; font-weight:700; color:#1a2040; }
-.reply-time { font-size:.7rem; color:#adb5bd; }
-.reply-text { font-size:.83rem; color:#344054; line-height:1.5; }
-.reply-actions { display:flex; gap:5px; flex-shrink:0; }
-.reply-reactions { display:flex; gap:6px; margin-top:4px; }
-.reply-reactions .reaction-chip { font-size:.7rem; padding:2px 7px; }
+            .cm-search input {
+                width: 100%;
+                padding: 8px 12px 8px 32px;
+                border: 1.5px solid #e9ecef;
+                border-radius: 10px;
+                font-size: .84rem;
+                outline: none;
+                font-family: inherit;
+            }
 
-/* Moderation log */
-.mod-log-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px dashed #f0f2fa; }
-.mod-log-item:last-child { border-bottom:none; }
-.mod-action-badge { padding:2px 9px; border-radius:6px; font-size:.67rem; font-weight:700; white-space:nowrap; }
-.mab-hide    { background:#f0f2fa; color:#6c757d; }
-.mab-unhide  { background:#e3fcf7; color:#00875a; }
-.mab-delete  { background:#ffebe6; color:#de350b; }
-.mab-warn    { background:#fff8e1; color:#f9a825; }
-.mab-approve { background:#e3fcf7; color:#00875a; }
+            .cm-search input:focus {
+                border-color: #0061ff;
+            }
 
-/* Modals */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
-.modal-box { background:#fff; border-radius:20px; width:100%; max-width:620px; max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.2); }
-.modal-box-wide { max-width:860px; }
-.modal-head { padding:20px 24px; border-bottom:1px solid #f0f2fa; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:#fff; z-index:1; }
-.modal-title { font-size:1rem; font-weight:800; color:#1a2040; }
-.modal-close { background:#f0f2fa; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#6c757d; font-size:.85rem; }
-.modal-body { padding:24px; }
-.mf-group { margin-bottom:16px; }
-.mf-label { display:block; font-size:.78rem; font-weight:600; color:#495057; margin-bottom:5px; }
-.mf-label .req { color:#de350b; }
-.mf-input { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; }
-.mf-input:focus { border-color:#0061ff; }
-.mf-textarea { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; resize:vertical; min-height:80px; }
-.mf-textarea:focus { border-color:#0061ff; }
-.mf-select { width:100%; padding:9px 12px; border:1.5px solid #e9ecef; border-radius:10px; font-size:.87rem; color:#1a2040; outline:none; font-family:inherit; cursor:pointer; background:#fff; }
-.mf-select:focus { border-color:#0061ff; }
-.mf-row { display:grid; gap:14px; }
-.mf-row.cols-2 { grid-template-columns:1fr 1fr; }
-.mf-section-divider { border:none; border-top:1px dashed #e9ecef; margin:20px 0; }
-.mf-section-label { font-size:.75rem; font-weight:800; color:#0061ff; text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
-.modal-footer { padding:16px 24px; border-top:1px solid #f0f2fa; display:flex; align-items:center; justify-content:flex-end; gap:10px; background:#fff; position:sticky; bottom:0; }
-.mf-btn { padding:9px 22px; border-radius:10px; font-size:.87rem; font-weight:700; cursor:pointer; border:none; font-family:inherit; }
-.mf-btn-primary { background:#0061ff; color:#fff; }
-.mf-btn-primary:hover { background:#0048c2; }
-.mf-btn-danger { background:#de350b; color:#fff; }
-.mf-btn-danger:hover { background:#b92e09; }
-.mf-btn-warning { background:#ff8b00; color:#fff; }
-.mf-btn-cancel { background:#f0f2fa; color:#495057; }
-.mf-btn-cancel:hover { background:#e2e8f0; }
+            .cm-filter {
+                padding: 8px 14px;
+                border: 1.5px solid #e9ecef;
+                border-radius: 10px;
+                font-size: .83rem;
+                outline: none;
+                cursor: pointer;
+                font-family: inherit;
+                color: #495057;
+                background: #fff;
+            }
 
-/* Moderation action quick buttons */
-.mod-quick-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
-.mod-quick-btn { padding:5px 14px; border-radius:8px; font-size:.78rem; font-weight:600; cursor:pointer; border:none; font-family:inherit; display:flex; align-items:center; gap:5px; }
-.mqb-approve { background:#e3fcf7; color:#00875a; }
-.mqb-hide    { background:#f0f2fa; color:#6c757d; }
-.mqb-unhide  { background:#fff8e1; color:#f9a825; }
-.mqb-warn    { background:#fff3cd; color:#b87800; }
-.mqb-delete  { background:#ffebe6; color:#de350b; }
-.mod-quick-btn:hover { filter:brightness(.92); }
+            .cm-filter:focus {
+                border-color: #0061ff;
+            }
 
-/* Pagination */
-.pager { display:flex; align-items:center; justify-content:space-between; margin-top:20px; flex-wrap:wrap; gap:12px; }
-.pager-info { font-size:.8rem; color:#6c757d; }
-.pager-btns { display:flex; gap:5px; }
-.pager-btn { width:34px; height:34px; border:1.5px solid #e9ecef; border-radius:9px; background:#fff; color:#495057; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.83rem; font-weight:600; font-family:inherit; transition:all .15s; }
-.pager-btn:hover { border-color:#0061ff; color:#0061ff; }
-.pager-btn.active { background:#0061ff; border-color:#0061ff; color:#fff; }
+            .cm-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                border-radius: 10px;
+                font-size: .84rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all .15s;
+                border: none;
+                font-family: inherit;
+            }
 
-/* LOAI_LIKE legend */
-.like-type-row { display:flex; gap:8px; flex-wrap:wrap; padding:10px 16px; background:#f8f9ff; border-radius:10px; margin-bottom:14px; }
-.like-type-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:8px; font-size:.75rem; font-weight:600; background:#fff; border:1px solid #e9ecef; color:#495057; }
-</style>
+            .cm-btn-primary {
+                background: #0061ff;
+                color: #fff;
+            }
 
-<!-- Page Header -->
-<div class="admin-page-header">
-    <div>
-        <h4><i class="fas fa-comments" style="color:#0061ff;margin-right:8px;"></i>Kiểm duyệt Bình luận</h4>
-        <p>Quản lý bình luận bài viết (CMT), phản hồi (PH_CMT), lịch sử kiểm duyệt và phản ứng cảm xúc</p>
-    </div>
-    <div style="display:flex;gap:10px;">
-        <button class="cm-btn cm-btn-ghost" onclick="openModal('likeTypesModal')">
-            <i class="fas fa-heart"></i> Loại cảm xúc (LOAI_LIKE)
-        </button>
-        <button class="cm-btn cm-btn-ghost" onclick="openModal('modActionsModal')">
-            <i class="fas fa-shield-alt"></i> Hành động (MODERATION_ACTIONS)
-        </button>
-        <button class="cm-btn cm-btn-primary" onclick="openModal('settingsModal')">
-            <i class="fas fa-cog"></i> Cài đặt kiểm duyệt
-        </button>
-    </div>
-</div>
+            .cm-btn-primary:hover {
+                background: #0048c2;
+            }
 
-<!-- Stat Row — CMT + PH_CMT + reports + moderation -->
-<div class="cm-stat-row">
-    <div class="cm-stat">
-        <div class="cm-stat-icon" style="background:#e8f0ff;"><i class="fas fa-comment" style="color:#0061ff;"></i></div>
-        <div>
-            <div class="cm-stat-num" style="color:#0061ff;">3,847</div>
-            <div class="cm-stat-label">Tổng CMT</div>
+            .cm-btn-ghost {
+                background: #fff;
+                border: 1.5px solid #e9ecef;
+                color: #495057;
+            }
+
+            .cm-btn-ghost:hover {
+                border-color: #0061ff;
+                color: #0061ff;
+            }
+
+            /* Tab bar */
+            .cm-tabs {
+                display: flex;
+                border-bottom: 2px solid #f0f2fa;
+                margin-bottom: 18px;
+                gap: 0;
+            }
+
+            .cm-tab {
+                padding: 10px 20px;
+                font-size: .85rem;
+                font-weight: 600;
+                color: #6c757d;
+                border-bottom: 2.5px solid transparent;
+                cursor: pointer;
+                margin-bottom: -2px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: color .15s;
+            }
+
+            .cm-tab.active {
+                color: #0061ff;
+                border-bottom-color: #0061ff;
+            }
+
+            .cm-tab .tab-count {
+                background: #e8f0ff;
+                color: #0061ff;
+                font-size: .65rem;
+                font-weight: 700;
+                padding: 1px 7px;
+                border-radius: 10px;
+            }
+
+            .cm-tab.active .tab-count {
+                background: #0061ff;
+                color: #fff;
+            }
+
+            .cm-tab .tab-warn {
+                background: #ffebe6;
+                color: #de350b;
+                font-size: .65rem;
+                font-weight: 700;
+                padding: 1px 7px;
+                border-radius: 10px;
+            }
+
+            /* Bulk bar */
+            .bulk-bar {
+                background: linear-gradient(90deg, #0061ff, #2d8cf0);
+                color: #fff;
+                border-radius: 12px;
+                padding: 10px 20px;
+                margin-bottom: 16px;
+                display: none;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .bulk-bar.visible {
+                display: flex;
+            }
+
+            .bulk-count {
+                font-size: .85rem;
+                font-weight: 700;
+            }
+
+            .bulk-actions {
+                display: flex;
+                gap: 8px;
+                margin-left: auto;
+            }
+
+            .bulk-btn {
+                padding: 6px 14px;
+                border-radius: 8px;
+                font-size: .8rem;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                font-family: inherit;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            .bulk-btn-white {
+                background: rgba(255, 255, 255, .9);
+                color: #0061ff;
+            }
+
+            .bulk-btn-yellow {
+                background: rgba(249, 168, 37, .85);
+                color: #fff;
+            }
+
+            .bulk-btn-red {
+                background: rgba(222, 53, 11, .8);
+                color: #fff;
+            }
+
+            .bulk-btn-clear {
+                background: transparent;
+                color: rgba(255, 255, 255, .7);
+                border: 1px solid rgba(255, 255, 255, .3);
+            }
+
+            /* Comment Cards — Bình luận gốc + Phản hồi */
+            .cmt-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .cmt-card {
+                background: #fff;
+                border: 1px solid #eee;
+                border-radius: 14px;
+                overflow: hidden;
+                transition: box-shadow .18s;
+            }
+
+            .cmt-card:hover {
+                box-shadow: 0 4px 14px rgba(0, 0, 0, .07);
+            }
+
+            .cmt-card.reported {
+                border-left: 3px solid #de350b;
+            }
+
+            .cmt-card.hidden {
+                border-left: 3px solid #6c757d;
+                opacity: .75;
+            }
+
+            .cmt-card.approved {
+                border-left: 3px solid #00875a;
+            }
+
+            .cmt-card.pending {
+                border-left: 3px solid #ff8b00;
+            }
+
+            .cmt-card-header {
+                padding: 12px 16px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .cmt-avatar {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #0061ff, #2d8cf0);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: .85rem;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            .cmt-meta {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .cmt-meta-top {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .cmt-author {
+                font-size: .87rem;
+                font-weight: 700;
+                color: #1a2040;
+            }
+
+            .cmt-time {
+                font-size: .72rem;
+                color: #adb5bd;
+            }
+
+            .cmt-type-badge {
+                padding: 1px 8px;
+                border-radius: 5px;
+                font-size: .65rem;
+                font-weight: 700;
+            }
+
+            .ctb-post {
+                background: #e8f0ff;
+                color: #0061ff;
+            }
+
+            .ctb-event {
+                background: #e3fcf7;
+                color: #00875a;
+            }
+
+            .ctb-reply {
+                background: #f0f2fa;
+                color: #6c757d;
+            }
+
+            .cmt-target {
+                font-size: .75rem;
+                color: #6c757d;
+                margin-top: 3px;
+            }
+
+            .cmt-target a {
+                color: #0061ff;
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+            .cmt-target a:hover {
+                text-decoration: underline;
+            }
+
+            .cmt-status-pill {
+                padding: 2px 9px;
+                border-radius: 6px;
+                font-size: .67rem;
+                font-weight: 700;
+                display: inline-block;
+            }
+
+            .csp-approved {
+                background: #e3fcf7;
+                color: #00875a;
+            }
+
+            .csp-pending {
+                background: #fff8e1;
+                color: #f9a825;
+            }
+
+            .csp-hidden {
+                background: #f0f2fa;
+                color: #6c757d;
+            }
+
+            .csp-reported {
+                background: #ffebe6;
+                color: #de350b;
+            }
+
+            .cmt-actions {
+                display: flex;
+                gap: 6px;
+                flex-shrink: 0;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+
+            .cmt-body {
+                padding: 0 16px 12px 64px;
+            }
+
+            .cmt-text {
+                font-size: .87rem;
+                color: #344054;
+                line-height: 1.6;
+            }
+
+            .cmt-text.hidden-text {
+                color: #adb5bd;
+                font-style: italic;
+            }
+
+            /* Reactions row — Cảm xúc bình luận + phản hồi + loại cảm xúc */
+            .cmt-reactions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 16px 12px 64px;
+                border-top: 1px solid #f8f9ff;
+                flex-wrap: wrap;
+            }
+
+            .reaction-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 3px 9px;
+                border-radius: 8px;
+                font-size: .75rem;
+                font-weight: 600;
+                background: #f8f9ff;
+                color: #495057;
+                border: 1px solid #f0f2fa;
+            }
+
+            .reaction-chip .rc-count {
+                font-weight: 800;
+                color: #1a2040;
+            }
+
+            .cmt-footer-meta {
+                margin-left: auto;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .cmt-ip {
+                font-size: .7rem;
+                color: #adb5bd;
+                font-family: monospace;
+            }
+
+            .cmt-report-flag {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font-size: .72rem;
+                color: #de350b;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            /* Reply comments — Phản hồi cấp 2+ */
+            .replies-toggle {
+                padding: 6px 16px 6px 64px;
+                border-top: 1px dashed #f0f2fa;
+            }
+
+            .replies-toggle-btn {
+                background: none;
+                border: none;
+                font-size: .78rem;
+                color: #0061ff;
+                font-weight: 600;
+                cursor: pointer;
+                font-family: inherit;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                padding: 0;
+            }
+
+            .replies-panel {
+                background: #fafbff;
+                border-top: 1px solid #f0f2fa;
+            }
+
+            .reply-item {
+                padding: 10px 16px 10px 56px;
+                border-bottom: 1px dashed #f0f2fa;
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .reply-item:last-child {
+                border-bottom: none;
+            }
+
+            .reply-avatar {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #00875a, #2db86f);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: .72rem;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            .reply-body {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .reply-meta {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 3px;
+                flex-wrap: wrap;
+            }
+
+            .reply-author {
+                font-size: .82rem;
+                font-weight: 700;
+                color: #1a2040;
+            }
+
+            .reply-time {
+                font-size: .7rem;
+                color: #adb5bd;
+            }
+
+            .reply-text {
+                font-size: .83rem;
+                color: #344054;
+                line-height: 1.5;
+            }
+
+            .reply-actions {
+                display: flex;
+                gap: 5px;
+                flex-shrink: 0;
+            }
+
+            .reply-reactions {
+                display: flex;
+                gap: 6px;
+                margin-top: 4px;
+            }
+
+            .reply-reactions .reaction-chip {
+                font-size: .7rem;
+                padding: 2px 7px;
+            }
+
+            /* Moderation log */
+            .mod-log-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 8px 0;
+                border-bottom: 1px dashed #f0f2fa;
+            }
+
+            .mod-log-item:last-child {
+                border-bottom: none;
+            }
+
+            .mod-action-badge {
+                padding: 2px 9px;
+                border-radius: 6px;
+                font-size: .67rem;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            .mab-hide {
+                background: #f0f2fa;
+                color: #6c757d;
+            }
+
+            .mab-unhide {
+                background: #e3fcf7;
+                color: #00875a;
+            }
+
+            .mab-delete {
+                background: #ffebe6;
+                color: #de350b;
+            }
+
+            .mab-warn {
+                background: #fff8e1;
+                color: #f9a825;
+            }
+
+            .mab-approve {
+                background: #e3fcf7;
+                color: #00875a;
+            }
+
+            /* Modals */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, .5);
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                backdrop-filter: blur(4px);
+            }
+
+            .modal-box {
+                background: #fff;
+                border-radius: 20px;
+                width: 100%;
+                max-width: 620px;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 24px 64px rgba(0, 0, 0, .2);
+            }
+
+            .modal-box-wide {
+                max-width: 860px;
+            }
+
+            .modal-head {
+                padding: 20px 24px;
+                border-bottom: 1px solid #f0f2fa;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                position: sticky;
+                top: 0;
+                background: #fff;
+                z-index: 1;
+            }
+
+            .modal-title {
+                font-size: 1rem;
+                font-weight: 800;
+                color: #1a2040;
+            }
+
+            .modal-close {
+                background: #f0f2fa;
+                border: none;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #6c757d;
+                font-size: .85rem;
+            }
+
+            .modal-body {
+                padding: 24px;
+            }
+
+            .mf-group {
+                margin-bottom: 16px;
+            }
+
+            .mf-label {
+                display: block;
+                font-size: .78rem;
+                font-weight: 600;
+                color: #495057;
+                margin-bottom: 5px;
+            }
+
+            .mf-label .req {
+                color: #de350b;
+            }
+
+            .mf-input {
+                width: 100%;
+                padding: 9px 12px;
+                border: 1.5px solid #e9ecef;
+                border-radius: 10px;
+                font-size: .87rem;
+                color: #1a2040;
+                outline: none;
+                font-family: inherit;
+            }
+
+            .mf-input:focus {
+                border-color: #0061ff;
+            }
+
+            .mf-textarea {
+                width: 100%;
+                padding: 9px 12px;
+                border: 1.5px solid #e9ecef;
+                border-radius: 10px;
+                font-size: .87rem;
+                color: #1a2040;
+                outline: none;
+                font-family: inherit;
+                resize: vertical;
+                min-height: 80px;
+            }
+
+            .mf-textarea:focus {
+                border-color: #0061ff;
+            }
+
+            .mf-select {
+                width: 100%;
+                padding: 9px 12px;
+                border: 1.5px solid #e9ecef;
+                border-radius: 10px;
+                font-size: .87rem;
+                color: #1a2040;
+                outline: none;
+                font-family: inherit;
+                cursor: pointer;
+                background: #fff;
+            }
+
+            .mf-select:focus {
+                border-color: #0061ff;
+            }
+
+            .mf-row {
+                display: grid;
+                gap: 14px;
+            }
+
+            .mf-row.cols-2 {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .mf-section-divider {
+                border: none;
+                border-top: 1px dashed #e9ecef;
+                margin: 20px 0;
+            }
+
+            .mf-section-label {
+                font-size: .75rem;
+                font-weight: 800;
+                color: #0061ff;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 14px;
+            }
+
+            .modal-footer {
+                padding: 16px 24px;
+                border-top: 1px solid #f0f2fa;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 10px;
+                background: #fff;
+                position: sticky;
+                bottom: 0;
+            }
+
+            .mf-btn {
+                padding: 9px 22px;
+                border-radius: 10px;
+                font-size: .87rem;
+                font-weight: 700;
+                cursor: pointer;
+                border: none;
+                font-family: inherit;
+            }
+
+            .mf-btn-primary {
+                background: #0061ff;
+                color: #fff;
+            }
+
+            .mf-btn-primary:hover {
+                background: #0048c2;
+            }
+
+            .mf-btn-danger {
+                background: #de350b;
+                color: #fff;
+            }
+
+            .mf-btn-danger:hover {
+                background: #b92e09;
+            }
+
+            .mf-btn-warning {
+                background: #ff8b00;
+                color: #fff;
+            }
+
+            .mf-btn-cancel {
+                background: #f0f2fa;
+                color: #495057;
+            }
+
+            .mf-btn-cancel:hover {
+                background: #e2e8f0;
+            }
+
+            /* Moderation action quick buttons */
+            .mod-quick-actions {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+                margin-top: 12px;
+            }
+
+            .mod-quick-btn {
+                padding: 5px 14px;
+                border-radius: 8px;
+                font-size: .78rem;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                font-family: inherit;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            .mqb-approve {
+                background: #e3fcf7;
+                color: #00875a;
+            }
+
+            .mqb-hide {
+                background: #f0f2fa;
+                color: #6c757d;
+            }
+
+            .mqb-unhide {
+                background: #fff8e1;
+                color: #f9a825;
+            }
+
+            .mqb-warn {
+                background: #fff3cd;
+                color: #b87800;
+            }
+
+            .mqb-delete {
+                background: #ffebe6;
+                color: #de350b;
+            }
+
+            .mod-quick-btn:hover {
+                filter: brightness(.92);
+            }
+
+            /* Pagination */
+            .pager {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-top: 20px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .pager-info {
+                font-size: .8rem;
+                color: #6c757d;
+            }
+
+            .pager-btns {
+                display: flex;
+                gap: 5px;
+            }
+
+            .pager-btn {
+                width: 34px;
+                height: 34px;
+                border: 1.5px solid #e9ecef;
+                border-radius: 9px;
+                background: #fff;
+                color: #495057;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: .83rem;
+                font-weight: 600;
+                font-family: inherit;
+                transition: all .15s;
+            }
+
+            .pager-btn:hover {
+                border-color: #0061ff;
+                color: #0061ff;
+            }
+
+            .pager-btn.active {
+                background: #0061ff;
+                border-color: #0061ff;
+                color: #fff;
+            }
+
+            /* Bảng chú giải loại cảm xúc */
+            .like-type-row {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                padding: 10px 16px;
+                background: #f8f9ff;
+                border-radius: 10px;
+                margin-bottom: 14px;
+            }
+
+            .like-type-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 4px 10px;
+                border-radius: 8px;
+                font-size: .75rem;
+                font-weight: 600;
+                background: #fff;
+                border: 1px solid #e9ecef;
+                color: #495057;
+            }
+
+            /* ===== UPLOAD ICON CẢM XÚC ===== */
+            .cm-icon-mode-tabs {
+                display: flex;
+                gap: 0;
+                margin-bottom: 14px;
+                border: 1.5px solid #e9ecef;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            .cm-icon-mode-tab {
+                flex: 1;
+                padding: 8px 12px;
+                font-size: .82rem;
+                font-weight: 600;
+                text-align: center;
+                cursor: pointer;
+                background: #fff;
+                color: #6c757d;
+                border: none;
+                font-family: inherit;
+                transition: all .15s;
+            }
+
+            .cm-icon-mode-tab.active {
+                background: #0061ff;
+                color: #fff;
+            }
+
+            .cm-media-upload-row {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .cm-media-preview {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 80px;
+                margin-top: 10px;
+                overflow: hidden;
+                border: 1px dashed #d6dfeb;
+                border-radius: 10px;
+                background: #f8f9ff;
+                color: #adb5bd;
+                font-size: .8rem;
+            }
+
+            .cm-media-preview img {
+                max-height: 100px;
+                max-width: 100%;
+                object-fit: contain;
+            }
+
+            .cm-emoji-preview {
+                font-size: 3rem;
+                text-align: center;
+                padding: 12px;
+                min-height: 80px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #f8f9ff;
+                border-radius: 10px;
+                border: 1px dashed #d6dfeb;
+            }
+
+            /* ===== REPLY TREE BRANCH ===== */
+            .adm-reply-thread {
+                margin-top: 8px;
+                position: relative;
+                padding-left: 0;
+            }
+
+            .adm-reply-thread:empty {
+                margin-top: 0;
+            }
+
+            .adm-reply-item {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+                position: relative;
+            }
+
+            .adm-reply-item.level-3 {
+                gap: 8px;
+            }
+
+            .adm-ri-avatar {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #00875a, #2db86f);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: .72rem;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            .adm-reply-item.level-3 .adm-ri-avatar {
+                width: 24px;
+                height: 24px;
+                font-size: .65rem;
+            }
+
+            .adm-ri-bubble-wrapper {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .adm-ri-bubble {
+                background: #f8f9ff;
+                border: 1px solid #f0f2fa;
+                border-radius: 12px;
+                padding: 10px 14px;
+            }
+
+            .adm-ri-bubble .reply-meta {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 4px;
+                flex-wrap: wrap;
+            }
+
+            .adm-ri-bubble .reply-author {
+                font-size: .82rem;
+                font-weight: 700;
+                color: #1a2040;
+            }
+
+            .adm-ri-bubble .reply-time {
+                font-size: .7rem;
+                color: #adb5bd;
+            }
+
+            .adm-ri-bubble .reply-text {
+                font-size: .83rem;
+                color: #344054;
+                line-height: 1.5;
+            }
+
+            .adm-ri-bubble .reply-tag {
+                color: #0061ff;
+                font-weight: 600;
+            }
+
+            .adm-ri-actions {
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+                margin-top: 6px;
+                padding-top: 6px;
+                border-top: 1px dashed #f0f2fa;
+            }
+
+            /* Trục dọc từ reply cha có sub-replies */
+            .adm-reply-item.has-sub>.adm-ri-avatar::after {
+                content: '';
+                position: absolute;
+                left: 14px;
+                top: 32px;
+                bottom: -10px;
+                width: 2px;
+                background: #e9ecef;
+                z-index: 0;
+            }
+
+            .adm-reply-item.level-3.has-sub>.adm-ri-avatar::after {
+                left: 12px;
+                top: 28px;
+            }
+
+            /* Nhánh L vào reply cấp 3 */
+            .adm-reply-thread>.adm-reply-item.level-3::before {
+                content: '';
+                position: absolute;
+                left: -20px;
+                top: 0;
+                width: 16px;
+                height: 14px;
+                border-left: 2px solid #e9ecef;
+                border-bottom: 2px solid #e9ecef;
+                border-bottom-left-radius: 10px;
+                z-index: 1;
+            }
+
+            /* Trục dọc nối giữa reply cấp 3 */
+            .adm-reply-thread>.adm-reply-item.level-3::after {
+                content: '';
+                position: absolute;
+                left: -20px;
+                top: 0;
+                height: calc(100% + 10px);
+                width: 2px;
+                background: #e9ecef;
+                z-index: 0;
+            }
+
+            .adm-reply-thread>.adm-reply-item.level-3:last-child::after {
+                display: none;
+            }
+
+            /* Sub-replies container lồng bên trong ri-bubble-wrapper */
+            .adm-ri-bubble-wrapper>.adm-reply-thread {
+                margin-left: 0;
+                padding-left: 20px;
+            }
+        </style>
+
+        <!-- Page Header -->
+        <div class="admin-page-header">
+            <div>
+                <h4><i class="fas fa-comments" style="color:#0061ff;margin-right:8px;"></i>Kiểm duyệt Bình luận</h4>
+                <p>Quản lý bình luận, phản hồi, lịch sử kiểm duyệt và cảm xúc</p>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button class="cm-btn cm-btn-ghost" onclick="moModal('likeTypesModal')">
+                    <i class="fas fa-heart"></i> Loại cảm xúc
+                </button>
+                <button class="cm-btn cm-btn-ghost" onclick="moModal('modActionsModal')">
+                    <i class="fas fa-shield-alt"></i> Hành động kiểm duyệt
+                </button>
+                <button class="cm-btn cm-btn-ghost" onclick="moModal('reportListModal')">
+                    <i class="fas fa-flag"></i> Báo cáo chờ xử lý
+                </button>
+                <button class="cm-btn cm-btn-primary" onclick="moModal('settingsModal')">
+                    <i class="fas fa-cog"></i> Cài đặt kiểm duyệt
+                </button>
+            </div>
         </div>
-    </div>
-    <div class="cm-stat">
-        <div class="cm-stat-icon" style="background:#e3fcf7;"><i class="fas fa-reply" style="color:#00875a;"></i></div>
-        <div>
-            <div class="cm-stat-num" style="color:#00875a;">1,294</div>
-            <div class="cm-stat-label">Phản hồi PH_CMT</div>
-        </div>
-    </div>
-    <div class="cm-stat">
-        <div class="cm-stat-icon" style="background:#fff8e1;"><i class="fas fa-clock" style="color:#f9a825;"></i></div>
-        <div>
-            <div class="cm-stat-num" style="color:#f9a825;">47</div>
-            <div class="cm-stat-label">Chờ duyệt</div>
-        </div>
-    </div>
-    <div class="cm-stat">
-        <div class="cm-stat-icon" style="background:#ffebe6;"><i class="fas fa-flag" style="color:#de350b;"></i></div>
-        <div>
-            <div class="cm-stat-num" style="color:#de350b;">12</div>
-            <div class="cm-stat-label">Bị báo cáo</div>
-        </div>
-    </div>
-    <div class="cm-stat">
-        <div class="cm-stat-icon" style="background:#f0f2fa;"><i class="fas fa-eye-slash" style="color:#6c757d;"></i></div>
-        <div>
-            <div class="cm-stat-num" style="color:#6c757d;">89</div>
-            <div class="cm-stat-label">Đã ẩn</div>
-        </div>
-    </div>
-    <div class="cm-stat">
-        <div class="cm-stat-icon" style="background:#e3fcf7;"><i class="fas fa-heart" style="color:#de350b;"></i></div>
-        <div>
-            <div class="cm-stat-num" style="color:#de350b;">18,472</div>
-            <div class="cm-stat-label">Tổng reactions</div>
-        </div>
-    </div>
-</div>
 
-<!-- Toolbar -->
-<div class="cm-toolbar">
-    <div class="cm-search">
-        <i class="fas fa-search"></i>
-        <input type="text" placeholder="Tìm nội dung, tên người dùng, bài viết...">
-    </div>
-    <select class="cm-filter">
-        <option>Tất cả trạng thái</option>
-        <option>Đang hiển thị</option>
-        <option>Chờ duyệt</option>
-        <option>Đã ẩn</option>
-        <option>Bị báo cáo</option>
-    </select>
-    <select class="cm-filter">
-        <option>Tất cả loại</option>
-        <option>Bình luận bài viết (CMT)</option>
-        <option>Phản hồi (PH_CMT)</option>
-    </select>
-    <select class="cm-filter">
-        <option>Tất cả bài viết</option>
-        <option>GMP 2025: Tiêu chuẩn mới</option>
-        <option>Dược phẩm OTC và thị trường</option>
-        <option>Chuỗi cung ứng lạnh</option>
-    </select>
-    <input type="date" class="cm-filter" style="cursor:pointer;">
-    <button class="cm-btn cm-btn-ghost"><i class="fas fa-download"></i> Xuất</button>
-</div>
-
-<!-- Tab Bar -->
-<div class="cm-tabs">
-    <div class="cm-tab active" onclick="switchTab(this,'all')">
-        Tất cả <span class="tab-count">3,847</span>
-    </div>
-    <div class="cm-tab" onclick="switchTab(this,'pending')">
-        Chờ duyệt <span class="tab-warn">47</span>
-    </div>
-    <div class="cm-tab" onclick="switchTab(this,'reported')">
-        Bị báo cáo <span class="tab-warn">12</span>
-    </div>
-    <div class="cm-tab" onclick="switchTab(this,'hidden')">
-        Đã ẩn <span class="tab-count">89</span>
-    </div>
-    <div class="cm-tab" onclick="switchTab(this,'post-cmt')">
-        Bài viết (CMT) <span class="tab-count">2,553</span>
-    </div>
-    <div class="cm-tab" onclick="switchTab(this,'replies')">
-        Phản hồi (PH_CMT) <span class="tab-count">1,294</span>
-    </div>
-</div>
-
-<!-- Bulk Action Bar -->
-<div class="bulk-bar" id="bulkBar">
-    <i class="fas fa-check-square"></i>
-    <span class="bulk-count" id="bulkCount">0 bình luận được chọn</span>
-    <div class="bulk-actions">
-        <button class="bulk-btn bulk-btn-white"><i class="fas fa-check"></i> Duyệt</button>
-        <button class="bulk-btn bulk-btn-yellow"><i class="fas fa-eye-slash"></i> Ẩn</button>
-        <button class="bulk-btn bulk-btn-red"><i class="fas fa-trash"></i> Xóa</button>
-        <button class="bulk-btn bulk-btn-clear" onclick="clearBulk()"><i class="fas fa-times"></i> Bỏ chọn</button>
-    </div>
-</div>
-
-<!-- Comment List — CMT + PH_CMT + CT_LIKECMT + CT_LIKEPHCMT + LOAI_LIKE + CT_CMT_MODERATION_LOG -->
-<div class="cmt-list">
-
-    <!-- Comment 1: Reported — CMT -->
-    <div class="cmt-card reported">
-        <div class="cmt-card-header">
-            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:6px;cursor:pointer;">
-            <div class="cmt-avatar">T</div>
-            <div class="cmt-meta">
-                <div class="cmt-meta-top">
-                    <span class="cmt-author">Trần Thanh Tùng</span>
-                    <span class="cmt-type-badge ctb-post">CMT</span>
-                    <span class="cmt-status-pill csp-reported"><i class="fas fa-flag"></i> Bị báo cáo (3)</span>
-                    <span class="cmt-time">hôm nay 08:22</span>
+        <!-- Stats row — JS sẽ fill số liệu từ API -->
+        <div class="cm-stat-row ptm-fade-container ptm-fade-out" id="statsRow">
+            <div class="cm-stat">
+                <div class="cm-stat-icon" style="background:#e8f0ff;"><i class="fas fa-comment"
+                        style="color:#0061ff;"></i></div>
+                <div>
+                    <div class="cm-stat-num" style="color:#0061ff;" id="statTotalCmt">—</div>
+                    <div class="cm-stat-label">Tổng bình luận</div>
                 </div>
-                <div class="cmt-target">
-                    Bình luận trên: <a href="#">GMP 2025: Tiêu chuẩn sản xuất mới nhất</a>
-                    <span style="color:#adb5bd;margin:0 4px;">•</span>
-                    <span style="font-family:monospace;font-size:.68rem;color:#adb5bd;">IP: 192.168.1.45</span>
+            </div>
+            <div class="cm-stat">
+                <div class="cm-stat-icon" style="background:#e3fcf7;"><i class="fas fa-reply"
+                        style="color:#00875a;"></i></div>
+                <div>
+                    <div class="cm-stat-num" style="color:#00875a;" id="statTotalPhCmt">—</div>
+                    <div class="cm-stat-label">Tổng phản hồi</div>
                 </div>
             </div>
-            <div class="cmt-actions">
-                <button class="mod-quick-btn mqb-approve" onclick="doMod('approve')"><i class="fas fa-check"></i> Duyệt</button>
-                <button class="mod-quick-btn mqb-hide" onclick="doMod('hide')"><i class="fas fa-eye-slash"></i> Ẩn</button>
-                <button class="mod-quick-btn mqb-warn" onclick="doMod('warn')"><i class="fas fa-exclamation-triangle"></i> Cảnh báo</button>
-                <button class="mod-quick-btn mqb-delete" onclick="doMod('delete')"><i class="fas fa-trash"></i></button>
-                <button class="btn-tbl btn-tbl-view" onclick="openModal('detailModal')" style="font-size:.75rem;"><i class="fas fa-eye"></i> Chi tiết</button>
+            <div class="cm-stat">
+                <div class="cm-stat-icon" style="background:#fff8e1;"><i class="fas fa-clock"
+                        style="color:#f9a825;"></i></div>
+                <div>
+                    <div class="cm-stat-num" style="color:#f9a825;" id="statPending">—</div>
+                    <div class="cm-stat-label">Chờ duyệt</div>
+                </div>
+            </div>
+            <div class="cm-stat">
+                <div class="cm-stat-icon" style="background:#ffebe6;"><i class="fas fa-flag" style="color:#de350b;"></i>
+                </div>
+                <div>
+                    <div class="cm-stat-num" style="color:#de350b;" id="statReported">—</div>
+                    <div class="cm-stat-label">Bị báo cáo</div>
+                </div>
+            </div>
+            <div class="cm-stat">
+                <div class="cm-stat-icon" style="background:#f0f2fa;"><i class="fas fa-eye-slash"
+                        style="color:#6c757d;"></i></div>
+                <div>
+                    <div class="cm-stat-num" style="color:#6c757d;" id="statHidden">—</div>
+                    <div class="cm-stat-label">Đã ẩn</div>
+                </div>
+            </div>
+            <div class="cm-stat">
+                <div class="cm-stat-icon" style="background:#e3fcf7;"><i class="fas fa-heart"
+                        style="color:#de350b;"></i></div>
+                <div>
+                    <div class="cm-stat-num" style="color:#de350b;" id="statReactions">—</div>
+                    <div class="cm-stat-label">Tổng reactions</div>
+                </div>
             </div>
         </div>
-        <div class="cmt-body">
-            <p class="cmt-text">
-                Bài viết này có nhiều thông tin sai lệch về quy trình GMP. Tiêu chuẩn WHO-GMP không hề quy định như vậy.
-                Tác giả cần kiểm tra lại nguồn tài liệu trước khi đăng, đặc biệt phần liên quan đến điều kiện bảo quản nhiệt độ.
-            </p>
-        </div>
-        <!-- Reactions: CT_LIKECMT + LOAI_LIKE -->
-        <div class="cmt-reactions">
-            <span class="reaction-chip">👍 <span class="rc-count">12</span></span>
-            <span class="reaction-chip">❤️ <span class="rc-count">3</span></span>
-            <span class="reaction-chip">😮 <span class="rc-count">7</span></span>
-            <span class="reaction-chip">😡 <span class="rc-count">15</span></span>
-            <div class="cmt-footer-meta">
-                <span class="cmt-report-flag" onclick="openModal('reportModal')">
-                    <i class="fas fa-flag"></i> 3 báo cáo
-                </span>
-                <span class="cmt-ip">ID: #CMT-4821</span>
+
+        <!-- Toolbar: search + filters -->
+        <div class="cm-toolbar">
+            <div class="cm-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Tìm nội dung, tên người dùng, bài viết..."
+                    oninput="debounceSearch()">
             </div>
-        </div>
-        <!-- Replies toggle: PH_CMT -->
-        <div class="replies-toggle">
-            <button class="replies-toggle-btn" onclick="toggleReplies('r1')">
-                <i class="fas fa-reply"></i> 2 phản hồi (PH_CMT)
-                <i class="fas fa-chevron-down" id="r1-chevron" style="font-size:.7rem;margin-left:4px;"></i>
+            <select class="cm-filter" id="filterStatus" onchange="apDungFilter()">
+                <option value="">Tất cả trạng thái</option>
+                <option value="APPROVE">Đang hiển thị</option>
+                <option value="HIDE">Đã ẩn</option>
+                <option value="WARN">Cảnh báo</option>
+            </select>
+            <select class="cm-filter" id="filterTargetType" onchange="apDungFilter()">
+                <option value="">Tất cả loại</option>
+                <option value="POST">Bài viết (POST)</option>
+                <option value="EVENT">Sự kiện (EVENT)</option>
+            </select>
+            <input type="date" class="cm-filter" id="filterStartDate" onchange="apDungFilter()" style="cursor:pointer;">
+            <input type="date" class="cm-filter" id="filterEndDate" onchange="apDungFilter()" style="cursor:pointer;">
+            <button class="cm-btn cm-btn-ghost" title="Chưa có API export" disabled
+                style="opacity:.5;cursor:not-allowed;">
+                <i class="fas fa-download"></i> Xuất
             </button>
         </div>
-        <div class="replies-panel" id="r1-panel" style="display:none;">
-            <div class="reply-item">
-                <div class="reply-avatar">N</div>
-                <div class="reply-body">
-                    <div class="reply-meta">
-                        <span class="reply-author">Nguyễn Văn Admin</span>
-                        <span class="cmt-type-badge ctb-reply" style="font-size:.62rem;">PH_CMT</span>
-                        <span class="cmt-status-pill csp-approved" style="font-size:.62rem;">Hiển thị</span>
-                        <span class="reply-time">hôm nay 08:45</span>
-                    </div>
-                    <div class="reply-text">Cảm ơn bạn đã phản hồi. Chúng tôi đã kiểm tra lại và sẽ cập nhật bài viết.</div>
-                    <div class="reply-reactions">
-                        <span class="reaction-chip">👍 <span class="rc-count">5</span></span>
-                        <span class="reaction-chip">❤️ <span class="rc-count">2</span></span>
-                    </div>
-                </div>
-                <div class="reply-actions">
-                    <button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button>
-                    <button class="btn-tbl btn-tbl-delete" style="font-size:.7rem;"><i class="fas fa-trash"></i></button>
-                </div>
+
+        <!-- Tab Bar -->
+        <div class="cm-tabs">
+            <div class="cm-tab active" onclick="doSwitchTab(this,'all')" data-tab="all">
+                Tất cả <span class="tab-count" id="tabCountAll">—</span>
             </div>
-            <div class="reply-item">
-                <div class="reply-avatar" style="background:linear-gradient(135deg,#de350b,#ff6b6b);">L</div>
-                <div class="reply-body">
-                    <div class="reply-meta">
-                        <span class="reply-author">Lê Thị Hương</span>
-                        <span class="cmt-type-badge ctb-reply" style="font-size:.62rem;">PH_CMT</span>
-                        <span class="cmt-status-pill csp-pending" style="font-size:.62rem;">Chờ duyệt</span>
-                        <span class="reply-time">hôm nay 09:12</span>
-                    </div>
-                    <div class="reply-text">Tôi đồng ý với ý kiến trên, bài viết cần được xem xét lại về phần kỹ thuật.</div>
-                    <div class="reply-reactions">
-                        <span class="reaction-chip">👍 <span class="rc-count">1</span></span>
-                    </div>
+            <div class="cm-tab" onclick="doSwitchTab(this,'pending')" data-tab="pending">
+                Chờ duyệt <span class="tab-warn" id="tabCountPending">—</span>
+            </div>
+            <div class="cm-tab" onclick="doSwitchTab(this,'reported')" data-tab="reported">
+                Bị báo cáo <span class="tab-warn" id="tabCountReported">—</span>
+            </div>
+            <div class="cm-tab" onclick="doSwitchTab(this,'hidden')" data-tab="hidden">
+                Đã ẩn <span class="tab-count" id="tabCountHidden">—</span>
+            </div>
+            <div class="cm-tab" onclick="doSwitchTab(this,'post')" data-tab="post">
+                Bài viết <span class="tab-count" id="tabCountPost">—</span>
+            </div>
+            <div class="cm-tab" onclick="doSwitchTab(this,'event')" data-tab="event">
+                Sự kiện <span class="tab-count" id="tabCountEvent">—</span>
+            </div>
+        </div>
+
+        <!-- Bulk Action Bar -->
+        <div class="bulk-bar" id="bulkBar">
+            <i class="fas fa-check-square"></i>
+            <span class="bulk-count" id="bulkCountLabel">0 bình luận được chọn</span>
+            <div class="bulk-actions">
+                <button class="bulk-btn bulk-btn-white" onclick="doBulkModerate('APPROVE')"><i class="fas fa-check"></i>
+                    Duyệt</button>
+                <button class="bulk-btn bulk-btn-yellow" onclick="doBulkModerate('HIDE')"><i
+                        class="fas fa-eye-slash"></i> Ẩn</button>
+                <button class="bulk-btn bulk-btn-red" onclick="doBulkDelete()"><i class="fas fa-trash"></i> Xóa</button>
+                <button class="bulk-btn bulk-btn-clear" onclick="doClearBulk()"><i class="fas fa-times"></i> Bỏ
+                    chọn</button>
+            </div>
+        </div>
+
+        <!-- Danh sách comment — JS render -->
+        <div class="cmt-list" id="cmtList">
+            <!-- Skeleton loading ban đầu — JS sẽ replace -->
+            <div style="text-align:center;padding:40px;color:#adb5bd;" id="cmtLoading">
+                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                <div style="margin-top:8px;font-size:.85rem;">Đang tải dữ liệu...</div>
+            </div>
+        </div>
+
+        <!-- Pagination — JS render -->
+        <div id="pagerContainer"></div>
+
+
+        <!-- ======================== MODALS ======================== -->
+
+        <!-- Modal Chi tiết Bình luận — JS fill nội dung -->
+        <div class="modal-overlay" id="detailModal" style="display:none;">
+            <div class="modal-box modal-box-wide">
+                <div class="modal-head">
+                    <span class="modal-title"><i class="fas fa-comment-dots"
+                            style="color:#0061ff;margin-right:8px;"></i>Chi tiết Bình luận</span>
+                    <button class="modal-close" onclick="dongModal('detailModal')"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="reply-actions">
-                    <button class="mod-quick-btn mqb-approve" style="font-size:.72rem;padding:4px 10px;"><i class="fas fa-check"></i></button>
-                    <button class="btn-tbl btn-tbl-delete" style="font-size:.7rem;"><i class="fas fa-trash"></i></button>
+                <div class="modal-body" id="detailModalBody">
+                    <div style="text-align:center;padding:30px;color:#adb5bd;"><i class="fas fa-spinner fa-spin"></i>
+                        Đang tải...</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="mf-btn mf-btn-cancel" onclick="dongModal('detailModal')">Đóng</button>
+                    <button class="mf-btn" id="detailBtnApprove" style="background:#00875a;color:#fff;"
+                        onclick="tuModalModerate('APPROVE')">
+                        <i class="fas fa-check" style="margin-right:5px;"></i>Duyệt
+                    </button>
+                    <button class="mf-btn mf-btn-warning" id="detailBtnWarn" onclick="tuModalModerate('WARN')">
+                        <i class="fas fa-exclamation-triangle" style="margin-right:5px;"></i>Cảnh báo
+                    </button>
+                    <button class="mf-btn mf-btn-danger" id="detailBtnDelete" onclick="tuModalDelete()">
+                        <i class="fas fa-trash" style="margin-right:5px;"></i>Xóa
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- Modal Danh sách Report -->
+        <div class="modal-overlay" id="reportListModal" style="display:none;">
+            <div class="modal-box modal-box-wide">
+                <div class="modal-head">
+                    <span class="modal-title"><i class="fas fa-flag" style="color:#de350b;margin-right:8px;"></i>Báo cáo
+                        chờ xử lý</span>
+                    <button class="modal-close" onclick="dongModal('reportListModal')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+                        <select class="cm-filter" id="reportFilterType" onchange="taiDanhSachReport()">
+                            <option value="CMT">Bình luận gốc</option>
+                            <option value="PH_CMT">Phản hồi</option>
+                        </select>
+                        <select class="cm-filter" id="reportFilterStatus" onchange="taiDanhSachReport()">
+                            <option value="PENDING">Chờ xử lý</option>
+                            <option value="RESOLVED">Đã xử lý</option>
+                            <option value="REJECTED">Đã từ chối</option>
+                        </select>
+                    </div>
+                    <div id="reportListBody">
+                        <div style="text-align:center;padding:20px;color:#adb5bd;"><i
+                                class="fas fa-spinner fa-spin"></i> Đang tải...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="mf-btn mf-btn-cancel" onclick="dongModal('reportListModal')">Đóng</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Xử lý Report đơn lẻ -->
+        <div class="modal-overlay" id="reportActionModal" style="display:none;">
+            <div class="modal-box" style="max-width:480px;">
+                <div class="modal-head">
+                    <span class="modal-title"><i class="fas fa-gavel" style="color:#0061ff;margin-right:8px;"></i>Xử lý
+                        Báo cáo</span>
+                    <button class="modal-close" onclick="dongModal('reportActionModal')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div id="reportActionInfo"
+                        style="background:#f8f9ff;border-radius:12px;padding:14px;margin-bottom:16px;font-size:.84rem;">
+                    </div>
+                    <div class="mf-group">
+                        <label class="mf-label">Hành động <span class="req">*</span></label>
+                        <select class="mf-select" id="reportActionCode">
+                            <option value="RESOLVE_REPORT">Xác nhận báo cáo (RESOLVE)</option>
+                            <option value="REJECT_REPORT">Từ chối báo cáo (REJECT)</option>
+                        </select>
+                    </div>
+                    <div class="mf-group">
+                        <label class="mf-label">Ghi chú</label>
+                        <textarea class="mf-textarea" id="reportActionReason" placeholder="Lý do xử lý..."></textarea>
+                    </div>
+                    <div class="mf-section-label">Lịch sử xử lý</div>
+                    <div id="reportHistoryBody" style="max-height:180px;overflow-y:auto;">
+                        <div style="color:#adb5bd;font-size:.82rem;padding:8px 0;">Đang tải lịch sử...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="mf-btn mf-btn-cancel" onclick="dongModal('reportActionModal')">Đóng</button>
+                    <button class="mf-btn mf-btn-primary" id="btnSubmitReport" onclick="xuLyReport()">
+                        <i class="fas fa-check" style="margin-right:5px;"></i>Xác nhận
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Quản lý Loại cảm xúc — JS fill table -->
+        <div class="modal-overlay" id="likeTypesModal" style="display:none;">
+            <div class="modal-box" style="max-width:560px;">
+                <div class="modal-head">
+                    <span class="modal-title"><i class="fas fa-heart" style="color:#de350b;margin-right:8px;"></i>Loại
+                        Cảm xúc</span>
+                    <button class="modal-close" onclick="dongModal('likeTypesModal')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Trạng thái kiểm duyệt là enum cố định, không cần load từ API -->
+                    <p style="font-size:.82rem;color:#6c757d;margin-bottom:14px;">Quản lý các loại cảm xúc dùng trong
+                        bình luận và phản hồi</p>
+                    <div class="like-type-row" id="likeTypeChips"></div>
+                    <div id="likeTypeTableWrap">
+                        <div style="text-align:center;padding:16px;color:#adb5bd;"><i
+                                class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                    <hr class="mf-section-divider">
+                    <div class="mf-section-label" id="likeTypeFormTitle">Thêm loại cảm xúc mới</div>
+                    <input type="hidden" id="likeTypeEditId" value="">
+                    <input type="hidden" id="likeTypeIconUrl" value="">
+
+                    <!-- Toggle chế độ icon -->
+                    <div class="cm-icon-mode-tabs">
+                        <button class="cm-icon-mode-tab active" id="tabModeEmoji" type="button"
+                            onclick="toggleIconMode('emoji')">
+                            <i class="fas fa-smile"></i> Nhập emoji
+                        </button>
+                        <button class="cm-icon-mode-tab" id="tabModeUpload" type="button"
+                            onclick="toggleIconMode('upload')">
+                            <i class="fas fa-image"></i> Tải ảnh lên
+                        </button>
+                    </div>
+
+                    <!-- Panel emoji -->
+                    <div id="panelEmoji">
+                        <div class="mf-group">
+                            <label class="mf-label">Emoji / Ký tự icon</label>
+                            <input class="mf-input" type="text" id="likeTypeEmojiText" placeholder="VD: 👍 ❤️ 😮 💊"
+                                style="text-align:center;font-size:1.4rem;" oninput="capNhatEmojiPreview()">
+                        </div>
+                        <div class="cm-emoji-preview" id="emojiPreview">—</div>
+                    </div>
+
+                    <!-- Panel upload ảnh -->
+                    <div id="panelUpload" style="display:none;">
+                        <div class="mf-group">
+                            <label class="mf-label">Chọn ảnh icon (JPG, PNG, GIF, WEBP)</label>
+                            <div class="cm-media-upload-row">
+                                <input class="mf-input" type="file" accept="image/*" id="likeTypeIconFile">
+                                <button class="cm-btn cm-btn-primary" type="button" id="btnUploadReactionIcon"
+                                    onclick="doUploadReactionIcon()">
+                                    <i class="fas fa-cloud-upload-alt"></i> Tải lên
+                                </button>
+                            </div>
+                        </div>
+                        <div class="cm-media-preview" id="iconUploadPreview">
+                            <span>Chưa có ảnh — chọn file rồi bấm "Tải lên"</span>
+                        </div>
+                    </div>
+
+                    <!-- Tên + Mã -->
+                    <div class="mf-row cols-2" style="margin-top:14px;">
+                        <div class="mf-group">
+                            <label class="mf-label">Tên hiển thị <span class="req">*</span></label>
+                            <input class="mf-input" type="text" id="likeTypeName" placeholder="VD: Hữu ích">
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Mã (code) <span class="req">*</span></label>
+                            <input class="mf-input" type="text" id="likeTypeCode" placeholder="VD: helpful">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="mf-btn mf-btn-cancel" onclick="huyEditLikeType()">Hủy</button>
+                    <button class="mf-btn mf-btn-primary" id="btnLikeTypeSubmit" onclick="submitLikeType()">
+                        <i class="fas fa-plus" style="margin-right:5px;"></i>Thêm loại
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Danh sách Hành động kiểm duyệt — JS fill table -->
+        <div class="modal-overlay" id="modActionsModal" style="display:none;">
+            <div class="modal-box" style="max-width:520px;">
+                <div class="modal-head">
+                    <span class="modal-title"><i class="fas fa-shield-alt"
+                            style="color:#0061ff;margin-right:8px;"></i>Hành động Kiểm duyệt</span>
+                    <button class="modal-close" onclick="dongModal('modActionsModal')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Trạng thái kiểm duyệt là enum cố định, không cần load từ API -->
+                    <p style="font-size:.82rem;color:#6c757d;margin-bottom:14px;">Các hành động ghi vào
+                        nhật ký kiểm duyệt bình luận và phản hồi</p>
+                    <div id="modActionsTableWrap">
+                        <div style="text-align:center;padding:16px;color:#adb5bd;"><i
+                                class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="mf-btn mf-btn-cancel" onclick="dongModal('modActionsModal')">Đóng</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Cài đặt Kiểm duyệt — disabled, chưa có API -->
+        <div class="modal-overlay" id="settingsModal" style="display:none;">
+            <div class="modal-box" style="max-width:500px;">
+                <div class="modal-head">
+                    <span class="modal-title"><i class="fas fa-cog" style="color:#0061ff;margin-right:8px;"></i>Cài đặt
+                        Kiểm duyệt</span>
+                    <button class="modal-close" onclick="dongModal('settingsModal')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div
+                        style="background:#fff8e1;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:.83rem;color:#b87800;">
+                        <i class="fas fa-info-circle" style="margin-right:6px;"></i>
+                        Chức năng này chưa có API backend. Các thay đổi bên dưới chưa được lưu.
+                    </div>
+                    <div class="mf-section-label">Chế độ tự động</div>
+                    <div
+                        style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;opacity:.5;pointer-events:none;">
+                        <label
+                            style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
+                            <div>
+                                <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Duyệt tự động bình luận
+                                    thành viên tin cậy</div>
+                                <div style="font-size:.75rem;color:#6c757d;">Không cần chờ duyệt thủ công</div>
+                            </div>
+                        </label>
+                        <label
+                            style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
+                            <div>
+                                <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Ẩn tự động khi có &ge; 5
+                                    báo cáo</div>
+                                <div style="font-size:.75rem;color:#6c757d;">Bình luận bị báo cáo nhiều sẽ tự ẩn</div>
+                            </div>
+                        </label>
+                        <label
+                            style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
+                            <div>
+                                <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Lọc từ ngữ nhạy cảm</div>
+                                <div style="font-size:.75rem;color:#6c757d;">Tự động đánh dấu chờ duyệt</div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="mf-section-label">Giới hạn</div>
+                    <div class="mf-row cols-2" style="opacity:.5;pointer-events:none;">
+                        <div class="mf-group">
+                            <label class="mf-label">Số báo cáo để tự ẩn</label>
+                            <input class="mf-input" type="number" value="5" disabled>
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Giới hạn ký tự / bình luận</label>
+                            <input class="mf-input" type="number" value="2000" disabled>
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Tối đa phản hồi / bình luận</label>
+                            <input class="mf-input" type="number" value="50" disabled>
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Cooldown gửi bình luận (giây)</label>
+                            <input class="mf-input" type="number" value="30" disabled>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="mf-btn mf-btn-cancel" onclick="dongModal('settingsModal')">Đóng</button>
+                    <button class="mf-btn mf-btn-primary" disabled style="opacity:.4;cursor:not-allowed;">
+                        <i class="fas fa-save" style="margin-right:5px;"></i>Lưu cài đặt
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <script>
+            /* ===== BIẾN TRẠNG THÁI TOÀN CỤC ===== */
+            var trangHienTai = 0;
+            var kichThuocTrang = 10;
+            var tabHienTai = 'all';
+            var boLocHienTai = { keyword: '', status: '', targetType: '', startDate: '', endDate: '' };
+            var danhSachHanhDong = [];
+            var danhSachIdDaChon = [];
+            var cmtDangXem = null;
+            var reportDangXuLy = null;
+            var timerDebounce = null;
+            var iconModeHienTai = 'emoji';
+
+            /* ===== HÀM TIỆN ÍCH ===== */
+
+            /* Chuyển đổi ký tự đặc biệt HTML thành entity an toàn — chống XSS khi gán innerHTML */
+            function lamSachChuoiHTML(chuoiKhongAnToan) {
+                if (chuoiKhongAnToan === null || chuoiKhongAnToan === undefined) { return ''; }
+                return String(chuoiKhongAnToan).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            }
+
+            /* Mở modal — tải dữ liệu động tùy loại modal */
+            function moModal(id) {
+                document.getElementById(id).style.display = 'flex';
+                if (id === 'likeTypesModal') { taiDanhSachLoaiLike(); }
+                if (id === 'modActionsModal') { taiDanhSachHanhDong(); }
+                if (id === 'reportListModal') { taiDanhSachReport(); }
+            }
+
+            /* Đóng modal */
+            function dongModal(id) {
+                document.getElementById(id).style.display = 'none';
+            }
+
+            /* Đóng modal khi click vào vùng overlay */
+            document.querySelectorAll('.modal-overlay').forEach(function (m) {
+                m.addEventListener('click', function (e) {
+                    if (e.target === m) { m.style.display = 'none'; }
+                });
+            });
+
+            /* Format ngày giờ sang locale Việt Nam */
+            function formatThoiGian(dateStr) {
+                if (!dateStr) { return '—'; }
+                return new Date(dateStr).toLocaleString('vi-VN');
+            }
+
+            /* Format số có dấu phân cách hàng nghìn */
+            function formatSo(n) {
+                if (n === null || n === undefined) { return '0'; }
+                return Number(n).toLocaleString('vi-VN');
+            }
+
+            /* Lấy ký tự đầu của tên để hiển thị avatar */
+            function layKyTuAvatar(ten) {
+                if (!ten) { return '?'; }
+                return ten.trim().charAt(0).toUpperCase();
+            }
+
+            /* Lấy CSS class border trái cho cmt-card */
+            /* Tra cứu class card theo trạng thái — ưu tiên reportCount, fallback pending */
+            function layClassCard(currentStatus, reportCount) {
+                if (reportCount > 0) { return 'reported'; }
+                if (!currentStatus) { return 'pending'; }
+                var cfg = cauHinhTrangThaiCmt[currentStatus];
+                if (cfg) {
+                    if (cfg.css === 'csp-approved') { return 'approved'; }
+                    if (cfg.css === 'csp-hidden') { return 'hidden'; }
+                    if (cfg.css === 'csp-reported') { return 'reported'; }
+                }
+                return 'pending';
+            }
+
+            /* Lấy HTML pill trạng thái — tra cứu từ bảng cauHinhTrangThaiCmt, fallback danhSachHanhDong */
+            function layHtmlStatusPill(currentStatus, reportCount) {
+                if (reportCount > 0 && currentStatus !== 'HIDE') {
+                    return '<span class="cmt-status-pill csp-reported"><i class="fas fa-flag"></i> Bị báo cáo (' + reportCount + ')</span>';
+                }
+                if (!currentStatus) {
+                    return '<span class="cmt-status-pill csp-pending"><i class="fas fa-clock"></i> Chờ duyệt</span>';
+                }
+                var cfg = cauHinhTrangThaiCmt[currentStatus];
+                if (cfg) {
+                    return '<span class="cmt-status-pill ' + cfg.css + '"><i class="fas ' + cfg.icon + '"></i> ' + lamSachChuoiHTML(cfg.label) + '</span>';
+                }
+                var labelFallback = currentStatus;
+                for (var i = 0; i < danhSachHanhDong.length; i++) {
+                    if (danhSachHanhDong[i].code === currentStatus) { labelFallback = danhSachHanhDong[i].name; break; }
+                }
+                return '<span class="cmt-status-pill csp-pending"><i class="fas fa-question-circle"></i> ' + lamSachChuoiHTML(labelFallback) + '</span>';
+            }
+
+            /* Render các reaction chip từ mảng reactions */
+            function renderReactionChips(reactions) {
+                var html = '';
+                if (!reactions || reactions.length === 0) { return html; }
+                for (var i = 0; i < reactions.length; i++) {
+                    var r = reactions[i];
+                    if (r.count > 0) {
+                        var icon = r.iconUrl ? r.iconUrl : r.code;
+                        html += '<span class="reaction-chip">' + icon + ' <span class="rc-count">' + r.count + '</span></span>';
+                    }
+                }
+                return html;
+            }
+
+            /* Render các nút moderation cho card */
+            function renderNutModCard(cmtId, targetType, currentStatus) {
+                var tt = (targetType === 'CMT') ? 'CMT' : 'PH_CMT';
+                var html = '';
+                if (currentStatus !== 'APPROVE') { html += '<button class="mod-quick-btn mqb-approve" onclick="doModDonLe(' + cmtId + ',\'' + tt + '\',\'APPROVE\')"><i class="fas fa-check"></i> Duyệt</button>'; }
+                if (currentStatus !== 'HIDE') { html += '<button class="mod-quick-btn mqb-hide" onclick="doModDonLe(' + cmtId + ',\'' + tt + '\',\'HIDE\')"><i class="fas fa-eye-slash"></i> Ẩn</button>'; }
+                if (currentStatus === 'HIDE') { html += '<button class="mod-quick-btn mqb-unhide" onclick="doModDonLe(' + cmtId + ',\'' + tt + '\',\'UNHIDE\')"><i class="fas fa-eye"></i> Bỏ ẩn</button>'; }
+                html += '<button class="mod-quick-btn mqb-delete" onclick="doXoaDonLe(' + cmtId + ',\'' + tt + '\')"><i class="fas fa-trash"></i></button>';
+                html += '<button class="btn-tbl btn-tbl-view" style="font-size:.75rem;" onclick="moChiTiet(' + cmtId + ',\'' + tt + '\')"><i class="fas fa-eye"></i> Chi tiết</button>';
+                return html;
+            }
+
+            /* ===== LOAD STATS ===== */
+
+            /* Tải stats từ API và điền vào stat row + tab counts */
+            function taiStats() {
+                callApi('/api/admin/comments/stats', 'GET', null, null, function (res) {
+                    var d = res.data;
+                    document.getElementById('statTotalCmt').textContent = formatSo(d.totalCmt);
+                    document.getElementById('statTotalPhCmt').textContent = formatSo(d.totalPhCmt);
+                    document.getElementById('statPending').textContent = formatSo(d.pendingCmt);
+                    document.getElementById('statReported').textContent = formatSo(d.reportedCmt);
+                    var tongAn = (d.hiddenCmt || 0) + (d.hiddenPhCmt || 0);
+                    document.getElementById('statHidden').textContent = formatSo(tongAn);
+                    document.getElementById('statReactions').textContent = formatSo(d.totalReactions);
+                    document.getElementById('tabCountAll').textContent = formatSo((d.totalCmt || 0) + (d.totalPhCmt || 0));
+                    document.getElementById('tabCountPending').textContent = formatSo(d.pendingCmt);
+                    document.getElementById('tabCountReported').textContent = formatSo(d.reportedCmt);
+                    document.getElementById('tabCountHidden').textContent = formatSo(tongAn);
+                    /* F1.5: dùng postCmt/eventCmt thay vì totalCmt */
+                    document.getElementById('tabCountPost').textContent = formatSo(d.postCmt);
+                    document.getElementById('tabCountEvent').textContent = formatSo(d.eventCmt);
+                    /* F1.4: hiện stats row sau khi fill xong */
+                    var statsRow = document.getElementById('statsRow');
+                    if (statsRow.classList.contains('ptm-fade-out')) {
+                        statsRow.classList.remove('ptm-fade-out');
+                    }
+                });
+            }
+
+            /* Bảng tra cứu trạng thái kiểm duyệt bình luận — mở rộng bằng cách thêm dòng, không sửa if-else */
+            var cauHinhTrangThaiCmt = {
+                'APPROVE': { label: 'Hiển thị', css: 'csp-approved', icon: 'fa-check-circle' },
+                'HIDE':    { label: 'Đã ẩn', css: 'csp-hidden', icon: 'fa-eye-slash' },
+                'WARN':    { label: 'Cảnh báo', css: 'csp-reported', icon: 'fa-exclamation-triangle' },
+                'DELETE':  { label: 'Đã xóa', css: 'csp-hidden', icon: 'fa-trash' }
+            };
+
+            /* Bảng tra cứu trạng thái báo cáo — hiện label tiếng Việt thay vì mã code */
+            var cauHinhTrangThaiReport = {
+                'PENDING':  { label: 'Chờ xử lý', css: 'csp-pending' },
+                'RESOLVED': { label: 'Đã giải quyết', css: 'csp-approved' },
+                'REJECTED': { label: 'Bác bỏ', css: 'csp-hidden' }
+            };
+
+            /* ===== DANH SÁCH COMMENT + PHÂN TRANG ===== */
+
+            /* Xây dựng URL API với query params từ bộ lọc hiện tại */
+            function xayDungUrl() {
+                var url = '/api/admin/comments?page=' + trangHienTai + '&size=' + kichThuocTrang;
+                if (boLocHienTai.keyword) { url += '&keyword=' + encodeURIComponent(boLocHienTai.keyword); }
+                if (boLocHienTai.status) { url += '&status=' + boLocHienTai.status; }
+                if (boLocHienTai.targetType) { url += '&targetType=' + boLocHienTai.targetType; }
+                if (boLocHienTai.startDate) { url += '&startDate=' + boLocHienTai.startDate; }
+                if (boLocHienTai.endDate) { url += '&endDate=' + boLocHienTai.endDate; }
+                return url;
+            }
+
+            /* Render một comment card từ AdminCmtContextResponse */
+            function renderCmtCard(item) {
+                var cmt = item.cmtData;
+                var targetType = item.targetType;
+                var cardClass = layClassCard(cmt.currentStatus, cmt.reportCount);
+                var statusPill = layHtmlStatusPill(cmt.currentStatus, cmt.reportCount);
+                var badgeClass = (targetType === 'POST') ? 'ctb-post' : 'ctb-event';
+                var badgeText = (targetType === 'POST') ? 'Bài viết' : 'Sự kiện';
+                var targetUrl = '/' + (targetType === 'POST' ? 'posts' : 'events') + '/' + (item.targetSlug || '');
+                var textClass = 'cmt-text';
+                var noiDung = cmt.content || '';
+
+                var html = '<div class="cmt-card ' + cardClass + '" id="card-' + cmt.id + '">';
+                html += '<div class="cmt-card-header">';
+                html += '<input type="checkbox" style="margin-top:6px;cursor:pointer;" onchange="doToggleBulk(this,' + cmt.id + ')">';
+                html += '<div class="cmt-avatar">' + layKyTuAvatar(cmt.userFullName) + '</div>';
+                html += '<div class="cmt-meta"><div class="cmt-meta-top">';
+                html += '<span class="cmt-author">' + lamSachChuoiHTML(cmt.userFullName || 'Ẩn danh') + '</span>';
+                html += '<span class="cmt-type-badge ' + badgeClass + '">' + badgeText + '</span>';
+                html += statusPill;
+                html += '<span class="cmt-time">' + formatThoiGian(cmt.createdAt) + '</span></div>';
+                html += '<div class="cmt-target">Bình luận trên: <a href="' + targetUrl + '" target="_blank">' + lamSachChuoiHTML(item.targetTitle || '—') + '</a>';
+                if (cmt.ipAddress) { html += ' <span style="color:#adb5bd;margin:0 4px;">•</span><span style="font-family:monospace;font-size:.68rem;color:#adb5bd;">IP: ' + lamSachChuoiHTML(cmt.ipAddress) + '</span>'; }
+                html += '</div></div>';
+                html += '<div class="cmt-actions">' + renderNutModCard(cmt.id, 'CMT', cmt.currentStatus) + '</div></div>';
+                html += '<div class="cmt-body"><p class="' + textClass + '">' + lamSachChuoiHTML(noiDung) + '</p></div>';
+                html += '<div class="cmt-reactions">' + renderReactionChips(cmt.reactions);
+                html += '<div class="cmt-footer-meta">';
+                if (cmt.reportCount > 0) { html += '<span class="cmt-report-flag" onclick="moReportDonLe(' + cmt.id + ',\'CMT\')"><i class="fas fa-flag"></i> ' + cmt.reportCount + ' báo cáo</span>'; }
+                html += '<span class="cmt-ip">ID: #' + cmt.id + '</span></div></div>';
+                if (cmt.replyCount > 0) {
+                    html += '<div style="padding:6px 16px 6px 64px;border-top:1px dashed #f0f2fa;">';
+                    html += '<button class="replies-toggle-btn" onclick="doToggleReplies(' + cmt.id + ')">';
+                    html += '<i class="fas fa-reply"></i> ' + cmt.replyCount + ' phản hồi';
+                    html += '<i class="fas fa-chevron-down" style="font-size:.7rem;margin-left:4px;"></i></button></div>';
+                    html += '<div class="adm-reply-thread" id="adm-replies-' + cmt.id + '" style="display:none;padding:8px 16px 8px 64px;"></div>';
+                }
+                html += '</div>';
+                return html;
+            }
+
+            /* Render thông báo trống */
+            function renderTrangRong() {
+                return '<div style="text-align:center;padding:48px;color:#adb5bd;"><i class="fas fa-comment-slash" style="font-size:2rem;"></i><div style="margin-top:12px;font-size:.9rem;">Không có bình luận nào phù hợp</div></div>';
+            }
+
+            /* Tải danh sách comment từ API — anLang=true: bỏ qua skeleton (dùng sau CRUD) */
+            function taiDanhSachCmt(anLang) {
+                var container = document.getElementById('cmtList');
+                if (anLang !== true) {
+                    PageTransitionManager.showSkeleton('cmtList', 'cardList', 4);
+                }
+                callApi(xayDungUrl(), 'GET', null, null, function (res) {
+                    var page = res.data;
+                    var content = page.content;
+                    PageTransitionManager.swapContent('cmtList', function () {
+                        if (!content || content.length === 0) {
+                            container.innerHTML = renderTrangRong();
+                            document.getElementById('pagerContainer').innerHTML = '';
+                            return;
+                        }
+                        var html = '';
+                        for (var i = 0; i < content.length; i++) { html += renderCmtCard(content[i]); }
+                        container.innerHTML = html;
+                        renderPhanTrang(page);
+                    });
+                    danhSachIdDaChon = [];
+                    capNhatBulkBar();
+                }, function (msg) {
+                    PageTransitionManager.swapContent('cmtList', function () {
+                        container.innerHTML = '<div style="text-align:center;padding:48px;color:#de350b;"><i class="fas fa-exclamation-triangle" style="font-size:1.5rem;"></i><div style="margin-top:12px;font-size:.9rem;">' + msg + '</div></div>';
+                    });
+                });
+            }
+
+            /* Render thanh phân trang từ Page response */
+            function renderPhanTrang(page) {
+                var container = document.getElementById('pagerContainer');
+                var tuSo = page.number * page.size + 1;
+                var denSo = Math.min(tuSo + page.size - 1, page.totalElements);
+                var html = '<div class="pager"><div class="pager-info">Hiển thị ' + tuSo + '–' + denSo + ' / ' + formatSo(page.totalElements) + ' bình luận</div>';
+                if (page.totalPages <= 1) {
+                    html += '</div>';
+                    container.innerHTML = html;
+                    return;
+                }
+                html += '<div class="pager-btns">';
+
+                /* Nút lùi trang */
+                if (page.first) {
+                    html += '<button class="pager-btn" disabled><i class="fas fa-chevron-left" style="font-size:.7rem;"></i></button>';
+                } else {
+                    html += '<button class="pager-btn" onclick="doChuyenTrang(' + (page.number - 1) + ')"><i class="fas fa-chevron-left" style="font-size:.7rem;"></i></button>';
+                }
+
+                /* Tính khoảng trang hiển thị (tối đa 5 nút quanh trang hiện tại) */
+                var bd = Math.max(0, page.number - 2);
+                var kt = Math.min(page.totalPages - 1, page.number + 2);
+
+                /* Nút trang đầu + dấu ... nếu khoảng bắt đầu xa trang 1 */
+                if (bd > 0) {
+                    html += '<button class="pager-btn" onclick="doChuyenTrang(0)">1</button>';
+                    if (bd > 1) {
+                        html += '<span style="padding:0 4px;color:#adb5bd;">...</span>';
+                    }
+                }
+
+                /* Các nút trang trong khoảng hiển thị */
+                for (var p = bd; p <= kt; p++) {
+                    var ac = (p === page.number) ? ' active' : '';
+                    html += '<button class="pager-btn' + ac + '" onclick="doChuyenTrang(' + p + ')">' + (p + 1) + '</button>';
+                }
+
+                /* Dấu ... + nút trang cuối nếu khoảng kết thúc xa trang cuối */
+                if (kt < page.totalPages - 1) {
+                    if (kt < page.totalPages - 2) {
+                        html += '<span style="padding:0 4px;color:#adb5bd;">...</span>';
+                    }
+                    html += '<button class="pager-btn" onclick="doChuyenTrang(' + (page.totalPages - 1) + ')">' + page.totalPages + '</button>';
+                }
+
+                /* Nút tiến trang */
+                if (page.last) {
+                    html += '<button class="pager-btn" disabled><i class="fas fa-chevron-right" style="font-size:.7rem;"></i></button>';
+                } else {
+                    html += '<button class="pager-btn" onclick="doChuyenTrang(' + (page.number + 1) + ')"><i class="fas fa-chevron-right" style="font-size:.7rem;"></i></button>';
+                }
+                html += '</div></div>';
+                container.innerHTML = html;
+            }
+
+            /* Chuyển sang trang số chỉ định */
+            function doChuyenTrang(soTrang) {
+                trangHienTai = soTrang;
+                taiDanhSachCmt();
+                window.scrollTo(0, 0);
+            }
+
+            /* ===== TAB SWITCHING ===== */
+
+            /* Chuyển tab và cập nhật bộ lọc tương ứng */
+            function doSwitchTab(el, tab) {
+                document.querySelectorAll('.cm-tab').forEach(function (t) { t.classList.remove('active'); });
+                el.classList.add('active');
+                tabHienTai = tab;
+                trangHienTai = 0;
+                boLocHienTai.status = '';
+                boLocHienTai.targetType = '';
+                document.getElementById('filterStatus').value = '';
+                document.getElementById('filterTargetType').value = '';
+                if (tab === 'hidden') { boLocHienTai.status = 'HIDE'; document.getElementById('filterStatus').value = 'HIDE'; }
+                if (tab === 'post') { boLocHienTai.targetType = 'POST'; document.getElementById('filterTargetType').value = 'POST'; }
+                if (tab === 'event') { boLocHienTai.targetType = 'EVENT'; document.getElementById('filterTargetType').value = 'EVENT'; }
+                taiDanhSachCmt();
+            }
+
+            /* Áp dụng filter từ toolbar vào bộ lọc và reload */
+            function apDungFilter() {
+                trangHienTai = 0;
+                boLocHienTai.status = document.getElementById('filterStatus').value;
+                boLocHienTai.targetType = document.getElementById('filterTargetType').value;
+                boLocHienTai.startDate = document.getElementById('filterStartDate').value;
+                boLocHienTai.endDate = document.getElementById('filterEndDate').value;
+                taiDanhSachCmt();
+            }
+
+            /* Debounce tìm kiếm 500ms */
+            function debounceSearch() {
+                clearTimeout(timerDebounce);
+                timerDebounce = setTimeout(function () {
+                    trangHienTai = 0;
+                    boLocHienTai.keyword = document.getElementById('searchInput').value;
+                    taiDanhSachCmt();
+                }, 500);
+            }
+
+            /* ===== BULK ACTIONS ===== */
+
+            /* Toggle chọn 1 comment vào danh sách bulk */
+            function doToggleBulk(checkbox, cmtId) {
+                if (checkbox.checked) {
+                    danhSachIdDaChon.push(cmtId);
+                } else {
+                    var moi = [];
+                    for (var i = 0; i < danhSachIdDaChon.length; i++) { if (danhSachIdDaChon[i] !== cmtId) { moi.push(danhSachIdDaChon[i]); } }
+                    danhSachIdDaChon = moi;
+                }
+                capNhatBulkBar();
+            }
+
+            /* Cập nhật hiển thị thanh bulk action */
+            function capNhatBulkBar() {
+                document.getElementById('bulkCountLabel').textContent = danhSachIdDaChon.length + ' bình luận được chọn';
+                var bar = document.getElementById('bulkBar');
+                if (danhSachIdDaChon.length > 0) { bar.classList.add('visible'); }
+                else { bar.classList.remove('visible'); }
+            }
+
+            /* Bỏ chọn tất cả */
+            function doClearBulk() {
+                danhSachIdDaChon = [];
+                document.querySelectorAll('.cmt-card input[type=checkbox]').forEach(function (cb) { cb.checked = false; });
+                capNhatBulkBar();
+            }
+
+            /* Bulk moderate với APPROVE hoặc HIDE */
+            function doBulkModerate(action) {
+                if (danhSachIdDaChon.length === 0) { return; }
+                var nhan = (action === 'APPROVE') ? 'Duyệt' : 'Ẩn';
+                confirmAction(nhan + ' ' + danhSachIdDaChon.length + ' bình luận?', function () {
+                    callApi('/api/admin/comments/bulk/moderate', 'POST', { ids: danhSachIdDaChon, action: action }, null, function () {
+                        showToast('success', nhan + ' thành công ' + danhSachIdDaChon.length + ' bình luận');
+                        doBulkSauThanhCong();
+                    });
+                });
+            }
+
+            /* Bulk delete */
+            function doBulkDelete() {
+                if (danhSachIdDaChon.length === 0) { return; }
+                confirmAction('Xóa ' + danhSachIdDaChon.length + ' bình luận? Hành động không thể khôi phục!', function () {
+                    callApi('/api/admin/comments/bulk', 'DELETE', { ids: danhSachIdDaChon }, null, function () {
+                        showToast('success', 'Đã xóa ' + danhSachIdDaChon.length + ' bình luận');
+                        doBulkSauThanhCong();
+                    });
+                }, true);
+            }
+
+            /* Reload sau khi bulk action thành công — im lặng, không skeleton */
+            function doBulkSauThanhCong() {
+                danhSachIdDaChon = [];
+                capNhatBulkBar();
+                taiDanhSachCmt(true);
+                taiStats();
+            }
+
+            /* ===== MODERATION ĐƠN LẺ ===== */
+
+            /* Tìm actionId từ cache theo code */
+            function layActionId(actionCode) {
+                for (var i = 0; i < danhSachHanhDong.length; i++) { if (danhSachHanhDong[i].code === actionCode) { return danhSachHanhDong[i].id || (i + 1); } }
+                return 1;
+            }
+
+            /* Gọi API moderate đơn lẻ — hiện confirm trước khi thực hiện */
+            function doModDonLe(id, targetType, actionCode) {
+                var tenHanhDong = actionCode;
+                for (var i = 0; i < danhSachHanhDong.length; i++) {
+                    if (danhSachHanhDong[i].code === actionCode) { tenHanhDong = danhSachHanhDong[i].name; break; }
+                }
+                confirmAction(tenHanhDong + ' bình luận #' + id + '?', function () {
+                    var body = { targetId: id, targetType: targetType, actionId: layActionId(actionCode), reason: '', isLockUser: false, lockDurationDays: 0 };
+                    callApi('/api/admin/comments/moderate', 'POST', body, null, function () {
+                        showToast('success', tenHanhDong + ' thành công');
+                        taiDanhSachCmt(true);
+                        taiStats();
+                    });
+                });
+            }
+
+            /* Xóa đơn lẻ sau khi xác nhận */
+            function doXoaDonLe(id, targetType) {
+                confirmAction('Xóa bình luận #' + id + '? Hành động không thể khôi phục!', function () {
+                    var url = (targetType === 'CMT') ? '/api/admin/comments/cmt/' + id : '/api/admin/comments/reply/' + id;
+                    callApi(url, 'DELETE', null, null, function () {
+                        showToast('success', 'Đã xóa bình luận thành công');
+                        taiDanhSachCmt(true);
+                        taiStats();
+                    });
+                }, true);
+            }
+
+            /* ===== MODAL CHI TIẾT ===== */
+
+            /* Mở modal chi tiết và tải log kiểm duyệt + lịch sử sửa */
+            function moChiTiet(cmtId, targetType) {
+                cmtDangXem = { id: cmtId, targetType: targetType };
+                moModal('detailModal');
+                var body = document.getElementById('detailModalBody');
+                body.innerHTML = '<div style="text-align:center;padding:30px;color:#adb5bd;"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>';
+                var urlLog = (targetType === 'CMT') ? '/api/admin/comments/cmt/' + cmtId + '/moderation-log' : '/api/admin/comments/reply/' + cmtId + '/moderation-log';
+                var urlHist = (targetType === 'CMT') ? '/api/comments/' + cmtId + '/history' : '/api/comments/reply/' + cmtId + '/history';
+                callApi(urlLog, 'GET', null, null, function (resLog) {
+                    callApi(urlHist, 'GET', null, null, function (resHist) {
+                        body.innerHTML = renderNoiDungModalChiTiet(cmtId, renderLogKiemDuyet(resLog.data), renderLichSuSua(resHist.data));
+                    }, function () {
+                        body.innerHTML = renderNoiDungModalChiTiet(cmtId, renderLogKiemDuyet(resLog.data), '<div style="color:#adb5bd;font-size:.82rem;padding:8px 0;">Không tải được lịch sử sửa</div>');
+                    });
+                });
+            }
+
+            /* Render HTML nội dung modal chi tiết */
+            function renderNoiDungModalChiTiet(cmtId, logHtml, histHtml) {
+                var html = '<div style="background:#f8f9ff;border-radius:12px;padding:14px;margin-bottom:20px;"><div class="mf-section-label">Thông tin</div>';
+                html += '<div style="font-size:.83rem;color:#6c757d;">ID: <strong style="color:#1a2040;">#' + cmtId + '</strong></div></div>';
+                html += '<div class="mf-section-label">Lịch sử Kiểm duyệt</div>';
+                html += '<div style="background:#f8f9ff;border-radius:12px;padding:12px 16px;margin-bottom:20px;">' + logHtml + '</div>';
+                html += '<div class="mf-section-label">Lịch sử Sửa nội dung</div>';
+                html += '<div style="background:#f8f9ff;border-radius:12px;padding:12px 16px;margin-bottom:20px;">' + histHtml + '</div>';
+                html += '<hr class="mf-section-divider"><div class="mf-section-label">Thực hiện hành động</div>';
+                html += '<div class="mf-row cols-2"><div class="mf-group"><label class="mf-label">Hành động <span class="req">*</span></label><select class="mf-select" id="detailActionSelect">';
+                for (var i = 0; i < danhSachHanhDong.length; i++) {
+                    html += '<option value="' + danhSachHanhDong[i].code + '">' + danhSachHanhDong[i].code + ' — ' + danhSachHanhDong[i].name + '</option>';
+                }
+                html += '</select></div><div class="mf-group"><label class="mf-label">Khóa tài khoản</label>';
+                html += '<select class="mf-select" id="detailLockSelect"><option value="0">Không khóa</option><option value="7">Khóa 7 ngày</option><option value="30">Khóa 30 ngày</option><option value="-1">Khóa vĩnh viễn</option></select></div></div>';
+                html += '<div class="mf-group"><label class="mf-label">Ghi chú</label><textarea class="mf-textarea" id="detailActionReason" placeholder="Lý do thực hiện hành động..."></textarea></div>';
+                return html;
+            }
+
+            /* Render HTML log kiểm duyệt */
+            function renderLogKiemDuyet(logs) {
+                if (!logs || logs.length === 0) { return '<div style="color:#adb5bd;font-size:.82rem;padding:8px 0;">Chưa có lịch sử kiểm duyệt</div>'; }
+                var html = '';
+                for (var i = 0; i < logs.length; i++) {
+                    var log = logs[i];
+                    var bc = 'mab-' + (log.actionCode || '').toLowerCase();
+                    html += '<div class="mod-log-item"><span class="mod-action-badge ' + bc + '">' + (log.actionCode || '—') + '</span>';
+                    html += '<div style="flex:1;"><div style="font-size:.82rem;font-weight:600;color:#1a2040;">' + (log.actionName || log.actionCode) + '</div>';
+                    if (log.reason) { html += '<div style="font-size:.78rem;color:#495057;margin-top:2px;">' + lamSachChuoiHTML(log.reason) + '</div>'; }
+                    html += '<div style="font-size:.72rem;color:#6c757d;margin-top:2px;">' + lamSachChuoiHTML(log.moderatorName || '—') + ' • ' + formatThoiGian(log.createdAt) + '</div></div></div>';
+                }
+                return html;
+            }
+
+            /* Render HTML lịch sử sửa nội dung — hiện nội dung cũ (đỏ) và mới (xanh) để admin đối soát */
+            function renderLichSuSua(histories) {
+                if (!histories || histories.length === 0) { return '<div style="color:#adb5bd;font-size:.82rem;padding:8px 0;">Chưa có lịch sử sửa</div>'; }
+                var html = '';
+                for (var i = 0; i < histories.length; i++) {
+                    var h = histories[i];
+                    html += '<div class="mod-log-item" style="flex-direction:column;align-items:stretch;">';
+                    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+                    html += '<span class="mod-action-badge" style="background:#e8f0ff;color:#0061ff;">' + lamSachChuoiHTML(h.actionCode || '—') + '</span>';
+                    html += '<div style="flex:1;"><div style="font-size:.82rem;font-weight:600;color:#1a2040;">' + lamSachChuoiHTML(h.actionName || h.actionCode) + '</div>';
+                    html += '<div style="font-size:.72rem;color:#6c757d;margin-top:2px;">' + lamSachChuoiHTML(h.authorName || '—') + ' • ' + formatThoiGian(h.createdAt) + '</div></div></div>';
+                    var txtCu = '';
+                    var txtMoi = '';
+                    if (h.oldPayload) {
+                        try { txtCu = JSON.parse(h.oldPayload).content || ''; } catch (e) { txtCu = h.oldPayload; }
+                    }
+                    if (h.newPayload) {
+                        try { txtMoi = JSON.parse(h.newPayload).content || ''; } catch (e) { txtMoi = h.newPayload; }
+                    }
+                    if (txtCu || txtMoi) {
+                        if (txtCu) { html += '<div style="background:#fef2f2;border-left:3px solid #ef4444;padding:8px 10px;font-size:.82rem;color:#991b1b;margin-bottom:4px;text-decoration:line-through;border-radius:4px;">' + lamSachChuoiHTML(txtCu) + '</div>'; }
+                        if (txtMoi) { html += '<div style="background:#f0fdf4;border-left:3px solid #22c55e;padding:8px 10px;font-size:.82rem;color:#166534;border-radius:4px;">' + lamSachChuoiHTML(txtMoi) + '</div>'; }
+                    }
+                    html += '</div>';
+                }
+                return html;
+            }
+
+            /* Moderate từ footer modal chi tiết — hiện confirm trước khi thực hiện */
+            function tuModalModerate(actionCode) {
+                if (!cmtDangXem) { return; }
+                var selEl = document.getElementById('detailActionSelect');
+                var ma = selEl ? selEl.value : actionCode;
+                var reason = document.getElementById('detailActionReason') ? document.getElementById('detailActionReason').value : '';
+                var lockVal = document.getElementById('detailLockSelect') ? parseInt(document.getElementById('detailLockSelect').value) : 0;
+                confirmAction('Thực hiện hành động kiểm duyệt?', function () {
+                    var body = { targetId: cmtDangXem.id, targetType: cmtDangXem.targetType, actionId: layActionId(ma), reason: reason, isLockUser: (lockVal !== 0), lockDurationDays: (lockVal > 0 ? lockVal : 0) };
+                    callApi('/api/admin/comments/moderate', 'POST', body, '#detailBtnApprove', function () {
+                        showToast('success', 'Đã thực hiện hành động thành công');
+                        dongModal('detailModal');
+                        taiDanhSachCmt(true);
+                        taiStats();
+                    });
+                });
+            }
+
+            /* Xóa từ footer modal chi tiết */
+            function tuModalDelete() {
+                if (!cmtDangXem) { return; }
+                confirmAction('Xóa bình luận #' + cmtDangXem.id + '? Hành động không thể khôi phục!', function () {
+                    var url = (cmtDangXem.targetType === 'CMT') ? '/api/admin/comments/cmt/' + cmtDangXem.id : '/api/admin/comments/reply/' + cmtDangXem.id;
+                    callApi(url, 'DELETE', null, '#detailBtnDelete', function () {
+                        showToast('success', 'Đã xóa bình luận thành công');
+                        dongModal('detailModal');
+                        taiDanhSachCmt(true);
+                        taiStats();
+                    });
+                });
+            }
+
+            /* ===== MODAL REPORT ===== */
+
+            /* Mở modal report của 1 comment cụ thể */
+            function moReportDonLe(cmtId, targetType) {
+                reportDangXuLy = { cmtId: cmtId, targetType: targetType, reportId: null };
+                moModal('reportListModal');
+            }
+
+            /* Tải danh sách report từ API */
+            function taiDanhSachReport() {
+                var loai = document.getElementById('reportFilterType') ? document.getElementById('reportFilterType').value : 'CMT';
+                var trangThai = document.getElementById('reportFilterStatus') ? document.getElementById('reportFilterStatus').value : 'PENDING';
+                var bodyEl = document.getElementById('reportListBody');
+                bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#adb5bd;"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>';
+                callApi('/api/admin/reports/comments?targetType=' + loai + '&status=' + trangThai, 'GET', null, null, function (res) {
+                    var list = res.data;
+                    if (!list || list.length === 0) { bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#adb5bd;font-size:.85rem;">Không có báo cáo nào</div>'; return; }
+                    var th = 'background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;';
+                    var html = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;"><thead><tr>';
+                    html += '<th style="' + th + '">#</th><th style="' + th + '">Người báo cáo</th><th style="' + th + '">Lý do</th><th style="' + th + '">IP</th><th style="' + th + '">TT</th><th style="' + th + '">Thời gian</th><th style="' + th + '"></th></tr></thead><tbody>';
+                    for (var i = 0; i < list.length; i++) {
+                        var r = list[i];
+                        var bdr = (i < list.length - 1) ? 'border-bottom:1px solid #f0f2fa;' : '';
+                        html += '<tr><td style="padding:8px 12px;' + bdr + 'color:#adb5bd;font-family:monospace;">' + (i + 1) + '</td>';
+                        html += '<td style="padding:8px 12px;' + bdr + 'font-weight:600;">' + lamSachChuoiHTML(r.reporterName || '—') + '</td>';
+                        html += '<td style="padding:8px 12px;' + bdr + '">' + lamSachChuoiHTML(r.reason || '—') + '</td>';
+                        html += '<td style="padding:8px 12px;' + bdr + 'font-family:monospace;font-size:.7rem;color:#adb5bd;">' + lamSachChuoiHTML(r.reporterIp || '—') + '</td>';
+                        html += '<td style="padding:8px 12px;' + bdr + '"><span class="cmt-status-pill ' + layClassReport(r.status) + '">' + lamSachChuoiHTML(layLabelReport(r.status)) + '</span></td>';
+                        html += '<td style="padding:8px 12px;' + bdr + 'font-size:.75rem;color:#6c757d;">' + formatThoiGian(r.createdAt) + '</td>';
+                        html += '<td style="padding:8px 12px;' + bdr + '">';
+                        if (r.status === 'PENDING') { html += '<button class="mod-quick-btn mqb-approve" style="font-size:.73rem;" onclick="moXuLyReport(' + r.id + ',\'' + r.targetType + '\')"><i class="fas fa-gavel"></i> Xử lý</button>'; }
+                        html += '</td></tr>';
+                    }
+                    html += '</tbody></table>';
+                    bodyEl.innerHTML = html;
+                });
+            }
+
+            /* CSS class cho pill trạng thái report — tra cứu từ bảng cauHinhTrangThaiReport */
+            function layClassReport(status) {
+                var cfg = cauHinhTrangThaiReport[status];
+                return cfg ? cfg.css : 'csp-hidden';
+            }
+
+            /* Label tiếng Việt cho trạng thái report — thay vì hiện mã code tiếng Anh */
+            function layLabelReport(status) {
+                var cfg = cauHinhTrangThaiReport[status];
+                return cfg ? cfg.label : (status || '—');
+            }
+
+            /* Mở modal xử lý report và tải lịch sử */
+            function moXuLyReport(reportId, targetType) {
+                reportDangXuLy = { reportId: reportId, targetType: targetType };
+                document.getElementById('reportActionReason').value = '';
+                document.getElementById('reportActionCode').value = 'RESOLVE_REPORT';
+                document.getElementById('reportActionInfo').innerHTML = 'Report ID: <strong>#' + reportId + '</strong> — Loại: ' + targetType;
+                var histEl = document.getElementById('reportHistoryBody');
+                histEl.innerHTML = '<div style="color:#adb5bd;font-size:.82rem;padding:8px 0;"><i class="fas fa-spinner fa-spin"></i></div>';
+                callApi('/api/admin/reports/comments/' + reportId + '/history?targetType=' + targetType, 'GET', null, null, function (res) {
+                    histEl.innerHTML = renderLichSuXuLyReport(res.data);
+                }, function () {
+                    histEl.innerHTML = '<div style="color:#adb5bd;font-size:.82rem;padding:8px 0;">Không tải được lịch sử</div>';
+                });
+                moModal('reportActionModal');
+            }
+
+            /* Render lịch sử xử lý report */
+            function renderLichSuXuLyReport(list) {
+                if (!list || list.length === 0) { return '<div style="color:#adb5bd;font-size:.82rem;padding:8px 0;">Chưa có lịch sử xử lý</div>'; }
+                var html = '';
+                for (var i = 0; i < list.length; i++) {
+                    var h = list[i];
+                    html += '<div class="mod-log-item"><span class="mod-action-badge mab-approve">' + lamSachChuoiHTML(h.actionCode || '—') + '</span>';
+                    html += '<div style="flex:1;"><div style="font-size:.82rem;font-weight:600;color:#1a2040;">' + lamSachChuoiHTML(h.actionName || h.actionCode) + '</div>';
+                    if (h.reason) { html += '<div style="font-size:.78rem;color:#495057;">' + lamSachChuoiHTML(h.reason) + '</div>'; }
+                    html += '<div style="font-size:.72rem;color:#6c757d;">' + lamSachChuoiHTML(h.moderatorName || '—') + ' • ' + formatThoiGian(h.createdAt) + '</div></div></div>';
+                }
+                return html;
+            }
+
+            /* Gửi xử lý report lên API — hiện confirm trước khi thực hiện */
+            function xuLyReport() {
+                if (!reportDangXuLy || !reportDangXuLy.reportId) { return; }
+                confirmAction('Xử lý báo cáo #' + reportDangXuLy.reportId + '?', function () {
+                    var body = { reportId: reportDangXuLy.reportId, targetType: reportDangXuLy.targetType, actionCode: document.getElementById('reportActionCode').value, reason: document.getElementById('reportActionReason').value };
+                    callApi('/api/admin/reports/comments/resolve', 'PATCH', body, '#btnSubmitReport', function () {
+                        showToast('success', 'Đã xử lý báo cáo thành công');
+                        dongModal('reportActionModal');
+                        taiDanhSachReport();
+                        taiStats();
+                    });
+                });
+            }
+
+            /* ===== UPLOAD ICON CẢM XÚC ===== */
+
+            /* Upload ảnh multipart/form-data — pattern từ admin/events */
+            function apiUploadComment(url, inputId, buttonSelector) {
+                return new Promise(function (resolve, reject) {
+                    var input = document.getElementById(inputId);
+                    if (!input || !input.files || input.files.length === 0) {
+                        showToast('warning', 'Vui lòng chọn file ảnh trước khi tải lên.');
+                        reject('Chưa chọn file');
+                        return;
+                    }
+                    var file = input.files[0];
+                    if (file.type.indexOf('image/') !== 0) {
+                        showToast('warning', 'Chỉ được tải lên file ảnh.');
+                        reject('Không phải ảnh');
+                        return;
+                    }
+                    var btn = document.querySelector(buttonSelector);
+                    var originalText = '';
+                    if (btn) { originalText = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Đang tải...'; }
+                    var formData = new FormData();
+                    formData.append('file', file);
+                    $.ajax({
+                        url: url,
+                        method: 'POST',
+                        headers: { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') },
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        success: function (response) {
+                            if (response.status === 200) { resolve(response); }
+                            else { showToast('error', response.message || 'Upload thất bại'); reject(response.message); }
+                        },
+                        error: function (xhr) {
+                            var msg = 'Không thể tải ảnh lên server.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) { msg = xhr.responseJSON.message; }
+                            showToast('error', msg);
+                            reject(msg);
+                        },
+                        complete: function () {
+                            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+                        }
+                    });
+                });
+            }
+
+            /* Chuyển chế độ icon: emoji hoặc upload */
+            function toggleIconMode(mode) {
+                iconModeHienTai = mode;
+                document.getElementById('panelEmoji').style.display = (mode === 'emoji') ? '' : 'none';
+                document.getElementById('panelUpload').style.display = (mode === 'upload') ? '' : 'none';
+                document.getElementById('tabModeEmoji').classList.toggle('active', mode === 'emoji');
+                document.getElementById('tabModeUpload').classList.toggle('active', mode === 'upload');
+            }
+
+            /* Cập nhật preview emoji khi nhập */
+            function capNhatEmojiPreview() {
+                var val = document.getElementById('likeTypeEmojiText').value.trim();
+                document.getElementById('emojiPreview').textContent = val || '—';
+            }
+
+            /* Upload icon cảm xúc lên server */
+            function doUploadReactionIcon() {
+                apiUploadComment('/api/admin/comments/reaction-types/upload-icon', 'likeTypeIconFile', '#btnUploadReactionIcon')
+                    .then(function (response) {
+                        var url = response.data.url;
+                        document.getElementById('likeTypeIconUrl').value = url;
+                        document.getElementById('iconUploadPreview').innerHTML = '<img src="' + lamSachChuoiHTML(url) + '" alt="Icon preview">';
+                        showToast('success', 'Tải ảnh icon thành công');
+                    });
+            }
+
+            /* Render icon: URL ảnh thì dùng <img>, emoji text thì dùng text */
+            function renderIconLoaiLike(iconUrl, code) {
+                if (iconUrl && (iconUrl.indexOf('/uploads/') === 0 || iconUrl.indexOf('http') === 0)) {
+                    return '<img src="' + lamSachChuoiHTML(iconUrl) + '" alt="icon" style="width:28px;height:28px;object-fit:contain;border-radius:4px;">';
+                }
+                return lamSachChuoiHTML(iconUrl || code || '—');
+            }
+
+            /* ===== MODAL QUẢN LÝ LOẠI CẢM XÚC ===== */
+
+            /* Tải danh sách loại like từ API */
+            function taiDanhSachLoaiLike() {
+                callApi('/api/admin/comments/reaction-types', 'GET', null, null, function (res) {
+                    var list = res.data;
+                    var chipsHtml = '';
+                    for (var i = 0; i < list.length; i++) { chipsHtml += '<span class="like-type-chip">' + renderIconLoaiLike(list[i].iconUrl, list[i].code) + ' ' + lamSachChuoiHTML(list[i].name) + '</span>'; }
+                    document.getElementById('likeTypeChips').innerHTML = chipsHtml;
+                    var th = 'background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;';
+                    var tableHtml = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:14px;"><thead><tr>';
+                    tableHtml += '<th style="' + th + '">Icon</th><th style="' + th + '">Tên</th><th style="' + th + '">Mã</th><th style="' + th + '">Lượt dùng</th><th style="' + th + '"></th></tr></thead><tbody>';
+                    for (var j = 0; j < list.length; j++) {
+                        var lt = list[j];
+                        var bdr = (j < list.length - 1) ? 'border-bottom:1px solid #f0f2fa;' : '';
+                        tableHtml += '<tr><td style="padding:8px 12px;' + bdr + 'font-size:1.2rem;">' + renderIconLoaiLike(lt.iconUrl, lt.code) + '</td>';
+                        tableHtml += '<td style="padding:8px 12px;' + bdr + 'font-weight:600;">' + lamSachChuoiHTML(lt.name) + '</td>';
+                        tableHtml += '<td style="padding:8px 12px;' + bdr + 'font-family:monospace;font-size:.75rem;color:#adb5bd;">' + lamSachChuoiHTML(lt.code) + '</td>';
+                        tableHtml += '<td style="padding:8px 12px;' + bdr + 'font-weight:700;color:#0061ff;">' + formatSo(lt.count) + '</td>';
+                        tableHtml += '<td style="padding:8px 12px;' + bdr + '">';
+                        tableHtml += '<button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;margin-right:4px;" onclick="batDauEditLikeType(' + lt.id + ',\'' + lamSachChuoiHTML(lt.code) + '\',\'' + lamSachChuoiHTML(lt.name) + '\',\'' + lamSachChuoiHTML(lt.iconUrl || '') + '\')"><i class="fas fa-edit"></i></button>';
+                        tableHtml += '<button class="btn-tbl btn-tbl-delete" style="font-size:.7rem;" onclick="xoaLoaiLike(' + lt.id + ')"><i class="fas fa-trash"></i></button></td></tr>';
+                    }
+                    tableHtml += '</tbody></table>';
+                    document.getElementById('likeTypeTableWrap').innerHTML = tableHtml;
+                });
+            }
+
+            /* Điền dữ liệu vào form để chỉnh sửa loại like — detect mode icon tự động */
+            function batDauEditLikeType(id, code, name, iconUrl) {
+                document.getElementById('likeTypeEditId').value = id;
+                document.getElementById('likeTypeCode').value = code;
+                document.getElementById('likeTypeName').value = name;
+                document.getElementById('likeTypeIconUrl').value = iconUrl;
+                document.getElementById('likeTypeFormTitle').textContent = 'Chỉnh sửa loại cảm xúc';
+                document.getElementById('btnLikeTypeSubmit').innerHTML = '<i class="fas fa-save" style="margin-right:5px;"></i>Lưu thay đổi';
+                if (iconUrl && (iconUrl.indexOf('/uploads/') === 0 || iconUrl.indexOf('http') === 0)) {
+                    toggleIconMode('upload');
+                    document.getElementById('iconUploadPreview').innerHTML = '<img src="' + lamSachChuoiHTML(iconUrl) + '" alt="Icon">';
+                } else {
+                    toggleIconMode('emoji');
+                    document.getElementById('likeTypeEmojiText').value = iconUrl;
+                    capNhatEmojiPreview();
+                }
+            }
+
+            /* Hủy edit loại like, reset form về trạng thái thêm mới */
+            function huyEditLikeType() {
+                document.getElementById('likeTypeEditId').value = '';
+                document.getElementById('likeTypeCode').value = '';
+                document.getElementById('likeTypeName').value = '';
+                document.getElementById('likeTypeIconUrl').value = '';
+                document.getElementById('likeTypeFormTitle').textContent = 'Thêm loại cảm xúc mới';
+                document.getElementById('btnLikeTypeSubmit').innerHTML = '<i class="fas fa-plus" style="margin-right:5px;"></i>Thêm loại';
+                document.getElementById('likeTypeEmojiText').value = '';
+                document.getElementById('emojiPreview').textContent = '—';
+                document.getElementById('iconUploadPreview').innerHTML = '<span>Chưa có ảnh — chọn file rồi bấm "Tải lên"</span>';
+                if (document.getElementById('likeTypeIconFile')) { document.getElementById('likeTypeIconFile').value = ''; }
+                toggleIconMode('emoji');
+                dongModal('likeTypesModal');
+            }
+
+            /* Submit thêm mới hoặc cập nhật loại like — hiện confirm trước khi gửi */
+            function submitLikeType() {
+                var editId = document.getElementById('likeTypeEditId').value;
+                var code = document.getElementById('likeTypeCode').value.trim();
+                var name = document.getElementById('likeTypeName').value.trim();
+                var iconUrl = '';
+                if (iconModeHienTai === 'emoji') {
+                    iconUrl = document.getElementById('likeTypeEmojiText').value.trim();
+                } else {
+                    iconUrl = document.getElementById('likeTypeIconUrl').value.trim();
+                }
+                if (!code || !name) { showToast('warning', 'Vui lòng nhập đầy đủ Tên và Mã'); return; }
+                var body = { code: code, name: name, iconUrl: iconUrl };
+                if (editId) {
+                    confirmAction('Cập nhật loại cảm xúc?', function () {
+                        callApi('/api/admin/comments/reaction-types/' + editId, 'PUT', body, '#btnLikeTypeSubmit', function () {
+                            showToast('success', 'Đã cập nhật loại cảm xúc thành công');
+                            huyEditLikeType();
+                            moModal('likeTypesModal');
+                            taiDanhSachLoaiLike();
+                        });
+                    });
+                } else {
+                    confirmAction('Lưu loại cảm xúc mới?', function () {
+                        callApi('/api/admin/comments/reaction-types', 'POST', body, '#btnLikeTypeSubmit', function () {
+                            showToast('success', 'Đã thêm loại cảm xúc thành công');
+                            document.getElementById('likeTypeCode').value = '';
+                            document.getElementById('likeTypeName').value = '';
+                            document.getElementById('likeTypeIconUrl').value = '';
+                            taiDanhSachLoaiLike();
+                        });
+                    });
+                }
+            }
+
+            /* Xóa loại like sau khi xác nhận */
+            function xoaLoaiLike(id) {
+                confirmAction('Xóa loại cảm xúc này?', function () {
+                    callApi('/api/admin/comments/reaction-types/' + id, 'DELETE', null, null, function () {
+                        showToast('success', 'Đã xóa loại cảm xúc');
+                        taiDanhSachLoaiLike();
+                    });
+                }, true);
+            }
+
+            /* ===== MODAL DANH SÁCH HÀNH ĐỘNG KIỂM DUYỆT (read-only) ===== */
+
+            /* Tải moderation actions: cache vào biến và render bảng */
+            function taiDanhSachHanhDong() {
+                callApi('/api/admin/audit/moderation-actions', 'GET', null, null, function (res) {
+                    danhSachHanhDong = res.data || [];
+                    var th = 'background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;';
+                    var html = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;"><thead><tr><th style="' + th + '">Mã</th><th style="' + th + '">Tên hành động</th></tr></thead><tbody>';
+                    for (var i = 0; i < danhSachHanhDong.length; i++) {
+                        var hd = danhSachHanhDong[i];
+                        var bdr = (i < danhSachHanhDong.length - 1) ? 'border-bottom:1px solid #f0f2fa;' : '';
+                        var bc = 'mab-' + (hd.code || '').toLowerCase();
+                        html += '<tr><td style="padding:9px 12px;' + bdr + '"><span class="mod-action-badge ' + bc + '">' + hd.code + '</span></td>';
+                        html += '<td style="padding:9px 12px;' + bdr + 'font-weight:600;">' + hd.name + '</td></tr>';
+                    }
+                    html += '</tbody></table>';
+                    var wrap = document.getElementById('modActionsTableWrap');
+                    if (wrap) { wrap.innerHTML = html; }
+                });
+            }
+
+            /* ===== REPLY LAZY-LOAD ===== */
+
+            /* Mở/đóng panel phản hồi cấp 2 và lazy-load */
+            function doToggleReplies(cmtId) {
+                var threadId = 'adm-replies-' + cmtId;
+                var panel = document.getElementById(threadId);
+                if (!panel) { return; }
+                if (panel.style.display === 'none') {
+                    panel.style.display = '';
+                } else if (panel.querySelectorAll('.adm-reply-item').length > 0) {
+                    panel.style.display = 'none';
+                    return;
+                }
+                panel.innerHTML = '<div style="padding:8px 0;text-align:center;color:#adb5bd;"><i class="fas fa-spinner fa-spin"></i></div>';
+                callApi('/api/comments/' + cmtId + '/replies?page=0&size=10', 'GET', null, null, function (res) {
+                    var page = res.data;
+                    var content = page.content;
+                    if (!content || content.length === 0) {
+                        panel.innerHTML = '<div style="padding:8px 0;font-size:.82rem;color:#adb5bd;">Chưa có phản hồi</div>';
+                        return;
+                    }
+                    var html = '';
+                    for (var i = 0; i < content.length; i++) {
+                        html += renderReplyItem(content[i], cmtId, 2);
+                    }
+                    if (!page.last) {
+                        html += '<div style="padding:6px 0;" id="adm-reply-more-' + cmtId + '">';
+                        html += '<button class="replies-toggle-btn" onclick="taiThemReply(' + cmtId + ',' + (page.number + 1) + ',this)">';
+                        html += '<i class="fas fa-plus"></i> Tải thêm</button></div>';
+                    }
+                    panel.innerHTML = html;
+                });
+            }
+
+            /* Render 1 reply item dạng bubble wrapper — hỗ trợ cây 3 cấp */
+            function renderReplyItem(reply, parentId, level) {
+                if (!level) { level = 2; }
+                var kyTu = layKyTuAvatar(reply.userFullName);
+                var statusPill = layHtmlStatusPill(reply.currentStatus, reply.reportCount || 0);
+                var levelClass = (level >= 3) ? ' level-3' : '';
+                var hasSub = (reply.replyCount > 0) ? ' has-sub' : '';
+
+                var html = '<div class="adm-reply-item' + levelClass + hasSub + '" id="adm-reply-' + reply.id + '">';
+                html += '<div class="adm-ri-avatar">' + kyTu + '</div>';
+                html += '<div class="adm-ri-bubble-wrapper">';
+                html += '<div class="adm-ri-bubble">';
+                html += '<div class="reply-meta">';
+                html += '<span class="reply-author">' + lamSachChuoiHTML(reply.userFullName || 'Ẩn danh') + '</span>';
+                html += statusPill;
+                html += '<span class="reply-time">' + formatThoiGian(reply.createdAt) + '</span>';
+                html += '</div>';
+
+                var noiDung = reply.content || '';
+                if (level >= 3 && reply.replyToUserFullName) {
+                    html += '<div class="reply-text"><span class="reply-tag">@' + lamSachChuoiHTML(reply.replyToUserFullName) + '</span> ' + lamSachChuoiHTML(noiDung) + '</div>';
+                } else {
+                    html += '<div class="reply-text">' + lamSachChuoiHTML(noiDung) + '</div>';
+                }
+
+                if (reply.reactions && reply.reactions.length > 0) {
+                    html += '<div class="reply-reactions" style="margin-top:4px;">' + renderReactionChips(reply.reactions) + '</div>';
+                }
+
+                html += '<div class="adm-ri-actions">' + renderNutModCard(reply.id, 'PH_CMT', reply.currentStatus) + '</div>';
+                html += '</div>';
+
+                if (level === 2 && reply.replyCount > 0) {
+                    html += '<div class="adm-reply-thread" id="adm-sub-replies-' + reply.id + '">';
+                    html += '<div style="padding:6px 0;"><button class="replies-toggle-btn" onclick="doToggleSubReplies(' + reply.id + ')">';
+                    html += '<i class="fas fa-reply"></i> ' + reply.replyCount + ' phản hồi</button></div>';
+                    html += '</div>';
+                }
+
+                html += '</div>';
+                html += '</div>';
+                return html;
+            }
+
+            /* Tải thêm reply cấp 2 theo trang (lazy pagination) */
+            function taiThemReply(cmtId, trang, btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải...';
+                callApi('/api/comments/' + cmtId + '/replies?page=' + trang + '&size=10', 'GET', null, null, function (res) {
+                    var page = res.data;
+                    var content = page.content;
+                    var container = btnEl.parentElement;
+                    var html = '';
+                    for (var i = 0; i < content.length; i++) { html += renderReplyItem(content[i], cmtId, 2); }
+                    container.insertAdjacentHTML('beforebegin', html);
+                    if (!page.last) {
+                        var trangMoi = trang + 1;
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = '<i class="fas fa-plus"></i> Tải thêm';
+                        btnEl.setAttribute('onclick', 'taiThemReply(' + cmtId + ',' + trangMoi + ',this)');
+                    } else { container.remove(); }
+                });
+            }
+
+            /* Lazy-load phản hồi cấp 3+ */
+            function doToggleSubReplies(phCmtId) {
+                var container = document.getElementById('adm-sub-replies-' + phCmtId);
+                if (!container) { return; }
+                if (container.querySelectorAll('.adm-reply-item').length > 0) {
+                    var hienThi = (container.style.display !== 'none');
+                    container.style.display = hienThi ? 'none' : '';
+                    return;
+                }
+                container.innerHTML = '<div style="padding:8px 0;text-align:center;color:#adb5bd;"><i class="fas fa-spinner fa-spin"></i></div>';
+                callApi('/api/comments/reply/' + phCmtId + '/replies?page=0&size=10', 'GET', null, null, function (res) {
+                    var page = res.data;
+                    var content = page.content;
+                    if (!content || content.length === 0) {
+                        container.innerHTML = '<div style="padding:8px 0;font-size:.82rem;color:#adb5bd;">Chưa có phản hồi cấp dưới</div>';
+                        return;
+                    }
+                    var html = '';
+                    for (var i = 0; i < content.length; i++) {
+                        html += renderReplyItem(content[i], phCmtId, 3);
+                    }
+                    if (!page.last) {
+                        html += '<div style="padding:6px 0;">';
+                        html += '<button class="replies-toggle-btn" onclick="taiThemSubReply(' + phCmtId + ',' + (page.number + 1) + ',this)">';
+                        html += '<i class="fas fa-plus"></i> Tải thêm</button></div>';
+                    }
+                    container.innerHTML = html;
+                });
+            }
+
+            /* Tải thêm phản hồi cấp 3 theo trang */
+            function taiThemSubReply(phCmtId, trang, btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải...';
+                callApi('/api/comments/reply/' + phCmtId + '/replies?page=' + trang + '&size=10', 'GET', null, null, function (res) {
+                    var page = res.data;
+                    var content = page.content;
+                    var container = btnEl.parentElement;
+                    var html = '';
+                    for (var i = 0; i < content.length; i++) {
+                        html += renderReplyItem(content[i], phCmtId, 3);
+                    }
+                    container.insertAdjacentHTML('beforebegin', html);
+                    if (!page.last) {
+                        var trangMoi = trang + 1;
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = '<i class="fas fa-plus"></i> Tải thêm';
+                        btnEl.setAttribute('onclick', 'taiThemSubReply(' + phCmtId + ',' + trangMoi + ',this)');
+                    } else { container.remove(); }
+                });
+            }
+
+            /* ===== KHỞI TẠO TRANG ===== */
+
+            /* Khởi động toàn bộ trang khi DOM ready */
+            document.addEventListener('DOMContentLoaded', function () {
+                taiDanhSachHanhDong();
+                taiStats();
+                taiDanhSachCmt();
+            });
+        </script>
+
     </div>
-
-    <!-- Comment 2: Pending — CMT -->
-    <div class="cmt-card pending">
-        <div class="cmt-card-header">
-            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:6px;cursor:pointer;">
-            <div class="cmt-avatar" style="background:linear-gradient(135deg,#ff8b00,#f9a825);">P</div>
-            <div class="cmt-meta">
-                <div class="cmt-meta-top">
-                    <span class="cmt-author">Phạm Minh Khoa</span>
-                    <span class="cmt-type-badge ctb-post">CMT</span>
-                    <span class="cmt-status-pill csp-pending"><i class="fas fa-clock"></i> Chờ duyệt</span>
-                    <span class="cmt-time">hôm nay 07:15</span>
-                </div>
-                <div class="cmt-target">
-                    Bình luận trên: <a href="#">Thị trường dược phẩm OTC Việt Nam Q1/2025</a>
-                </div>
-            </div>
-            <div class="cmt-actions">
-                <button class="mod-quick-btn mqb-approve" onclick="doMod('approve')"><i class="fas fa-check"></i> Duyệt</button>
-                <button class="mod-quick-btn mqb-delete"><i class="fas fa-trash"></i> Xóa</button>
-                <button class="btn-tbl btn-tbl-view" onclick="openModal('detailModal')" style="font-size:.75rem;"><i class="fas fa-eye"></i> Chi tiết</button>
-            </div>
-        </div>
-        <div class="cmt-body">
-            <p class="cmt-text">
-                Số liệu thị trường OTC rất thú vị! Theo báo cáo IQVIA gần đây, tốc độ tăng trưởng còn có thể cao hơn nếu tính cả
-                kênh phân phối điện tử. Rất mong tác giả có bài phân tích sâu hơn về phân khúc này.
-            </p>
-        </div>
-        <div class="cmt-reactions">
-            <span class="reaction-chip">👍 <span class="rc-count">0</span></span>
-            <div class="cmt-footer-meta">
-                <span class="cmt-ip">ID: #CMT-4820</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Comment 3: Approved + Visible — CMT on event -->
-    <div class="cmt-card approved">
-        <div class="cmt-card-header">
-            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:6px;cursor:pointer;">
-            <div class="cmt-avatar" style="background:linear-gradient(135deg,#00875a,#2db86f);">H</div>
-            <div class="cmt-meta">
-                <div class="cmt-meta-top">
-                    <span class="cmt-author">Hoàng Thu Hà</span>
-                    <span class="cmt-type-badge ctb-event">CMT Sự kiện</span>
-                    <span class="cmt-status-pill csp-approved"><i class="fas fa-check-circle"></i> Hiển thị</span>
-                    <span class="cmt-time">hôm qua 16:33</span>
-                </div>
-                <div class="cmt-target">
-                    Bình luận tại sự kiện: <a href="#">Hội nghị Dược phẩm Quốc tế VN 2025</a>
-                </div>
-            </div>
-            <div class="cmt-actions">
-                <button class="mod-quick-btn mqb-hide" onclick="doMod('hide')"><i class="fas fa-eye-slash"></i> Ẩn</button>
-                <button class="mod-quick-btn mqb-warn" onclick="doMod('warn')"><i class="fas fa-exclamation-triangle"></i> Cảnh báo</button>
-                <button class="mod-quick-btn mqb-delete"><i class="fas fa-trash"></i></button>
-                <button class="btn-tbl btn-tbl-view" onclick="openModal('detailModal')" style="font-size:.75rem;"><i class="fas fa-eye"></i> Chi tiết</button>
-            </div>
-        </div>
-        <div class="cmt-body">
-            <p class="cmt-text">
-                Hội nghị năm nay rất chuyên sâu và bổ ích. Phiên chuyên đề về chuỗi cung ứng lạnh đặc biệt ấn tượng.
-                Cảm ơn ban tổ chức đã chuẩn bị rất chu đáo!
-            </p>
-        </div>
-        <div class="cmt-reactions">
-            <span class="reaction-chip">👍 <span class="rc-count">24</span></span>
-            <span class="reaction-chip">❤️ <span class="rc-count">18</span></span>
-            <span class="reaction-chip">🎉 <span class="rc-count">9</span></span>
-            <div class="cmt-footer-meta">
-                <span class="cmt-ip">ID: #CMT-4815</span>
-            </div>
-        </div>
-        <div class="replies-toggle">
-            <button class="replies-toggle-btn" onclick="toggleReplies('r3')">
-                <i class="fas fa-reply"></i> 1 phản hồi (PH_CMT)
-                <i class="fas fa-chevron-down" id="r3-chevron" style="font-size:.7rem;margin-left:4px;"></i>
-            </button>
-        </div>
-        <div class="replies-panel" id="r3-panel" style="display:none;">
-            <div class="reply-item">
-                <div class="reply-avatar" style="background:linear-gradient(135deg,#0061ff,#2d8cf0);">B</div>
-                <div class="reply-body">
-                    <div class="reply-meta">
-                        <span class="reply-author">Ban Tổ chức</span>
-                        <span class="cmt-type-badge ctb-reply" style="font-size:.62rem;">PH_CMT</span>
-                        <span class="cmt-status-pill csp-approved" style="font-size:.62rem;">Hiển thị</span>
-                        <span class="reply-time">hôm qua 17:00</span>
-                    </div>
-                    <div class="reply-text">Cảm ơn bạn đã tham dự và chia sẻ! Hẹn gặp lại tại Hội nghị 2026 🎊</div>
-                    <div class="reply-reactions">
-                        <span class="reaction-chip">❤️ <span class="rc-count">8</span></span>
-                    </div>
-                </div>
-                <div class="reply-actions">
-                    <button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button>
-                    <button class="btn-tbl btn-tbl-delete" style="font-size:.7rem;"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Comment 4: Hidden -->
-    <div class="cmt-card hidden">
-        <div class="cmt-card-header">
-            <input type="checkbox" onchange="toggleBulk(this)" style="margin-top:6px;cursor:pointer;">
-            <div class="cmt-avatar" style="background:#dee2e6;color:#6c757d;">?</div>
-            <div class="cmt-meta">
-                <div class="cmt-meta-top">
-                    <span class="cmt-author" style="color:#6c757d;">Người dùng ẩn danh</span>
-                    <span class="cmt-type-badge ctb-post">CMT</span>
-                    <span class="cmt-status-pill csp-hidden"><i class="fas fa-eye-slash"></i> Đã ẩn</span>
-                    <span class="cmt-time">3 ngày trước</span>
-                </div>
-                <div class="cmt-target">
-                    Bình luận trên: <a href="#">Chuỗi cung ứng dược lạnh: Thách thức logistics</a>
-                    <span style="color:#adb5bd;margin:0 4px;">•</span>
-                    <span style="font-size:.68rem;color:#de350b;font-weight:600;"><i class="fas fa-gavel"></i> Ẩn bởi: admin@pharma.vn — Spam</span>
-                </div>
-            </div>
-            <div class="cmt-actions">
-                <button class="mod-quick-btn mqb-unhide" onclick="doMod('unhide')"><i class="fas fa-eye"></i> Bỏ ẩn</button>
-                <button class="mod-quick-btn mqb-delete"><i class="fas fa-trash"></i> Xóa hẳn</button>
-                <button class="btn-tbl btn-tbl-view" onclick="openModal('detailModal')" style="font-size:.75rem;"><i class="fas fa-eye"></i> Chi tiết</button>
-            </div>
-        </div>
-        <div class="cmt-body">
-            <p class="cmt-text hidden-text">
-                [Nội dung đã bị ẩn — click "Chi tiết" để xem]
-            </p>
-        </div>
-        <div class="cmt-reactions">
-            <span class="reaction-chip" style="opacity:.5;">👍 <span class="rc-count">0</span></span>
-            <div class="cmt-footer-meta">
-                <span class="cmt-ip">ID: #CMT-4799</span>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<!-- Pagination -->
-<div class="pager">
-    <div class="pager-info">Hiển thị 1–4 / 3,847 bình luận</div>
-    <div class="pager-btns">
-        <button class="pager-btn" disabled><i class="fas fa-chevron-left" style="font-size:.7rem;"></i></button>
-        <button class="pager-btn active">1</button>
-        <button class="pager-btn">2</button>
-        <button class="pager-btn">3</button>
-        <span style="display:flex;align-items:center;padding:0 4px;color:#adb5bd;font-size:.8rem;">...</span>
-        <button class="pager-btn">962</button>
-        <button class="pager-btn"><i class="fas fa-chevron-right" style="font-size:.7rem;"></i></button>
-    </div>
-</div>
-
-
-<!-- ======================== MODALS ======================== -->
-
-<!-- Detail + Moderation Log Modal — CT_CMT_MODERATION_LOG + CT_PH_CMT_MODERATION_LOG -->
-<div class="modal-overlay" id="detailModal" style="display:none;">
-    <div class="modal-box modal-box-wide">
-        <div class="modal-head">
-            <span class="modal-title"><i class="fas fa-comment-dots" style="color:#0061ff;margin-right:8px;"></i>Chi tiết Bình luận #CMT-4821</span>
-            <button class="modal-close" onclick="closeModal('detailModal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <!-- Comment info -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-                <div style="background:#f8f9ff;border-radius:12px;padding:14px;">
-                    <div class="mf-section-label">Thông tin bình luận (CMT)</div>
-                    <div style="display:flex;flex-direction:column;gap:6px;">
-                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">ID:</span><span style="font-family:monospace;font-weight:600;">#CMT-4821</span></div>
-                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Người dùng:</span><span style="font-weight:600;">Trần Thanh Tùng</span></div>
-                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Email:</span><span>tung.tt@example.com</span></div>
-                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">IP Address:</span><span style="font-family:monospace;">192.168.1.45</span></div>
-                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Thời gian:</span><span>21/04/2026 08:22</span></div>
-                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Trạng thái:</span><span class="cmt-status-pill csp-reported">Bị báo cáo</span></div>
-                        <div style="display:flex;justify-content:space-between;font-size:.83rem;"><span style="color:#6c757d;">Số báo cáo:</span><span style="color:#de350b;font-weight:800;">3</span></div>
-                    </div>
-                </div>
-                <div style="background:#f8f9ff;border-radius:12px;padding:14px;">
-                    <div class="mf-section-label">Bài viết liên quan</div>
-                    <div style="font-size:.85rem;font-weight:700;color:#1a2040;margin-bottom:8px;">GMP 2025: Tiêu chuẩn sản xuất mới nhất</div>
-                    <div style="font-size:.78rem;color:#6c757d;margin-bottom:12px;">Đăng bởi: admin • 10/04/2025 • Bài viết chuyên môn</div>
-                    <div class="mf-section-label" style="margin-top:12px;">Phản ứng (CT_LIKECMT + LOAI_LIKE)</div>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <span class="reaction-chip">👍 Thích <span class="rc-count">12</span></span>
-                        <span class="reaction-chip">❤️ Yêu thích <span class="rc-count">3</span></span>
-                        <span class="reaction-chip">😮 Ngạc nhiên <span class="rc-count">7</span></span>
-                        <span class="reaction-chip">😡 Tức giận <span class="rc-count">15</span></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Full content -->
-            <div class="mf-group">
-                <label class="mf-label">Nội dung đầy đủ</label>
-                <div style="background:#fffbf0;border:1.5px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:.87rem;color:#344054;line-height:1.7;">
-                    Bài viết này có nhiều thông tin sai lệch về quy trình GMP. Tiêu chuẩn WHO-GMP không hề quy định như vậy.
-                    Tác giả cần kiểm tra lại nguồn tài liệu trước khi đăng, đặc biệt phần liên quan đến điều kiện bảo quản nhiệt độ.
-                </div>
-            </div>
-
-            <hr class="mf-section-divider">
-
-            <!-- Moderation Log — CT_CMT_MODERATION_LOG -->
-            <div class="mf-section-label">Lịch sử Kiểm duyệt (CT_CMT_MODERATION_LOG)</div>
-            <div style="background:#f8f9ff;border-radius:12px;padding:12px 16px;margin-bottom:20px;">
-                <div class="mod-log-item">
-                    <span class="mod-action-badge mab-warn">WARN</span>
-                    <div style="flex:1;">
-                        <div style="font-size:.82rem;font-weight:600;color:#1a2040;">Cảnh báo người dùng — Nội dung không tích cực</div>
-                        <div style="font-size:.72rem;color:#6c757d;margin-top:2px;">admin@pharma.vn • 21/04/2026 10:15</div>
-                    </div>
-                </div>
-                <div class="mod-log-item">
-                    <span class="mod-action-badge mab-hide">HIDE</span>
-                    <div style="flex:1;">
-                        <div style="font-size:.82rem;font-weight:600;color:#1a2040;">Tạm ẩn bình luận để xem xét</div>
-                        <div style="font-size:.72rem;color:#6c757d;margin-top:2px;">moderator@pharma.vn • 21/04/2026 09:30</div>
-                    </div>
-                </div>
-                <div class="mod-log-item" style="border:none;">
-                    <span class="mod-action-badge" style="background:#ffebe6;color:#de350b;">REPORT</span>
-                    <div style="flex:1;">
-                        <div style="font-size:.82rem;font-weight:600;color:#1a2040;">3 người dùng báo cáo: Thông tin sai lệch</div>
-                        <div style="font-size:.72rem;color:#6c757d;margin-top:2px;">Hệ thống tự động • 21/04/2026 08:22–09:10</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick moderation action -->
-            <div class="mf-section-label">Thực hiện hành động (MODERATION_ACTIONS)</div>
-            <div class="mf-row cols-2">
-                <div class="mf-group">
-                    <label class="mf-label">Hành động <span class="req">*</span></label>
-                    <select class="mf-select">
-                        <option>APPROVE — Duyệt hiển thị</option>
-                        <option>HIDE — Ẩn khỏi công khai</option>
-                        <option>UNHIDE — Bỏ ẩn</option>
-                        <option selected>WARN — Cảnh báo người dùng</option>
-                        <option>DELETE — Xóa vĩnh viễn</option>
-                    </select>
-                </div>
-                <div class="mf-group">
-                    <label class="mf-label">Mức độ nghiêm trọng</label>
-                    <select class="mf-select">
-                        <option>Thấp</option>
-                        <option selected>Trung bình</option>
-                        <option>Cao</option>
-                        <option>Nghiêm trọng</option>
-                    </select>
-                </div>
-            </div>
-            <div class="mf-group">
-                <label class="mf-label">Ghi chú kiểm duyệt</label>
-                <textarea class="mf-textarea" placeholder="Lý do thực hiện hành động này...">Nội dung có thể gây hiểu nhầm, người dùng đã được cảnh báo lần 1.</textarea>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fffbf0;border-radius:10px;border:1px solid #fde68a;font-size:.82rem;">
-                <i class="fas fa-user-slash" style="color:#ff8b00;"></i>
-                <span style="color:#6c757d;">Khóa tài khoản người dùng này:</span>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                    <input type="checkbox"> <span style="font-weight:600;color:#de350b;">Khóa tạm thời (7 ngày)</span>
-                </label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:10px;">
-                    <input type="checkbox"> <span style="font-weight:600;color:#de350b;">Khóa vĩnh viễn</span>
-                </label>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="mf-btn mf-btn-cancel" onclick="closeModal('detailModal')">Đóng</button>
-            <button class="mf-btn" style="background:#00875a;color:#fff;"><i class="fas fa-check" style="margin-right:5px;"></i>Duyệt</button>
-            <button class="mf-btn mf-btn-warning"><i class="fas fa-exclamation-triangle" style="margin-right:5px;"></i>Cảnh báo</button>
-            <button class="mf-btn mf-btn-danger"><i class="fas fa-trash" style="margin-right:5px;"></i>Xóa</button>
-        </div>
-    </div>
-</div>
-
-<!-- Report Details Modal -->
-<div class="modal-overlay" id="reportModal" style="display:none;">
-    <div class="modal-box" style="max-width:540px;">
-        <div class="modal-head">
-            <span class="modal-title"><i class="fas fa-flag" style="color:#de350b;margin-right:8px;"></i>Chi tiết Báo cáo — #CMT-4821</span>
-            <button class="modal-close" onclick="closeModal('reportModal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <table style="width:100%;border-collapse:collapse;font-size:.83rem;">
-                <thead>
-                    <tr>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">#</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Người báo cáo</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Lý do</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Thời gian</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;color:#adb5bd;font-family:monospace;">1</td>
-                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Nguyễn Thị Mai</td>
-                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;">Thông tin sai lệch</td>
-                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;font-size:.75rem;color:#6c757d;">08:22</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;color:#adb5bd;font-family:monospace;">2</td>
-                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Trần Văn Bình</td>
-                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;">Nội dung gây hiểu nhầm</td>
-                        <td style="padding:10px 12px;border-bottom:1px solid #f0f2fa;font-size:.75rem;color:#6c757d;">08:55</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:10px 12px;color:#adb5bd;font-family:monospace;">3</td>
-                        <td style="padding:10px 12px;font-weight:600;">Lê Hoàng Nam</td>
-                        <td style="padding:10px 12px;">Thiếu căn cứ khoa học</td>
-                        <td style="padding:10px 12px;font-size:.75rem;color:#6c757d;">09:10</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="modal-footer">
-            <button class="mf-btn mf-btn-cancel" onclick="closeModal('reportModal')">Đóng</button>
-            <button class="mf-btn" style="background:#00875a;color:#fff;"><i class="fas fa-check" style="margin-right:5px;"></i>Xử lý báo cáo</button>
-        </div>
-    </div>
-</div>
-
-<!-- LOAI_LIKE Management Modal -->
-<div class="modal-overlay" id="likeTypesModal" style="display:none;">
-    <div class="modal-box" style="max-width:500px;">
-        <div class="modal-head">
-            <span class="modal-title"><i class="fas fa-heart" style="color:#de350b;margin-right:8px;"></i>Loại Cảm xúc (LOAI_LIKE)</span>
-            <button class="modal-close" onclick="closeModal('likeTypesModal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <p style="font-size:.82rem;color:#6c757d;margin-bottom:14px;">Quản lý các loại cảm xúc được dùng trong CT_LIKECMT và CT_LIKEPHCMT</p>
-            <div class="like-type-row">
-                <span class="like-type-chip">👍 Thích</span>
-                <span class="like-type-chip">❤️ Yêu thích</span>
-                <span class="like-type-chip">😮 Ngạc nhiên</span>
-                <span class="like-type-chip">😂 Hài hước</span>
-                <span class="like-type-chip">😡 Tức giận</span>
-                <span class="like-type-chip">😢 Buồn</span>
-                <span class="like-type-chip">🎉 Chúc mừng</span>
-                <span class="like-type-chip">💊 Hữu ích</span>
-            </div>
-            <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:14px;">
-                <thead>
-                    <tr>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Emoji</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Tên</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Slug</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Lượt dùng</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-size:1.2rem;">👍</td>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Thích</td>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-family:monospace;font-size:.75rem;color:#adb5bd;">like</td>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#0061ff;">8,420</td>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;"><button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button></td>
-                    </tr>
-                    <tr>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-size:1.2rem;">❤️</td>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Yêu thích</td>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-family:monospace;font-size:.75rem;color:#adb5bd;">love</td>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#0061ff;">5,130</td>
-                        <td style="padding:8px 12px;border-bottom:1px solid #f0f2fa;"><button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button></td>
-                    </tr>
-                    <tr>
-                        <td style="padding:8px 12px;font-size:1.2rem;">💊</td>
-                        <td style="padding:8px 12px;font-weight:600;">Hữu ích</td>
-                        <td style="padding:8px 12px;font-family:monospace;font-size:.75rem;color:#adb5bd;">helpful</td>
-                        <td style="padding:8px 12px;font-weight:700;color:#0061ff;">3,890</td>
-                        <td style="padding:8px 12px;"><button class="btn-tbl btn-tbl-edit" style="font-size:.7rem;"><i class="fas fa-edit"></i></button></td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="mf-row" style="grid-template-columns:80px 1fr;">
-                <div class="mf-group">
-                    <label class="mf-label">Emoji</label>
-                    <input class="mf-input" type="text" placeholder="💬" style="text-align:center;font-size:1.2rem;">
-                </div>
-                <div class="mf-group">
-                    <label class="mf-label">Tên cảm xúc</label>
-                    <input class="mf-input" type="text" placeholder="VD: Hữu ích">
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="mf-btn mf-btn-cancel" onclick="closeModal('likeTypesModal')">Đóng</button>
-            <button class="mf-btn mf-btn-primary"><i class="fas fa-plus" style="margin-right:5px;"></i>Thêm loại</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODERATION_ACTIONS Management Modal -->
-<div class="modal-overlay" id="modActionsModal" style="display:none;">
-    <div class="modal-box" style="max-width:520px;">
-        <div class="modal-head">
-            <span class="modal-title"><i class="fas fa-shield-alt" style="color:#0061ff;margin-right:8px;"></i>Hành động Kiểm duyệt (MODERATION_ACTIONS)</span>
-            <button class="modal-close" onclick="closeModal('modActionsModal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <p style="font-size:.82rem;color:#6c757d;margin-bottom:14px;">Các hành động được ghi vào CT_CMT_MODERATION_LOG và CT_PH_CMT_MODERATION_LOG</p>
-            <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
-                <thead>
-                    <tr>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Mã</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Tên hành động</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Mô tả</th>
-                        <th style="background:#f8f9ff;padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:#6c757d;text-transform:uppercase;border-bottom:2px solid #f0f2fa;">Tổng lần dùng</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;"><span class="mod-action-badge mab-approve">APPROVE</span></td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Duyệt</td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-size:.78rem;color:#6c757d;">Cho hiển thị công khai</td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#00875a;">2,341</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;"><span class="mod-action-badge mab-hide">HIDE</span></td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Ẩn</td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-size:.78rem;color:#6c757d;">Ẩn khỏi giao diện người dùng</td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#6c757d;">89</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;"><span class="mod-action-badge mab-unhide">UNHIDE</span></td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Bỏ ẩn</td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-size:.78rem;color:#6c757d;">Khôi phục hiển thị</td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#f9a825;">34</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;"><span class="mod-action-badge mab-warn">WARN</span></td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:600;">Cảnh báo</td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-size:.78rem;color:#6c757d;">Gửi cảnh báo đến người dùng</td>
-                        <td style="padding:9px 12px;border-bottom:1px solid #f0f2fa;font-weight:700;color:#ff8b00;">156</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:9px 12px;"><span class="mod-action-badge mab-delete">DELETE</span></td>
-                        <td style="padding:9px 12px;font-weight:600;">Xóa</td>
-                        <td style="padding:9px 12px;font-size:.78rem;color:#6c757d;">Xóa vĩnh viễn khỏi hệ thống</td>
-                        <td style="padding:9px 12px;font-weight:700;color:#de350b;">412</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="modal-footer">
-            <button class="mf-btn mf-btn-cancel" onclick="closeModal('modActionsModal')">Đóng</button>
-        </div>
-    </div>
-</div>
-
-<!-- Moderation Settings Modal -->
-<div class="modal-overlay" id="settingsModal" style="display:none;">
-    <div class="modal-box" style="max-width:500px;">
-        <div class="modal-head">
-            <span class="modal-title"><i class="fas fa-cog" style="color:#0061ff;margin-right:8px;"></i>Cài đặt Kiểm duyệt</span>
-            <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="mf-section-label">Chế độ tự động</div>
-            <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
-                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
-                    <div>
-                        <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Duyệt tự động bình luận thành viên tin cậy</div>
-                        <div style="font-size:.75rem;color:#6c757d;">Không cần chờ duyệt thủ công</div>
-                    </div>
-                    <div style="position:relative;width:40px;height:22px;flex-shrink:0;">
-                        <input type="checkbox" checked style="opacity:0;width:0;height:0;">
-                        <div style="position:absolute;cursor:pointer;inset:0;background:#00875a;border-radius:20px;"></div>
-                        <div style="position:absolute;height:16px;width:16px;right:3px;bottom:3px;background:white;border-radius:50%;"></div>
-                    </div>
-                </label>
-                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
-                    <div>
-                        <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Ẩn tự động khi có ≥ 5 báo cáo</div>
-                        <div style="font-size:.75rem;color:#6c757d;">Bình luận bị báo cáo nhiều sẽ tự ẩn</div>
-                    </div>
-                    <div style="position:relative;width:40px;height:22px;flex-shrink:0;">
-                        <input type="checkbox" checked style="opacity:0;width:0;height:0;">
-                        <div style="position:absolute;cursor:pointer;inset:0;background:#00875a;border-radius:20px;"></div>
-                        <div style="position:absolute;height:16px;width:16px;right:3px;bottom:3px;background:white;border-radius:50%;"></div>
-                    </div>
-                </label>
-                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:#f8f9ff;border-radius:10px;">
-                    <div>
-                        <div style="font-size:.85rem;font-weight:600;color:#1a2040;">Lọc từ ngữ nhạy cảm</div>
-                        <div style="font-size:.75rem;color:#6c757d;">Tự động đánh dấu chờ duyệt</div>
-                    </div>
-                    <div style="position:relative;width:40px;height:22px;flex-shrink:0;">
-                        <input type="checkbox" style="opacity:0;width:0;height:0;">
-                        <div style="position:absolute;cursor:pointer;inset:0;background:#dee2e6;border-radius:20px;"></div>
-                        <div style="position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:white;border-radius:50%;"></div>
-                    </div>
-                </label>
-            </div>
-            <div class="mf-section-label">Giới hạn</div>
-            <div class="mf-row cols-2">
-                <div class="mf-group">
-                    <label class="mf-label">Số báo cáo để tự ẩn</label>
-                    <input class="mf-input" type="number" value="5">
-                </div>
-                <div class="mf-group">
-                    <label class="mf-label">Giới hạn ký tự / bình luận</label>
-                    <input class="mf-input" type="number" value="2000">
-                </div>
-                <div class="mf-group">
-                    <label class="mf-label">Tối đa phản hồi / bình luận</label>
-                    <input class="mf-input" type="number" value="50">
-                </div>
-                <div class="mf-group">
-                    <label class="mf-label">Cooldown gửi bình luận (giây)</label>
-                    <input class="mf-input" type="number" value="30">
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="mf-btn mf-btn-cancel" onclick="closeModal('settingsModal')">Hủy</button>
-            <button class="mf-btn mf-btn-primary"><i class="fas fa-save" style="margin-right:5px;"></i>Lưu cài đặt</button>
-        </div>
-    </div>
-</div>
-
-
-<script>
-function openModal(id){ document.getElementById(id).style.display='flex'; }
-function closeModal(id){ document.getElementById(id).style.display='none'; }
-document.querySelectorAll('.modal-overlay').forEach(m=>{
-    m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; });
-});
-
-let bulkCount=0;
-function toggleBulk(cb){
-    bulkCount += cb.checked ? 1 : -1;
-    bulkCount = Math.max(0,bulkCount);
-    document.getElementById('bulkCount').textContent = bulkCount + ' bình luận được chọn';
-    document.getElementById('bulkBar').classList.toggle('visible', bulkCount>0);
-}
-function clearBulk(){
-    document.querySelectorAll('.cmt-card input[type=checkbox]').forEach(c=>c.checked=false);
-    bulkCount=0;
-    document.getElementById('bulkBar').classList.remove('visible');
-}
-
-function switchTab(el,tab){
-    document.querySelectorAll('.cm-tab').forEach(t=>t.classList.remove('active'));
-    el.classList.add('active');
-}
-
-function toggleReplies(id){
-    const panel = document.getElementById(id+'-panel');
-    const chevron = document.getElementById(id+'-chevron');
-    const visible = panel.style.display!=='none';
-    panel.style.display = visible ? 'none' : 'block';
-    chevron.style.transform = visible ? '' : 'rotate(180deg)';
-}
-
-function doMod(action){
-    const labels = {approve:'Duyệt',hide:'Ẩn',unhide:'Bỏ ẩn',warn:'Cảnh báo',delete:'Xóa'};
-    if(action==='delete'){
-        if(!confirm('Xóa vĩnh viễn bình luận này?')) return;
-    }
-    // UI feedback only — no real backend
-    console.log('Moderation action:', action);
-}
-</script>
-
-</div>
 </th:block>
+
 </html>

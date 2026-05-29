@@ -1,31 +1,29 @@
 # Active Workspace - Ban lam viec hien tai
-> Last updated: 2026-05-28
+> Last updated: 2026-05-30
 
 ## Trang thai hien tai
 
-- **IDLE** — khong co task dang do. Memory da dong bo 2026-05-28 sau 5 commit ngoai Claude/Codex.
-- Admin events module da on dinh: dictionary/upload/bulk status endpoints, utility classes `ImagePathUtil` + `PagingUtil`, entity column length sync voi schema.
-- 5 file dang sua chua commit: `admin_layout.html` (reformat CSS nhieu dong), `admin/events.html` (reformat), `admin/posts.html`, `admin/user-details.html`, `.claude/agents/15-planner.md`.
+- **IDLE** — Audit chuyen sau 7 phase + fix XSS + fix bat dong bo trang thai/confirm DONE. Memory dong bo 2026-05-30.
+- Admin comments module hoan chinh: XSS fixed (31 diem escape), renderLichSuSua hien old/new content, report table hien IP + label tieng Viet, status pill data-driven (lookup map + fallback API), confirm dialog dong bo SAVE/DELETE, DB terms don sach.
+- Admin events module da on dinh tu 2026-05-26.
 
-## Thay doi quan trong gan day
+## Cac file dang thay doi chua commit
 
-### Codex + User Changes (2026-05-27 ~ 2026-05-28)
-- Codex commit `871f7dd`: mo rong lon admin event — them `AdminEventDictionaryResponse`, `AdminEventMediaResponse`, `StatusOptionResponse`, them validation DTO, sync entity length, upload endpoint, them repositories inject.
-- User commit `2d64c50`: fix loi codex bang cach tach `ImagePathUtil` (validate URL anh) va `PagingUtil` (chuan hoa page/size) tu duplicate logic trong services/controllers.
-- Codex config `6b6cfe0` + `34335b6`: cap nhat toan bo `.codex/` agents/hooks/scripts.
-- User uncommitted: reformat `admin_layout.html` CSS tu single-line sang multi-line, cac template admin khac dang chinh.
-
-### Admin Event Management (2026-05-26 — da on dinh)
-- `admin/events.html`: trang quan tri dong goi API that, status dictionary, file upload, bulk actions.
-- `AdminEventServiceImpl`: validate atomic IDs, FK delete, overbooking, locked privacy.
-- `IAdminEventService`: them `layDanhMucTrangThai()`, `uploadAnhChienDich()`, `uploadAnhDienGia()`, `doiTrangThaiNhieuChienDich()`.
+- `ApiAdminCommentController.java` — them endpoint upload-icon + moderation-log CMT/PH_CMT
+- `CommentStatsResponse.java` — them field `postCmt`, `eventCmt`
+- `ICtEventCmtRepository.java` — them `demTong()`
+- `ICtPostCmtRepository.java` — them `demTong()`
+- `CommentServiceImpl.java` — them `uploadIconReaction`, `layLichSuKiemDuyetCmt/PhCmt`, cap nhat `layThongKeBinhLuan`
+- `ICommentService.java` — them 3 method interface tuong ung
+- `admin/comments.html` — rewrite + fix 9 nhom loi + LOAI_LIKE upload + reply tree branch
+- `CmtModerationLogResponse.java` — DTO moi (untracked)
 
 ## Context cho phien sau
 
 - `mvnw.cmd` dang loi wrapper PowerShell; dung `bash mvnw` cho compile/test.
 - Hai file `posts/detail.html` va `events/detail.html` co comment system tuong dong — khi sua 1 ben nen kiem tra ben kia.
-- `.codexignore` van ton tai; `CSDL/` chi doc file cu the khi task yeu cau.
-- `admin_layout.html` dang co thay doi chua commit — can verify truoc khi lam task lien quan admin template.
+- Admin comments reply dung prefix `adm-` cho CSS class (adm-ri-bubble-wrapper) de tranh xung dot voi user-side.
+- LOAI_LIKE modal co 2 che do: emoji (text input) va upload anh (file picker + preview). Icon upload vao `/uploads/comments/reaction-icons/`.
 
 ## Debug Notes
 
@@ -35,4 +33,6 @@
 2026-05-25: User xoa CSDL/DuLieuMau.sql + reports + TEST.MD khoi repo, commit 52b6709.
 2026-05-27: Codex rewrite admin event module (+49 files), commit 871f7dd.
 2026-05-28: User fix codex tach ImagePathUtil + PagingUtil, commit 2d64c50.
+2026-05-28: Admin comments rewrite API-driven + PageTransitionManager, commit ffcced1 + ecf601d.
+2026-05-29: Fix LOAI_LIKE upload + reply tree branch, chua commit (bfaa0a0 la commit truoc do).
 ```

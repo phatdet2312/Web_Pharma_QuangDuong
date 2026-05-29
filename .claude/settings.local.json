@@ -35,7 +35,23 @@
       "Bash(curl -s http://localhost:8080/tin-tuc)",
       "Bash(curl -s http://localhost:8080/hoi-thao)",
       "Bash(curl -s http://localhost:8080/login)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(./mvnw compiler:compile -Dmaven.compiler.forceJavacCompilerUse=true)",
+      "Bash(./mvnw compiler:compile)",
+      "Bash(bash mvnw -q -DskipTests compile)",
+      "Bash(bash mvnw -q test)",
+      "Bash(findstr hook *)",
+      "Bash(Get-Content \"D:\\\\J2EE\\\\Web_Pharma_QuangDuong\\\\.claudeignore\")",
+      "Bash(Get-Content \"D:\\\\J2EE\\\\Web_Pharma_QuangDuong\\\\src\\\\main\\\\java\\\\PharmaceuticalsWeb\\\\Phatdev_Pharmaceuticals\\\\service\\\\impl\\\\CommentServiceImpl.java\")",
+      "Bash(Measure-Object -Line)",
+      "Bash(cd /d \"D:\\\\J2EE\\\\Web_Pharma_QuangDuong\")",
+      "Bash(mvnw.cmd compile *)",
+      "Bash(cmd /c \"mvnw.cmd compile -q 2>&1\")",
+      "Bash(Select-Object -Last 20)",
+      "Bash(git *)",
+      "Bash(Get-Content \"D:\\\\J2EE\\\\Web_Pharma_QuangDuong\\\\src\\\\main\\\\resources\\\\templates\\\\admin\\\\comments.html\")",
+      "Bash(./mvnw -q -DskipTests compile)",
+      "Bash(./mvnw -DskipTests compile)"
     ]
   }
 }
