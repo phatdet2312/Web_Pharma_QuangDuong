@@ -1,7 +1,233 @@
-# Active Plan - Kiểm tra chuyên sâu Admin Posts Management
-> Last updated: 2026-05-29
+# Active Plan - Phase 4: Rich Content Editor + Live Preview
+> Last updated: 2026-05-30
 > Status: IN_PROGRESS
 > Planner persisted before implementation: YES
+> Planner model: Opus 4.6
+
+## Mục tiêu Phase 4
+
+Đập giao diện modal tạo/sửa bài viết hiện tại (chỉ có textarea nhập raw text), xây lại thành Rich Content Editor chuyên nghiệp với Live Preview — hoàn toàn từ đầu, KHÔNG dùng thư viện ngoài nào. Admin có thể thiết kế nội dung bài viết (heading, list, bảng, hình ảnh, link, blockquote...) và xem trước demo thực tế trước khi lưu.
+
+## Gap Analysis
+
+| # | Hiện trạng | Mục tiêu | Severity |
+|---|-----------|----------|----------|
+| G1 | `<textarea>` nhập raw text, KHÔNG có formatting | contenteditable div + toolbar 16 công cụ | CRITICAL |
+| G2 | KHÔNG có preview | Live Preview split-view, CSS `.prose` giống trang user | CRITICAL |
+| G3 | Modal 700px quá nhỏ | Modal near-fullscreen cho đủ không gian | HIGH |
+| G4 | KHÔNG có undo/redo | Undo/Redo stack thủ công (50 entries) | HIGH |
+| G5 | KHÔNG có chèn ảnh inline vào nội dung | Upload ảnh qua API có sẵn + insert `<img>` vào editor | HIGH |
+| G6 | KHÔNG có chèn bảng | Grid picker 6x6 → generate `<table>` HTML | MEDIUM |
+| G7 | KHÔNG có chèn link | Dialog nhập URL + text → insert `<a>` | MEDIUM |
+| G8 | CSS `.prose` chưa có trong admin | Copy từ `posts/detail.html` vào preview panel | MEDIUM |
+| G9 | KHÔNG responsive split-view | Tablet: stacked view (editor trên, preview dưới) | MEDIUM |
+| G10 | `savePost()` đọc textarea `.value` | Đổi sang đọc contenteditable `.innerHTML` | LOW |
+
+## Sprint A — CSS Foundation (4 task SONG SONG)
+
+| # | Task | Mục tiêu | Output | Agent | Effort |
+|---|------|---------|--------|-------|--------|
+| A1 | CSS modal fullscreen | Class `.modal-box-editor` fullscreen (95-100vw, 95-100vh), responsive 768px/576px | ~30 dòng CSS | implementer | S |
+| A2 | CSS split-view layout | `.editor-split-container` CSS Grid 2 cột 1fr 1fr, responsive stacked 768px | ~25 dòng CSS | implementer | S |
+| A3 | CSS toolbar editor | `.rce-toolbar`, `.rce-toolbar-btn` 32x32px hover/active, `.rce-toolbar-separator` | ~30 dòng CSS | implementer | S |
+| A4 | CSS preview panel (copy .prose) | Copy CSS `.prose` từ `posts/detail.html` dòng 298-372, namespace `.rce-preview .prose` | ~45 dòng CSS | implementer | XS |
+
+## Sprint B — HTML Restructure Modal (tuần tự)
+
+| # | Task | Mục tiêu | Output | Agent | Effort |
+|---|------|---------|--------|-------|--------|
+| B1 | Restructure modal HTML | Thay `<div class="modal-box">` → `modal-box modal-box-editor`. Trong modal-body: panel trái (toolbar + contenteditable + metadata collapse), panel phải (preview `.prose`) | Sửa HTML modal #modalPost | implementer | M |
+| B2 | Nút toggle view | 3 nút: Chia đôi (split), Chỉ editor, Chỉ preview. Tablet mặc định stacked | 3 button `.rce-view-toggle` | implementer | XS |
+
+**B1 → B2**
+
+## Sprint C — Rich Content Editor Core JS (C1 trước → C2-C6 song song → C7)
+
+| # | Task | Mục tiêu | Output | Agent | Effort |
+|---|------|---------|--------|-------|--------|
+| C1 | Toolbar + basic formatting | `khoiTaoEditorToolbar()`: Bold, Italic, Underline, Strikethrough, H2, H3, Clear Format, HR. Dùng `document.execCommand()` | Hàm `khoiTaoEditorToolbar()`, `thucThiLenhEditor()`, `capNhatTrangThaiToolbar()` | implementer | M |
+| C2 | List + Blockquote | 3 nút: UL, OL, Blockquote (toggle) | Bổ sung vào toolbar | implementer | S |
+| C3 | Insert Link dialog | Mini-dialog: URL + text → `createLink` | Hàm `moDialogChenLink()`, `chenLienKet()` | implementer | S |
+| C4 | Insert Image (upload/URL) | Mini-dialog 2 tab: URL hoặc upload → insert `<img>`. Reuse `apiUploadPost()` | Hàm `moDialogChenAnh()`, `chenAnhTuUpload()` | implementer | M |
+| C5 | Insert Table picker | Grid picker 6x6 → generate `<table>` HTML tương thích `.prose` | Hàm `moDialogChenBang()`, `taoHtmlBang()` | implementer | M |
+| C6 | Code block | Wrap selection trong `<pre><code>` (toggle) | Bổ sung vào `thucThiLenhEditor()` | implementer | S |
+| C7 | Undo/Redo stack | Array HTML snapshot, debounce 500ms, max 50 entries. Ctrl+Z/Y override | Hàm `luuTrangThaiEditor()`, `hoanTacEditor()`, `lamLaiEditor()` | implementer | M |
+
+## Sprint D — Live Preview Engine (D1 trước → D2, D3 song song)
+
+| # | Task | Mục tiêu | Output | Agent | Effort |
+|---|------|---------|--------|-------|--------|
+| D1 | Live Preview sync | `capNhatPreview()`: đọc innerHTML editor → set vào preview `.prose`. Debounce 200ms | Hàm `capNhatPreview()` + input listener | implementer | S |
+| D2 | Toggle view modes | JS cho 3 nút: split / editor-only / preview-only. CSS class `.editor-only`, `.preview-only` | Hàm `chuyenCheDo(mode)` | implementer | XS |
+| D3 | Preview full-screen overlay | Nút "Xem trước demo" → overlay 100vw x 100vh, CSS `.prose` đầy đủ | Hàm `moPreviewFullscreen()` | implementer | S |
+
+## Sprint E — Integration (E1→E2→E3, E4 song song)
+
+| # | Task | Mục tiêu | Output | Agent | Effort |
+|---|------|---------|--------|-------|--------|
+| E1 | Sửa openModalCreate | Clear editor innerHTML, clear preview, reset undo/redo, set view = split | Sửa function `openModalCreate()` | implementer | S |
+| E2 | Sửa openModalEditById | Load content HTML vào contenteditable, trigger preview, reset undo | Sửa function `openModalEditById()` | implementer | S |
+| E3 | Sửa savePost | Đọc innerHTML từ contenteditable (thay textarea.value), strip `<script>` tags | Sửa function `savePost()` | implementer | S |
+| E4 | Paste handler | Intercept paste: strip style/class, giữ basic semantic tags (b, i, u, a, p, h2, h3, ul, ol, table, img, blockquote, pre, code, strong, em) | Hàm `xuLyPasteEditor()` | implementer | S |
+
+## Sprint F — Review + Test + Memory (tuần tự)
+
+| # | Task | Mục tiêu | Agent | Effort |
+|---|------|---------|-------|--------|
+| F1 | Review DieuKienCode | Comment trước mỗi hàm, không ternary/lambda/arrow, naming tường minh | reviewer | S |
+| F2 | Build + Test | `mvnw compile`, `mvnw test`, JS syntax check (không ES6+) | tester | S |
+| F3 | UX Smoke Test | Checklist 15 tiêu chí nghiệm thu | tester | S |
+| F4 | Memory sync | Cập nhật memory | memory-keeper | XS |
+
+## Tiêu chí nghiệm thu (15 items)
+
+1. Modal Create/Edit mở near-fullscreen (width >= 95vw)
+2. Split-view: editor bên trái, preview bên phải, gap 16px
+3. Toolbar 16 nút hoạt động: Bold, Italic, Underline, Strikethrough, H2, H3, UL, OL, Blockquote, Link, Image, Table, HR, Code Block, Clear Format, Undo, Redo
+4. contenteditable div thay thế textarea cho trường Content
+5. Live Preview cập nhật realtime khi gõ (debounce 200ms)
+6. Preview render đúng CSS `.prose` giống trang user detail.html
+7. Insert Image: upload qua API + insert `<img>` vào editor
+8. Insert Table: grid picker 6x6, generate table HTML
+9. Insert Link: dialog URL + text, insert `<a>` tag
+10. Undo/Redo hoạt động đúng (stack 50 entries)
+11. Paste strip formatting: paste từ Word/web chỉ giữ basic tags
+12. Toggle 3 chế độ: split / editor-only / preview-only
+13. Responsive 768px: chuyển sang stacked view
+14. savePost() đọc innerHTML từ contenteditable, gửi API thành công
+15. Không ảnh hưởng modal khác (Detail, Category, Tag)
+
+## Decisions Phase 4
+
+| Quyết định | Phương án chọn | Lý do | Ngày | Hết hạn |
+|-----------|---------------|-------|------|---------|
+| Editor dùng contenteditable div | contenteditable + execCommand | User yêu cầu không dùng thư viện, không iframe. contenteditable là cách duy nhất WYSIWYG vanilla JS | 2026-05-30 | 2026-08-30 |
+| Layout split-view bằng CSS Grid | Grid 2 cột 1fr 1fr | Đơn giản, responsive dễ, không cần JS resize | 2026-05-30 | 2026-08-30 |
+| Modal near-fullscreen (không trang riêng) | Fullscreen modal overlay | Nhất quán pattern modal admin (events, comments đều modal) | 2026-05-30 | 2026-08-30 |
+| Undo/Redo bằng HTML snapshot | Array snapshot + debounce 500ms | Đơn giản nhất cho vanilla JS, đủ tốt cho editor vừa-nhỏ | 2026-05-30 | 2026-08-30 |
+| Upload ảnh inline reuse endpoint có sẵn | `/api/admin/posts/upload-thumbnail` | Endpoint đã có, trả URL. Không cần tạo mới | 2026-05-30 | 2026-08-30 |
+| Paste handler giữ basic semantic tags | Strip style/class, giữ b/i/u/a/p/h2/h3/ul/ol/table/img/blockquote/pre/code | Cân bằng: giữ cấu trúc nội dung, loại style inline từ Word/web | 2026-05-30 | 2026-08-30 |
+
+## Rủi ro
+
+| # | Rủi ro | Mức độ | Giải pháp |
+|---|--------|--------|-----------|
+| R1 | `execCommand` đã deprecated | MEDIUM | Vẫn hoạt động trên mọi browser. Nếu bị loại bỏ → chuyển Selection + Range API |
+| R2 | HTML output từ contenteditable không sạch | HIGH | Paste handler strip formatting + server-side sanitize |
+| R3 | posts.html quá lớn (dự kiến 2800-3000+ dòng) | MEDIUM | Chấp nhận — events.html 3300+ dòng là tiền lệ |
+| R4 | XSS qua preview panel | LOW | Preview trong admin area (authenticated). Vẫn strip `<script>` tags |
+| R5 | Undo stack tốn bộ nhớ | LOW | Giới hạn 50 entries, ~2.5MB max — chấp nhận được |
+
+---
+
+## Phase 3 (DONE — Lịch sử)
+
+## Mục tiêu Phase 3
+
+Nâng cấp admin/posts lên chuẩn vàng admin/events: khai thác 12/12 bảng DB (từ 42% lên 85%+), Detail Modal Hub 5 tab, Category/Tag CRUD modal, Images gallery, Files management, Comments inline, Reactions detail, Post-Event linking.
+
+## Gap Analysis (Evidence-based)
+
+- DB exploitation: 5/12 bảng có UI (42%) — thiếu 7 bảng
+- Frontend: 1137 dòng vs events 3321 — thiếu ~2000 dòng
+- Backend: 20 endpoint hiện có, cần thêm 13 endpoint mới
+- Modals: 2 (CRUD + detail đơn giản) — cần thêm 2 CRUD modal + nâng cấp detail thành 5-tab hub
+- 5 CRITICAL gaps: Comments inline, POST_FILES, POST_IMAGES, Category CRUD modal, Tag CRUD modal
+- 5 HIGH gaps: Stats 4/11 fields, CT_POST_EVENTS zero UI, Reactions chi đếm số, Detail modal đơn giản, View analytics thiếu
+
+## Sprint A — Backend DTOs + Service (Images, Files, Comments/Reactions/Events)
+
+| # | Task | Mục tiêu | Output | Pattern tham chiếu | Agent | Effort | Trạng thái |
+|---|------|---------|--------|-------------------|-------|--------|-----------|
+| A1 | DTO cho Images & Files | Tạo PostImageResponse (id, postId, imageUrl, displayOrder), PostFileResponse (id, postId, fileName, fileUrl, fileType, fileSize, downloadCount), PostImageRequest, PostReactionSummary, PostLinkedEventResponse | 5 DTO files mới | Copy pattern CategoryResponse — field, getter/setter, builder | implementer | XS | DONE |
+| A2 | Service methods Images CRUD | 4 method: layAnhCuaBaiViet, uploadAnhBaiViet (gallery), xoaAnhBaiViet, doiThuTuAnh. Upload ghi /uploads/posts/images/ | AdminPostServiceImpl +4 methods | Copy uploadAnhBaiViet (thumbnail) dòng 370-412 — validate file + ghi + trả URL | implementer | M | DONE |
+| A3 | Service methods Files CRUD | 3 method: layFileCuaBaiViet, uploadFileBaiViet, xoaFileBaiViet. Accept pdf/doc/docx/pptx/xlsx, max 10MB, ghi /uploads/posts/files/ | AdminPostServiceImpl +3 methods | Copy pattern thumbnail upload, thay validate thành file types | implementer | M | DONE |
+| A4 | Service methods Comments/Reactions/Events/Analytics | 5 method read-only: layCmtCuaBaiVietAdmin (phân trang), layReactionsCuaBaiViet (grouped), laySuKienLienKet, lienKetSuKien, xoaLienKetSuKien | AdminPostServiceImpl +5 methods + 2 DTO mới | Copy CommentServiceImpl cho comment lazy-load. Copy ICtLikePostRepository.demReactionTheLoai | implementer | M | DONE |
+
+**Dependency:** A1 xong trước → A2, A3, A4 song song
+
+## Sprint B — Backend Controller (13 endpoint mới)
+
+| # | Task | Mục tiêu | Output | Agent | Effort | Trạng thái |
+|---|------|---------|--------|-------|--------|-----------|
+| B1 | Controller Images (4 endpoint) | GET/POST/DELETE/PATCH cho /api/admin/posts/{id}/images | ApiAdminPostController +4 methods | implementer | S | DONE |
+| B2 | Controller Files (3 endpoint) | GET/POST/DELETE cho /api/admin/posts/{id}/files | ApiAdminPostController +3 methods | implementer | S | DONE |
+| B3 | Controller Comments/Reactions/Events (5 endpoint) | GET comments (phân trang), GET reactions, GET/POST/DELETE events liên kết | ApiAdminPostController +5 methods | implementer | S | DONE |
+
+**Dependency:** B1 cần A2, B2 cần A3, B3 cần A4 — song song nội bộ
+
+## Sprint C — Frontend Detail Modal Hub (5 Tabs)
+
+| # | Task | Mục tiêu | Output | Pattern tham chiếu | Agent | Effort | Trạng thái |
+|---|------|---------|--------|-------------------|-------|--------|-----------|
+| C1 | CSS tab system + detail modal nâng cấp | CSS .pd-tabs, .pd-tab, .pd-tab-badge, .pd-tab-content, .pd-gallery-grid, modal-wide 1060px, responsive 1200/768/576px | posts.html +~80 dòng CSS | events.html dòng 520-640 modal styles | implementer | S | DONE |
+| C2 | JS Tab 1: Tổng quan (refactor openDetailModal) | Refactor detail modal thành tab system. Tab 1 = nội dung hiện tại + stats row 4 card (views/downloads/comments/reactions) + badge count trên tab header | Refactor openDetailModal function | events.html detail modal render dòng 2100-2200 | implementer | M | DONE |
+| C3 | JS Tab 2: Hình ảnh Gallery | renderImageTab(postId): grid 3 cột, upload flow, delete + confirmAction, reorder display_order, empty state, loading spinner | functions renderImageTab, uploadPostImage, deletePostImage, reorderImages | doUploadThumbnail dòng 978 + renderPostsTable grid pattern | implementer | M | DONE |
+| C4 | JS Tab 3: File đính kèm | renderFileTab(postId): table 5 cột (icon theo type, tên, loại, dung lượng, thao tác), upload validate 10MB, delete + FK warning, downloadCount | functions renderFileTab, uploadPostFile, deletePostFile | doUploadThumbnail + renderPostsTable table pattern | implementer | M | DONE |
+| C5 | JS Tab 4: Bình luận preview | renderCommentTab(postId): load 5 comments mới nhất, avatar+tên+nội dung truncate+time, nút "Xem tất cả" redirect admin/comments, tab badge count, empty state | function renderCommentTab | events.html openCommentModal dòng 2971-3000 | implementer | S | DONE |
+| C6 | JS Tab 5: Liên kết & Tương tác | renderLinkTab(postId): Section 1 = Events liên kết (title+date+unlink) + dropdown link event. Section 2 = Reactions breakdown (icon+name+count). Empty state mỗi section | functions renderLinkTab, linkEvent, unlinkEvent | events.html event linking pattern | implementer | M | DONE |
+
+**Dependency:** C1 trước → C2 trước → (C3, C4, C5, C6 song song). C3 cần B1, C4 cần B2, C5+C6 cần B3.
+
+## Sprint D — Frontend Category & Tag CRUD Modals (song song với Sprint C)
+
+| # | Task | Mục tiêu | Output | Pattern tham chiếu | Agent | Effort | Trạng thái |
+|---|------|---------|--------|-------------------|-------|--------|-----------|
+| D1 | Category CRUD Modal | Modal 700px: table (Tên, Slug, Mô tả, Số bài viết, isActive toggle, Thao tác edit/delete) + form thêm/sửa (Tên*, Slug, Mô tả, isActive checkbox) + FK check delete | HTML modal + JS: openCategoryModal, loadCategories, saveCategory, deleteCategory | events.html Type CRUD modal dòng 850-950 | implementer | M | DONE |
+| D2 | Tag CRUD Modal | Modal: grid tag chips (tên + usageCount + nút X + edit) + form thêm/sửa (Tên*, Slug) + FK check delete | HTML modal + JS: openTagModal, loadTagsAdmin, saveTag, deleteTag | Copy pattern từ D1 đơn giản hơn | implementer | S | DONE |
+| D3 | Toolbar integration | 2 nút gear (fa-cog) cạnh dropdown Category và Tag trong toolbar. Responsive: ẩn trên mobile | Thêm 2 button vào toolbar | Inline toolbar hiện tại | implementer | XS | DONE |
+
+**Dependency:** D1 trước → D2 → D3
+
+## Sprint E — Stats mở rộng + UX + Review + Test + Memory
+
+| # | Task | Mục tiêu | Output | Agent | Effort | Trạng thái |
+|---|------|---------|--------|-------|--------|-----------|
+| E1 | Stats row mở rộng | Hiện thêm: totalViews, totalComments, totalReactions, totalFeatured từ response đã có. Từ 4 card lên 8 card (2 dòng responsive) | Sửa renderStats function | implementer | S | DONE |
+| E2 | Escape key đóng modal | Thêm keydown listener đóng tất cả modal-overlay khi nhấn Escape | Thêm event listener | implementer | XS | DONE |
+| E3 | Table column clickable | commentCount → link mở tab Comments detail. downloadCount → link mở tab Files detail | Sửa renderPostsTable | implementer | XS | DONE |
+| E4 | Review DieuKienCode | Kiểm tra: comment trước hàm/action, không ternary phức tạp, không lambda, naming tường minh, không lộ DB, full code | Report findings | reviewer | S | DONE |
+| E5 | Build + Test | mvnw compile + test + git diff --check + JS syntax check | Build log | tester | S | DONE |
+| E6 | Memory sync | Cập nhật 04_active_plan.md DONE, 03_deep_knowledge, 06_evolution_log, DB exploitation rate | Memory files | memory-keeper | XS | DONE |
+
+**Dependency:** E1-E3 song song (sau C+D). E4 sau E1-E3. E5 sau E4 fix. E6 sau E5.
+
+## Tiêu chí nghiệm thu Phase 3 (20 items)
+
+1. Detail modal có 5 tab hoạt động: Tổng quan, Hình ảnh, File, Bình luận, Liên kết
+2. Tab Hình ảnh: upload/delete/reorder images, hiện DISPLAY_ORDER
+3. Tab File: upload/delete files, icon theo type, hiện downloadCount
+4. Tab Bình luận: load 5 comments mới nhất, nút redirect admin/comments
+5. Tab Liên kết: reactions breakdown + events linked + link/unlink event
+6. Category CRUD modal: table + form + toggle isActive + FK check delete
+7. Tag CRUD modal: grid chips + form + FK check delete
+8. Toolbar có nút gear cho Category và Tag
+9. Responsive tại 1200px, 768px, 576px không vỡ layout
+10. Empty state mỗi tab/modal khi không có data
+11. Loading spinner/skeleton khi load data trong tab
+12. escapeHtml() tất cả output innerHTML — không XSS
+13. Backend validate @Valid mỗi endpoint mới
+14. Upload validate file type + size cả client + server
+15. Không lộ tên bảng DB trong frontend
+16. Comment Javadoc trước mỗi function/method mới
+17. Không stream/lambda/ternary phức tạp
+18. Build pass (mvnw compile + test)
+19. DB exploitation rate >= 85% (10/12 bảng có UI)
+20. posts.html >= 2200 dòng (từ 1137, tăng ~1063)
+
+## Decisions Phase 3
+
+| Quyết định | Phương án chọn | Lý do | Ngày | Hết hạn |
+|-----------|---------------|-------|------|---------|
+| Detail modal dùng tab system 5 tab | Tab system (không accordion, không separate modals) | events.html dùng tab, consistency + dễ mở rộng | 2026-05-30 | 2026-08-30 |
+| Images/Files là sub-resource REST nested | /posts/{id}/images, /posts/{id}/files | REST convention, events cũng dùng nested pattern | 2026-05-30 | 2026-08-30 |
+| Category/Tag CRUD dùng modal inline | Modal table + form cùng 1 modal | events.html dùng modal cho Type/Location CRUD | 2026-05-30 | 2026-08-30 |
+| Comment tab chỉ preview, không full management | Preview 5 comments + redirect admin/comments | Tránh trùng lặp, events cũng chỉ preview | 2026-05-30 | 2026-08-30 |
+| Stats mở rộng 8 cards 2 dòng | 2 dòng responsive | Backend đã trả 11 fields, hiện 4 là lãng phí | 2026-05-30 | 2026-08-30 |
+
+---
+
+## Phase 1+2 (DONE) — Lịch sử audit + fix trước đó
 
 ## Mục tiêu
 
@@ -17,35 +243,109 @@ Kiểm tra chuyên sâu chức năng quản lý post admin (`admin/posts.html`) 
 
 ## Danh sách Task
 
-### Đợt 1 (song song — thu thập evidence)
+### Đợt 1 (song song — thu thập evidence) — DONE
 
 | # | Task | Agent | Trạng thái |
 |---|------|-------|-----------|
-| 1.1 | Coverage audit: user-side 9 API vs admin-side | deep-reviewer | TODO |
-| 1.2 | DB exploitation audit: 12 bảng mapping + column gap | deep-reviewer | TODO |
-| 1.3 | Backend completeness audit: service/endpoint/DTO gap vs events+comments | deep-reviewer | TODO |
+| 1.1 | Coverage audit: user-side 9 API vs admin-side | deep-reviewer | DONE — 55-60% coverage, 1 BLOCKER (filter access sai param), 2 HIGH, 1 MAJOR, 2 MEDIUM |
+| 1.2 | DB exploitation audit: 12 bảng mapping + column gap | deep-reviewer | DONE — 7/12 bảng (58%), 2 BLOCKER (FK cascade thiếu), 1 MAJOR (accessLevel undefined) |
+| 1.3 | Backend completeness audit: service/endpoint/DTO gap vs events+comments | deep-reviewer | DONE — 55-60% completeness, 2 BLOCKER (FK crash + no upload), 5 MAJOR, N+1 query |
 
-### Đợt 2 (song song, sau Đợt 1)
-
-| # | Task | Agent | Trạng thái |
-|---|------|-------|-----------|
-| 2.1 | UX consistency audit: posts vs events vs comments (12 checklist items) | deep-reviewer | TODO |
-| 2.2 | DieuKienCode convention audit: JS comment + OOP + naming + pattern cấm | deep-reviewer | TODO |
-| 2.3 | XSS + security audit: innerHTML/onclick/src injection + CSRF + backend @Valid | security-auditor | TODO |
-
-### Đợt 3 (song song, sau Đợt 2)
+### Đợt 2 (song song, sau Đợt 1) — DONE
 
 | # | Task | Agent | Trạng thái |
 |---|------|-------|-----------|
-| 3.1 | Edge case audit: pagination + bulk + nội dung dài + FK dependency | deep-reviewer | TODO |
-| 3.2 | Missing features gap analysis: tổng hợp chức năng thiếu từ Đợt 1+2 | deep-reviewer | TODO |
+| 2.1 | UX consistency audit: posts vs events vs comments (12 checklist items) | deep-reviewer | DONE — 30-35% đồng bộ, 3 CRITICAL (PTM+upload+loading), 3 HIGH, 3 MEDIUM |
+| 2.2 | DieuKienCode convention audit: JS comment + OOP + naming + pattern cấm | deep-reviewer | DONE — 66.7% compliance, 2 BLOCKER (lộ DB+cascade), 4 MAJOR (ClassCastException) |
+| 2.3 | XSS + security audit: innerHTML/onclick/src injection + CSRF + backend @Valid | security-auditor | DONE — 15 XSS (3 CRITICAL), 15 backend issues (3 HIGH). Cùng pattern comments đã fix |
 
-### Đợt 4 (tuần tự, sau Đợt 3)
+### Đợt 3 (song song, sau Đợt 2) — DONE
 
 | # | Task | Agent | Trạng thái |
 |---|------|-------|-----------|
-| 4.1 | Tổng hợp verdict report: CRITICAL/HIGH/MEDIUM/LOW + PASS/SỬA/ĐẬP BỎ | deep-reviewer | TODO |
-| 4.2 | Lập roadmap sửa/rebuild (nếu cần) — sau khi có verdict | planner | TODO |
+| 3.1 | Edge case audit: pagination + bulk + nội dung dài + FK dependency | deep-reviewer | DONE — 2 BLOCKER (xóa Category/Tag FK), 3 MAJOR, 4 MINOR |
+| 3.2 | Missing features gap analysis: tổng hợp chức năng thiếu từ Đợt 1+2 | deep-reviewer | DONE — 20 findings, DB ~37%, verdict SỬA TOÀN DIỆN |
+
+### Đợt 4 (tuần tự, sau Đợt 3) — DONE
+
+| # | Task | Agent | Trạng thái |
+|---|------|-------|-----------|
+| 4.1 | Tổng hợp verdict report: CRITICAL/HIGH/MEDIUM/LOW + PASS/SỬA/ĐẬP BỎ | orchestrator | DONE — SỬA TOÀN DIỆN (34 findings) |
+| 4.2 | Implement fix toàn bộ Sprint 1+2+3 | implementer x3 | DONE — Backend 22 fixes + Frontend 15 fixes |
+
+## Kết quả implement
+
+### Backend (22 fixes)
+- 6 repositories: thêm cascade delete methods + FK check
+- IAdminPostService: +1 method `layChiTietBaiViet`
+- AdminPostServiceImpl: cascade delete 9 bảng, ClassCastException x4, FK check Category/Tag, stats +2 fields, postCount/usageCount, accessLevel computed, detail method
+- ApiAdminPostController: +1 endpoint detail, page/size validate, auth throw 401
+- PostRequest: @NotBlank + @Size cho content/thumbnailUrl/seoTitle/seoDescription
+- PostResponse: +4 fields (accessLevel, content, seoTitle, seoDescription)
+- PostStatsResponse: +2 fields (totalViews, totalComments)
+
+### Frontend (15 fixes)
+- XSS: escapeHtml() + 9 escape points
+- DB names: xóa 6 vị trí lộ tên bảng
+- PageTransitionManager: tích hợp fade stats + skeleton table
+- Filter access: xóa param sai, TODO chờ API dictionary
+- Modal: a11y (role="dialog", aria-modal)
+- Pagination: giới hạn 7 nút + dấu "..."
+- Bulk bar: CSS class toggle thay inline style
+- openModalEdit → openModalEditById (gọi admin API)
+- Breakpoint 1200px
+- Tags hiển thị giới hạn 4 + "+N"
+- Slug overflow ellipsis
+
+### Phase 2 — 7 items còn lại (19 tasks, 5 đợt)
+
+#### Đợt 1 — Database + DTO foundation
+
+| # | Task | Agent | Trạng thái |
+|---|------|-------|-----------|
+| 1.1 | Thêm field isFeatured vào Post entity + SQL | implementer | DONE |
+| 1.2 | Tạo DTOs: AdminPostMediaResponse, AdminPostDictionaryResponse, RoleOptionResponse | implementer | DONE |
+
+#### Đợt 2 — Backend Service + Repository (3 nhánh song song)
+
+| # | Task | Agent | Trạng thái |
+|---|------|-------|-----------|
+| 2.1 | Upload thumbnail service method | implementer | DONE |
+| 2.2 | Dictionary service method | implementer | DONE |
+| 2.3 | Date range JPQL query | implementer | DONE |
+| 2.4 | Dynamic sort trong service | implementer | DONE |
+| 2.5 | 5 batch queries cho N+1 fix | implementer | DONE |
+| 2.6 | Refactor chuyenDoiPostResponse batch | implementer | DONE |
+
+#### Đợt 3 — Controller endpoints
+
+| # | Task | Agent | Trạng thái |
+|---|------|-------|-----------|
+| 3.1 | Featured repository + stats | implementer | DONE |
+| 3.2 | Featured toggle service | implementer | DONE |
+| 3.3 | Controller: 4 endpoint mới + sửa layDanhSach | implementer | DONE |
+
+#### Đợt 4 — Frontend (2 nhánh song song)
+
+| # | Task | Agent | Trạng thái |
+|---|------|-------|-----------|
+| 4.1 | Load dictionary + populate dropdowns | implementer | DONE |
+| 4.2 | Date range filter UI | implementer | DONE |
+| 4.3 | Sort dropdown UI | implementer | DONE |
+| 4.4 | Upload thumbnail UI | implementer | DONE |
+| 4.5 | Modal detail read-only | implementer | DONE |
+| 4.6 | Featured toggle UI | implementer | DONE |
+
+#### Đợt 5 — Review + Test
+
+| # | Task | Agent | Trạng thái |
+|---|------|-------|-----------|
+| 5.1 | Review DieuKienCode | reviewer | DONE — NEEDS_FIX → 3 critical/warning fixed |
+| 5.2 | Build + test | compile | DONE — BUILD SUCCESS |
+| 5.3 | Memory sync | orchestrator | DONE |
+- Reactions management
+- CT_POST_EVENTS management
+- N+1 query optimization (batch load)
 
 ## Phát hiện sơ bộ (trước audit chính thức)
 

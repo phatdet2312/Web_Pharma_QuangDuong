@@ -30,6 +30,9 @@ public class PostResponse {
     private List<String> allowedRoleNames;
     private boolean isPublished;
 
+    /** Bài viết nổi bật */
+    private boolean isFeatured;
+
     /** Thông tin danh mục */
     private Integer categoryId;
     private String categoryName;
@@ -53,4 +56,12 @@ public class PostResponse {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /** Cấp độ truy cập tổng hợp (Công khai / tên role) */
+    private String accessLevel;
+
+    /** Nội dung đầy đủ (chỉ trả về trong chi tiết, không trả trong danh sách) */
+    private String content;
+    private String seoTitle;
+    private String seoDescription;
 }

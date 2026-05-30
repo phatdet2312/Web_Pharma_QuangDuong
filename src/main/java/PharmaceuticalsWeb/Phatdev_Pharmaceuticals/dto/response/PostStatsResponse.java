@@ -44,4 +44,13 @@ public class PostStatsResponse {
 
     /** Tổng lượng tương tác cảm xúc trực tiếp trên bài viết */
     private long totalReactions;
+
+    /** Tổng lượt xem toàn hệ thống */
+    private long totalViews;
+
+    /** Tổng bình luận trên bài viết */
+    private long totalComments;
+
+    /** Số bài viết nổi bật */
+    private long totalFeatured;
 }

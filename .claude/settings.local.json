@@ -51,7 +51,21 @@
       "Bash(git *)",
       "Bash(Get-Content \"D:\\\\J2EE\\\\Web_Pharma_QuangDuong\\\\src\\\\main\\\\resources\\\\templates\\\\admin\\\\comments.html\")",
       "Bash(./mvnw -q -DskipTests compile)",
-      "Bash(./mvnw -DskipTests compile)"
+      "Bash(./mvnw -DskipTests compile)",
+      "Bash(cmd /c \"cd /d D:\\\\J2EE\\\\Web_Pharma_QuangDuong && mvn compile 2>&1\")",
+      "Bash(cmd *)",
+      "Bash(findstr /V \"Microsoft Windows Version\")",
+      "Bash(./mvnw clean *)",
+      "Bash(bash mvnw spring-boot:run)",
+      "Bash(bash mvnw compile -q)",
+      "Bash(bash mvnw compile)",
+      "Bash(bash mvnw compile -pl .)",
+      "Bash(bash mvnw clean compile)",
+      "Bash(tasklist)",
+      "Bash(findstr /i \"java\")",
+      "Bash(findstr \"java\")",
+      "Bash(taskkill *)",
+      "Bash(findstr /n \"campaignModal sessionModal modal-box modal-head modal-body modal-footer sessionStatus sessionSeoTitle sessionSeoDescription sessionPostChips sessionRoleChips sessionTagChips campaignThumbnail btnUploadCampaign campaignSlug campaignType\")"
     ]
   }
 }

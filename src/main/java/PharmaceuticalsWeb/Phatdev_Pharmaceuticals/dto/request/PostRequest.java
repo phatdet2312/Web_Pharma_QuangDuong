@@ -29,18 +29,23 @@ public class PostRequest {
     private String summary;
 
     /** Nội dung HTML/Markdown đầy đủ */
+    @NotBlank(message = "Nội dung bài viết không được để trống")
+    @Size(max = 100000, message = "Nội dung tối đa 100.000 ký tự")
     private String content;
 
+    @Size(max = 2000, message = "URL ảnh tối đa 2000 ký tự")
     private String thumbnailUrl;
 
-   /** Danh sách ID các Nhóm quyền (USER_ROLES) được phép đọc bài này */
+    /** Danh sách ID các Nhóm quyền (USER_ROLES) được phép đọc bài này */
     private List<Integer> roleIds;
 
     /** true = xuất bản ngay, false = lưu nháp */
     private boolean isPublished = false;
 
+    @Size(max = 200, message = "SEO Title tối đa 200 ký tự")
     private String seoTitle;
 
+    @Size(max = 500, message = "SEO Description tối đa 500 ký tự")
     private String seoDescription;
 
     /** ID danh mục (FK → CATEGORIES) */

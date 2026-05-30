@@ -23,4 +23,8 @@ public interface ICtPostRoleRepository extends JpaRepository<CtPostRole, CtPostR
     @Modifying
     @Query("DELETE FROM CtPostRole cpr WHERE cpr.post.id = :postId")
     void xoaHetQuyenCuaBaiViet(@Param("postId") Long postId);
+
+    /** Batch: lấy quyền của nhiều bài viết cùng lúc (tránh N+1) */
+    @Query("SELECT cpr.post.id, r.id, r.roleName FROM CtPostRole cpr JOIN cpr.role r WHERE cpr.post.id IN :postIds")
+    List<Object[]> layQuyenCuaNhieuBaiViet(@Param("postIds") List<Long> postIds);
 }

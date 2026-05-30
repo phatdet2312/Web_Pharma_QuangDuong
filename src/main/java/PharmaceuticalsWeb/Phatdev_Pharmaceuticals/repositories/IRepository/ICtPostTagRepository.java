@@ -30,4 +30,17 @@ public interface ICtPostTagRepository extends JpaRepository<CtPostTag, CtPostTag
     /** Đếm tổng số tag đang được dùng (cho Hero Stats) */
     @Query("SELECT COUNT(DISTINCT cpt.tag.id) FROM CtPostTag cpt")
     long demTongSoTagDangDung();
+
+    /** Xóa tất cả liên kết bài viết của một tag (cascade delete trước khi xóa tag) */
+    @Modifying
+    @Query("DELETE FROM CtPostTag cpt WHERE cpt.tag.id = :tagId")
+    void xoaHetBaiVietCuaTag(@Param("tagId") Long tagId);
+
+    /** Đếm số bài viết đang dùng một tag cụ thể (cho hiển thị usageCount) */
+    @Query("SELECT COUNT(cpt) FROM CtPostTag cpt WHERE cpt.tag.id = :tagId")
+    long demBaiVietDungTag(@Param("tagId") Long tagId);
+
+    /** Batch: lấy tag của nhiều bài viết cùng lúc (tránh N+1) */
+    @Query("SELECT cpt.post.id, t.id, t.name, t.slug FROM CtPostTag cpt JOIN cpt.tag t WHERE cpt.post.id IN :postIds")
+    List<Object[]> layTagCuaNhieuBaiViet(@Param("postIds") List<Long> postIds);
 }

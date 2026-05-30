@@ -67,4 +67,11 @@ public class AdminViewController {
     public String quanTriBinhLuan() {
         return "admin/comments";
     }
+
+    /* 
+    @GetMapping("/test")
+    public String test() {
+        return "admin/test";
+    }
+    */
 }

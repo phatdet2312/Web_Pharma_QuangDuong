@@ -287,6 +287,7 @@ CREATE TABLE [POSTS](
 	CONTENT NVARCHAR(MAX) NOT NULL,              -- Nội dung HTML/Rich Text toàn bộ bài viết
 	THUMBNAIL_URL VARCHAR(255),                  -- Đường dẫn ảnh đại diện/bìa của bài viết
 	IS_PUBLISHED BIT DEFAULT 0,                  -- Cờ xuất bản: 1 = Hiển thị ra web, 0 = Bản nháp
+	IS_FEATURED BIT NOT NULL DEFAULT 0,          -- Cờ nổi bật: 1 = Hiển thị trang chủ, 0 = Bình thường
 	SEO_TITLE NVARCHAR(200),                     -- Thẻ Title SEO (Ghi đè tiêu đề gốc để tối ưu từ khóa)
 	SEO_DESCRIPTION NVARCHAR(255),               -- Thẻ Meta Description SEO
 	CATEGORY_ID INT NOT NULL,                    -- Thuộc chuyên mục nào (Khóa ngoại)

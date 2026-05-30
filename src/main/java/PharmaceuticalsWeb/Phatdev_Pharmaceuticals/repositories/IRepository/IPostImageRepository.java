@@ -24,4 +24,7 @@ public interface IPostImageRepository extends JpaRepository<PostImage, Long> {
     @Modifying
     @Query("DELETE FROM PostImage pi WHERE pi.post.id = :postId")
     void xoaHetAnhCuaBaiViet(@Param("postId") Long postId);
+
+    /** Đếm tổng ảnh của bài viết */
+    long countByPostId(Long postId);
 }

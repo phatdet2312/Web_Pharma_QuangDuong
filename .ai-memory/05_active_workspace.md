@@ -3,8 +3,9 @@
 
 ## Trang thai hien tai
 
-- **IDLE** — Audit chuyen sau 7 phase + fix XSS + fix bat dong bo trang thai/confirm DONE. Memory dong bo 2026-05-30.
-- Admin comments module hoan chinh: XSS fixed (31 diem escape), renderLichSuSua hien old/new content, report table hien IP + label tieng Viet, status pill data-driven (lookup map + fallback API), confirm dialog dong bo SAVE/DELETE, DB terms don sach.
+- **IDLE** — Admin Posts Phase 3 HOAN CHINH: 3 DTOs moi + 11 service methods + 12 controller endpoints + frontend 2118 dong (tab system 5 tab, gallery CRUD, files CRUD, comments preview, reactions/events linking, category/tag CRUD modals, 8 stats cards, escape key). Compile pass. 2026-05-30.
+- Admin posts module: XSS fixed (escapeHtml 10 diem), cascade delete 9 bang, ClassCastException x4 fixed, accessLevel computed, detail endpoint, a11y modal, PageTransitionManager, pagination 7 nut, DB names don sach.
+- Admin comments module hoan chinh tu 2026-05-29.
 - Admin events module da on dinh tu 2026-05-26.
 
 ## Cac file dang thay doi chua commit

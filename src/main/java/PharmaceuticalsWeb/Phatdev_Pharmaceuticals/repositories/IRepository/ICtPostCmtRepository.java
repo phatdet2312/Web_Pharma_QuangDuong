@@ -37,4 +37,16 @@ public interface ICtPostCmtRepository extends JpaRepository<CtPostCmt, CtPostCmt
     @Query("SELECT cpc.cmt.id, p.id, p.title, p.slug FROM CtPostCmt cpc " +
            "JOIN cpc.post p WHERE cpc.cmt.id IN :cmtIds")
     List<Object[]> layCmtIdToPostMapping(@Param("cmtIds") List<Long> cmtIds);
+
+    /** Xóa tất cả liên kết comment của bài viết (cascade delete trước khi xóa post) */
+    @Modifying
+    @Query("DELETE FROM CtPostCmt cpc WHERE cpc.post.id = :postId")
+    void xoaHetCmtCuaBaiViet(@Param("postId") Long postId);
+
+    /**
+     * Batch: Đếm số comment của nhiều bài viết trong 1 query.
+     * Trả về Object[]{postId, count} cho mỗi bài viết có comment.
+     */
+    @Query("SELECT cpc.post.id, COUNT(cpc) FROM CtPostCmt cpc WHERE cpc.post.id IN :postIds GROUP BY cpc.post.id")
+    List<Object[]> demCmtTheoNhieuBaiViet(@Param("postIds") List<Long> postIds);
 }

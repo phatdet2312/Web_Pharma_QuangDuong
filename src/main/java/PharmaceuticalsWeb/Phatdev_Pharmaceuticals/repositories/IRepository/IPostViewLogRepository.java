@@ -4,9 +4,12 @@ package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PostViewLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 /**
  * Repository lượt xem bài viết.
@@ -34,4 +37,13 @@ public interface IPostViewLogRepository extends JpaRepository<PostViewLog, Long>
      */
     @Query("SELECT COUNT(v) FROM PostViewLog v")
     long demTongLuotXem();
+
+    /** Xóa tất cả lượt xem của một bài viết (cascade khi xóa bài) */
+    @Modifying
+    @Query("DELETE FROM PostViewLog v WHERE v.post.id = :postId")
+    void xoaHetLuotXemCuaBaiViet(@Param("postId") Long postId);
+
+    /** Batch: đếm lượt xem theo nhiều bài viết (tránh N+1) */
+    @Query("SELECT v.post.id, COUNT(v) FROM PostViewLog v WHERE v.post.id IN :postIds GROUP BY v.post.id")
+    List<Object[]> demLuotXemTheoNhieuBaiViet(@Param("postIds") List<Long> postIds);
 }

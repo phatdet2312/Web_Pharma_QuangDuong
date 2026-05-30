@@ -55,6 +55,11 @@ public class Post {
     @Column(name = "IS_PUBLISHED", nullable = false)
     private boolean isPublished = false;
 
+    /** true = bài viết nổi bật hiển thị trang chủ, false = bình thường */
+    @Builder.Default
+    @Column(name = "IS_FEATURED", nullable = false)
+    private boolean isFeatured = false;
+
     @Column(name = "SEO_TITLE", length = 200)
     private String seoTitle;
 

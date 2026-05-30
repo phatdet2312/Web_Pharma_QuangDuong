@@ -104,6 +104,10 @@ public interface ICmtRepository extends JpaRepository<Cmt, Long> {
            "ORDER BY c.createdAt DESC")
     Page<Cmt> layCmtCuaSuKienTheoThoiGian(@Param("eventId") Long eventId, Pageable pageable);
 
+    /** Batch: đếm comment theo nhiều bài viết (tránh N+1, qua CT_POST_CMT) */
+    @Query("SELECT cpc.post.id, COUNT(cpc) FROM CtPostCmt cpc WHERE cpc.post.id IN :postIds GROUP BY cpc.post.id")
+    List<Object[]> demCmtTheoNhieuBaiViet(@Param("postIds") List<Long> postIds);
+
     /** Cỗ máy tìm kiếm Bình luận phân nhánh quản trị. */
     @Query("SELECT c FROM Cmt c WHERE " +
            "(:keyword IS NULL OR LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +

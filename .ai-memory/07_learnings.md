@@ -30,6 +30,9 @@
 | 2026-05-29 | CONVENTION | Sai: delegate fix cho agent rồi báo cáo DONE dựa trên self-report của agent mà không tự đọc code output thực tế verify từng lỗi user liệt kê. Đúng: LUÔN tự đọc code output, đối chiếu từng điểm user yêu cầu, chỉ báo DONE khi mỗi điểm có evidence dòng code cụ thể. | 2 |
 | 2026-05-29 | ARCHITECTURE | Sai: user yêu cầu rõ "upload ảnh như admin/event" nhưng tự ý quyết định giữ text input vì "LOAI_LIKE là emoji" — override yêu cầu user bằng phán đoán riêng. Đúng: KHÔNG BAO GIỜ override yêu cầu tường minh của user bằng phán đoán kỹ thuật riêng. Nếu thấy bất hợp lý → HỎI user, không tự quyết. | 1 |
 
+| 2026-05-30 | CONVENTION | Sai: tự viết upload bằng raw XMLHttpRequest thay vì dùng pattern upload đã có sẵn trong hệ thống (apiUploadComment dùng $.ajax + JWT + loading). Đúng: LUÔN đọc code upload/tương tác API đã có trong các trang tham chiếu (comments, events), copy chính xác pattern đó, KHÔNG tự sáng tạo cách gọi API riêng ngoài callApi hoặc hàm upload chung. | 1 |
+| 2026-05-30 | FRONTEND | Sai: thay thế HTML element (input text URL) bằng element mới (hidden input) mà không giữ lại chức năng cũ. Đúng: KHÔNG BAO GIỜ xóa/thay thế input đang hoạt động — chỉ BỔ SUNG thêm, giữ nguyên cả 2 luồng (nhập URL thủ công + upload file). | 1 |
+| 2026-05-30 | LOGIC | Sai: dùng file.transferTo(path.toFile()) thay vì file.transferTo(path) — trên Windows relative path gây IOException. Đúng: LUÔN copy chính xác method signature từ code tham chiếu đang hoạt động (events dùng transferTo(Path), không phải transferTo(File)). | 1 |
 <!-- Loại: LOGIC | CONVENTION | ARCHITECTURE | PERFORMANCE | SECURITY -->
 <!-- Pattern: "Sai: [pattern sai]. Đúng: LUÔN/KHÔNG BAO GIỜ [rule]" -->
 <!-- Lần >= 3 → ⚠️ candidate promote -->

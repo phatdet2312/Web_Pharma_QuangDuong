@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -94,5 +95,28 @@ public interface IPostRepository extends JpaRepository<Post, Long> {
     List<Post> layBaiVietCungDanhMuc(
             @Param("categoryId") Integer categoryId,
             @Param("excludeId") Long excludeId,
+            Pageable pageable);
+
+    /** Đếm số bài viết thuộc một danh mục (dùng để kiểm tra trước khi xóa danh mục) */
+    long countByCategoryId(Integer categoryId);
+
+    /** Đếm bài viết nổi bật */
+    long countByIsFeaturedTrue();
+
+    /** Tìm kiếm nâng cao có date range (admin). */
+    @Query("SELECT p FROM Post p WHERE " +
+           "(:keyword IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+           "AND (:roleId IS NULL OR EXISTS (SELECT 1 FROM CtPostRole cpr WHERE cpr.post.id = p.id AND cpr.role.id = :roleId)) " +
+           "AND (:isPublished IS NULL OR p.isPublished = :isPublished) " +
+           "AND (:fromDate IS NULL OR p.createdAt >= :fromDate) " +
+           "AND (:toDate IS NULL OR p.createdAt < :toDate)")
+    Page<Post> timKiemBaiVietAdminNangCao(
+            @Param("keyword") String keyword,
+            @Param("categoryId") Integer categoryId,
+            @Param("roleId") Integer roleId,
+            @Param("isPublished") Boolean isPublished,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
             Pageable pageable);
 }

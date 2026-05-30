@@ -3,6 +3,7 @@ package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtLikePost;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -50,4 +51,15 @@ public interface ICtLikePostRepository extends JpaRepository<CtLikePost, CtLikeP
      */
     @Query("SELECT COUNT(lk) FROM CtLikePost lk")
     long demTongReaction();
+
+    /** Xóa tất cả reaction của bài viết (cascade delete trước khi xóa post) */
+    @Modifying
+    @Query("DELETE FROM CtLikePost lk WHERE lk.post.id = :postId")
+    void xoaHetReactionCuaBaiViet(@Param("postId") Long postId);
+
+    /** Thống kê reactions chi tiết kèm tên và icon (JOIN LOAI_LIKE) */
+    @Query("SELECT lk.loaiLike.code, lk.loaiLike.name, lk.loaiLike.iconUrl, COUNT(lk) " +
+           "FROM CtLikePost lk WHERE lk.post.id = :postId " +
+           "GROUP BY lk.loaiLike.code, lk.loaiLike.name, lk.loaiLike.iconUrl")
+    List<Object[]> demReactionChiTietCuaBaiViet(@Param("postId") Long postId);
 }

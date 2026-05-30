@@ -889,126 +889,157 @@
 </div>
 
 <div class="modal-overlay" id="campaignModal" role="dialog" aria-modal="true" aria-labelledby="campaignModalTitle">
-    <div class="modal-box">
+    <div class="modal-box modal-box-editor">
         <div class="modal-head">
             <span class="modal-title" id="campaignModalTitle">Chiến dịch</span>
-            <button type="button" class="modal-close" aria-label="Đóng" data-action="close-modal" data-modal="campaignModal">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="rce-view-toggles">
+                <button class="rce-view-btn active" title="Chia đôi" onclick="chuyenCheDoBangId('campaignSplitContainer','split',this)"><i class="fas fa-columns"></i></button>
+                <button class="rce-view-btn" title="Chỉ soạn thảo" onclick="chuyenCheDoBangId('campaignSplitContainer','editor',this)"><i class="fas fa-edit"></i></button>
+                <button class="rce-view-btn" title="Chỉ xem trước" onclick="chuyenCheDoBangId('campaignSplitContainer','preview',this)"><i class="fas fa-eye"></i></button>
+                <button class="rce-view-btn" title="Xem trước toàn màn hình" onclick="moPreviewFullscreenTu('campaignDescEditor')"><i class="fas fa-expand"></i></button>
+            </div>
+            <button type="button" class="modal-close" aria-label="Đóng" data-action="close-modal" data-modal="campaignModal"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
-            <input id="campaignId" type="hidden">
-            <div class="mf-group">
-                <label class="mf-label" for="campaignTitle">Tiêu đề <span class="req">*</span></label>
-                <input id="campaignTitle" class="mf-input" type="text" maxlength="255">
-            </div>
-            <div class="mf-row two">
-                <div class="mf-group">
-                    <label class="mf-label" for="campaignSlug">Slug</label>
-                    <input id="campaignSlug" class="mf-input" type="text" maxlength="255" placeholder="Tự tạo nếu bỏ trống">
+            <div class="rce-metadata-section">
+                <div class="rce-metadata-toggle" onclick="toggleMetadata(this)">
+                    <i class="fas fa-chevron-down"></i> Thông tin chiến dịch (Tiêu đề, Loại, Ảnh...)
                 </div>
-                <div class="mf-group">
-                    <label class="mf-label" for="campaignType">Loại sự kiện <span class="req">*</span></label>
-                    <select id="campaignType" class="mf-select"></select>
+                <div class="rce-metadata-body">
+                    <input id="campaignId" type="hidden">
+                    <div class="mf-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+                        <div class="mf-group">
+                            <label class="mf-label">Tiêu đề <span class="req">*</span></label>
+                            <input id="campaignTitle" class="mf-input" type="text" maxlength="255">
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Slug</label>
+                            <input id="campaignSlug" class="mf-input" type="text" maxlength="255" placeholder="Tự tạo nếu bỏ trống">
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Loại sự kiện <span class="req">*</span></label>
+                            <select id="campaignType" class="mf-select"></select>
+                        </div>
+                    </div>
+                    <div class="mf-group">
+                        <label class="mf-label">Ảnh đại diện</label>
+                        <input id="campaignThumbnail" type="hidden">
+                        <div class="media-upload-row">
+                            <input id="campaignThumbnailFile" class="mf-input" type="file" accept="image/*">
+                            <button type="button" class="ev-btn ev-btn-ghost" id="btnUploadCampaignImage" data-action="upload-campaign-image"><i class="fas fa-upload"></i> Tải ảnh</button>
+                        </div>
+                        <div id="campaignThumbnailPreview" class="media-preview is-empty">Chưa có ảnh</div>
+                    </div>
                 </div>
             </div>
-            <div class="mf-group">
-                <label class="mf-label" for="campaignThumbnailFile">Ảnh đại diện</label>
-                <input id="campaignThumbnail" type="hidden">
-                <div class="media-upload-row">
-                    <input id="campaignThumbnailFile" class="mf-input" type="file" accept="image/*">
-                    <button type="button" class="ev-btn ev-btn-ghost" id="btnUploadCampaignImage" data-action="upload-campaign-image">
-                        <i class="fas fa-upload"></i>
-                        Tải ảnh
-                    </button>
+            <div class="editor-split-container" id="campaignSplitContainer">
+                <div class="rce-editor-panel">
+                    <div class="rce-toolbar" id="rceToolbarCampaign"></div>
+                    <div class="rce-editor-area" id="campaignDescEditor" contenteditable="true"></div>
                 </div>
-                <div id="campaignThumbnailPreview" class="media-preview is-empty">Chưa có ảnh đại diện</div>
+                <div class="rce-preview-panel">
+                    <div class="rce-preview-wrap">
+                        <div class="rce-preview-label"><i class="fas fa-eye"></i> Xem trước mô tả chiến dịch</div>
+                        <div class="rce-preview-content" id="campaignDescPreview"></div>
+                    </div>
+                </div>
             </div>
-            <div class="mf-group">
-                <label class="mf-label" for="campaignDescription">Mô tả</label>
-                <textarea id="campaignDescription" class="mf-textarea"></textarea>
-            </div>
+            <input type="hidden" id="campaignDescription">
         </div>
         <div class="modal-footer">
             <button type="button" class="ev-btn ev-btn-ghost" data-action="close-modal" data-modal="campaignModal">Hủy</button>
-            <button type="button" class="ev-btn ev-btn-primary" id="btnSaveCampaign" data-action="save-campaign">
-                <i class="fas fa-save"></i>
-                Lưu chiến dịch
-            </button>
+            <button type="button" class="ev-btn ev-btn-primary" id="btnSaveCampaign" data-action="save-campaign"><i class="fas fa-save"></i> Lưu chiến dịch</button>
         </div>
     </div>
 </div>
 
 <div class="modal-overlay" id="sessionModal" role="dialog" aria-modal="true" aria-labelledby="sessionModalTitle">
-    <div class="modal-box modal-wide">
+    <div class="modal-box modal-box-editor">
         <div class="modal-head">
             <span class="modal-title" id="sessionModalTitle">Phiên sự kiện</span>
-            <button type="button" class="modal-close" aria-label="Đóng" data-action="close-modal" data-modal="sessionModal">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="rce-view-toggles">
+                <button class="rce-view-btn active" title="Chia đôi" onclick="chuyenCheDoBangId('sessionSplitContainer','split',this)"><i class="fas fa-columns"></i></button>
+                <button class="rce-view-btn" title="Chỉ soạn thảo" onclick="chuyenCheDoBangId('sessionSplitContainer','editor',this)"><i class="fas fa-edit"></i></button>
+                <button class="rce-view-btn" title="Chỉ xem trước" onclick="chuyenCheDoBangId('sessionSplitContainer','preview',this)"><i class="fas fa-eye"></i></button>
+                <button class="rce-view-btn" title="Xem trước toàn màn hình" onclick="moPreviewFullscreenTu('sessionContentEditor')"><i class="fas fa-expand"></i></button>
+            </div>
+            <button type="button" class="modal-close" aria-label="Đóng" data-action="close-modal" data-modal="sessionModal"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
-            <input id="sessionId" type="hidden">
-            <input id="sessionEventId" type="hidden">
-            <div class="mf-row two">
-                <div class="mf-group">
-                    <label class="mf-label" for="sessionTitle">Tên phiên</label>
-                    <input id="sessionTitle" class="mf-input" type="text" maxlength="500">
+            <div class="rce-metadata-section">
+                <div class="rce-metadata-toggle" onclick="toggleMetadata(this)">
+                    <i class="fas fa-chevron-down"></i> Thông tin phiên (Tên, Địa điểm, Thời gian, Tag, SEO...)
                 </div>
-                <div class="mf-group">
-                    <label class="mf-label" for="sessionLocation">Địa điểm <span class="req">*</span></label>
-                    <select id="sessionLocation" class="mf-select"></select>
+                <div class="rce-metadata-body">
+                    <input id="sessionId" type="hidden">
+                    <input id="sessionEventId" type="hidden">
+                    <div class="mf-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <div class="mf-group">
+                            <label class="mf-label">Tên phiên</label>
+                            <input id="sessionTitle" class="mf-input" type="text" maxlength="500">
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Địa điểm <span class="req">*</span></label>
+                            <select id="sessionLocation" class="mf-select"></select>
+                        </div>
+                    </div>
+                    <div class="mf-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+                        <div class="mf-group">
+                            <label class="mf-label">Bắt đầu <span class="req">*</span></label>
+                            <input id="sessionStart" class="mf-input" type="datetime-local">
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Kết thúc <span class="req">*</span></label>
+                            <input id="sessionEnd" class="mf-input" type="datetime-local">
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Tổng slot</label>
+                            <input id="sessionSlots" class="mf-input" type="number" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="mf-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+                        <div class="mf-group">
+                            <label class="mf-label">Nhóm quyền</label>
+                            <div id="sessionRoleChips" class="chip-grid"></div>
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Tag chuyên môn</label>
+                            <div id="sessionTagChips" class="chip-grid"></div>
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">Bài viết liên quan</label>
+                            <div id="sessionPostChips" class="chip-grid"></div>
+                        </div>
+                    </div>
+                    <div class="mf-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <div class="mf-group">
+                            <label class="mf-label">SEO title</label>
+                            <input id="sessionSeoTitle" class="mf-input" type="text">
+                        </div>
+                        <div class="mf-group">
+                            <label class="mf-label">SEO description</label>
+                            <input id="sessionSeoDescription" class="mf-input" type="text">
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="mf-row three">
-                <div class="mf-group">
-                    <label class="mf-label" for="sessionStart">Bắt đầu <span class="req">*</span></label>
-                    <input id="sessionStart" class="mf-input" type="datetime-local">
+            <div class="editor-split-container" id="sessionSplitContainer">
+                <div class="rce-editor-panel">
+                    <div class="rce-toolbar" id="rceToolbarSession"></div>
+                    <div class="rce-editor-area" id="sessionContentEditor" contenteditable="true"></div>
                 </div>
-                <div class="mf-group">
-                    <label class="mf-label" for="sessionEnd">Kết thúc <span class="req">*</span></label>
-                    <input id="sessionEnd" class="mf-input" type="datetime-local">
-                </div>
-                <div class="mf-group">
-                    <label class="mf-label" for="sessionSlots">Tổng slot</label>
-                    <input id="sessionSlots" class="mf-input" type="number" min="0" value="0">
+                <div class="rce-preview-panel">
+                    <div class="rce-preview-wrap">
+                        <div class="rce-preview-label"><i class="fas fa-eye"></i> Xem trước nội dung phiên</div>
+                        <div class="rce-preview-content" id="sessionContentPreview"></div>
+                    </div>
                 </div>
             </div>
-            <div class="mf-group">
-                <label class="mf-label" for="sessionContent">Nội dung</label>
-                <textarea id="sessionContent" class="mf-textarea"></textarea>
-            </div>
-            <div class="mf-row two">
-                <div class="mf-group">
-                    <label class="mf-label">Nhóm quyền được xem/đăng ký</label>
-                    <div id="sessionRoleChips" class="chip-grid"></div>
-                </div>
-                <div class="mf-group">
-                    <label class="mf-label">Tag chuyên môn</label>
-                    <div id="sessionTagChips" class="chip-grid"></div>
-                </div>
-            </div>
-            <div class="mf-group">
-                <label class="mf-label">Bài viết liên quan</label>
-                <div id="sessionPostChips" class="chip-grid"></div>
-            </div>
-            <div class="mf-row two">
-                <div class="mf-group">
-                    <label class="mf-label" for="sessionSeoTitle">SEO title</label>
-                    <input id="sessionSeoTitle" class="mf-input" type="text">
-                </div>
-                <div class="mf-group">
-                    <label class="mf-label" for="sessionSeoDescription">SEO description</label>
-                    <input id="sessionSeoDescription" class="mf-input" type="text">
-                </div>
-            </div>
+            <input type="hidden" id="sessionContent">
         </div>
         <div class="modal-footer">
             <button type="button" class="ev-btn ev-btn-ghost" data-action="close-modal" data-modal="sessionModal">Hủy</button>
-            <button type="button" class="ev-btn ev-btn-primary" id="btnSaveSession" data-action="save-session">
-                <i class="fas fa-save"></i>
-                Lưu phiên
-            </button>
+            <button type="button" class="ev-btn ev-btn-primary" id="btnSaveSession" data-action="save-session"><i class="fas fa-save"></i> Lưu phiên</button>
         </div>
     </div>
 </div>
@@ -2274,9 +2305,11 @@ function openCampaignCreateModal() {
     byId('campaignSlug').value = '';
     byId('campaignType').value = '';
     byId('campaignThumbnail').value = '';
-    byId('campaignDescription').value = '';
     clearFileInput('campaignThumbnailFile');
     setMediaPreview('campaignThumbnailPreview', '', 'Chưa có ảnh đại diện');
+    // Khởi tạo editor cho campaign description
+    khoiTaoEditorCampaign();
+    document.getElementById('campaignDescEditor').innerHTML = '';
     openModal('campaignModal');
 }
 
@@ -2293,9 +2326,11 @@ function openCampaignEditModal(id) {
     byId('campaignSlug').value = campaign.slug || '';
     byId('campaignType').value = campaign.eventTypeId || '';
     byId('campaignThumbnail').value = campaign.thumbnailUrl || '';
-    byId('campaignDescription').value = campaign.description || '';
     clearFileInput('campaignThumbnailFile');
     setMediaPreview('campaignThumbnailPreview', campaign.thumbnailUrl, 'Chưa có ảnh đại diện');
+    // Khởi tạo editor cho campaign description và load nội dung
+    khoiTaoEditorCampaign();
+    document.getElementById('campaignDescEditor').innerHTML = campaign.description || '';
     openModal('campaignModal');
 }
 
@@ -2309,8 +2344,11 @@ function saveCampaign() {
         return;
     }
 
+    // Đọc nội dung từ rich editor thay vì textarea
+    var descEditorEl = document.getElementById('campaignDescEditor');
+    var descriptionHtml = (descEditorEl !== null) ? descEditorEl.innerHTML.trim() : '';
     var payload = {
-        description: byId('campaignDescription').value.trim(),
+        description: descriptionHtml,
         eventTypeId: Number(typeId),
         slug: byId('campaignSlug').value.trim(),
         thumbnailUrl: byId('campaignThumbnail').value.trim(),
@@ -2369,10 +2407,12 @@ function openSessionCreateModal(campaignId) {
     byId('sessionStart').value = '';
     byId('sessionEnd').value = '';
     byId('sessionSlots').value = '0';
-    byId('sessionContent').value = '';
     byId('sessionSeoTitle').value = '';
     byId('sessionSeoDescription').value = '';
     renderSessionChips([], [], []);
+    // Khởi tạo editor cho session content
+    khoiTaoEditorSession();
+    document.getElementById('sessionContentEditor').innerHTML = '';
     openModal('sessionModal');
 }
 
@@ -2392,7 +2432,6 @@ function openSessionEditModal(id) {
     byId('sessionStart').value = toDateTimeInput(session.startTime);
     byId('sessionEnd').value = toDateTimeInput(session.endTime);
     byId('sessionSlots').value = session.totalSlots || 0;
-    byId('sessionContent').value = session.content || '';
     byId('sessionSeoTitle').value = session.seoTitle || '';
     byId('sessionSeoDescription').value = session.seoDescription || '';
 
@@ -2401,6 +2440,9 @@ function openSessionEditModal(id) {
         collectIds(session.tags || [], 'id'),
         collectIds(session.relatedPosts || [], 'id')
     );
+    // Khởi tạo editor cho session content và load nội dung
+    khoiTaoEditorSession();
+    document.getElementById('sessionContentEditor').innerHTML = session.content || '';
     openModal('sessionModal');
 }
 
@@ -2472,8 +2514,11 @@ function saveSession() {
         return;
     }
 
+    // Đọc nội dung từ rich editor thay vì textarea
+    var sessionEditorEl = document.getElementById('sessionContentEditor');
+    var sessionContentHtml = (sessionEditorEl !== null) ? sessionEditorEl.innerHTML.trim() : '';
     var payload = {
-        content: byId('sessionContent').value.trim(),
+        content: sessionContentHtml,
         endTime: end,
         eventId: Number(eventId),
         locationId: Number(locationId),
@@ -3273,6 +3318,79 @@ function handleAction(action, id, el) {
     else if (action === 'delete-location') deleteLocation(id);
 }
 
+// =========================================================================
+// RICH CONTENT EDITOR — tích hợp với campaign và session modal
+// =========================================================================
+
+// Hàm nội bộ: render toolbar HTML vào container chỉ định và gắn editor listeners
+// toolbarContainerId: ID của div toolbar, editorAreaId: ID div contenteditable, previewAreaId: ID div preview
+function khoiTaoEditorVaoContainer(toolbarContainerId, editorAreaId, previewAreaId) {
+    rceHienTaiEditorId = editorAreaId;
+    rceHienTaiPreviewId = previewAreaId || 'rceFullscreenContent';
+    var toolbarEl = document.getElementById(toolbarContainerId);
+    if (toolbarEl !== null) {
+        toolbarEl.id = 'rceToolbar';
+        khoiTaoEditorToolbar();
+        toolbarEl.id = toolbarContainerId;
+    }
+    var editorArea = document.getElementById(editorAreaId);
+    if (editorArea !== null) {
+        editorArea.removeEventListener('input', debounceCapNhatPreview);
+        editorArea.removeEventListener('paste', xuLyPasteEditor);
+        editorArea.addEventListener('input', debounceCapNhatPreview);
+        editorArea.addEventListener('paste', xuLyPasteEditor);
+        editorArea.addEventListener('keydown', function(e) {
+            if (e.ctrlKey === true && e.key === 'z') { e.preventDefault(); hoanTacEditor(); }
+            if (e.ctrlKey === true && e.key === 'y') { e.preventDefault(); lamLaiEditor(); }
+        });
+    }
+    editorUndoStack = [];
+    editorRedoStack = [];
+}
+
+// Khởi tạo editor cho campaign description (fullscreen split-view)
+function khoiTaoEditorCampaign() {
+    khoiTaoEditorVaoContainer('rceToolbarCampaign', 'campaignDescEditor', 'campaignDescPreview');
+}
+
+// Khởi tạo editor cho session content (fullscreen split-view)
+function khoiTaoEditorSession() {
+    khoiTaoEditorVaoContainer('rceToolbarSession', 'sessionContentEditor', 'sessionContentPreview');
+}
+
+// Chuyển chế độ view (split/editor/preview) cho bất kỳ split container nào
+function chuyenCheDoBangId(containerId, mode, btnEl) {
+    var container = document.getElementById(containerId);
+    if (container === null) return;
+    container.classList.remove('editor-only', 'preview-only');
+    if (mode === 'editor') container.classList.add('editor-only');
+    if (mode === 'preview') container.classList.add('preview-only');
+    // Cập nhật preview khi chuyển sang preview mode
+    if (mode === 'preview' || mode === 'split') {
+        capNhatPreview();
+    }
+    // Cập nhật trạng thái nút active trong cùng nhóm toggle
+    if (btnEl !== null && btnEl !== undefined) {
+        var parent = btnEl.parentNode;
+        var btns = parent.querySelectorAll('.rce-view-btn');
+        for (var i = 0; i < btns.length; i = i + 1) {
+            btns[i].classList.remove('active');
+        }
+        btnEl.classList.add('active');
+    }
+}
+
+// Mở preview fullscreen từ bất kỳ editor nào (truyền editorId)
+function moPreviewFullscreenTu(editorId) {
+    var editor = document.getElementById(editorId);
+    var overlay = document.getElementById('rceFullscreenPreview');
+    var content = document.getElementById('rceFullscreenContent');
+    if (editor !== null && content !== null) {
+        content.innerHTML = editor.innerHTML;
+    }
+    overlay.style.display = 'block';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     loadDictionaries(function() {
         byId('statusCode').innerHTML = statusOptions('UPCOMING');
@@ -3315,6 +3433,230 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<!-- Bộ dialog dùng chung cho Rich Content Editor (dùng chung với posts) -->
+<!-- Chỉ 1 bộ dialog duy nhất — cả campaign và session dùng chung -->
+<div id="rceDialogLink" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog">
+        <div class="rce-dialog-title"><i class="fas fa-link" style="color:#0061ff;margin-right:8px;"></i>Chèn liên kết</div>
+        <div class="mf-group"><label class="mf-label">URL</label><input type="text" id="rceLinkUrl" class="mf-input" placeholder="https://..."></div>
+        <div class="mf-group"><label class="mf-label">Văn bản hiển thị</label><input type="text" id="rceLinkText" class="mf-input" placeholder="Nhấn vào đây"></div>
+        <div class="rce-dialog-actions">
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogLink()">Hủy</button>
+            <button class="ev-btn ev-btn-primary" onclick="chenLienKet()"><i class="fas fa-check"></i> Chèn</button>
+        </div>
+    </div>
+</div>
+<!-- Dialog chèn ảnh -->
+<div id="rceDialogImage" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog">
+        <div class="rce-dialog-title"><i class="fas fa-image" style="color:#00875a;margin-right:8px;"></i>Chèn hình ảnh</div>
+        <div class="mf-group"><label class="mf-label">URL hình ảnh</label><input type="text" id="rceImageUrl" class="mf-input" placeholder="https://..."></div>
+        <div class="mf-group"><label class="mf-label">Mô tả (alt)</label><input type="text" id="rceImageAlt" class="mf-input" placeholder="Mô tả hình ảnh..."></div>
+        <div style="font-size:.75rem;color:#6c757d;margin:8px 0;">— hoặc —</div>
+        <div class="mf-group">
+            <label class="mf-label">Upload từ máy</label>
+            <div style="display:flex;gap:6px;">
+                <input class="mf-input" type="file" accept="image/*" id="rceImageFile">
+                <button class="ev-btn ev-btn-primary" type="button" onclick="uploadAnhChoEditor()"><i class="fas fa-cloud-upload-alt"></i> Tải</button>
+            </div>
+        </div>
+        <div class="rce-dialog-actions">
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogImage()">Hủy</button>
+            <button class="ev-btn ev-btn-primary" onclick="chenAnhTuUrl()"><i class="fas fa-check"></i> Chèn từ URL</button>
+        </div>
+    </div>
+</div>
+<!-- Dialog chèn bảng -->
+<div id="rceDialogTable" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog">
+        <div class="rce-dialog-title"><i class="fas fa-table" style="color:#b87800;margin-right:8px;"></i>Chèn bảng</div>
+        <div style="font-size:.82rem;color:#495057;margin-bottom:8px;">Chọn kích thước: <span id="rceTableSizeLabel">0 × 0</span></div>
+        <div class="rce-table-grid" id="rceTableGrid"></div>
+        <div class="rce-dialog-actions">
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogTable()">Hủy</button>
+        </div>
+    </div>
+</div>
+<!-- Dialog chèn video YouTube -->
+<div id="rceDialogVideo" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog">
+        <div class="rce-dialog-title"><i class="fas fa-video" style="color:#de350b;margin-right:8px;"></i>Chèn video YouTube</div>
+        <div class="mf-group"><label class="mf-label">URL video YouTube</label><input type="text" id="rceVideoUrl" class="mf-input" placeholder="https://www.youtube.com/watch?v=..."></div>
+        <div style="font-size:.72rem;color:#adb5bd;margin-top:-8px;margin-bottom:8px;">Hỗ trợ: youtube.com/watch?v=, youtu.be/, youtube.com/embed/</div>
+        <div class="rce-dialog-actions">
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogVideo()">Hủy</button>
+            <button class="ev-btn ev-btn-primary" onclick="chenVideoYoutube()"><i class="fas fa-check"></i> Chèn</button>
+        </div>
+    </div>
+</div>
+<!-- Dialog chọn màu chữ / nền -->
+<div id="rceDialogColor" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog">
+        <div class="rce-dialog-title"><i class="fas fa-palette" style="color:#0061ff;margin-right:8px;"></i><span id="rceColorTitle">Chọn màu</span></div>
+        <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin:12px 0;">
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#000000;border:1px solid #dee2e6;" onclick="apDungMau('#000000')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#434343;border:1px solid #dee2e6;" onclick="apDungMau('#434343')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#666666;border:1px solid #dee2e6;" onclick="apDungMau('#666666')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#999999;border:1px solid #dee2e6;" onclick="apDungMau('#999999')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#cccccc;border:1px solid #dee2e6;" onclick="apDungMau('#cccccc')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#eeeeee;border:1px solid #dee2e6;" onclick="apDungMau('#eeeeee')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#f3f3f3;border:1px solid #dee2e6;" onclick="apDungMau('#f3f3f3')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#ffffff;border:2px solid #dee2e6;" onclick="apDungMau('#ffffff')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#de350b;border:1px solid #dee2e6;" onclick="apDungMau('#de350b')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#ff6900;border:1px solid #dee2e6;" onclick="apDungMau('#ff6900')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#ff9800;border:1px solid #dee2e6;" onclick="apDungMau('#ff9800')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#ffeb3b;border:1px solid #dee2e6;" onclick="apDungMau('#ffeb3b')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#4caf50;border:1px solid #dee2e6;" onclick="apDungMau('#4caf50')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#0d9488;border:1px solid #dee2e6;" onclick="apDungMau('#0d9488')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#2196f3;border:1px solid #dee2e6;" onclick="apDungMau('#2196f3')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#0061ff;border:1px solid #dee2e6;" onclick="apDungMau('#0061ff')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#9c27b0;border:1px solid #dee2e6;" onclick="apDungMau('#9c27b0')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#e91e63;border:1px solid #dee2e6;" onclick="apDungMau('#e91e63')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#795548;border:1px solid #dee2e6;" onclick="apDungMau('#795548')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#1a2040;border:1px solid #dee2e6;" onclick="apDungMau('#1a2040')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#004d40;border:1px solid #dee2e6;" onclick="apDungMau('#004d40')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#1565c0;border:1px solid #dee2e6;" onclick="apDungMau('#1565c0')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#4a148c;border:1px solid #dee2e6;" onclick="apDungMau('#4a148c')"></div>
+            <div style="width:28px;height:28px;border-radius:6px;cursor:pointer;background:#b71c1c;border:1px solid #dee2e6;" onclick="apDungMau('#b71c1c')"></div>
+        </div>
+        <div class="rce-dialog-actions">
+            <button class="ev-btn ev-btn-ghost" onclick="xoaMau()"><i class="fas fa-eraser"></i> Xóa màu</button>
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogColor()">Đóng</button>
+        </div>
+    </div>
+</div>
+<!-- Dialog ký tự đặc biệt y khoa -->
+<div id="rceDialogSpecialChar" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog" style="width:480px;">
+        <div class="rce-dialog-title"><i class="fas fa-flask" style="color:#9c27b0;margin-right:8px;"></i>Ký tự đặc biệt y khoa &amp; khoa học</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0;">
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('±')">±</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('°')">°</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('µ')">µ</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('²')">²</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('³')">³</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('×')">×</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('÷')">÷</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('→')">→</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('←')">←</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('↔')">↔</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('≤')">≤</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('≥')">≥</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('≠')">≠</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('≈')">≈</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('∞')">∞</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('∑')">∑</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('√')">√</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('∆')">∆</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('π')">π</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('α')">α</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('β')">β</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('γ')">γ</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('δ')">δ</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('ε')">ε</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('λ')">λ</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('σ')">σ</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('ω')">ω</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('Ω')">Ω</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('℃')">℃</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('℉')">℉</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('‰')">‰</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('§')">§</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('©')">©</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('®')">®</button>
+            <button class="rce-char-btn" onclick="chenKyTuDacBiet('™')">™</button>
+        </div>
+        <div class="rce-dialog-actions">
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogSpecialChar()">Đóng</button>
+        </div>
+    </div>
+</div>
+<!-- Dialog hộp cảnh báo y khoa -->
+<div id="rceDialogAlert" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog">
+        <div class="rce-dialog-title"><i class="fas fa-exclamation-triangle" style="color:#ff9800;margin-right:8px;"></i>Chèn hộp cảnh báo</div>
+        <div class="mf-group">
+            <label class="mf-label">Nội dung cảnh báo</label>
+            <textarea id="rceAlertContent" class="mf-textarea" style="min-height:60px;" placeholder="Nhập nội dung cảnh báo, ghi chú..."></textarea>
+        </div>
+        <div style="font-size:.78rem;color:#6c757d;margin-bottom:8px;">Chọn loại:</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button class="ev-btn" style="background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;" onclick="chenAlertBox('info')"><i class="fas fa-info-circle"></i> Thông tin</button>
+            <button class="ev-btn" style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;" onclick="chenAlertBox('success')"><i class="fas fa-check-circle"></i> Thành công</button>
+            <button class="ev-btn" style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;" onclick="chenAlertBox('warning')"><i class="fas fa-exclamation-triangle"></i> Cảnh báo</button>
+            <button class="ev-btn" style="background:#ffebee;color:#c62828;border:1px solid #ef9a9a;" onclick="chenAlertBox('danger')"><i class="fas fa-times-circle"></i> Nguy hiểm</button>
+        </div>
+        <div class="rce-dialog-actions" style="margin-top:12px;">
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogAlert()">Hủy</button>
+        </div>
+    </div>
+</div>
+<!-- Dialog emoji -->
+<div id="rceDialogEmoji" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog" style="width:420px;">
+        <div class="rce-dialog-title"><i class="fas fa-smile" style="color:#ff9800;margin-right:8px;"></i>Biểu tượng cảm xúc</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0;max-height:200px;overflow-y:auto;">
+            <button class="rce-char-btn" onclick="chenEmoji('😀')">😀</button>
+            <button class="rce-char-btn" onclick="chenEmoji('😃')">😃</button>
+            <button class="rce-char-btn" onclick="chenEmoji('😊')">😊</button>
+            <button class="rce-char-btn" onclick="chenEmoji('😍')">😍</button>
+            <button class="rce-char-btn" onclick="chenEmoji('🤔')">🤔</button>
+            <button class="rce-char-btn" onclick="chenEmoji('😎')">😎</button>
+            <button class="rce-char-btn" onclick="chenEmoji('👍')">👍</button>
+            <button class="rce-char-btn" onclick="chenEmoji('👏')">👏</button>
+            <button class="rce-char-btn" onclick="chenEmoji('🙏')">🙏</button>
+            <button class="rce-char-btn" onclick="chenEmoji('💊')">💊</button>
+            <button class="rce-char-btn" onclick="chenEmoji('💉')">💉</button>
+            <button class="rce-char-btn" onclick="chenEmoji('🩺')">🩺</button>
+            <button class="rce-char-btn" onclick="chenEmoji('🏥')">🏥</button>
+            <button class="rce-char-btn" onclick="chenEmoji('🔬')">🔬</button>
+            <button class="rce-char-btn" onclick="chenEmoji('🧬')">🧬</button>
+            <button class="rce-char-btn" onclick="chenEmoji('⚠️')">⚠️</button>
+            <button class="rce-char-btn" onclick="chenEmoji('✅')">✅</button>
+            <button class="rce-char-btn" onclick="chenEmoji('❌')">❌</button>
+            <button class="rce-char-btn" onclick="chenEmoji('📌')">📌</button>
+            <button class="rce-char-btn" onclick="chenEmoji('💡')">💡</button>
+        </div>
+        <div class="rce-dialog-actions">
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogEmoji()">Đóng</button>
+        </div>
+    </div>
+</div>
+<!-- Dialog tìm & thay thế -->
+<div id="rceDialogFindReplace" class="rce-dialog-overlay" style="display:none;">
+    <div class="rce-dialog">
+        <div class="rce-dialog-title"><i class="fas fa-search" style="color:#0061ff;margin-right:8px;"></i>Tìm &amp; Thay thế</div>
+        <div class="mf-group">
+            <label class="mf-label">Tìm</label>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="rceFindText" class="mf-input" placeholder="Nhập từ cần tìm...">
+                <button class="ev-btn ev-btn-primary" onclick="timKiemTrongEditor()" style="flex-shrink:0;"><i class="fas fa-search"></i></button>
+            </div>
+            <div id="rceFindCount" style="font-size:.72rem;color:#6c757d;margin-top:4px;"></div>
+        </div>
+        <div class="mf-group">
+            <label class="mf-label">Thay thế bằng</label>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="rceReplaceText" class="mf-input" placeholder="Thay thế bằng...">
+                <button class="ev-btn ev-btn-primary" onclick="thayTheTatCa()" style="flex-shrink:0;"><i class="fas fa-exchange-alt"></i> Tất cả</button>
+            </div>
+        </div>
+        <div class="rce-dialog-actions">
+            <button class="ev-btn ev-btn-ghost" onclick="dongDialogFindReplace()">Đóng</button>
+        </div>
+    </div>
+</div>
+<!-- Fullscreen preview overlay dùng chung -->
+<div id="rceFullscreenPreview" class="rce-fullscreen-overlay">
+    <div class="rce-fullscreen-bar">
+        <div style="font-size:.9rem;font-weight:700;color:#1a2040;"><i class="fas fa-eye" style="color:#0061ff;margin-right:8px;"></i>Xem trước nội dung</div>
+        <button class="ev-btn ev-btn-ghost" onclick="dongPreviewFullscreen()"><i class="fas fa-times"></i> Đóng</button>
+    </div>
+    <div class="rce-fullscreen-body">
+        <div class="rce-preview-content" id="rceFullscreenContent"></div>
+    </div>
+</div>
 
 </div>
 </th:block>
