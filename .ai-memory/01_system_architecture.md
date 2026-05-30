@@ -1,5 +1,5 @@
 # System Architecture
-> Last updated: 2026-05-28
+> Last updated: 2026-05-31
 > Status: BOOTSTRAPPED
 
 ## Tech Stack

@@ -65,7 +65,8 @@
       "Bash(findstr /i \"java\")",
       "Bash(findstr \"java\")",
       "Bash(taskkill *)",
-      "Bash(findstr /n \"campaignModal sessionModal modal-box modal-head modal-body modal-footer sessionStatus sessionSeoTitle sessionSeoDescription sessionPostChips sessionRoleChips sessionTagChips campaignThumbnail btnUploadCampaign campaignSlug campaignType\")"
+      "Bash(findstr /n \"campaignModal sessionModal modal-box modal-head modal-body modal-footer sessionStatus sessionSeoTitle sessionSeoDescription sessionPostChips sessionRoleChips sessionTagChips campaignThumbnail btnUploadCampaign campaignSlug campaignType\")",
+      "Bash(sed 's/.java//')"
     ]
   }
 }

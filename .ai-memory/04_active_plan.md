@@ -1,6 +1,6 @@
 # Active Plan - Phase 4: Rich Content Editor + Live Preview
-> Last updated: 2026-05-30
-> Status: IN_PROGRESS
+> Last updated: 2026-05-31
+> Status: DONE (tach file dung chung, tich hop admin posts + events)
 > Planner persisted before implementation: YES
 > Planner model: Opus 4.6
 

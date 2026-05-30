@@ -1,5 +1,5 @@
 # Events & Registration
-> Last updated: 2026-05-28
+> Last updated: 2026-05-31
 > Source files: `controller/view/EventViewController.java`, `controller/api/ApiEventController.java`, `controller/api/ApiCommentController.java`, `controller/api/ApiPublicSpeakerAgendaController.java`, `controller/api/ApiAdminEventController.java`, `service/itf/IEventService.java`, `service/itf/IAdminEventService.java`, `service/impl/EventServiceImpl.java`, `service/impl/AdminEventServiceImpl.java`, `service/impl/SpeakerAgendaServiceImpl.java`, `service/support/EventStatusDisplayPolicy.java`, `service/support/NguCanhNguoiDung.java`, `service/support/NguCanhNguoiDungFactory.java`, `utils/ImagePathUtil.java`, `utils/PagingUtil.java`, `entities/Event.java`, `entities/CtEvent.java`, `entities/CtEventRegistration.java`
 > Confidence: HIGH
 
@@ -145,6 +145,13 @@ Entity da duoc dong bo voi `FileKhoiTaoCSDL.sql`:
 - `SpeakerAgendaServiceImpl` validate agenda `endTime > startTime`, speakerIds ton tai va speaker thuoc dung session.
 - Public locked session khong tra speaker/agenda/related posts/attendee summary trai quyen; public stats/list dung chung helper parse time va tra 400 voi filter ngay thang sai.
 - Verify cuoi: `bash mvnw -q -DskipTests compile`, `bash mvnw -q test`, Node parse inline script `admin/events.html`, `git diff --check`.
+
+### Rich Content Editor Integration (2026-05-31)
+
+- `admin/events.html` (3663 dong) tich hop Rich Content Editor cho campaign description va session content: thay textarea bang contenteditable div + toolbar WYSIWYG.
+- Editor la file dung chung `rich-content-editor.js` (1017 dong) + `rich-content-editor.css` (196 dong), include tu `admin_layout.html`.
+- Khoi tao bang `khoiTaoEditorCampaign()`, `khoiTaoEditorSession()`, `khoiTaoEditorVaoContainer()`.
+- Editor ho tro: Bold/Italic/Underline/Strikethrough, H2/H3, List UL/OL, Blockquote, Link, Image (URL + upload), Table picker 6x6, Code block, HR, Color/Background, Font/Size, Line Height, Video YouTube embed, Alert box, Emoji, Find/Replace, Fullscreen, Print, Word count, Undo/Redo, Live Preview, Paste handler strip formatting.
 
 ## Ghi chu
 

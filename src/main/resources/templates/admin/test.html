@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sơ Đồ Tư Duy - Nhóm Cộng Hưởng</title>
+    <style>
+        :root {
+            --bg-color: #0f172a; /* Nền tối để làm nổi bật đường line sáng */
+            --center-color: #ffffff;
+            --text-color: #ffffff;
+            --branch-color-1: #1f4a9b; /* Xanh dương đậm từ logo */
+            --branch-color-2: #2fa79c; /* Xanh ngọc từ logo */
+            --branch-color-3: #f7a02e; /* Cam từ logo */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Ẩn cuộn, tạo không gian vô tận giả lập */
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            cursor: grab;
+        }
+
+        body:active {
+            cursor: grabbing;
+        }
+
+        /* Vùng chứa sơ đồ */
+        #canvas-container {
+            position: absolute;
+            width: 3000px; /* Không gian rộng để kéo thả */
+            height: 3000px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+        }
+
+        /* Thẻ Canvas để vẽ đường nối */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Xuyên qua canvas để click được div bên dưới */
+            z-index: 1;
+        }
+
+        /* Các Node (Thẻ) */
+        .node {
+            position: absolute;
+            z-index: 2;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            user-select: none;
+        }
+
+        .node:active {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        /* Nút Trung tâm (Logo) */
+        .node-center {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 40px rgba(47, 167, 156, 0.5), inset 0 0 20px rgba(31, 74, 155, 0.2);
+            border: 3px solid var(--branch-color-2);
+            width: 280px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .node-center img {
+            max-width: 180px;
+            height: auto;
+            margin-bottom: 15px;
+            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.2));
+        }
+
+        .node-center h1 {
+            color: var(--branch-color-1);
+            margin: 0;
+            font-size: 28px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .node-center .slogan {
+            font-size: 13px;
+            color: #555;
+            margin-top: 10px;
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        /* Nút Nhánh Chính và Phụ */
+        .node-main {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+
+        /* Nút Biểu tượng (Lá) */
+        .node-leaf {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .node-leaf:hover {
+            transform: translate(-50%, -50%) scale(1.3);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255,255,255,0.5);
+            z-index: 20;
+        }
+
+        /* Tooltip cho các biểu tượng */
+        .node-leaf::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 13px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            font-weight: normal;
+            z-index: 1000;
+        }
+
+        .node-leaf:hover::after {
+            opacity: 1;
+        }
+
+        /* Màu viền rực rỡ cho các nhóm */
+        .team-tv { border-color: #a29bfe; color: #a29bfe; } /* Nhánh gốc Thành viên */
+        .team-nt { border-color: #ffd700; color: #ffd700; } /* Nguyên tắc - Vàng */
+        .team-mt { border-color: #ff4757; color: #ff4757; } /* Mục tiêu - Đỏ */
+        .team-m1 { border-color: #ff9ff3; } /* Thanh */
+        .team-m2 { border-color: #ff6b6b; } /* Thái */
+        .team-m3 { border-color: #48dbfb; } /* Tuấn H */
+        .team-m4 { border-color: #1dd1a1; } /* Sang */
+        .team-m5 { border-color: #ff9f43; } /* Phát */
+        .team-m6 { border-color: #00d2d3; } /* Tuấn Đ */
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translate(-50%, -50%) translateY(0px); }
+            50% { transform: translate(-50%, -50%) translateY(-10px); }
+            100% { transform: translate(-50%, -50%) translateY(0px); }
+        }
+
+        /* Nút hướng dẫn */
+        #hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.1);
+            color: #aaa;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="hint"></div>
+
+    <div id="canvas-container">
+        <canvas id="connections"></canvas>
+    </div>
+
+<script>
+    // --- 1. DỮ LIỆU SƠ ĐỒ ĐƯỢC CẤU TRÚC LẠI (THÊM CẤP BẬC ĐỆ QUY) ---
+    const mindmapData = {
+        id: "center",
+        type: "center",
+        title: "CỘNG HƯỞNG",
+        slogan: "Vững bước đi lên, cân mọi deadline!",
+        image: "aaa.png",
+        children: [
+            // NHÁNH 1: NHÁNH MẸ THÀNH VIÊN
+            {
+                id: "tv", type: "main", text: "THÀNH VIÊN NHÓM", class: "team-tv",
+                children: [
+                    {
+                        id: "m1", type: "sub", text: "Hoàng Thị Mỹ Thanh", class: "team-m1",
+                        children: [
+                            { icon: "💻", tooltip: "CN Phần Mềm" },
+                            { icon: "🦀", tooltip: "Quê: Cà Mau" },
+                            { icon: "😇", tooltip: "Tính: Hiền hòa, Thân thiện" },
+                            { icon: "⚡", tooltip: "Sở trường: Nhanh nhẹn" },
+                            { icon: "🗣️", tooltip: "Sở trường: Giao tiếp tốt" }
+                        ]
+                    },
+                    {
+                        id: "m2", type: "sub", text: "Trần Nguyễn Quốc Thái", class: "team-m2",
+                        children: [
+                            { icon: "💻", tooltip: "CN Phần Mềm" },
+                            { icon: "🍉", tooltip: "Quê: Long An" },
+                            { icon: "🎸", tooltip: "Tính: Nổi loạn" },
+                            { icon: "❤️", tooltip: "Tính: Tình cảm" },
+                            { icon: "🎮", tooltip: "Sở trường: Giỏi chơi game" }
+                        ]
+                    },
+                    {
+                        id: "m3", type: "sub", text: "Huỳnh Anh Tuấn", class: "team-m3",
+                        children: [
+                            { icon: "💻", tooltip: "CN Phần Mềm" },
+                            { icon: "🎋", tooltip: "Quê: Quảng Ngãi" },
+                            { icon: "😆", tooltip: "Tính: Hòa đồng, Vui vẻ" },
+                            { icon: "🤷‍♂️", tooltip: "Sở trường: Không có" }
+                        ]
+                    },
+                    {
+                        id: "m4", type: "sub", text: "Trương Minh Sang", class: "team-m4",
+                        children: [
+                            { icon: "💻", tooltip: "CN Phần Mềm" },
+                            { icon: "🥋", tooltip: "Quê: Bình Định" },
+                            { icon: "🤝", tooltip: "Tính: Hòa đồng, Thân thiện" },
+                            { icon: "🤷", tooltip: "Sở trường: Không có" }
+                        ]
+                    },
+                    {
+                        id: "m5", type: "sub", text: "Huỳnh Tấn Phát", class: "team-m5",
+                        children: [
+                            { icon: "💻", tooltip: "CN Phần Mềm" },
+                            { icon: "🥥", tooltip: "Quê: Bến Tre" },
+                            { icon: "🌋", tooltip: "Tính: Nóng nảy" },
+                            { icon: "🫂", tooltip: "Tính: Hòa đồng" },
+                            { icon: "🧠", tooltip: "Sở trường: Tư duy" }
+                        ]
+                    },
+                    {
+                        id: "m6", type: "sub", text: "Đoàn Anh Tuấn", class: "team-m6",
+                        children: [
+                            { icon: "📢", tooltip: "QH Công Chúng (PR)" },
+                            { icon: "🏖️", tooltip: "Quê: BR-Vũng Tàu" },
+                            { icon: "⏱️", tooltip: "Tính: Đúng giờ, Cẩn thận" },
+                            { icon: "🧩", tooltip: "Sở trường: Thích nghi nhanh" }
+                        ]
+                    }
+                ]
+            },
+            // NHÁNH 2: NGUYÊN TẮC
+            {
+                id: "nt", type: "main", text: "NGUYÊN TẮC HOẠT ĐỘNG", class: "team-nt",
+                children: [
+                    { icon: "⏰", tooltip: "Đúng giờ" },
+                    { icon: "⚖️", tooltip: "Trách nhiệm" },
+                    { icon: "🤫", tooltip: "Tôn trọng & Lắng nghe" },
+                    { icon: "🤝", tooltip: "Đoàn kết hỗ trợ" }
+                ]
+            },
+            // NHÁNH 3: MỤC TIÊU
+            {
+                id: "mt", type: "main", text: "MỤC TIÊU NHÓM", class: "team-mt",
+                children: [
+                    { icon: "💯", tooltip: "Hoàn thành xuất sắc" },
+                    { icon: "🏆", tooltip: "Đạt thành tích cao" },
+                    { icon: "💪", tooltip: "Cân mọi Deadline" },
+                    { icon: "📈", tooltip: "Cùng nhau phát triển" }
+                ]
+            }
+        ]
+    };
+
+    const container = document.getElementById('canvas-container');
+    const canvas = document.getElementById('connections');
+    const ctx = canvas.getContext('2d');
+    
+    let nodesMap = {}; 
+    let domElements = {}; 
+    
+    const CENTER_X = 1500;
+    // Dịch toàn bộ cây xuống dưới để chừa không gian phía trên cho tán cây
+    const CENTER_Y = 1800;
+
+    // --- 2. THUẬT TOÁN ĐỆ QUY KHỞI TẠO VỊ TRÍ ---
+    function initMindmap() {
+        canvas.width = 3000;
+        canvas.height = 3000;
+
+        // Tạo Node Trung tâm
+        createDOMNode(mindmapData.id, 'node-center floating', CENTER_X, CENTER_Y, `
+            <img src="/uploads/test/test.png" alt="Logo" onerror="this.src='https://via.placeholder.com/150/ffffff/1f4a9b?text=CỘNG+HƯỞNG'">
+            <h1>${mindmapData.title}</h1>
+            <div class="slogan">"${mindmapData.slogan}"</div>
+        `);
+        nodesMap[mindmapData.id] = { x: CENTER_X, y: CENTER_Y, type: 'center' };
+
+        // Bắt đầu toả các nhánh cấp 1 (3 nhánh)
+        const l1Radius = 350; 
+        const l1Spread = 360 * (Math.PI / 180); // Toả đều 360 độ quanh tâm
+        // Sửa góc bắt đầu (baseAngle) thành -Math.PI / 2 (-90 độ) để nhánh đầu tiên (Thành viên) hướng thẳng lên trên
+        buildNodes(mindmapData.id, CENTER_X, CENTER_Y, -Math.PI / 2, l1Spread, l1Radius, mindmapData.children, "");
+
+        drawConnections();
+        setupPanAndZoom();
+    }
+
+    // Hàm đệ quy tạo Node và tính toán Toạ độ toả tròn
+    function buildNodes(parentId, parentX, parentY, baseAngle, spreadAngle, radius, children, parentClass) {
+        const count = children.length;
+        // Kiểm tra xem vòng tròn phân bổ là đường khép kín (360 độ) hay cung tròn (mở)
+        const isFullCircle = spreadAngle >= (359 * Math.PI / 180);
+        const startAngle = isFullCircle ? baseAngle : baseAngle - (spreadAngle / 2);
+
+        children.forEach((child, i) => {
+            // Tính toán góc cho nhánh hiện tại
+            let angle;
+            if (isFullCircle) {
+                angle = baseAngle + (i * (Math.PI * 2 / count));
+            } else {
+                angle = count > 1 ? startAngle + (i * (spreadAngle / (count - 1))) : baseAngle;
+            }
+            
+            const x = parentX + radius * Math.cos(angle);
+            const y = parentY + radius * Math.sin(angle);
+
+            if (child.icon) {
+                // Nếu là nhánh Lá (Biểu tượng)
+                const leafId = `${parentId}_leaf_${i}`;
+                createDOMNode(leafId, `node-leaf ${parentClass}`, x, y, child.icon, child.tooltip);
+                nodesMap[leafId] = { x, y, parentId: parentId, type: 'leaf' };
+            } else {
+                // Nếu là nhánh chính (Main) hoặc nhánh phụ (Sub)
+                const isMain = child.type === 'main';
+                createDOMNode(child.id, `node-main ${isMain ? 'floating' : ''} ${child.class}`, x, y, child.text);
+                nodesMap[child.id] = { x, y, parentId: parentId, type: child.type };
+
+                if (child.children) {
+                    // Cấu hình không gian cho cấp bậc tiếp theo dựa vào việc nhánh con là Lá hay là Sub-branch
+                    const nextIsSubNode = child.children[0] && !child.children[0].icon;
+                    
+                    // Điều chỉnh bán kính và góc xòe để tạo dáng cây dựng đứng đẹp mắt
+                    const nextRadius = nextIsSubNode ? 500 : 160; 
+                    const nextSpread = nextIsSubNode ? (180 * Math.PI / 180) : (140 * Math.PI / 180);
+                    
+                    buildNodes(child.id, x, y, angle, nextSpread, nextRadius, child.children, child.class);
+                }
+            }
+        });
+    }
+
+    // Tạo HTML Element
+    function createDOMNode(id, className, x, y, innerHTML, tooltip = "") {
+        const el = document.createElement('div');
+        el.id = id;
+        el.className = `node ${className}`;
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        el.innerHTML = innerHTML;
+        if(tooltip) el.setAttribute('data-tooltip', tooltip);
+        
+        makeDraggable(el, id);
+        
+        container.appendChild(el);
+        domElements[id] = el;
+    }
+
+    // --- 3. VẼ ĐƯỜNG KẾT NỐI THEO TỪNG CẤP BẬC ---
+    function drawConnections() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        function drawCurve(x1, y1, x2, y2, nodeType) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            
+            let cp1x, cp1y, cp2x, cp2y;
+            
+            if (nodeType === 'leaf') {
+                // Lá kết nối cứng cáp hơn một chút
+                cp1x = x1 + (x2 - x1) * 0.5;
+                cp1y = y1 + (y2 - y1) * 0.1;
+                cp2x = x1 + (x2 - x1) * 0.5;
+                cp2y = y2 - (y2 - y1) * 0.1;
+            } else {
+                // Nhánh chính/phụ bẻ cong phong cách sóng biển
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                cp1x = x1 + dx * 0.3 - dy * 0.2;
+                cp1y = y1 + dy * 0.3 + dx * 0.2;
+                cp2x = x2 - dx * 0.3 - dy * 0.2;
+                cp2y = y2 - dy * 0.3 + dx * 0.2;
+            }
+
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+            
+            let gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+            if (nodeType === 'leaf') {
+                gradient.addColorStop(0, 'rgba(47, 167, 156, 0.6)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)');
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+            } else if (nodeType === 'sub') {
+                gradient.addColorStop(0, '#2fa79c');
+                gradient.addColorStop(1, 'rgba(31, 74, 155, 0.8)');
+                ctx.lineWidth = 4;
+                ctx.setLineDash([]);
+                ctx.shadowColor = '#2fa79c';
+                ctx.shadowBlur = 5;
+            } else {
+                gradient.addColorStop(0, '#1f4a9b');
+                gradient.addColorStop(0.5, '#2fa79c');
+                gradient.addColorStop(1, '#f7a02e');
+                ctx.lineWidth = 6;
+                ctx.setLineDash([]);
+                ctx.shadowColor = '#2fa79c';
+                ctx.shadowBlur = 10;
+            }
+
+            ctx.strokeStyle = gradient;
+            ctx.stroke();
+            ctx.shadowBlur = 0; 
+        }
+
+        for (let id in nodesMap) {
+            if (id === 'center') continue;
+            const node = nodesMap[id];
+            const parent = nodesMap[node.parentId];
+            
+            if(parent) {
+                drawCurve(parent.x, parent.y, node.x, node.y, node.type);
+            }
+        }
+    }
+
+    // --- 4. LOGIC KÉO THẢ NÂNG CẤP (KÉO MẸ THÌ CON ĐI THEO) ---
+    // Đệ quy dịch chuyển tất cả nhánh con
+    function moveChildren(parentId, dx, dy) {
+        for (let childId in nodesMap) {
+            if (nodesMap[childId].parentId === parentId) {
+                nodesMap[childId].x += dx;
+                nodesMap[childId].y += dy;
+                if (domElements[childId]) {
+                    domElements[childId].style.left = `${nodesMap[childId].x}px`;
+                    domElements[childId].style.top = `${nodesMap[childId].y}px`;
+                }
+                moveChildren(childId, dx, dy);
+            }
+        }
+    }
+
+    function makeDraggable(el, id) {
+        let isDragging = false;
+        
+        el.addEventListener('mousedown', (e) => {
+            e.stopPropagation(); 
+            isDragging = true;
+            el.style.animation = 'none'; 
+            el.style.zIndex = 100;
+            
+            let startX = e.clientX;
+            let startY = e.clientY;
+
+            function onMouseMove(eMove) {
+                if (!isDragging) return;
+                
+                const dx = eMove.clientX - startX;
+                const dy = eMove.clientY - startY;
+                
+                // Dịch chuyển nhánh đang chọn
+                nodesMap[id].x += dx;
+                nodesMap[id].y += dy;
+                el.style.left = `${nodesMap[id].x}px`;
+                el.style.top = `${nodesMap[id].y}px`;
+                
+                // Dịch chuyển đệ quy toàn bộ nhánh con, cháu bên dưới nó
+                moveChildren(id, dx, dy);
+                
+                requestAnimationFrame(drawConnections);
+                
+                startX = eMove.clientX;
+                startY = eMove.clientY;
+            }
+
+            function onMouseUp() {
+                isDragging = false;
+                el.style.zIndex = nodesMap[id].type === 'center' ? 10 : (nodesMap[id].type === 'leaf' ? 20 : 2);
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    }
+
+    // --- 5. PAN BẢN ĐỒ (DI CHUYỂN TOÀN MÀN HÌNH) ---
+    function setupPanAndZoom() {
+        let isPan = false;
+        let startX, startY;
+        let scrollLeft, scrollTop;
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.tagName !== 'DIV' || e.target.id === 'hint') return;
+            isPan = true;
+            startX = e.pageX - document.documentElement.offsetLeft;
+            startY = e.pageY - document.documentElement.offsetTop;
+            scrollLeft = window.scrollX;
+            scrollTop = window.scrollY;
+            document.body.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isPan) return;
+            e.preventDefault();
+            const x = e.pageX - document.documentElement.offsetLeft;
+            const y = e.pageY - document.documentElement.offsetTop;
+            const walkX = (x - startX) * 1.5;
+            const walkY = (y - startY) * 1.5;
+            window.scrollTo(scrollLeft - walkX, scrollTop - walkY);
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPan = false;
+            document.body.style.cursor = 'grab';
+        });
+        
+        // Tính toán tọa độ trung tâm thực tế của toàn bộ cái cây
+        // Đỉnh cây nằm ở khoảng Y = 790, đáy ở khoảng Y = 2310, Tâm dọc của cây là 1550
+        const treeCenterY = 1550;
+        
+        window.scrollTo(
+            (document.documentElement.scrollWidth - window.innerWidth) / 2,
+            treeCenterY - window.innerHeight / 2
+        );
+    }
+
+    window.onload = () => {
+        initMindmap();
+    };
+    
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(drawConnections);
+    });
+
+</script>
+</body>
+</html>

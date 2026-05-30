@@ -1,0 +1,196 @@
+/* static/css/rich-content-editor.css */
+/* Rich Content Editor — CSS dùng chung cho mọi trang admin cần soạn thảo nội dung */
+/* Tách ra từ admin/posts.html để tái sử dụng ở posts, events, ... */
+
+/* === MODAL EDITOR FULLSCREEN === */
+.modal-box-editor {
+    max-width: 98vw;
+    width: 98vw;
+    height: 95vh;
+    max-height: 95vh;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+}
+.modal-box-editor .modal-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+.modal-box-editor .modal-foot {
+    flex-shrink: 0;
+}
+
+/* === SPLIT VIEW LAYOUT === */
+.editor-split-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+}
+.editor-split-container.editor-only .rce-preview-panel { display: none; }
+.editor-split-container.editor-only .rce-editor-panel { grid-column: 1 / -1; }
+.editor-split-container.preview-only .rce-editor-panel { display: none; }
+.editor-split-container.preview-only .rce-preview-panel { grid-column: 1 / -1; }
+.rce-editor-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid #e9ecef;
+}
+.rce-preview-panel {
+    overflow-y: auto;
+    background: #fafbfc;
+}
+
+/* === TOOLBAR === */
+.rce-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9ff;
+    flex-shrink: 0;
+}
+.rce-toolbar-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #495057;
+    cursor: pointer;
+    font-size: .82rem;
+    transition: all .12s;
+}
+.rce-toolbar-btn:hover { background: #e8f0fe; color: #0061ff; }
+.rce-toolbar-btn.active { background: #0061ff; color: #fff; }
+.rce-toolbar-sep { width: 1px; height: 20px; background: #dee2e6; margin: 0 4px; flex-shrink: 0; }
+.rce-toolbar-group { display: flex; gap: 2px; }
+.rce-toolbar-select { padding: 4px 6px; border: 1px solid #dee2e6; border-radius: 6px; font-size: .75rem; color: #495057; background: #fff; cursor: pointer; outline: none; font-family: inherit; max-width: 110px; }
+.rce-toolbar-select:focus { border-color: #0061ff; }
+.rce-toolbar-select-sm { max-width: 68px; }
+.rce-word-count { font-size: .68rem; color: #adb5bd; padding: 4px 8px; white-space: nowrap; margin-left: auto; }
+.rce-find-hl { background: #ffeb3b; color: #000; padding: 1px 2px; border-radius: 2px; }
+
+/* === EDITOR AREA === */
+.rce-editor-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    outline: none;
+    font-size: .93rem;
+    line-height: 1.75;
+    color: #1a2040;
+    min-height: 200px;
+}
+.rce-editor-area:focus { background: #fff; }
+.rce-editor-area:empty::before {
+    content: 'Bắt đầu soạn nội dung...';
+    color: #adb5bd;
+    font-style: italic;
+}
+.rce-editor-area h1 { font-size: 1.6rem; font-weight: 800; color: #1a2040; margin: 24px 0 12px; line-height: 1.3; }
+.rce-editor-area h2 { font-size: 1.3rem; font-weight: 800; color: #1a2040; margin: 20px 0 8px; }
+.rce-editor-area h3 { font-size: 1.08rem; font-weight: 700; color: #1a2040; margin: 16px 0 6px; }
+.rce-editor-area h4 { font-size: .95rem; font-weight: 700; color: #374151; margin: 14px 0 6px; }
+.rce-editor-area p { margin-bottom: 14px; }
+.rce-editor-area a { color: #0061ff; text-decoration: underline; }
+.rce-editor-area em { font-style: italic; }
+.rce-editor-area blockquote { border-left: 4px solid #0d9488; background: #f0fdfa; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0; font-style: italic; color: #134e4a; }
+.rce-editor-area figure { margin: 20px 0; }
+.rce-editor-area figure img { width: 100%; border-radius: 8px; }
+.rce-editor-area figcaption { text-align: center; font-size: .78rem; color: #6c757d; margin-top: 8px; font-style: italic; }
+.rce-editor-area section { display: block; }
+.rce-editor-area table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+.rce-editor-area th, .rce-editor-area td { border: 1px solid #dee2e6; padding: 8px 12px; }
+.rce-editor-area th { background: #f8f9ff; font-weight: 700; }
+.rce-editor-area pre { background: #1e293b; color: #e2e8f0; padding: 14px 18px; border-radius: 8px; overflow-x: auto; font-family: 'Consolas', monospace; font-size: .85rem; margin: 14px 0; }
+.rce-editor-area img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
+.rce-editor-area iframe { max-width: 100%; border-radius: 8px; }
+
+/* === PREVIEW PANEL === */
+.rce-preview-wrap { padding: 24px; }
+.rce-preview-label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #adb5bd; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.rce-preview-content {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 28px 32px;
+    min-height: 300px;
+}
+.rce-preview-content h1 { font-size: 1.6rem; font-weight: 800; color: #1a2040; margin: 28px 0 14px; line-height: 1.3; }
+.rce-preview-content h2 { font-size: 1.3rem; font-weight: 800; color: #1a2040; margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #f0f2fa; }
+.rce-preview-content h3 { font-size: 1.08rem; font-weight: 700; color: #1a2040; margin: 24px 0 8px; }
+.rce-preview-content h4 { font-size: .95rem; font-weight: 700; color: #374151; margin: 18px 0 8px; }
+.rce-preview-content p { margin-bottom: 16px; font-size: .96rem; line-height: 1.85; color: #374151; }
+.rce-preview-content ul, .rce-preview-content ol { padding-left: 20px; margin-bottom: 16px; }
+.rce-preview-content li { margin-bottom: 6px; font-size: .96rem; line-height: 1.85; color: #374151; }
+.rce-preview-content strong { color: #1a2040; }
+.rce-preview-content em { font-style: italic; }
+.rce-preview-content blockquote { border-left: 4px solid #0d9488; background: #f0fdfa; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; font-style: italic; color: #134e4a; }
+.rce-preview-content figure { margin: 20px 0; }
+.rce-preview-content figure img { width: 100%; border-radius: 8px; }
+.rce-preview-content figcaption { text-align: center; font-size: .78rem; color: #6c757d; margin-top: 8px; font-style: italic; }
+.rce-preview-content section { display: block; }
+.rce-preview-content table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: .88rem; }
+.rce-preview-content th { background: #1e293b; color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+.rce-preview-content td { padding: 9px 14px; border-bottom: 1px solid #f0f2fa; }
+.rce-preview-content tr:nth-child(even) td { background: #fafbfc; }
+.rce-preview-content pre { background: #1e293b; color: #e2e8f0; padding: 14px 18px; border-radius: 8px; overflow-x: auto; font-family: 'Consolas', monospace; font-size: .85rem; margin: 14px 0; }
+.rce-preview-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
+.rce-preview-content a { color: #0061ff; text-decoration: underline; }
+.rce-preview-content hr { border: none; border-top: 2px solid #f0f2fa; margin: 24px 0; }
+.rce-preview-content iframe { max-width: 100%; border-radius: 8px; }
+
+/* === DIALOGS === */
+.rce-dialog-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.3); z-index: 10; display: flex; align-items: center; justify-content: center; }
+.rce-dialog { background: #fff; border-radius: 12px; padding: 20px; width: 400px; max-width: 90%; box-shadow: 0 12px 32px rgba(0,0,0,.2); }
+.rce-dialog-title { font-size: .9rem; font-weight: 800; color: #1a2040; margin-bottom: 14px; }
+.rce-dialog .mf-group { margin-bottom: 12px; }
+.rce-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+/* === TABLE PICKER === */
+.rce-table-grid { display: grid; grid-template-columns: repeat(6, 28px); gap: 2px; margin: 12px 0; }
+.rce-table-cell { width: 28px; height: 28px; border: 1px solid #dee2e6; border-radius: 3px; cursor: pointer; transition: all .1s; }
+.rce-table-cell:hover, .rce-table-cell.highlight { background: #0061ff; border-color: #0061ff; }
+
+/* === NÚT KÝ TỰ ĐẶC BIỆT === */
+.rce-char-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; font-size: 1.05rem; cursor: pointer; transition: all .12s; }
+.rce-char-btn:hover { background: #0061ff; color: #fff; border-color: #0061ff; }
+
+/* === FULLSCREEN PREVIEW OVERLAY === */
+.rce-fullscreen-overlay { position: fixed; inset: 0; z-index: 2000; background: #fff; overflow-y: auto; display: none; }
+.rce-fullscreen-bar { position: sticky; top: 0; z-index: 1; background: #fff; border-bottom: 1px solid #e9ecef; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+.rce-fullscreen-body { max-width: 780px; margin: 0 auto; padding: 40px 24px; }
+
+/* === VIEW TOGGLE BUTTONS === */
+.rce-view-toggles { display: flex; gap: 4px; margin-left: auto; margin-right: 12px; }
+.rce-view-btn { padding: 4px 10px; border: 1px solid #e9ecef; border-radius: 6px; background: #fff; font-size: .72rem; font-weight: 600; color: #6c757d; cursor: pointer; transition: all .12s; }
+.rce-view-btn:hover { border-color: #0061ff; color: #0061ff; }
+.rce-view-btn.active { background: #0061ff; border-color: #0061ff; color: #fff; }
+
+/* === METADATA SECTION === */
+.rce-metadata-section { border-top: 1px solid #e9ecef; padding: 16px 24px; background: #fafbfc; flex-shrink: 0; overflow-y: auto; max-height: 45vh; }
+.rce-metadata-toggle { display: flex; align-items: center; gap: 8px; font-size: .78rem; font-weight: 700; color: #6c757d; cursor: pointer; margin-bottom: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.rce-metadata-toggle i { transition: transform .2s; font-size: .7rem; }
+.rce-metadata-toggle.collapsed i { transform: rotate(-90deg); }
+.rce-metadata-body { display: block; }
+.rce-metadata-body.collapsed { display: none; }
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .modal-box-editor { width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; border-radius: 0; }
+    .editor-split-container { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    .rce-editor-panel { border-right: none; border-bottom: 1px solid #e9ecef; }
+    .rce-view-toggles { display: none; }
+    .rce-metadata-section .mf-row[style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns: 1fr; }
+}
