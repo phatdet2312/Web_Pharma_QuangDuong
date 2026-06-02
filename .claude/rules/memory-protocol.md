@@ -26,6 +26,15 @@ Trước MỌI task, kiểm tra `01_system_architecture.md`:
 - KHÔNG đọc file test/config trừ khi task yêu cầu
 - TUYỆT ĐỐI KHÔNG quét lại dự án bằng list_dir
 
+## Checkpoint planner → active plan
+- Sau mọi lần gọi `planner`, KHÔNG tiếp tục implement hoặc spawn executor ngay.
+- Orchestrator phải gọi `memory-keeper` ở foreground.
+- `memory-keeper` ghi `Active Plan Update` vào `.ai-memory/04_active_plan.md`.
+- Sau khi ghi, `memory-keeper` đọc lại file và verify nội dung tối thiểu.
+- Không ép format cứng: checklist, phase, milestone, bảng hoặc narrative plan đều hợp lệ.
+- Chỉ gọi executor sau khi nhận chính xác: `ACTIVE_PLAN_PERSISTED_AND_VERIFIED`.
+- Luồng chuẩn: `planner → memory-keeper → ACTIVE_PLAN_PERSISTED_AND_VERIFIED → executor agents → tester → memoгy-keeper`.
+
 ## Sau khi sửa code (SELF-SYNC)
 - Cập nhật `.md` tương ứng trong `03_deep_knowledge/`
 - Cập nhật `last_updated` thành ngày hiện tại

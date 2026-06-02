@@ -105,8 +105,8 @@ KHÔNG tự làm nếu có agent chuyên biệt phù hợp.
  
 ### Quy tắc điều phối
  1. **Task đơn giản** (1 agent đủ): delegate trực tiếp, nhận kết quả, báo cáo user
- 2. **Task phức tạp** (cần nhiều agent): gọi **planner** TRƯỚC để phân rã, rồi delegate tuần tự
-   - VD: "Thêm chức năng thanh toán" → planner → db-specialist → api-designer → implementer → tester → memory-keeper
+ 2. **Task phức tạp** (cần nhiều agent): gọi **planner** TRƯỚC để phân rã. Sau checkpoint mới delegate theo dependency; chỉ chạy song song khi các agent không sửa cùng file
+   - VD: "Thêm chức năng thanh toán" planner → memory-keeper ghi + đọc lại `.ai-memory/04_active_plan.md` → trả `ACTIVE_PLAN_PERSISTED_AND_VERIFIED` → db-specialist → api-designer → implementer → tester → memory-keeper sync kết quả cuối
  3. **Task mơ hồ** (chưa rõ cần gì): gọi **explorer** tìm context TRƯỚC, rồi quyết định agent tiếp theo
  4. **Sau mỗi task hoàn thành**: gọi **memory-keeper** cập nhật `.ai-memory/`
  5. **KHÔNG gọi 2 agent cùng lúc** cho cùng 1 file — tuần tự để tránh xung đột
@@ -114,9 +114,22 @@ KHÔNG tự làm nếu có agent chuyên biệt phù hợp.
  7. **Ưu tiên Opus** CHỈ khi cần suy nghĩ sâu (kiến trúc, bảo mật, kế hoạch)
  8. **Khi user sửa lại output**: tự trigger /reflect TRƯỚC khi làm tiếp
 
+### Checkpoint planner → active plan
+ Sau MỌI lần gọi `planner`:
+ 1. Orchestrator PHẢI gọi `memory-keeper` ở foreground.
+ 2. `memory-keeper` ghi output planner vào `.ai-memory/04_active_plan.md`.
+ 3. `memory-keeper` đọc lại file để verify.
+ 4. Chỉ tiếp tục gọi executor khi nhận: `ACTIVE_PLAN_PERSISTED_AND_VERIFIED`
+ Không coi việc `planner` trả output là đủ. `memory-keeper` PHẢI chạy foreground và trả đúng checkpoint trên.
+ Nếu chưa có xác nhận trên:
+ - KHÔNG gọi `db-specialist`
+ - KHÔNG gọi `api-designer`
+ - KHÔNG gọi `implementer`
+ - KHÔNG gọi `tester`
+
 ### Luồng mẫu cho task phổ biến
  **"Thêm API mới":**
-  planner → db-specialist (nếu cần entity) → api-designer → implementer → tester
+  planner → memory-keeper → trả `ACTIVE_PLAN_PERSISTED_AND_VERIFIED` → db-specialist (nếu cần entity) → api-designer → implementer → tester
    → nếu test FAIL: /reflect ghi learning → implementer fix → tester (tối đa 3 vòng)
    → nếu test PASS: memory-keeper
  
