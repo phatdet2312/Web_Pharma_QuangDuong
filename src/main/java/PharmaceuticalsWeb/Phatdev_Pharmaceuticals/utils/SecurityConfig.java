@@ -87,11 +87,11 @@ public class SecurityConfig {
                                                                 "/oauth2/**", "/api/auth/**", "/search", "/error")
                                                 .permitAll()
 
-                                                // MODULE 3: Trang bài viết và sự kiện public (ai cũng xem được)
+                                                // Trang bài viết và sự kiện public (ai cũng xem được)
                                                 .requestMatchers("/posts", "/posts/**", "/events", "/events/**")
                                                 .permitAll()
 
-                                                // MODULE 3: API public cho bài viết và sự kiện
+                                                // API public cho bài viết, sự kiện, bình luận
                                                 .requestMatchers("/api/posts", "/api/posts/**",
                                                                 "/api/events", "/api/events/**",
                                                                 "/api/comments/posts/**",
@@ -99,24 +99,12 @@ public class SecurityConfig {
                                                                 "/api/comments/reaction-types")
                                                 .permitAll()
 
-                                                .requestMatchers("/warforge/**")
-                                                .hasAnyRole("USER", "EMPLOYEE", "ADMIN", "SUPERADMIN")
-
-                                        
-                                                // TRANG QUẢN TRỊ
-                                                .requestMatchers("/admin/users/**")
-                                                .hasAnyRole("EMPLOYEE", "ADMIN", "SUPERADMIN")// quản lý user (phân quyền + khóa tài khoản)
-                                                
-                                                .requestMatchers("/admin/**")
-                                                .hasAnyRole("EMPLOYEE", "ADMIN", "SUPERADMIN")
-
-                                                // API
-                                                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPERADMIN")
-                                                // Hồ sơ cá nhân — mọi user đã xác thực đều truy cập được
-                                                .requestMatchers("/api/profile/**")
-                                                .hasAnyRole("USER", "EMPLOYEE", "ADMIN", "SUPERADMIN")
-                                                .requestMatchers("/api/**")
-                                                .hasAnyRole("USER", "EMPLOYEE", "ADMIN", "SUPERADMIN")
+                                                // PHÂN QUYỀN ĐỘNG: Mọi route admin và API đều chỉ cần xác thực.
+                                                // Quyền cụ thể do PermissionInterceptor kiểm tra từ DB.
+                                                .requestMatchers("/admin/**").authenticated()
+                                                .requestMatchers("/api/admin/**").authenticated()
+                                                .requestMatchers("/api/profile/**").authenticated()
+                                                .requestMatchers("/api/**").authenticated()
 
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form

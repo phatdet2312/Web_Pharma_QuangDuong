@@ -120,24 +120,41 @@
             white-space: nowrap;
         }
 
-        /* Nút Biểu tượng (Lá) */
+        /* Nút Biểu tượng (Lá) - ĐÃ CHỈNH SỬA KÍCH THƯỚC LỚN HƠN */
         .node-leaf {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(5px);
             border: 1px solid rgba(255,255,255,0.15);
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            /* Tăng kích thước khung chứa */
+            width: 90px;
+            height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
+            overflow: hidden; /* Cắt phần ảnh bị thừa ra khỏi hình tròn */
+            padding: 0;
+        }
+
+        /* Thêm style cho thẻ img bên trong node-leaf */
+        .node-leaf img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Đảm bảo ảnh lấp đầy hình tròn, không méo */
+            border-radius: 50%;
+        }
+
+        /* Style cho emoji hiển thị nếu ảnh bị lỗi hoặc chưa tải lên (fallback) */
+        .node-leaf span {
+            font-size: 54px;
+            line-height: 1;
         }
 
         .node-leaf:hover {
-            transform: translate(-50%, -50%) scale(1.3);
+            /* Giảm scale một chút vì icon gốc đã to */
+            transform: translate(-50%, -50%) scale(1.15);
             background: rgba(255, 255, 255, 0.2);
             border-color: rgba(255,255,255,0.5);
             z-index: 20;
@@ -147,14 +164,14 @@
         .node-leaf::after {
             content: attr(data-tooltip);
             position: absolute;
-            bottom: -35px;
+            bottom: -45px; /* Điều chỉnh vị trí tooltip xuống thấp hơn do icon to hơn */
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.9);
             color: white;
-            padding: 6px 12px;
+            padding: 8px 15px;
             border-radius: 5px;
-            font-size: 13px;
+            font-size: 14px;
             white-space: nowrap;
             opacity: 0;
             pointer-events: none;
@@ -229,80 +246,82 @@
                     {
                         id: "m1", type: "sub", text: "Hoàng Thị Mỹ Thanh", class: "team-m1",
                         children: [
-                            { icon: "💻", tooltip: "CN Phần Mềm" },
-                            { icon: "🦀", tooltip: "Quê: Cà Mau" },
-                            { icon: "😇", tooltip: "Tính: Hiền hòa, Thân thiện" },
-                            { icon: "⚡", tooltip: "Sở trường: Nhanh nhẹn" },
-                            { icon: "🗣️", tooltip: "Sở trường: Giao tiếp tốt" }
+                            { image: "/uploads/test/HoangThiMyThanh/ChuyenNganh.jpg", fallback: "💻", tooltip: "CN Phần Mềm" },
+                            { image: "/uploads/test/HoangThiMyThanh/QueQuan.jpg", fallback: "🦀", tooltip: "Quê: Cà Mau" },
+                            { image: "/uploads/test/HoangThiMyThanh/TiinhCach.jpg", fallback: "😇", tooltip: "Tính: Hiền hòa, Thân thiện" },
+                            { image: "/uploads/test/HoangThiMyThanh/SoTruong1.jpg", fallback: "⚡", tooltip: "Sở trường: Nhanh nhẹn" },
+                            { image: "/uploads/giaotiep.png", fallback: "🗣️", tooltip: "Sở trường: Giao tiếp tốt" }
                         ]
                     },
-                    {
+                    { 
                         id: "m2", type: "sub", text: "Trần Nguyễn Quốc Thái", class: "team-m2",
                         children: [
-                            { icon: "💻", tooltip: "CN Phần Mềm" },
-                            { icon: "🍉", tooltip: "Quê: Long An" },
-                            { icon: "🎸", tooltip: "Tính: Nổi loạn" },
-                            { icon: "❤️", tooltip: "Tính: Tình cảm" },
-                            { icon: "🎮", tooltip: "Sở trường: Giỏi chơi game" }
+                            { image: "/uploads/test/TranNguyenQuocThai/ChuyenNganh.jpg", fallback: "💻", tooltip: "CN Phần Mềm" },
+                            { image: "/uploads/test/TranNguyenQuocThai/QueQuan.jpg", fallback: "🍉", tooltip: "Quê: Long An" },
+                            { image: "/uploads/test/TranNguyenQuocThai/TinhCach1.jpg", fallback: "🎸", tooltip: "Tính: Nổi loạn" },
+                            { image: "/uploads/tinhcam.png", fallback: "❤️", tooltip: "Tính: Tình cảm" },
+                            { image: "/uploads/test/TranNguyenQuocThai/SoTruong.jpg", fallback: "🎮", tooltip: "Sở trường: Giỏi chơi game" }
                         ]
                     },
                     {
                         id: "m3", type: "sub", text: "Huỳnh Anh Tuấn", class: "team-m3",
                         children: [
-                            { icon: "💻", tooltip: "CN Phần Mềm" },
-                            { icon: "🎋", tooltip: "Quê: Quảng Ngãi" },
-                            { icon: "😆", tooltip: "Tính: Hòa đồng, Vui vẻ" },
-                            { icon: "🤷‍♂️", tooltip: "Sở trường: Không có" }
+                            { image: "/uploads/test/HuynhAnhTuan/ChuyenNganh.jpg", fallback: "💻", tooltip: "CN Phần Mềm" },
+                            { image: "/uploads/test/HuynhAnhTuan/QueQuan.jpg", fallback: "🎋", tooltip: "Quê: Quảng Ngãi" },
+                            { image: "/uploads/test/HuynhAnhTuan/TinhCach.jpg", fallback: "😆", tooltip: "Tính: Hòa đồng, Vui vẻ" },
+                            { image: "/uploads/test/HuynhAnhTuan/SoTruong.jpg", fallback: "🤷‍♂️", tooltip: "Sở trường: Không có" }
                         ]
-                    },
-                    {
+                    },  
+                    { 
                         id: "m4", type: "sub", text: "Trương Minh Sang", class: "team-m4",
                         children: [
-                            { icon: "💻", tooltip: "CN Phần Mềm" },
-                            { icon: "🥋", tooltip: "Quê: Bình Định" },
-                            { icon: "🤝", tooltip: "Tính: Hòa đồng, Thân thiện" },
-                            { icon: "🤷", tooltip: "Sở trường: Không có" }
+                            { image: "/uploads/test/MinhSang/ChuyenNganh.jpg", fallback: "💻", tooltip: "CN Phần Mềm" },
+                            { image: "/uploads/test/MinhSang/QueQuan.jpg", fallback: "🥋", tooltip: "Quê: Bình Định" },
+                            { image: "/uploads/test/MinhSang/TinhCach.jpg", fallback: "🤝", tooltip: "Tính: Hòa đồng, Thân thiện" },
+                            { image: "/uploads/test/MinhSang/SoTruong.jpg", fallback: "🤷", tooltip: "Sở trường: Không có" }
                         ]
-                    },
+                    },   
                     {
                         id: "m5", type: "sub", text: "Huỳnh Tấn Phát", class: "team-m5",
                         children: [
-                            { icon: "💻", tooltip: "CN Phần Mềm" },
-                            { icon: "🥥", tooltip: "Quê: Bến Tre" },
-                            { icon: "🌋", tooltip: "Tính: Nóng nảy" },
-                            { icon: "🫂", tooltip: "Tính: Hòa đồng" },
-                            { icon: "🧠", tooltip: "Sở trường: Tư duy" }
-                        ]
-                    },
-                    {
+                            { image: "/uploads/test/HuynhTanPhat/ChuyenNganh.jpg", fallback: "💻", tooltip: "CN Phần Mềm" },
+                            { image: "/uploads/test/HuynhTanPhat/QueQuan.jpg", fallback: "🥥", tooltip: "Quê: Bến Tre" },
+                            { image: "/uploads/test/HuynhTanPhat/TinhCach1.jpg", fallback: "🌋", tooltip: "Tính: Nóng nảy" },
+                            { image: "/uploads/test/HuynhTanPhat/TinhCach2.jpg", fallback: "🫂", tooltip: "Tính: Hòa đồng" },
+                            { image: "/uploads/test/HuynhTanPhat/SoTruong.jpg", fallback: "🧠", tooltip: "Sở trường: Tư duy" }
+                        ]  
+                    },   
+                    { 
                         id: "m6", type: "sub", text: "Đoàn Anh Tuấn", class: "team-m6",
                         children: [
-                            { icon: "📢", tooltip: "QH Công Chúng (PR)" },
-                            { icon: "🏖️", tooltip: "Quê: BR-Vũng Tàu" },
-                            { icon: "⏱️", tooltip: "Tính: Đúng giờ, Cẩn thận" },
-                            { icon: "🧩", tooltip: "Sở trường: Thích nghi nhanh" }
+                            { image: "/uploads/test/DoanAnhTuan/ChuyenNganh.jpg", fallback: "📢", tooltip: "QH Công Chúng (PR)" },
+                            { image: "/uploads/test/DoanAnhTuan/QueQuan.jpg", fallback: "🏖️", tooltip: "Quê: BR-Vũng Tàu" },
+                            { image: "/uploads/test/DoanAnhTuan/TinhCach1.jpg", fallback: "⏱️", tooltip: "Tính: Hoà đồng" },
+                            { image: "/uploads/test/DoanAnhTuan/TinhCach2.jpg", fallback: "⏱️", tooltip: "Tính: Đúng giờ" },
+                            { image: "/uploads/test/DoanAnhTuan/TinhCach3.jpg", fallback: "⏱️", tooltip: "Tính: Cẩn thận" },
+                            { image: "/uploads/test/DoanAnhTuan/SoTruong.jpg", fallback: "🧩", tooltip: "Sở trường: Thích nghi nhanh" }
                         ]
-                    }
+                    }  
                 ]
             },
             // NHÁNH 2: NGUYÊN TẮC
             {
                 id: "nt", type: "main", text: "NGUYÊN TẮC HOẠT ĐỘNG", class: "team-nt",
                 children: [
-                    { icon: "⏰", tooltip: "Đúng giờ" },
-                    { icon: "⚖️", tooltip: "Trách nhiệm" },
-                    { icon: "🤫", tooltip: "Tôn trọng & Lắng nghe" },
-                    { icon: "🤝", tooltip: "Đoàn kết hỗ trợ" }
+                    { image: "/uploads/time.png", fallback: "⏰", tooltip: "Đúng giờ" },
+                    { image: "/uploads/duty.png", fallback: "⚖️", tooltip: "Trách nhiệm" },
+                    { image: "/uploads/listen.png", fallback: "🤫", tooltip: "Tôn trọng & Lắng nghe" },
+                    { image: "/uploads/team.png", fallback: "🤝", tooltip: "Đoàn kết hỗ trợ" }
                 ]
             },
             // NHÁNH 3: MỤC TIÊU
             {
                 id: "mt", type: "main", text: "MỤC TIÊU NHÓM", class: "team-mt",
                 children: [
-                    { icon: "💯", tooltip: "Hoàn thành xuất sắc" },
-                    { icon: "🏆", tooltip: "Đạt thành tích cao" },
-                    { icon: "💪", tooltip: "Cân mọi Deadline" },
-                    { icon: "📈", tooltip: "Cùng nhau phát triển" }
+                    { image: "/uploads/100.png", fallback: "💯", tooltip: "Hoàn thành xuất sắc" },
+                    { image: "/uploads/cup.png", fallback: "🏆", tooltip: "Đạt thành tích cao" },
+                    { image: "/uploads/deadline.png", fallback: "💪", tooltip: "Cân mọi Deadline" },
+                    { image: "/uploads/grow.png", fallback: "📈", tooltip: "Cùng nhau phát triển" }
                 ]
             }
         ]
@@ -361,10 +380,16 @@
             const x = parentX + radius * Math.cos(angle);
             const y = parentY + radius * Math.sin(angle);
 
-            if (child.icon) {
-                // Nếu là nhánh Lá (Biểu tượng)
+            if (child.image || child.icon) {
+                // Nếu là nhánh Lá (Biểu tượng bằng Hình ảnh)
                 const leafId = `${parentId}_leaf_${i}`;
-                createDOMNode(leafId, `node-leaf ${parentClass}`, x, y, child.icon, child.tooltip);
+                const imgSrc = child.image || child.icon;
+                const fallbackText = child.fallback || child.icon || "!";
+                
+                // HTML trả về thẻ img. Nếu đường dẫn ảnh chưa tồn tại sẽ tự động chạy onerror và thế chỗ bằng nội dung fallback
+                const imgHTML = `<img src="${imgSrc}" alt="${child.tooltip}" onerror="this.outerHTML='<span>${fallbackText}</span>'">`;
+                
+                createDOMNode(leafId, `node-leaf ${parentClass}`, x, y, imgHTML, child.tooltip);
                 nodesMap[leafId] = { x, y, parentId: parentId, type: 'leaf' };
             } else {
                 // Nếu là nhánh chính (Main) hoặc nhánh phụ (Sub)
@@ -374,7 +399,7 @@
 
                 if (child.children) {
                     // Cấu hình không gian cho cấp bậc tiếp theo dựa vào việc nhánh con là Lá hay là Sub-branch
-                    const nextIsSubNode = child.children[0] && !child.children[0].icon;
+                    const nextIsSubNode = child.children[0] && !(child.children[0].image || child.children[0].icon);
                     
                     // Điều chỉnh bán kính và góc xòe để tạo dáng cây dựng đứng đẹp mắt
                     const nextRadius = nextIsSubNode ? 500 : 160; 

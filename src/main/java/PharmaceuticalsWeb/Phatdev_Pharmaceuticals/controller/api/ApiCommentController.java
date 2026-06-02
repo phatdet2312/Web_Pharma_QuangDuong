@@ -1,6 +1,7 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/controller/api/ApiCommentController.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EditContentRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LikeRequest;
@@ -115,6 +116,7 @@ public class ApiCommentController {
     }
 
     /** Gửi bình luận cho bài viết */
+    @RequirePermission("USER_COMMENT")
     @PostMapping("/posts/{postId}")
     public ApiResponse<CmtResponse> guiCmtBaiViet(
             @PathVariable Long postId,
@@ -131,6 +133,7 @@ public class ApiCommentController {
     }
 
     /** Gửi bình luận cho sự kiện */
+    @RequirePermission("USER_COMMENT")
     @PostMapping("/events/{eventId}")
     public ApiResponse<CmtResponse> guiCmtSuKien(
             @PathVariable Long eventId,
@@ -151,6 +154,7 @@ public class ApiCommentController {
     }
 
     /** Gửi phản hồi (reply) */
+    @RequirePermission("USER_COMMENT")
     @PostMapping("/reply")
     public ApiResponse<PhCmtResponse> guiPhCmt(
             @Valid @RequestBody ReplyRequest request,
@@ -165,6 +169,7 @@ public class ApiCommentController {
     }
 
     /** Hiệu đính nội dung văn bản của một Bình luận gốc bởi chính Tác giả. */
+    @RequirePermission("USER_COMMENT")
     @PutMapping("/{cmtId}")
     public ApiResponse<CmtResponse> capNhatCmt(
             @PathVariable Long cmtId,
@@ -194,6 +199,7 @@ public class ApiCommentController {
     }
 
     /** Hiệu đính nội dung văn bản của một Phản hồi lồng cấp bởi chính Tác giả. */
+    @RequirePermission("USER_COMMENT")
     @PutMapping("/reply/{phCmtId}")
     public ApiResponse<PhCmtResponse> capNhatPhCmt(
             @PathVariable Long phCmtId,
@@ -237,6 +243,7 @@ public class ApiCommentController {
     }
 
     /** Thêm / đổi reaction trên comment gốc */
+    @RequirePermission("USER_REACT")
     @PostMapping("/like/cmt")
     public ApiResponse<Void> thichCmt(
             @Valid @RequestBody LikeRequest request,
@@ -251,6 +258,7 @@ public class ApiCommentController {
     }
 
     /** Thêm / đổi reaction trên reply */
+    @RequirePermission("USER_REACT")
     @PostMapping("/like/reply")
     public ApiResponse<Void> thichPhCmt(
             @Valid @RequestBody LikeRequest request,

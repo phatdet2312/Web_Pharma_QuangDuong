@@ -75,7 +75,7 @@ Orchestrator (phiên chính) đọc AGENTS.md → quyết định delegate qua `
 **ANALYST agents (`default_permissions = ":read-only"`)** — trả decision trong output, KHÔNG tự ghi:
 - architect, planner, deep-reviewer, adversarial-critic, reviewer, security-auditor, performance-analyst, explorer, debugger
 - Khi có decision → orchestrator → memory-keeper ghi vào deep knowledge / Architecture Decisions
-- Riêng planner: Task Breakdown / Active Plan Update phải được persist vào `.ai-memory/04_active_plan.md` trước khi gọi executor
+- Riêng planner: Task Breakdown / Active Plan Update phải được memory-keeper persist + đọc lại verify `.ai-memory/04_active_plan.md` trước khi gọi executor
 
 **EXECUTOR agents (kế thừa profile `workspace-secure` của phiên chính)** — có quyền sửa file:
 - implementer, tester, refactorer, db-specialist, api-designer, doc-writer, config-manager, memory-keeper
@@ -87,10 +87,10 @@ Orchestrator (phiên chính) đọc AGENTS.md → quyết định delegate qua `
 2. Orchestrator delegate qua `/agent <name>` cho subagent phù hợp
 3. Subagent chạy trong thread riêng → không ô nhiễm context chính
 4. Subagent trả kết quả → orchestrator tổng hợp báo cáo user
-5. Nếu subagent là `planner` → persist `.ai-memory/04_active_plan.md` trước khi gọi executor
+5. Nếu subagent là `planner` → gọi memory-keeper foreground → chỉ gọi executor sau `ACTIVE_PLAN_PERSISTED_AND_VERIFIED`
 
 ## Luồng mẫu
-- **"Thêm API mới"**: planner → memory-keeper (persist `04_active_plan.md`) → db-specialist → api-designer → implementer → tester → memory-keeper
+- **"Thêm API mới"**: planner → memory-keeper → `ACTIVE_PLAN_PERSISTED_AND_VERIFIED` → db-specialist → api-designer → implementer → tester → memory-keeper
 - **"Sửa bug"**: explorer → debugger → implementer (thực hiện fix) → tester → memory-keeper
 - **"Review module X"** (two-tier):
   ```

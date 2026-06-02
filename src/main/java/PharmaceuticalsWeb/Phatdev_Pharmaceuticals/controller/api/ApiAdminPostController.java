@@ -2,6 +2,7 @@
 
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.BulkActionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CategoryRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.PostRequest;
@@ -59,12 +60,14 @@ public class ApiAdminPostController {
     private final IUserService userService;
 
     /** Thống kê admin (tổng, nháp, gated, downloads...) */
+    @RequirePermission("POST_VIEW")
     @GetMapping("/stats")
     public ApiResponse<PostStatsResponse> layThongKeAdmin() {
         return ApiResponse.thanhCong(adminPostService.layThongKeAdmin(), "Lấy thống kê thành công");
     }
 
     /** Danh sách bài viết với lọc/phân trang + date range + sort */
+    @RequirePermission("POST_VIEW")
     @GetMapping
     public ApiResponse<Page<PostResponse>> layDanhSach(
             @RequestParam(required = false) String keyword,
@@ -85,6 +88,7 @@ public class ApiAdminPostController {
     }
 
     /** Tạo bài viết mới */
+    @RequirePermission("POST_CREATE")
     @PostMapping
     public ApiResponse<PostResponse> taoBaiViet(
             @Valid @RequestBody PostRequest request,
@@ -96,6 +100,7 @@ public class ApiAdminPostController {
     }
 
     /** Cập nhật bài viết */
+    @RequirePermission("POST_EDIT")
     @PutMapping("/{postId}")
     public ApiResponse<PostResponse> capNhatBaiViet(
             @PathVariable Long postId,
@@ -106,6 +111,7 @@ public class ApiAdminPostController {
     }
 
     /** Xóa bài viết */
+    @RequirePermission("POST_DELETE")
     @DeleteMapping("/{postId}")
     public ApiResponse<Void> xoaBaiViet(@PathVariable Long postId) {
         adminPostService.xoaBaiViet(postId);
@@ -113,6 +119,7 @@ public class ApiAdminPostController {
     }
 
     /** Lấy chi tiết bài viết theo ID (admin, bao gồm cả nháp) */
+    @RequirePermission("POST_VIEW")
     @GetMapping("/{postId}")
     public ApiResponse<PostResponse> layChiTiet(@PathVariable Long postId) {
         PostResponse post = adminPostService.layChiTietBaiViet(postId);
@@ -120,6 +127,7 @@ public class ApiAdminPostController {
     }
 
     /** Upload ảnh thumbnail bài viết */
+    @RequirePermission("POST_EDIT")
     @PostMapping("/upload-thumbnail")
     public ApiResponse<AdminPostMediaResponse> uploadThumbnail(@RequestParam("file") MultipartFile file) {
         AdminPostMediaResponse result = adminPostService.uploadAnhBaiViet(file);
@@ -127,6 +135,7 @@ public class ApiAdminPostController {
     }
 
     /** Bật/tắt xuất bản (toggle) */
+    @RequirePermission("POST_EDIT")
     @PatchMapping("/{postId}/publish")
     public ApiResponse<PostResponse> doiTrangThaiXuatBan(
             @PathVariable Long postId,
@@ -137,6 +146,7 @@ public class ApiAdminPostController {
     }
 
     /** Bật/tắt bài viết nổi bật */
+    @RequirePermission("POST_EDIT")
     @PatchMapping("/{postId}/featured")
     public ApiResponse<PostResponse> doiTrangThaiFeatured(
             @PathVariable Long postId,
@@ -146,6 +156,7 @@ public class ApiAdminPostController {
     }
 
     /** Lấy danh mục từ điển cho frontend (roles, ...) */
+    @RequirePermission("POST_VIEW")
     @GetMapping("/dictionaries")
     public ApiResponse<AdminPostDictionaryResponse> layTuDien() {
         return ApiResponse.thanhCong(adminPostService.layDanhMucTuDien(), "Lấy từ điển thành công");
@@ -154,6 +165,7 @@ public class ApiAdminPostController {
     // === BULK ACTIONS ===
 
     /** Đổi trạng thái xuất bản hàng loạt */
+    @RequirePermission("POST_EDIT")
     @PatchMapping("/bulk/publish")
     public ApiResponse<Void> doiTrangThaiNhieu(@Valid @RequestBody BulkActionRequest request) {
         adminPostService.doiTrangThaiXuatBanNhieu(request);
@@ -161,6 +173,7 @@ public class ApiAdminPostController {
     }
 
     /** Xóa hàng loạt bài viết */
+    @RequirePermission("POST_DELETE")
     @DeleteMapping("/bulk")
     public ApiResponse<Void> xoaNhieu(@Valid @RequestBody BulkActionRequest request) {
         adminPostService.xoaNhieuBaiViet(request);
@@ -169,16 +182,19 @@ public class ApiAdminPostController {
 
     // === CRUD DANH MỤC ===
 
+    @RequirePermission("POST_MANAGE_CATEGORY")
     @GetMapping("/categories")
     public ApiResponse<List<CategoryResponse>> layDanhMuc() {
         return ApiResponse.thanhCong(adminPostService.layTatCaDanhMuc(), "Lấy danh mục thành công");
     }
 
+    @RequirePermission("POST_MANAGE_CATEGORY")
     @PostMapping("/categories")
     public ApiResponse<CategoryResponse> taoDanhMuc(@Valid @RequestBody CategoryRequest request) {
         return ApiResponse.thanhCong(adminPostService.taoDanhMuc(request), "Tạo danh mục thành công");
     }
 
+    @RequirePermission("POST_MANAGE_CATEGORY")
     @PutMapping("/categories/{id}")
     public ApiResponse<CategoryResponse> capNhatDanhMuc(
             @PathVariable Integer id,
@@ -186,6 +202,7 @@ public class ApiAdminPostController {
         return ApiResponse.thanhCong(adminPostService.capNhatDanhMuc(id, request), "Cập nhật danh mục thành công");
     }
 
+    @RequirePermission("POST_MANAGE_CATEGORY")
     @DeleteMapping("/categories/{id}")
     public ApiResponse<Void> xoaDanhMuc(@PathVariable Integer id) {
         adminPostService.xoaDanhMuc(id);
@@ -194,16 +211,19 @@ public class ApiAdminPostController {
 
     // === CRUD TAG ===
 
+    @RequirePermission("POST_MANAGE_TAG")
     @GetMapping("/tags")
     public ApiResponse<List<TagResponse>> layTag() {
         return ApiResponse.thanhCong(adminPostService.layTatCaTag(), "Lấy tags thành công");
     }
 
+    @RequirePermission("POST_MANAGE_TAG")
     @PostMapping("/tags")
     public ApiResponse<TagResponse> taoTag(@Valid @RequestBody TagRequest request) {
         return ApiResponse.thanhCong(adminPostService.taoTag(request), "Tạo tag thành công");
     }
 
+    @RequirePermission("POST_MANAGE_TAG")
     @PutMapping("/tags/{id}")
     public ApiResponse<TagResponse> capNhatTag(
             @PathVariable Long id,
@@ -211,6 +231,7 @@ public class ApiAdminPostController {
         return ApiResponse.thanhCong(adminPostService.capNhatTag(id, request), "Cập nhật tag thành công");
     }
 
+    @RequirePermission("POST_MANAGE_TAG")
     @DeleteMapping("/tags/{id}")
     public ApiResponse<Void> xoaTag(@PathVariable Long id) {
         adminPostService.xoaTag(id);
@@ -220,12 +241,14 @@ public class ApiAdminPostController {
     // === QUẢN LÝ HÌNH ẢNH GALLERY ===
 
     /** Lấy danh sách ảnh gallery của bài viết */
+    @RequirePermission("POST_EDIT")
     @GetMapping("/{postId}/images")
     public ApiResponse<List<PostImageResponse>> layAnhGallery(@PathVariable Long postId) {
         return ApiResponse.thanhCong(adminPostService.layAnhCuaBaiViet(postId), "Lấy ảnh gallery thành công");
     }
 
     /** Upload ảnh vào gallery bài viết */
+    @RequirePermission("POST_EDIT")
     @PostMapping("/{postId}/images")
     public ApiResponse<PostImageResponse> uploadAnhGallery(
             @PathVariable Long postId,
@@ -235,6 +258,7 @@ public class ApiAdminPostController {
     }
 
     /** Xóa ảnh khỏi gallery bài viết */
+    @RequirePermission("POST_EDIT")
     @DeleteMapping("/{postId}/images/{imageId}")
     public ApiResponse<Void> xoaAnhGallery(
             @PathVariable Long postId,
@@ -244,6 +268,7 @@ public class ApiAdminPostController {
     }
 
     /** Đổi thứ tự hiển thị ảnh trong gallery */
+    @RequirePermission("POST_EDIT")
     @PatchMapping("/{postId}/images/reorder")
     public ApiResponse<Void> doiThuTuAnh(
             @PathVariable Long postId,
@@ -255,12 +280,14 @@ public class ApiAdminPostController {
     // === QUẢN LÝ FILE ĐÍNH KÈM ===
 
     /** Lấy danh sách file đính kèm của bài viết */
+    @RequirePermission("POST_EDIT")
     @GetMapping("/{postId}/files")
     public ApiResponse<List<PostFileResponse>> layFileDinhKem(@PathVariable Long postId) {
         return ApiResponse.thanhCong(adminPostService.layFileCuaBaiViet(postId), "Lấy file đính kèm thành công");
     }
 
     /** Upload file đính kèm cho bài viết */
+    @RequirePermission("POST_EDIT")
     @PostMapping("/{postId}/files")
     public ApiResponse<PostFileResponse> uploadFileDinhKem(
             @PathVariable Long postId,
@@ -270,6 +297,7 @@ public class ApiAdminPostController {
     }
 
     /** Xóa file đính kèm của bài viết */
+    @RequirePermission("POST_EDIT")
     @DeleteMapping("/{postId}/files/{fileId}")
     public ApiResponse<Void> xoaFileDinhKem(
             @PathVariable Long postId,
@@ -281,6 +309,7 @@ public class ApiAdminPostController {
     // === BÌNH LUẬN / REACTIONS / SỰ KIỆN LIÊN KẾT ===
 
     /** Lấy bình luận preview của bài viết (phân trang) */
+    @RequirePermission("POST_VIEW")
     @GetMapping("/{postId}/comments")
     public ApiResponse<Page<PostCommentPreviewResponse>> layCmtPreview(
             @PathVariable Long postId,
@@ -293,6 +322,7 @@ public class ApiAdminPostController {
     }
 
     /** Lấy reactions chi tiết (grouped by type) */
+    @RequirePermission("POST_VIEW")
     @GetMapping("/{postId}/reactions")
     public ApiResponse<List<PostReactionSummary>> layReactions(@PathVariable Long postId) {
         return ApiResponse.thanhCong(adminPostService.layReactionsCuaBaiViet(postId),
@@ -300,6 +330,7 @@ public class ApiAdminPostController {
     }
 
     /** Lấy danh sách sự kiện liên kết với bài viết */
+    @RequirePermission("POST_EDIT")
     @GetMapping("/{postId}/events")
     public ApiResponse<List<PostLinkedEventResponse>> laySuKienLienKet(@PathVariable Long postId) {
         return ApiResponse.thanhCong(adminPostService.laySuKienLienKet(postId),
@@ -307,6 +338,7 @@ public class ApiAdminPostController {
     }
 
     /** Liên kết bài viết với buổi sự kiện */
+    @RequirePermission("POST_EDIT")
     @PostMapping("/{postId}/events")
     public ApiResponse<Void> lienKetSuKien(
             @PathVariable Long postId,
@@ -320,6 +352,7 @@ public class ApiAdminPostController {
     }
 
     /** Xóa liên kết bài viết - sự kiện */
+    @RequirePermission("POST_EDIT")
     @DeleteMapping("/{postId}/events/{ctEventId}")
     public ApiResponse<Void> xoaLienKetSuKien(
             @PathVariable Long postId,

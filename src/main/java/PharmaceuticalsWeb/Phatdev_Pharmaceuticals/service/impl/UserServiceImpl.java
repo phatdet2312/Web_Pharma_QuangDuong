@@ -43,11 +43,12 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
     // Tiêm Interface Email, mù hoàn toàn cách Email được gửi đi
     private final IEmailService emailService;
     
-    // TIÊM 4 REPOSITORY CỦA MÔ HÌNH PHÂN QUYỀN MỚI
+    // TIÊM 5 REPOSITORY CỦA MÔ HÌNH PHÂN QUYỀN ĐỘNG
     private final IUserRoleRepository userRoleRepository;
     private final ICtUserRoleRepository ctUserRoleRepository;
     private final IPermissionRepository permissionRepository;
     private final ICtRolePermissionRepository ctRolePermissionRepository;
+    private final ICtUserPermissionBlacklistRepository blacklistRepository;
 
     // [THÊM MỚI] Dịch vụ ghi nhật ký kiểm toán — dùng trong updateUserRoles()
     private final IAuditService auditService;
@@ -116,6 +117,22 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
             }
         }
         
+        // Bước E: Lọc bỏ các quyền hạt lựu nằm trong danh sách đóng băng (Blacklist)
+        List<CtUserPermissionBlacklist> danhSachBiCam = blacklistRepository.findByUserId(user.getId());
+        if (danhSachBiCam != null) {
+            Object[] mangBiCam = danhSachBiCam.toArray();
+            for (int bl = 0; bl < mangBiCam.length; bl = bl + 1) {
+                CtUserPermissionBlacklist banGhi = (CtUserPermissionBlacklist) mangBiCam[bl];
+
+                // Tra cứu mã quyền từ permissionId bị đóng băng
+                Permission quyenBiCam = permissionRepository.findById(banGhi.getPermissionId()).orElse(null);
+                if (quyenBiCam != null) {
+                    // Gỡ bỏ mã quyền khỏi danh sách đã gom (nếu tồn tại)
+                    danhSachTenPermission.remove(quyenBiCam.getPermissionCode());
+                }
+            }
+        }
+
         // Bơm dữ liệu tìm được vào biến tạm (Transient) của Entity User
         user.setDanhSachTenRole(danhSachTenRole);
         user.setDanhSachTenPermission(danhSachTenPermission);
@@ -210,9 +227,9 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         user.setProvider("LOCAL");
         
         user = userRepository.save(user); // Lưu để lấy ID
-        
-        // Tự động tìm quyền 'USER' trong DB để gán cho người mới
-        UserRole defaultRole = userRoleRepository.findByRoleName("USER").orElse(null);
+
+        // Tự động tìm chức vụ yếu nhất (roleLevel cao nhất, loại trừ SUPERADMIN level 0) để gán mặc định
+        UserRole defaultRole = userRoleRepository.findTopByRoleLevelGreaterThanOrderByRoleLevelDesc(0).orElse(null);
         if (defaultRole != null) {
             CtUserRole ctUserRole = new CtUserRole(user.getId(), defaultRole.getId());
             ctUserRoleRepository.save(ctUserRole);
@@ -255,8 +272,8 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         try {
             user = userRepository.save(user);
             
-            // Tự động tìm quyền 'USER' trong DB để gán cho người mới
-            UserRole defaultRole = userRoleRepository.findByRoleName("USER").orElse(null);
+            // Tự động tìm chức vụ yếu nhất (loại trừ SUPERADMIN) để gán mặc định
+            UserRole defaultRole = userRoleRepository.findTopByRoleLevelGreaterThanOrderByRoleLevelDesc(0).orElse(null);
             if (defaultRole != null) {
                 CtUserRole ctUserRole = new CtUserRole(user.getId(), defaultRole.getId());
                 ctUserRoleRepository.save(ctUserRole);
@@ -403,13 +420,13 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
             }
         }
 
-        // Chống lỗi: Nếu Admin không tick quyền nào hợp lệ, tự động trả về mức USER thấp nhất
+        // Chống lỗi: Nếu Admin không tick quyền nào hợp lệ, tìm chức vụ yếu nhất để gán mặc định
         if (coQuyenHopLe == false) {
-            UserRole defaultRole = userRoleRepository.findByRoleName("USER").orElse(null);
+            UserRole defaultRole = userRoleRepository.findTopByRoleLevelGreaterThanOrderByRoleLevelDesc(0).orElse(null);
             if (defaultRole != null) {
                 CtUserRole ctUserRole = new CtUserRole(targetUserId, defaultRole.getId());
                 ctUserRoleRepository.save(ctUserRole);
-                danhSachRoleMoi.add("USER"); // [THÊM MỚI]
+                danhSachRoleMoi.add(defaultRole.getRoleName());
             }
         }
 

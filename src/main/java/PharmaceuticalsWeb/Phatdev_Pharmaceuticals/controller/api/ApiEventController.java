@@ -2,6 +2,7 @@
 
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventRegistrationRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ApiResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CmtResponse;
@@ -159,6 +160,7 @@ public class ApiEventController {
     }
 
     /** Đăng ký tham dự buổi sự kiện */
+    @RequirePermission("USER_REGISTER")
     @PostMapping("/register")
     public ApiResponse<EventRegistrationResponse> dangKy(
             @Valid @RequestBody EventRegistrationRequest request,
@@ -228,6 +230,7 @@ public class ApiEventController {
     }
 
     /** Gửi bình luận cho buổi sự kiện */
+    @RequirePermission("USER_COMMENT")
     @PostMapping("/sessions/{ctEventId}/comments")
     public ApiResponse<CmtResponse> guiCmtBuoi(
             @PathVariable Long ctEventId,

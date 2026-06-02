@@ -29,4 +29,8 @@ public class Permission {
 
     @Column(name = "DESCRIPTION", length = 255)
     private String description;
+
+    // Khóa ngoại tới bảng PERMISSION_MODULES (nhóm chức năng)
+    @Column(name = "MODULE_ID")
+    private Integer moduleId;
 }

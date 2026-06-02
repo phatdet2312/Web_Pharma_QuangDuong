@@ -37,12 +37,25 @@ CREATE TABLE [USER_ROLES](
 	DESCRIPTION NVARCHAR(255)                    -- Mô tả hiển thị cho Admin hiểu vai trò này làm gì
 );
 
+-- Bảng PERMISSION_MODULES: Danh mục nhóm chức năng để phân loại quyền hạt lựu.
+-- Admin quản lý tập trung: thêm/sửa/xóa module tại 1 chỗ, frontend load dropdown từ API.
+-- [QUAN HỆ]: 1-N với PERMISSIONS.
+CREATE TABLE [PERMISSION_MODULES](
+	ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,   -- Khóa chính module
+	MODULE_CODE VARCHAR(50) NOT NULL UNIQUE,     -- Mã module hệ thống (VD: 'POST', 'EVENT', 'COMMENT', 'SYSTEM')
+	MODULE_NAME NVARCHAR(100) NOT NULL,          -- Tên hiển thị (VD: 'Bài viết', 'Sự kiện', 'Bình luận', 'Hệ thống')
+	DESCRIPTION NVARCHAR(255),                   -- Mô tả chi tiết module
+	DISPLAY_ORDER INT DEFAULT 0                  -- Thứ tự hiển thị trên giao diện (số nhỏ hiện trước)
+);
+
 -- Bảng PERMISSIONS: Danh sách các quyền hạn thao tác cực nhỏ (Hạt lựu - Granular Permissions)
--- [QUAN HỆ]: 1-N với CT_ROLE_PERMISSIONS, 1-N với CT_USER_PERMISSION_BLACKLIST, 1-N với CT_USER_MODERATION_LOG.
+-- [QUAN HỆ]: N-1 với PERMISSION_MODULES, 1-N với CT_ROLE_PERMISSIONS, 1-N với CT_USER_PERMISSION_BLACKLIST.
 CREATE TABLE [PERMISSIONS](
 	ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,   -- Khóa chính quyền hạn thao tác
-	PERMISSION_CODE VARCHAR(50) NOT NULL UNIQUE, -- Mã thao tác (VD: 'HIDE_COMMENT', 'APPROVE_EVENT')
-	DESCRIPTION NVARCHAR(255)                    -- Mô tả: 'Quyền ẩn bình luận vi phạm trên bài viết'
+	PERMISSION_CODE VARCHAR(50) NOT NULL UNIQUE, -- Mã thao tác (VD: 'POST_CREATE', 'EVENT_DELETE')
+	DESCRIPTION NVARCHAR(255),                   -- Mô tả: 'Quyền tạo bài viết mới'
+	MODULE_ID INT,                               -- Nhóm chức năng (FK tới PERMISSION_MODULES, nullable cho quyền chưa phân nhóm)
+	FOREIGN KEY (MODULE_ID) REFERENCES PERMISSION_MODULES(ID)
 );
 
 -- Bảng CT_ROLE_PERMISSIONS: Gán quyền thao tác cho Nhóm quyền.

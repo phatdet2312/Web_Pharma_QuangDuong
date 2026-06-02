@@ -136,15 +136,21 @@ Subagents chạy thread riêng, kết quả gộp về phản hồi chính.
 
 **Quy tắc decision routing:**
 1. Analyst phát hiện cần ghi memory → trả Decision Note → orchestrator → memory-keeper (BẮT BUỘC qua memory-keeper, không skip)
-2. Riêng `planner`: khi trả Task Breakdown / Critical Path / Risk, orchestrator BẮT BUỘC persist vào `.ai-memory/04_active_plan.md` trước khi gọi executor. Đây là active plan, không phải Decision Note.
+2. Riêng `planner`: khi trả Task Breakdown / Critical Path / Risk / Active Plan Update, orchestrator BẮT BUỘC gọi `memory-keeper` ở foreground để persist + đọc lại verify `.ai-memory/04_active_plan.md` trước khi gọi executor. Đây là active plan, không phải Decision Note.
 3. Executor (db-specialist, api-designer) phát hiện cần ghi → tự ghi vào file trực tiếp (nhanh hơn, đỡ overhead)
 4. Cross-cutting decision (ảnh hưởng nhiều module) → BẮT BUỘC qua memory-keeper để ghi `01_system_architecture.md` → Architecture Decisions
 
 ## Quy tắc điều phối (9 quy tắc — orchestrator BẮT BUỘC tuân thủ)
 1. **Task đơn giản** (1 agent đủ): delegate trực tiếp, nhận kết quả, báo cáo user
 2. **Task phức tạp** (cần nhiều agent): gọi `planner` TRƯỚC để phân rã, rồi delegate tuần tự
-   - VD: "Thêm chức năng thanh toán" → planner → memory-keeper (persist `.ai-memory/04_active_plan.md`) → db-specialist → api-designer → implementer → tester → memory-keeper
-3. **Persist Planner Output (BẮT BUỘC, không rập khuôn format)**: sau mọi lần gọi `planner`, orchestrator KHÔNG được tiếp tục implement ngay. Phải nhận kế hoạch từ `planner`, gọi `memory-keeper` hoặc tự cập nhật `.ai-memory/04_active_plan.md`, rồi verify file đã có đủ ý nghĩa điều phối: mục tiêu, hướng làm, trạng thái hiện tại, dependency/risk/blocker/câu hỏi nếu có, agent/subagent dự kiến nếu cần. Không ép bảng cố định; planner được chọn checklist, phase, milestone, bảng, hoặc narrative plan tùy task. Nếu chưa persist plan → KHÔNG gọi `implementer` / `db-specialist` / `api-designer` / `tester`.
+   - VD: "Thêm chức năng thanh toán" → planner → memory-keeper → `ACTIVE_PLAN_PERSISTED_AND_VERIFIED` → db-specialist → api-designer → implementer → tester → memory-keeper
+   - Codex chỉ spawn subagent khi user yêu cầu rõ dùng subagent/delegation. Nếu user không yêu cầu delegation: orchestrator tự lập plan tương đương, persist + đọc lại verify trước khi implement. KHÔNG claim planner tự spawn.
+3. **Checkpoint planner → active plan (BẮT BUỘC)**:
+   - Sau mọi lần gọi `planner`, orchestrator PHẢI gọi `memory-keeper` ở foreground.
+   - `memory-keeper` ghi `Active Plan Update` vào `.ai-memory/04_active_plan.md`, đọc lại và verify.
+   - Chỉ tiếp tục khi nhận chính xác: `ACTIVE_PLAN_PERSISTED_AND_VERIFIED`.
+   - Nếu chưa có xác nhận: KHÔNG gọi `db-specialist`, `api-designer`, `implementer`, `tester`.
+   - Không ép format cứng. Planner được tự thiết kế checklist, phase, milestone, bảng hoặc narrative plan.
 4. **Task mơ hồ** (chưa rõ cần gì): gọi `explorer` tìm context TRƯỚC, rồi quyết định agent tiếp theo
 5. **Sau mỗi task hoàn thành**: gọi `memory-keeper` cập nhật `.ai-memory/` (BẮT BUỘC, không skip)
 6. **KHÔNG gọi 2 agent cùng lúc** cho cùng 1 file — tuần tự để tránh xung đột ghi (Codex `agents.max_threads=6` cho phép song song, nhưng phải khác file)
@@ -156,7 +162,7 @@ Subagents chạy thread riêng, kết quả gộp về phản hồi chính.
 
 **"Thêm API mới":**
 ```
-planner → memory-keeper (persist 04_active_plan.md) → db-specialist (nếu cần entity) → api-designer → implementer → tester
+planner → memory-keeper → `ACTIVE_PLAN_PERSISTED_AND_VERIFIED` → db-specialist (nếu cần entity) → api-designer → implementer → tester
   ├── test FAIL: $reflect ghi learning → implementer fix → tester (max 3 vòng)
   └── test PASS: memory-keeper
 ```

@@ -2,6 +2,7 @@
 
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LikeRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ApiResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.CategoryResponse;
@@ -133,6 +134,7 @@ public class ApiPostController {
     /**
      * Bổ sung API đón Request Thả cảm xúc trực tiếp lên Bài viết.
      */
+    @RequirePermission("USER_REACT")
     @PostMapping("/like")
     public ApiResponse<Void> thichBaiViet(
             @Valid @RequestBody LikeRequest request,

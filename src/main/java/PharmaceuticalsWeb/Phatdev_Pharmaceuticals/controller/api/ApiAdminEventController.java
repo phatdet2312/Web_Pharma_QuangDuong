@@ -2,6 +2,7 @@
 
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.BulkActionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CtEventRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.EventRequest;
@@ -58,24 +59,28 @@ public class ApiAdminEventController {
     private final IUserService userService;
 
     /** Thống kê admin sự kiện */
+    @RequirePermission("EVENT_VIEW")
     @GetMapping("/stats")
     public ApiResponse<EventStatsResponse> layThongKe() {
         return ApiResponse.thanhCong(adminEventService.layThongKeAdmin(), "Lấy thống kê thành công");
     }
 
     /** Trả danh mục trạng thái để giao diện quản trị không tự hardcode mã nghiệp vụ. */
+    @RequirePermission("EVENT_VIEW")
     @GetMapping("/dictionaries/statuses")
     public ApiResponse<AdminEventDictionaryResponse> layDanhMucTrangThai() {
         return ApiResponse.thanhCong(adminEventService.layDanhMucTrangThai(), "Lấy danh mục trạng thái thành công");
     }
 
     /** Upload ảnh đại diện chiến dịch, trả URL public do server cấp. */
+    @RequirePermission("EVENT_EDIT")
     @PostMapping(value = "/media/campaign-thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<AdminEventMediaResponse> uploadAnhChienDich(@RequestParam("file") MultipartFile file) {
         return ApiResponse.thanhCong(adminEventService.uploadAnhChienDich(file), "Upload ảnh chiến dịch thành công");
     }
 
     /** Upload ảnh đại diện diễn giả, trả URL public do server cấp. */
+    @RequirePermission("EVENT_EDIT")
     @PostMapping(value = "/media/speaker-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<AdminEventMediaResponse> uploadAnhDienGia(@RequestParam("file") MultipartFile file) {
         return ApiResponse.thanhCong(adminEventService.uploadAnhDienGia(file), "Upload ảnh diễn giả thành công");
@@ -87,6 +92,7 @@ public class ApiAdminEventController {
      * Vận hành Cỗ máy tìm kiếm đa chiều.
      * Tiếp nhận mảng tham số và ủy thác cho tầng Service xử lý.
      */
+    @RequirePermission("EVENT_VIEW")
     @GetMapping
     public ApiResponse<Page<EventResponse>> layDanhSach(
             @RequestParam(required = false) String keyword,
@@ -103,11 +109,13 @@ public class ApiAdminEventController {
                 "Lấy danh sách thành công");
     }
 
+    @RequirePermission("EVENT_CREATE")
     @PostMapping
     public ApiResponse<EventResponse> taoChienDich(@Valid @RequestBody EventRequest request) {
         return ApiResponse.thanhCong(adminEventService.taoChienDich(request), "Tạo chiến dịch thành công");
     }
 
+    @RequirePermission("EVENT_EDIT")
     @PutMapping("/{eventId}")
     public ApiResponse<EventResponse> capNhatChienDich(
             @PathVariable Long eventId,
@@ -115,12 +123,14 @@ public class ApiAdminEventController {
         return ApiResponse.thanhCong(adminEventService.capNhatChienDich(eventId, request), "Cập nhật thành công");
     }
 
+    @RequirePermission("EVENT_DELETE")
     @DeleteMapping("/{eventId}")
     public ApiResponse<Void> xoaChienDich(@PathVariable Long eventId) {
         adminEventService.xoaChienDich(eventId);
         return ApiResponse.thanhCong(null, "Xóa chiến dịch thành công");
     }
 
+    @RequirePermission("EVENT_EDIT")
     @PostMapping("/bulk/status")
     public ApiResponse<Void> doiTrangThaiNhieuChienDich(
             @Valid @RequestBody BulkActionRequest request,
@@ -137,6 +147,7 @@ public class ApiAdminEventController {
 
     // === CRUD BUỔI (CT_EVENTS) ===
 
+    @RequirePermission("EVENT_EDIT")
     @PostMapping("/sessions")
     public ApiResponse<CtEventResponse> taoBuoi(
             @Valid @RequestBody CtEventRequest request,
@@ -146,6 +157,7 @@ public class ApiAdminEventController {
         return ApiResponse.thanhCong(adminEventService.taoBuoi(request, moderatorId), "Tạo buổi thành công");
     }
 
+    @RequirePermission("EVENT_EDIT")
     @PutMapping("/sessions/{ctEventId}")
     public ApiResponse<CtEventResponse> capNhatBuoi(
             @PathVariable Long ctEventId,
@@ -153,6 +165,7 @@ public class ApiAdminEventController {
         return ApiResponse.thanhCong(adminEventService.capNhatBuoi(ctEventId, request), "Cập nhật buổi thành công");
     }
 
+    @RequirePermission("EVENT_EDIT")
     @DeleteMapping("/sessions/{ctEventId}")
     public ApiResponse<Void> xoaBuoi(@PathVariable Long ctEventId) {
         adminEventService.xoaBuoi(ctEventId);
@@ -161,11 +174,13 @@ public class ApiAdminEventController {
 
     // === TRẠNG THÁI BUỔI ===
 
+    @RequirePermission("EVENT_EDIT")
     @GetMapping("/sessions/{ctEventId}/status-history")
     public ApiResponse<List<EventStatusHistoryResponse>> layLichSuTrangThai(@PathVariable Long ctEventId) {
         return ApiResponse.thanhCong(adminEventService.layLichSuTrangThai(ctEventId), "Lấy lịch sử thành công");
     }
 
+    @RequirePermission("EVENT_EDIT")
     @PostMapping("/sessions/status")
     public ApiResponse<Void> doiTrangThai(
             @Valid @RequestBody EventStatusRequest request,
@@ -178,12 +193,14 @@ public class ApiAdminEventController {
 
     // === ĐĂNG KÝ ===
 
+    @RequirePermission("EVENT_EDIT")
     @GetMapping("/sessions/{ctEventId}/registrations")
     public ApiResponse<List<EventRegistrationResponse>> layDanhSachDangKy(@PathVariable Long ctEventId) {
         return ApiResponse.thanhCong(adminEventService.layDanhSachDangKy(ctEventId),
                 "Lấy danh sách đăng ký thành công");
     }
 
+    @RequirePermission("EVENT_EDIT")
     @PatchMapping("/registrations/{id}/status")
     public ApiResponse<Void> capNhatTrangThaiDangKy(
             @PathVariable Long id,
@@ -194,16 +211,19 @@ public class ApiAdminEventController {
 
     // === CRUD LOẠI SỰ KIỆN ===
 
+    @RequirePermission("EVENT_MANAGE_TYPE")
     @GetMapping("/types")
     public ApiResponse<List<EventTypeResponse>> layLoaiSuKien() {
         return ApiResponse.thanhCong(adminEventService.layTatCaLoaiSuKien(), "Lấy loại sự kiện thành công");
     }
 
+    @RequirePermission("EVENT_MANAGE_TYPE")
     @PostMapping("/types")
     public ApiResponse<EventTypeResponse> taoLoai(@Valid @RequestBody EventTypeRequest request) {
         return ApiResponse.thanhCong(adminEventService.taoLoaiSuKien(request), "Tạo loại sự kiện thành công");
     }
 
+    @RequirePermission("EVENT_MANAGE_TYPE")
     @PutMapping("/types/{id}")
     public ApiResponse<EventTypeResponse> capNhatLoai(
             @PathVariable Integer id,
@@ -211,6 +231,7 @@ public class ApiAdminEventController {
         return ApiResponse.thanhCong(adminEventService.capNhatLoaiSuKien(id, request), "Cập nhật thành công");
     }
 
+    @RequirePermission("EVENT_MANAGE_TYPE")
     @DeleteMapping("/types/{id}")
     public ApiResponse<Void> xoaLoai(@PathVariable Integer id) {
         adminEventService.xoaLoaiSuKien(id);
@@ -219,16 +240,19 @@ public class ApiAdminEventController {
 
     // === CRUD ĐỊA ĐIỂM ===
 
+    @RequirePermission("EVENT_MANAGE_LOCATION")
     @GetMapping("/locations")
     public ApiResponse<List<LocationResponse>> layDiaDiem() {
         return ApiResponse.thanhCong(adminEventService.layTatCaDiaDiem(), "Lấy địa điểm thành công");
     }
 
+    @RequirePermission("EVENT_MANAGE_LOCATION")
     @PostMapping("/locations")
     public ApiResponse<LocationResponse> taoDiaDiem(@Valid @RequestBody LocationRequest request) {
         return ApiResponse.thanhCong(adminEventService.taoDiaDiem(request), "Tạo địa điểm thành công");
     }
 
+    @RequirePermission("EVENT_MANAGE_LOCATION")
     @PutMapping("/locations/{id}")
     public ApiResponse<LocationResponse> capNhatDiaDiem(
             @PathVariable Integer id,
@@ -236,6 +260,7 @@ public class ApiAdminEventController {
         return ApiResponse.thanhCong(adminEventService.capNhatDiaDiem(id, request), "Cập nhật địa điểm thành công");
     }
 
+    @RequirePermission("EVENT_MANAGE_LOCATION")
     @DeleteMapping("/locations/{id}")
     public ApiResponse<Void> xoaDiaDiem(@PathVariable Integer id) {
         adminEventService.xoaDiaDiem(id);

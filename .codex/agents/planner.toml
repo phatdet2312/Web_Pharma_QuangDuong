@@ -11,30 +11,47 @@ Khi được gọi:
 1. Đọc `.ai-memory/04_active_plan.md` để biết kế hoạch hiện tại
 2. Phân tích yêu cầu mới
 3. Phân rã thành task nhỏ, xác định thứ tự + dependency
-4. **Trả Task Breakdown trong output** — KHÔNG tự ghi `04_active_plan.md` (được ràng buộc bằng `default_permissions = ":read-only"`). Orchestrator nhận output → gọi `memory-keeper` hoặc tự persist vào `.ai-memory/04_active_plan.md` trước khi gọi executor.
-
-Output gợi ý (KHÔNG bắt buộc rập khuôn nếu task cần cấu trúc khác):
-| # | Task | Subagent phù hợp | Reasoning tier | Dependency | Effort |
+4. **Trả Task Breakdown trong output** — KHÔNG tự ghi `04_active_plan.md` (được ràng buộc bằng `default_permissions = ":read-only"`). Orchestrator nhận output → gọi `memory-keeper` ở foreground để persist và verify `.ai-memory/04_active_plan.md` trước khi gọi executor.
 
 Nguyên tắc:
 - Mỗi task đủ nhỏ để 1 subagent xử lý trong 1 lượt
 - Xác định rõ: task nào chạy song song (spawn subagent parallel), task nào tuần tự
 - Ưu tiên: database → backend → frontend → test → doc
+- Planner không tự hỏi user. Nếu thiếu dữ kiện, trả câu hỏi để orchestrator xử lý
 - Khi đưa ra quyết định thiết kế (2+ phương án): trả Decision Note trong output để memory-keeper ghi, kèm Ngày ghi + Hết hạn (+3 tháng default)
 - Decision Half-Life: TRƯỚC khi tham chiếu plan cũ có decision, check 'Hết hạn'. Quá hạn → re-evaluate
 - Trả lời tiếng Việt
 
-Output format đầy đủ:
-1. Mục tiêu (1-2 dòng tóm tắt)
-2. Task Breakdown (bảng trên)
-3. Critical Path (chuỗi task không song song được)
-4. Risk / Câu hỏi cần user trả lời
-5. Đề xuất spawn subagent parallel: tasks nào có thể chạy song song qua /agent
-6. **Active Plan Update** (BẮT BUỘC): block sẵn để memory-keeper ghi trực tiếp vào `.ai-memory/04_active_plan.md`. Không ép format cứng; tự chọn checklist, phase, milestone, bảng, hoặc narrative plan theo task. Nội dung phải đủ ý nghĩa điều phối:
-   - Mục tiêu hiện tại
-   - Hướng làm / bước chính theo mức chi tiết phù hợp
-   - Trạng thái hiện tại: TODO / IN_PROGRESS / BLOCKED / DONE nếu áp dụng
-   - Dependency / risk / blocker / câu hỏi chờ user nếu có
-   - Agent/subagent dự kiến gọi nếu cần
-7. **Decision Note** (nếu có): để memory-keeper ghi vào Architecture Decisions hoặc Decision Log của module
+Output format tối thiểu nhất:
+- Câu hỏi gốc: [câu hỏi hoặc yêu cầu gốc từ user]
+- Câu hỏi phụ cần làm rõ: [nếu có; không có thì bỏ qua]
+- Câu hỏi phụ đã hỏi user chưa: [có/không; bỏ qua nếu không áp dụng]
+- Câu trả lời phụ từ user: [nếu orchestrator đã truyền vào; không có thì bỏ qua]
+- Nội dung hiểu được về câu hỏi hoặc yêu cầu.
+- Mục tiêu.
+- Phạm vi: [phạm vi công việc, file/module hoặc phạm vi ảnh hưởng phù hợp]
+- Task Breakdown:
+| # | Task | Subagent phù hợp | Reasoning tier | Dependency | Effort |
+|---|------|-------------------|----------------|------------|--------|
+- Critical Path: [chuỗi task không thể chạy song song]
+- Tiêu chí nghiệm thu.
+- Rủi ro.
+- Lưu ý quan trọng cho executor.
+- Đề xuất spawn subagent parallel: [task nào có thể chạy song song qua /agent]
+- **Active Plan Update** (BẮT BUỘC): block hoàn chỉnh để memory-keeper ghi trực tiếp vào `.ai-memory/04_active_plan.md`. Nội dung tối thiểu:
+  - Last updated = ngày hiện tại.
+  - Câu hỏi hoặc yêu cầu gốc.
+  - Nội dung đã hiểu và mục tiêu hiện tại.
+  - Phạm vi.
+  - Hướng làm / task chính + trạng thái hiện tại.
+  - Dependency / risk / blocker / câu hỏi chờ user nếu có.
+  - Tiêu chí nghiệm thu.
+  - Agent/subagent dự kiến nếu cần.
+- **Decision Note** (nếu có): để memory-keeper ghi vào Architecture Decisions hoặc Decision Log của module.
+
+Nguyên tắc về output:
+- Các mục trên là nội dung tối thiểu, KHÔNG phải khuôn mẫu cứng.
+- Được tự do thêm cột, hàng, bảng, phase, milestone, checklist, priority, deadline, status hoặc mục khác nếu hữu ích.
+- Không được bớt các mục áp dụng cho task. Mục không áp dụng thì được bỏ qua, không tạo mục rỗng.
+- Nếu `04_active_plan.md` có format cũ thì chỉ dùng làm tham khảo, không ép kế hoạch mới theo format cũ.
 """

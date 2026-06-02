@@ -7,6 +7,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.UserBlacklistReque
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PermissionResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.RoleResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtRolePermission;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PermissionModule;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtUserRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtUserPermissionBlacklist;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtUserPermissionBlacklist.CtUserPermissionBlacklistId;
@@ -18,6 +19,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtRo
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtUserRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtUserPermissionBlacklistRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPermissionRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPermissionModuleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAuditService;
@@ -47,6 +49,7 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
     private final ICtUserPermissionBlacklistRepository blacklistRepository;
     private final IUserRepository userRepository;
     private final IAuditService auditService;
+    private final IPermissionModuleRepository permissionModuleRepository;
 
     // =====================================================================
     // 1. NGHIỆP VỤ LIÊN QUAN ĐẾN NHÓM CHỨC VỤ (ROLES)
@@ -185,9 +188,9 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
         UserRole role = userRoleRepository.findById(roleId)
                 .orElseThrow(() -> new AppException(404, "Không tìm thấy chức vụ"));
 
-        // Bảo vệ các Role lõi không bị xóa nhầm
-        if ("SUPERADMIN".equals(role.getRoleName()) || "ADMIN".equals(role.getRoleName()) || "USER".equals(role.getRoleName())) {
-            throw new AppException(403, "Không được xóa các chức vụ lõi của hệ thống");
+        // Bảo vệ chức vụ tối cao (roleLevel = 0) không bị xóa nhầm
+        if (role.getRoleLevel() != null && role.getRoleLevel() == 0) {
+            throw new AppException(403, "Không được xóa chức vụ tối cao của hệ thống");
         }
 
         // Kiểm tra xem có User nào đang mang chức vụ này không (Chống mồ côi dữ liệu)
@@ -255,27 +258,36 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
     public List<PermissionResponse> layTatCaQuyenHatLuu() {
         List<Permission> tatCaQuyen = permissionRepository.findAll();
         List<PermissionResponse> responseList = new ArrayList<>();
-        
+
         if (tatCaQuyen != null) {
             Object[] permsArray = tatCaQuyen.toArray();
             for (int i = 0; i < permsArray.length; i = i + 1) {
                 Permission p = (Permission) permsArray[i];
                 PermissionResponse dto = PermissionResponse.fromEntity(p);
-                
+
+                // Nạp thông tin module nếu permission có moduleId
+                if (p.getModuleId() != null) {
+                    PermissionModule mod = permissionModuleRepository.findById(p.getModuleId()).orElse(null);
+                    if (mod != null) {
+                        dto.setModuleCode(mod.getModuleCode());
+                        dto.setModuleName(mod.getModuleName());
+                    }
+                }
+
                 // Thuật toán gắn cờ rủi ro (Risk Analysis Engine)
                 String code = p.getPermissionCode().toUpperCase();
                 boolean laQuyenRuiRo = false;
-                
+
                 if (code.contains("DELETE") || code.contains("REMOVE") || code.contains("DESTROY") || code.contains("LOCK") || code.contains("BLACKLIST") || code.contains("EXPORT")) {
                     laQuyenRuiRo = true;
                 }
-                
+
                 if (laQuyenRuiRo == true) {
                     dto.setRiskLevel("DANGER");
                 } else {
                     dto.setRiskLevel("SAFE");
                 }
-                
+
                 responseList.add(dto);
             }
         }
@@ -299,7 +311,8 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
         Permission p = new Permission();
         p.setPermissionCode(codeChuan);
         p.setDescription(request.getDescription());
-        
+        p.setModuleId(request.getModuleId());
+
         permissionRepository.save(p);
     }
 
@@ -323,6 +336,7 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
         }
 
         p.setDescription(request.getDescription());
+        p.setModuleId(request.getModuleId());
         permissionRepository.save(p);
     }
 
@@ -371,6 +385,11 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
             }
         }
         return danhSachPermissionIdBiCam;
+    }
+
+    @Override
+    public List<Permission> layTatCaQuyenEntity() {
+        return permissionRepository.findAll();
     }
 
     @Override

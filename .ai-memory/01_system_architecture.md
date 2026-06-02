@@ -1,5 +1,5 @@
 # System Architecture
-> Last updated: 2026-05-31
+> Last updated: 2026-06-01
 > Status: BOOTSTRAPPED
 
 ## Tech Stack
@@ -49,6 +49,16 @@ Security flow:
 | Backend API | 8080 mặc định Spring Boot (không thấy `server.port`) | `http://localhost:8080/api` |
 | Frontend | 8080 cùng Spring Boot process | `http://localhost:8080/` |
 | Database | SQL Server local instance; port không khai báo trực tiếp | `jdbc:sqlserver://LAPTOP-S1U5MI7D\\SQLEXPRESS;databaseName=Web_Pharma_QuangDuong;...` |
+
+## Hệ thống Phân quyền Động
+
+Phân quyền 100% database-driven qua 4 lớp:
+1. **CSDL**: Admin tạo role/permission/module qua web, gán qua 6 bảng RBAC (`USER_ROLES`, `PERMISSIONS`, `PERMISSION_MODULES`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST`).
+2. **Nạp quyền**: `napQuyenChoNguoiDung()` query 4 bảng + lọc blacklist → bơm vào JWT.
+3. **Enforce**: `PermissionInterceptor` (config/interceptor) + `@RequirePermission` annotation (validators/annotations) kiểm tra quyền mỗi endpoint. SUPERADMIN bypass.
+4. **UX**: `permission-manager.js` ẩn/hiện UI frontend (chỉ UX, backend vẫn enforce).
+
+`PermissionRegistry` (config/) khai báo danh sách mã quyền hệ thống đang sử dụng.
 
 ## External Dependencies
 

@@ -316,6 +316,9 @@
             <button class="rm-tab-btn" id="tabBtnPerms" onclick="switchTab('perms')">
                 <i class="fas fa-key me-2"></i>Từ điển Quyền Hạt Lựu
             </button>
+            <button class="rm-tab-btn" id="tabBtnModules" onclick="switchTab('modules')">
+                <i class="fas fa-folder-open me-2"></i>Nhóm Chức Năng
+            </button>
         </div>
 
         <!-- ================================================================
@@ -380,7 +383,8 @@
                         <thead>
                             <tr>
                                 <th style="width: 65px;">ID</th>
-                                <th style="width: 240px;">Mã Quyền (Code)</th>
+                                <th style="width: 220px;">Mã Quyền (Code)</th>
+                                <th style="width: 160px;">Nhóm</th>
                                 <th>Diễn giải Nghiệp vụ</th>
                                 <th style="width: 120px; text-align: center;">Mức Rủi Ro</th>
                                 <th style="width: 110px; text-align: right;">Thao tác</th>
@@ -388,7 +392,47 @@
                         </thead>
                         <tbody id="permsTableBody">
                             <tr>
-                                <td colspan="5" style="padding: 40px; text-align: center;"><i
+                                <td colspan="6" style="padding: 40px; text-align: center;"><i
+                                        class="fas fa-circle-notch fa-spin fa-2x" style="color: #94a3b8;"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+     TAB 3: PERMISSION MODULES — NHÓM CHỨC NĂNG
+     ================================================================ -->
+        <div id="panelModules" style="display: none;">
+            <div class="rm-card">
+                <div class="rm-card-hdr">
+                    <h5 class="rm-card-title"><i class="fas fa-folder-open me-2 text-warning"></i>Danh sách Nhóm Chức Năng</h5>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-ghost" onclick="loadModules()" style="padding: 7px 14px;">
+                            <i class="fas fa-sync-alt me-1"></i>Làm mới
+                        </button>
+                        <button class="btn-hc-primary" onclick="moModalThemModule()"
+                            style="padding: 7px 16px; background: #f59e0b; border-color: #f59e0b;">
+                            <i class="fas fa-plus-circle me-2"></i>Thêm nhóm mới
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="rm-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 65px;">ID</th>
+                                <th style="width: 180px;">Mã Module</th>
+                                <th style="width: 220px;">Tên hiển thị</th>
+                                <th>Mô tả</th>
+                                <th style="width: 100px; text-align: center;">Thứ tự</th>
+                                <th style="width: 110px; text-align: right;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modulesTableBody">
+                            <tr>
+                                <td colspan="6" style="padding: 40px; text-align: center;"><i
                                         class="fas fa-circle-notch fa-spin fa-2x" style="color: #94a3b8;"></i></td>
                             </tr>
                         </tbody>
@@ -536,20 +580,31 @@
                     </div>
                     <div class="modal-body" style="padding: 20px 24px;">
                         <input type="hidden" id="quyenId">
+                        <input type="hidden" id="quyenCode">
                         <div class="mb-4">
                             <label
                                 style="font-size: .82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
-                                Mã Quyền Thao Tác <span style="color: #dc2626;">*</span>
+                                Chọn quyền thao tác <span style="color: #dc2626;">*</span>
                             </label>
-                            <input type="text" id="quyenCode" class="form-control text-uppercase"
-                                placeholder="VD: DUYET_BAO_GIA, XOA_BENH_NHAN..."
-                                style="font-weight: 700; border-radius: 8px;">
-                            <p style="font-size: .7rem; color: #94a3b8; margin-top: 5px;">Viết hoa, nối bằng gạch dưới
-                                (_). Ví dụ: XOA_BAI_VIET</p>
+                            <select id="quyenCodeSelect" class="form-select" style="border-radius: 8px; font-weight: 600;"
+                                onchange="khiChonQuyenHeThong()">
+                                <option value="">-- Chọn quyền từ danh sách hệ thống --</option>
+                            </select>
+                            <p style="font-size: .7rem; color: #94a3b8; margin-top: 5px;">Danh sách quyền do hệ thống
+                                cung cấp. Mô tả có thể chỉnh sửa bên dưới.</p>
                             <p id="quyenCodeError"
                                 style="color: #dc2626; font-size: .75rem; margin-top: 4px; display: none;">
-                                <i class="fas fa-exclamation-circle me-1"></i>Mã quyền không được để trống.
+                                <i class="fas fa-exclamation-circle me-1"></i>Vui lòng chọn quyền thao tác.
                             </p>
+                        </div>
+                        <div class="mb-4">
+                            <label
+                                style="font-size: .82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                                Nhóm chức năng
+                            </label>
+                            <select id="quyenModuleId" class="form-select" style="border-radius: 8px;">
+                                <option value="">-- Chưa phân nhóm --</option>
+                            </select>
                         </div>
                         <div>
                             <label
@@ -577,25 +632,36 @@
             // GLOBAL STATE
             // ================================================================
             var danhSachPermissionsGoc = [];
+            var danhSachModulesGoc = [];
 
             var modalChucVuInstance = null;
             var modalCloneInstance = null;
             var modalQuyenInstance = null;
 
             // ================================================================
-            // TAB SWITCHING
+            // TAB SWITCHING — xử lý 3 tab: roles, perms, modules
             // ================================================================
             function switchTab(tabName) {
+                // Ẩn tất cả panel
+                document.getElementById('panelRoles').style.display = 'none';
+                document.getElementById('panelPerms').style.display = 'none';
+                document.getElementById('panelModules').style.display = 'none';
+
+                // Bỏ active tất cả nút tab
+                document.getElementById('tabBtnRoles').classList.remove('active');
+                document.getElementById('tabBtnPerms').classList.remove('active');
+                document.getElementById('tabBtnModules').classList.remove('active');
+
+                // Hiện panel và active nút tab tương ứng
                 if (tabName === 'roles') {
                     document.getElementById('panelRoles').style.display = 'block';
-                    document.getElementById('panelPerms').style.display = 'none';
                     document.getElementById('tabBtnRoles').classList.add('active');
-                    document.getElementById('tabBtnPerms').classList.remove('active');
-                } else {
-                    document.getElementById('panelRoles').style.display = 'none';
+                } else if (tabName === 'perms') {
                     document.getElementById('panelPerms').style.display = 'block';
-                    document.getElementById('tabBtnRoles').classList.remove('active');
                     document.getElementById('tabBtnPerms').classList.add('active');
+                } else if (tabName === 'modules') {
+                    document.getElementById('panelModules').style.display = 'block';
+                    document.getElementById('tabBtnModules').classList.add('active');
                 }
             }
 
@@ -632,6 +698,9 @@
                 loadRoles();
                 loadPermissionsForTab2();
                 loadPermissionsForCheckbox();
+                loadModules();
+                loadModulesDropdown();
+                loadSystemPermissionsDropdown();
             });
 
             // ================================================================
@@ -651,11 +720,13 @@
                         for (var i = 0; i < roles.length; i = i + 1) {
                             var r = roles[i];
 
-                            // Permissions badges
+                            // Permissions badges — hiện description thay vì mã thô
                             var permsHtml = '';
                             if (r.permissions !== null && r.permissions !== undefined && r.permissions.length > 0) {
                                 for (var j = 0; j < r.permissions.length; j = j + 1) {
-                                    permsHtml += '<span class="perm-badge">' + r.permissions[j] + '</span>';
+                                    // Tra cứu mô tả nghiệp vụ, fallback về code nếu chưa có
+                                    var permLabel = layMoTaQuyen(r.permissions[j]);
+                                    permsHtml += '<span class="perm-badge" title="' + r.permissions[j] + '">' + permLabel + '</span>';
                                 }
                             } else {
                                 permsHtml = '<span style="color:#94a3b8;font-size:.75rem;font-style:italic;">Không có quyền</span>';
@@ -772,23 +843,25 @@
                     return;
                 }
 
-                // Nhóm theo prefix để dễ tích chọn
+                // Nhóm theo moduleName (từ bảng PERMISSION_MODULES) để dễ tích chọn
+                // Nếu chưa phân nhóm thì gom vào nhóm "Chưa phân nhóm"
+                var NHOM_MAC_DINH = 'Chưa phân nhóm';
                 var nhomKeys = [];
                 var nhomDict = {};
 
                 for (var i = 0; i < danhSachPermissionsGoc.length; i = i + 1) {
                     var p = danhSachPermissionsGoc[i];
-                    var prefix = p.permissionCode.split('_')[0];
+                    var tenNhom = (p.moduleName !== null && p.moduleName !== undefined && p.moduleName !== '') ? p.moduleName : NHOM_MAC_DINH;
                     var found = false;
 
                     for (var k = 0; k < nhomKeys.length; k = k + 1) {
-                        if (nhomKeys[k] === prefix) { found = true; break; }
+                        if (nhomKeys[k] === tenNhom) { found = true; break; }
                     }
                     if (found === false) {
-                        nhomKeys.push(prefix);
-                        nhomDict[prefix] = [];
+                        nhomKeys.push(tenNhom);
+                        nhomDict[tenNhom] = [];
                     }
-                    nhomDict[prefix].push(p);
+                    nhomDict[tenNhom].push(p);
                 }
 
                 var html = '';
@@ -797,7 +870,7 @@
                     var groupPerms = nhomDict[groupKey];
 
                     html += '<div style="margin-bottom:16px;">' +
-                        '<div class="perm-group-label"><i class="fas fa-layer-group"></i>' + groupKey + ' (' + groupPerms.length + ')</div>' +
+                        '<div class="perm-group-label"><i class="fas fa-folder me-1"></i>' + groupKey + ' (' + groupPerms.length + ')</div>' +
                         '<div class="row g-2">';
 
                     for (var pg = 0; pg < groupPerms.length; pg = pg + 1) {
@@ -812,12 +885,14 @@
                         var checkedClass = isChecked ? ' checked-box' : '';
                         var desc = (perm.description !== null && perm.description !== undefined) ? perm.description : '';
 
+                        // Description lên chính (đậm), code xuống phụ (nhỏ, mờ) — admin tích chọn theo mô tả nghiệp vụ
+                        var labelText = (desc !== '') ? desc : perm.permissionCode;
                         html += '<div class="col-md-6 col-lg-4">' +
                             '<label class="perm-check-box' + checkedClass + '" onclick="togglePermCheckBox(this)">' +
                             '<input type="checkbox" name="permissionsGroup" value="' + perm.permissionCode + '"' + checkedAttr + ' style="pointer-events:none;">' +
                             '<div>' +
-                            '<div class="perm-check-code">' + perm.permissionCode + '</div>' +
-                            '<div class="perm-check-desc">' + desc + '</div>' +
+                            '<div class="perm-check-code">' + labelText + '</div>' +
+                            '<div class="perm-check-desc" style="font-family:monospace;opacity:.5;font-size:.65rem;">' + perm.permissionCode + '</div>' +
                             '</div>' +
                             '</label>' +
                             '</div>';
@@ -946,8 +1021,9 @@
             }
 
             function loadPermissionsForTab2() {
+                // colspan đã tăng từ 5 lên 6 (thêm cột Nhóm)
                 document.getElementById('permsTableBody').innerHTML =
-                    '<tr><td colspan="5" style="padding:40px;text-align:center;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:#94a3b8;"></i></td></tr>';
+                    '<tr><td colspan="6" style="padding:40px;text-align:center;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:#94a3b8;"></i></td></tr>';
 
                 callApi('/api/admin/role-management/permissions', 'GET', null, '', function (response) {
                     var perms = response.data || [];
@@ -955,7 +1031,7 @@
                     var html = '';
 
                     if (perms.length === 0) {
-                        html = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#94a3b8;">Hệ thống chưa có quyền hạt lựu nào.</td></tr>';
+                        html = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;">Hệ thống chưa có quyền hạt lựu nào.</td></tr>';
                     } else {
                         for (var i = 0; i < perms.length; i = i + 1) {
                             var p = perms[i];
@@ -968,14 +1044,27 @@
                             var riskLabel = getRiskLabel(riskLevel);
                             var descEscaped = (p.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
+                            // Hiển thị badge nhóm chức năng (moduleName từ PermissionResponse)
+                            var moduleBadge = '';
+                            if (p.moduleName !== null && p.moduleName !== undefined && p.moduleName !== '') {
+                                moduleBadge = '<span style="padding:2px 8px;background:#fef9c3;color:#a16207;border-radius:5px;font-size:.72rem;font-weight:700;border:1px solid #fde68a;">' +
+                                    p.moduleName + '</span>';
+                            } else {
+                                moduleBadge = '<span style="color:#cbd5e1;font-size:.73rem;font-style:italic;">Chưa phân nhóm</span>';
+                            }
+
+                            // moduleId để truyền vào hàm sửa
+                            var moduleIdVal = (p.moduleId !== null && p.moduleId !== undefined) ? p.moduleId : '';
+
                             html += '<tr>' +
                                 '<td style="font-weight:700;color:#64748b;font-size:.85rem;">#' + p.id + '</td>' +
                                 '<td><span class="perm-badge" style="font-size:.78rem;padding:4px 10px;">' + p.permissionCode + '</span></td>' +
+                                '<td>' + moduleBadge + '</td>' +
                                 '<td style="font-size:.82rem;color:#475569;">' + desc + '</td>' +
                                 '<td style="text-align:center;"><span class="risk-badge ' + riskLevel + '">' + riskLabel + '</span></td>' +
                                 '<td style="text-align:right;">' +
                                 '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
-                                'onclick=\'moModalSuaQuyen(' + p.id + ',"' + p.permissionCode + '","' + descEscaped + '")\'>' +
+                                'onclick=\'moModalSuaQuyen(' + p.id + ',"' + p.permissionCode + '","' + descEscaped + '",' + (moduleIdVal === '' ? 'null' : moduleIdVal) + ')\'>' +
                                 '<i class="fas fa-edit"></i>' +
                                 '</button>' +
                                 '<button class="btn-tbl btn-tbl-delete" title="Xóa" onclick="xoaQuyen(' + p.id + ', \'' + p.permissionCode + '\')">' +
@@ -989,35 +1078,52 @@
                     document.getElementById('permsTableBody').innerHTML = html;
                 }, function (errMsg) {
                     document.getElementById('permsTableBody').innerHTML =
-                        '<tr><td colspan="5" style="padding:30px;text-align:center;color:#dc2626;">' +
+                        '<tr><td colspan="6" style="padding:30px;text-align:center;color:#dc2626;">' +
                         '<i class="fas fa-exclamation-triangle me-2"></i>' + errMsg + '</td></tr>';
                 });
             }
 
+            // Mở modal tạo quyền hạt lựu mới — admin CHỌN từ dropdown, không tự gõ mã
             window.moModalThemQuyen = function () {
                 document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Tạo Quyền Hạt Lựu Mới';
                 document.getElementById('quyenId').value = '';
                 document.getElementById('quyenCode').value = '';
-                document.getElementById('quyenCode').readOnly = false;
+                document.getElementById('quyenCodeSelect').value = '';
+                document.getElementById('quyenCodeSelect').disabled = false;
                 document.getElementById('quyenDesc').value = '';
                 document.getElementById('quyenCodeError').style.display = 'none';
+                document.getElementById('quyenModuleId').value = '';
                 modalQuyenInstance.show();
             };
 
-            window.moModalSuaQuyen = function (id, code, desc) {
-                document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Sửa Quyền: <span style="color:#10b981;">' + code + '</span>';
+            // Mở modal sửa quyền hạt lựu — mã quyền KHÔNG đổi được, chỉ sửa mô tả + nhóm
+            window.moModalSuaQuyen = function (id, code, desc, moduleId) {
+                document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Sửa Quyền: <span style="color:#10b981;">' + layMoTaQuyen(code) + '</span>';
                 document.getElementById('quyenId').value = id;
                 document.getElementById('quyenCode').value = code;
-                document.getElementById('quyenCode').readOnly = false;
+                document.getElementById('quyenCodeSelect').value = code;
+                document.getElementById('quyenCodeSelect').disabled = true;
                 document.getElementById('quyenDesc').value = desc;
                 document.getElementById('quyenCodeError').style.display = 'none';
+                var selectEl = document.getElementById('quyenModuleId');
+                if (moduleId !== null && moduleId !== undefined) {
+                    selectEl.value = moduleId;
+                } else {
+                    selectEl.value = '';
+                }
                 modalQuyenInstance.show();
             };
 
             window.luuQuyen = function () {
                 var id = document.getElementById('quyenId').value;
+                // Khi tạo mới: đọc mã từ dropdown. Khi sửa: đọc từ hidden input (dropdown disabled)
                 var code = document.getElementById('quyenCode').value.trim();
+                if (code === '') {
+                    code = document.getElementById('quyenCodeSelect').value.trim();
+                    document.getElementById('quyenCode').value = code;
+                }
                 var desc = document.getElementById('quyenDesc').value.trim();
+                var moduleIdStr = document.getElementById('quyenModuleId').value;
 
                 if (code === '') {
                     document.getElementById('quyenCodeError').style.display = 'block';
@@ -1025,7 +1131,14 @@
                 }
                 document.getElementById('quyenCodeError').style.display = 'none';
 
+                // Thêm moduleId vào requestData (null nếu chưa chọn)
                 var requestData = { permissionCode: code, description: desc };
+                if (moduleIdStr !== '' && moduleIdStr !== null && moduleIdStr !== undefined) {
+                    requestData.moduleId = parseInt(moduleIdStr);
+                } else {
+                    requestData.moduleId = null;
+                }
+
                 var apiUrl = '/api/admin/role-management/permissions';
                 var method = 'POST';
                 if (id !== '') {
@@ -1037,11 +1150,13 @@
                     modalQuyenInstance.hide();
                     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Lưu quyền thành công!', showConfirmButton: false, timer: 2000 });
                     loadPermissionsForTab2();
+                    loadPermissionsForCheckbox(); // Đồng bộ lại checkbox cho modal chức vụ
                 }, function (errMsg) {
                     Swal.fire({ icon: 'error', title: 'Lưu thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
                 });
             };
 
+            // Xóa quyền hạt lựu (chỉ xóa được nếu chưa gắn vào chức vụ nào)
             window.xoaQuyen = function (id, code) {
                 Swal.fire({
                     title: 'Xóa quyền ' + code + '?',
@@ -1064,6 +1179,303 @@
             };
 
             // ================================================================
+            // PHẦN 3: NHÓM CHỨC NĂNG (PERMISSION MODULES)
+            // ================================================================
+
+            // Tải danh sách nhóm chức năng cho Tab 3
+            function loadModules() {
+                document.getElementById('modulesTableBody').innerHTML =
+                    '<tr><td colspan="6" style="padding:40px;text-align:center;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:#94a3b8;"></i></td></tr>';
+
+                callApi('/api/admin/role-management/modules', 'GET', null, '', function (response) {
+                    var modules = response.data || [];
+                    danhSachModulesGoc = modules; // Lưu vào global để dùng lại
+                    var html = '';
+
+                    if (modules.length === 0) {
+                        html = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;">Hệ thống chưa có nhóm chức năng nào.</td></tr>';
+                    } else {
+                        for (var i = 0; i < modules.length; i = i + 1) {
+                            var m = modules[i];
+                            var descText = m.description;
+                            if (descText === null || descText === undefined || descText === '') {
+                                descText = '<i style="color:#cbd5e1;">Chưa có mô tả</i>';
+                            }
+                            var displayOrder = (m.displayOrder !== null && m.displayOrder !== undefined) ? m.displayOrder : 0;
+                            var descEscaped = (m.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            var moduleNameEscaped = (m.moduleName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                            html += '<tr>' +
+                                '<td style="font-weight:700;color:#64748b;font-size:.85rem;">#' + m.id + '</td>' +
+                                '<td><span style="padding:2px 8px;background:#fef9c3;color:#a16207;border-radius:5px;font-size:.78rem;font-weight:700;border:1px solid #fde68a;">' + m.moduleCode + '</span></td>' +
+                                '<td style="font-weight:600;color:#1e293b;font-size:.85rem;">' + m.moduleName + '</td>' +
+                                '<td style="font-size:.82rem;color:#475569;">' + descText + '</td>' +
+                                '<td style="text-align:center;font-weight:700;color:#64748b;">' + displayOrder + '</td>' +
+                                '<td style="text-align:right;">' +
+                                '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
+                                'onclick=\'moModalSuaModule(' + m.id + ',"' + m.moduleCode + '","' + moduleNameEscaped + '","' + descEscaped + '",' + displayOrder + ')\'>' +
+                                '<i class="fas fa-edit"></i>' +
+                                '</button>' +
+                                '<button class="btn-tbl btn-tbl-delete" title="Xóa" onclick="xoaModule(' + m.id + ', \'' + m.moduleCode + '\')">' +
+                                '<i class="fas fa-trash-alt"></i>' +
+                                '</button>' +
+                                '</td>' +
+                                '</tr>';
+                        }
+                    }
+
+                    document.getElementById('modulesTableBody').innerHTML = html;
+                }, function (errMsg) {
+                    document.getElementById('modulesTableBody').innerHTML =
+                        '<tr><td colspan="6" style="padding:30px;text-align:center;color:#dc2626;">' +
+                        '<i class="fas fa-exclamation-triangle me-2"></i>' + errMsg + '</td></tr>';
+                });
+            }
+
+            // Nạp danh sách module vào dropdown select trong modal tạo/sửa quyền
+            function loadModulesDropdown() {
+                callApi('/api/admin/role-management/modules', 'GET', null, '', function (response) {
+                    var modules = response.data || [];
+                    danhSachModulesGoc = modules;
+                    var selectEl = document.getElementById('quyenModuleId');
+                    // Giữ option đầu "Chưa phân nhóm", xóa các option cũ
+                    selectEl.innerHTML = '<option value="">-- Chưa phân nhóm --</option>';
+                    for (var i = 0; i < modules.length; i = i + 1) {
+                        var m = modules[i];
+                        var opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = m.moduleName;
+                        opt.setAttribute('data-code', m.moduleCode);
+                        selectEl.appendChild(opt);
+                    }
+                }, function () {
+                    // Không báo lỗi nặng — chỉ để dropdown trống
+                });
+            }
+
+            // Mở SweetAlert tạo nhóm chức năng mới
+            window.moModalThemModule = function () {
+                Swal.fire({
+                    title: '<i class="fas fa-folder-plus me-2" style="color:#f59e0b;"></i>Tạo nhóm chức năng mới',
+                    html: '<div style="text-align:left;">' +
+                        '<div class="mb-3">' +
+                        '<label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:5px;">Mã Module <span style="color:#dc2626;">*</span></label>' +
+                        '<input id="swal-moduleCode" class="swal2-input" placeholder="VD: USER_MANAGEMENT, POST_ADMIN..." style="text-transform:uppercase;font-weight:700;">' +
+                        '</div>' +
+                        '<div class="mb-3">' +
+                        '<label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:5px;">Tên hiển thị <span style="color:#dc2626;">*</span></label>' +
+                        '<input id="swal-moduleName" class="swal2-input" placeholder="VD: Quản lý người dùng">' +
+                        '</div>' +
+                        '<div class="mb-3">' +
+                        '<label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:5px;">Mô tả</label>' +
+                        '<input id="swal-moduleDesc" class="swal2-input" placeholder="Mô tả ngắn về nhóm chức năng này">' +
+                        '</div>' +
+                        '<div class="mb-3">' +
+                        '<label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:5px;">Thứ tự hiển thị</label>' +
+                        '<input id="swal-moduleOrder" type="number" class="swal2-input" placeholder="0" value="0" min="0">' +
+                        '</div>' +
+                        '</div>',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-save me-1"></i>Tạo nhóm',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#f59e0b',
+                    cancelButtonColor: '#94a3b8',
+                    didOpen: function () {
+                        // Auto uppercase mã module
+                        var codeInput = document.getElementById('swal-moduleCode');
+                        codeInput.addEventListener('input', function () {
+                            var pos = this.selectionStart;
+                            this.value = this.value.toUpperCase();
+                            this.setSelectionRange(pos, pos);
+                        });
+                    },
+                    preConfirm: function () {
+                        var code = document.getElementById('swal-moduleCode').value.trim();
+                        var name = document.getElementById('swal-moduleName').value.trim();
+                        var desc = document.getElementById('swal-moduleDesc').value.trim();
+                        var order = document.getElementById('swal-moduleOrder').value;
+
+                        if (code === '') {
+                            Swal.showValidationMessage('Mã module không được để trống');
+                            return false;
+                        }
+                        if (name === '') {
+                            Swal.showValidationMessage('Tên hiển thị không được để trống');
+                            return false;
+                        }
+                        return { moduleCode: code, moduleName: name, description: desc, displayOrder: parseInt(order) || 0 };
+                    }
+                }).then(function (result) {
+                    if (result.isConfirmed !== true) return;
+                    callApi('/api/admin/role-management/modules', 'POST', result.value, '', function (response) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Tạo nhóm thành công!', showConfirmButton: false, timer: 2000 });
+                        loadModules();
+                        loadModulesDropdown();
+                    }, function (errMsg) {
+                        Swal.fire({ icon: 'error', title: 'Tạo thất bại', text: errMsg, confirmButtonColor: '#f59e0b' });
+                    });
+                });
+            };
+
+            // Mở SweetAlert sửa nhóm chức năng (không cho sửa moduleCode)
+            window.moModalSuaModule = function (id, moduleCode, moduleName, description, displayOrder) {
+                Swal.fire({
+                    title: '<i class="fas fa-edit me-2" style="color:#f59e0b;"></i>Sửa nhóm: <span style="color:#f59e0b;">' + moduleCode + '</span>',
+                    html: '<div style="text-align:left;">' +
+                        '<div class="mb-3">' +
+                        '<label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:5px;">Tên hiển thị <span style="color:#dc2626;">*</span></label>' +
+                        '<input id="swal-editModuleName" class="swal2-input" value="' + moduleName + '">' +
+                        '</div>' +
+                        '<div class="mb-3">' +
+                        '<label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:5px;">Mô tả</label>' +
+                        '<input id="swal-editModuleDesc" class="swal2-input" value="' + description + '">' +
+                        '</div>' +
+                        '<div class="mb-3">' +
+                        '<label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:5px;">Thứ tự hiển thị</label>' +
+                        '<input id="swal-editModuleOrder" type="number" class="swal2-input" value="' + displayOrder + '" min="0">' +
+                        '</div>' +
+                        '</div>',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-save me-1"></i>Lưu thay đổi',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#f59e0b',
+                    cancelButtonColor: '#94a3b8',
+                    preConfirm: function () {
+                        var name = document.getElementById('swal-editModuleName').value.trim();
+                        var desc = document.getElementById('swal-editModuleDesc').value.trim();
+                        var order = document.getElementById('swal-editModuleOrder').value;
+
+                        if (name === '') {
+                            Swal.showValidationMessage('Tên hiển thị không được để trống');
+                            return false;
+                        }
+                        return { moduleName: name, description: desc, displayOrder: parseInt(order) || 0 };
+                    }
+                }).then(function (result) {
+                    if (result.isConfirmed !== true) return;
+                    callApi('/api/admin/role-management/modules/' + id, 'PUT', result.value, '', function (response) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Lưu thay đổi thành công!', showConfirmButton: false, timer: 2000 });
+                        loadModules();
+                        loadModulesDropdown();
+                    }, function (errMsg) {
+                        Swal.fire({ icon: 'error', title: 'Lưu thất bại', text: errMsg, confirmButtonColor: '#f59e0b' });
+                    });
+                });
+            };
+
+            // Xóa nhóm chức năng — backend sẽ kiểm tra FK trước khi xóa
+            window.xoaModule = function (id, moduleCode) {
+                Swal.fire({
+                    title: 'Xóa nhóm ' + moduleCode + '?',
+                    html: '<div style="color:#64748b;font-size:.9rem;">Chỉ xóa được nếu nhóm này chưa có quyền nào thuộc về.<br>Hành động này không thể hoàn tác.</div>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: '<i class="fas fa-trash-alt me-1"></i>Xác nhận xóa',
+                    cancelButtonText: 'Hủy'
+                }).then(function (result) {
+                    if (result.isConfirmed !== true) return;
+                    callApi('/api/admin/role-management/modules/' + id, 'DELETE', null, '', function (response) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Đã xóa nhóm', showConfirmButton: false, timer: 2000 });
+                        loadModules();
+                        loadModulesDropdown();
+                    }, function (errMsg) {
+                        Swal.fire({ icon: 'error', title: 'Xóa thất bại', text: errMsg, confirmButtonColor: '#3b82f6' });
+                    });
+                });
+            };
+
+            // ================================================================
+            // PHẦN 4: DROPDOWN QUYỀN HỆ THỐNG (TỪ BACKEND)
+            // ================================================================
+
+            // Biến cache danh sách quyền hệ thống (từ PermissionRegistry)
+            var danhSachQuyenHeThong = [];
+
+            // Nạp danh sách mã quyền từ backend vào dropdown modal tạo quyền
+            function loadSystemPermissionsDropdown() {
+                callApi('/api/admin/role-management/system-permissions', 'GET', null, '', function (response) {
+                    danhSachQuyenHeThong = response.data || [];
+                    var selectEl = document.getElementById('quyenCodeSelect');
+
+                    // Xóa options cũ (giữ option đầu)
+                    while (selectEl.options.length > 1) {
+                        selectEl.remove(1);
+                    }
+
+                    // Nhóm theo moduleCode để hiện optgroup
+                    var nhomKeys = [];
+                    var nhomDict = {};
+                    for (var i = 0; i < danhSachQuyenHeThong.length; i = i + 1) {
+                        var item = danhSachQuyenHeThong[i];
+                        var moduleCode = item.moduleCode || 'KHAC';
+                        var found = false;
+                        for (var k = 0; k < nhomKeys.length; k = k + 1) {
+                            if (nhomKeys[k] === moduleCode) { found = true; break; }
+                        }
+                        if (found === false) {
+                            nhomKeys.push(moduleCode);
+                            nhomDict[moduleCode] = [];
+                        }
+                        nhomDict[moduleCode].push(item);
+                    }
+
+                    // Tạo optgroup cho từng nhóm module
+                    for (var g = 0; g < nhomKeys.length; g = g + 1) {
+                        var groupKey = nhomKeys[g];
+                        var groupItems = nhomDict[groupKey];
+                        var optgroup = document.createElement('optgroup');
+                        optgroup.label = groupKey;
+
+                        for (var j = 0; j < groupItems.length; j = j + 1) {
+                            var opt = document.createElement('option');
+                            opt.value = groupItems[j].code;
+                            opt.textContent = groupItems[j].description;
+                            opt.setAttribute('data-module', groupItems[j].moduleCode);
+                            optgroup.appendChild(opt);
+                        }
+                        selectEl.appendChild(optgroup);
+                    }
+                }, function () {
+                    danhSachQuyenHeThong = [];
+                });
+            }
+
+            // Xử lý khi admin chọn quyền từ dropdown — tự điền mã + mô tả + nhóm
+            function khiChonQuyenHeThong() {
+                var selectEl = document.getElementById('quyenCodeSelect');
+                var selectedCode = selectEl.value;
+                if (selectedCode === '') {
+                    document.getElementById('quyenCode').value = '';
+                    document.getElementById('quyenDesc').value = '';
+                    return;
+                }
+
+                // Tìm thông tin quyền đã chọn
+                document.getElementById('quyenCode').value = selectedCode;
+                for (var i = 0; i < danhSachQuyenHeThong.length; i = i + 1) {
+                    var item = danhSachQuyenHeThong[i];
+                    if (item.code === selectedCode) {
+                        document.getElementById('quyenDesc').value = item.description;
+
+                        // Tự chọn nhóm module tương ứng trong dropdown module
+                        var moduleSelect = document.getElementById('quyenModuleId');
+                        var moduleCode = item.moduleCode;
+                        for (var m = 0; m < moduleSelect.options.length; m = m + 1) {
+                            var optText = moduleSelect.options[m].textContent;
+                            var optDataCode = moduleSelect.options[m].getAttribute('data-code');
+                            if (optDataCode === moduleCode) {
+                                moduleSelect.selectedIndex = m;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // ================================================================
             // UTILITY
             // ================================================================
             function getRiskLabel(riskLevel) {
@@ -1073,6 +1485,22 @@
                 if (riskLevel === 'LOW') return 'Thấp';
                 return 'An toàn';
             }
+
+            // Tra cứu mô tả nghiệp vụ của quyền từ danh sách đã nạp sẵn
+            function layMoTaQuyen(permissionCode) {
+                for (var i = 0; i < danhSachPermissionsGoc.length; i = i + 1) {
+                    if (danhSachPermissionsGoc[i].permissionCode === permissionCode) {
+                        var desc = danhSachPermissionsGoc[i].description;
+                        if (desc !== null && desc !== undefined && desc !== '') {
+                            return desc;
+                        }
+                        break;
+                    }
+                }
+                // Fallback: nếu chưa có mô tả thì hiện code
+                return permissionCode;
+            }
+
         </script>
 
     </div>

@@ -9,6 +9,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ReportModLogRespo
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAdminReportService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,7 @@ public class ApiAdminReportController {
     private final IAdminReportService adminReportService;
     private final IUserService userService;
 
+    @RequirePermission("REPORT_VIEW")
     @GetMapping("/comments")
     public ApiResponse<List<CommentReportResponse>> layDanhSachBaoCao(
             @RequestParam String targetType,
@@ -39,6 +41,7 @@ public class ApiAdminReportController {
         return ApiResponse.thanhCong(result, "Lấy danh sách đơn báo cáo thành công.");
     }
 
+    @RequirePermission("REPORT_RESOLVE")
     @PatchMapping("/comments/resolve")
     public ApiResponse<Void> xuLyBaoCao(
             @Valid @RequestBody ReportResolutionRequest request,
@@ -53,6 +56,7 @@ public class ApiAdminReportController {
         return ApiResponse.thanhCong(null, "Đóng hồ sơ báo cáo thành công.");
     }
 
+    @RequirePermission("REPORT_VIEW")
     @GetMapping("/comments/{reportId}/history")
     public ApiResponse<List<ReportModLogResponse>> layLichSuXuLyBaoCao(
             @PathVariable Long reportId,

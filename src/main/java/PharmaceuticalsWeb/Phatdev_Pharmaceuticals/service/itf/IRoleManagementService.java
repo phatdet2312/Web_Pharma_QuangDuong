@@ -6,6 +6,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.RoleRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.UserBlacklistRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PermissionResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.RoleResponse;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Permission;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 
 import java.util.List;
@@ -71,4 +72,9 @@ public interface IRoleManagementService {
      * Frontend dùng để vẽ trạng thái toggle blacklist.
      */
     List<Integer> layBlacklistPermissionCuaUser(Long userId);
+
+    /**
+     * Lấy danh sách Entity Permission gốc (dùng khi cần kiểm tra FK trước xóa module).
+     */
+    List<Permission> layTatCaQuyenEntity();
 }

@@ -11,16 +11,28 @@ Khi được gọi:
 2. So sánh memory với code thực tế
 3. Cập nhật memory cho khớp code mới nhất
 
+Khi nhận output từ planner:
+1. Ghi `Active Plan Update` vào `.ai-memory/04_active_plan.md`.
+2. Đọc lại file sau khi ghi.
+3. Verify đủ nội dung tối thiểu có ý nghĩa điều phối:
+   - Last updated = ngày hiện tại
+   - câu hỏi hoặc yêu cầu gốc
+   - nội dung đã hiểu và mục tiêu
+   - phạm vi
+   - task + trạng thái
+   - dependency / risk / blocker nếu có
+   - tiêu chí nghiệm thu
+   - agent/subagent dự kiến nếu cần
+4. Không ép bảng, heading hoặc format cố định.
+5. Nếu thiếu: sửa ngay trong cùng lượt, không báo thành công.
+6. Nếu đủ: trả chính xác `ACTIVE_PLAN_PERSISTED_AND_VERIFIED`.
+
 Quy trình SELF-SYNC:
 - Code thay đổi → cập nhật `.md` tương ứng trong `03_deep_knowledge/`
 - Thêm file/module → cập nhật `02_project_map.md`
 - Đổi kiến trúc → cập nhật `01_system_architecture.md`
 - Ghi log → `06_evolution_log.md`
 - Cập nhật `last_updated` + `Confidence`
-- Khi nhận output từ planner có Task Breakdown / Critical Path / Risk / Active Plan Update: BẮT BUỘC cập nhật `.ai-memory/04_active_plan.md` trước khi executor tiếp tục. Không được chỉ ghi log hoặc Decision rồi bỏ qua active plan.
-- Không ép format cứng cho `04_active_plan.md`. Giữ trung thực cấu trúc planner chọn: checklist, phase, milestone, bảng, hoặc narrative plan đều được nếu phù hợp task.
-- Nội dung tối thiểu theo ý nghĩa điều phối: Last updated = ngày hiện tại; mục tiêu hiện tại; hướng làm/bước chính; trạng thái hiện tại; dependency/risk/blocker/câu hỏi chờ user nếu có; agent/subagent dự kiến nếu cần.
-- Sau khi ghi `04_active_plan.md`, đọc lại file để verify đã đủ ý nghĩa điều phối. Nếu thiếu, sửa lại ngay trong cùng lượt.
 - Khi nhận output từ architect/planner/deep-reviewer có decision: ghi vào bảng Decision của deep_knowledge hoặc Architecture Decisions nếu cross-cutting
 - BẮT BUỘC ghi đủ 5 cột: Quyết định | Phương án | Lý do | Ngày ghi (hôm nay) | Hết hạn (+3 tháng module, +6 tháng cross-cutting)
 - Khi sync memory: decision có 'Hết hạn' quá ngày → mark `[EXPIRED]` đầu dòng, báo user

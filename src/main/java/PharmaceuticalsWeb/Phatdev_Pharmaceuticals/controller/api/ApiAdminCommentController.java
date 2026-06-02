@@ -1,6 +1,7 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/controller/api/ApiAdminCommentController.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.BulkActionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentModerationRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.LoaiLikeRequest;
@@ -44,30 +45,35 @@ public class ApiAdminCommentController {
     private final IUserService userService;
 
     /** Thống kê bình luận cho Hero Stats */
+    @RequirePermission("COMMENT_VIEW")
     @GetMapping("/stats")
     public ApiResponse<CommentStatsResponse> layThongKe() {
         return ApiResponse.thanhCong(commentService.layThongKeBinhLuan(), "Lấy thống kê thành công");
     }
 
     /** Tất cả loại reaction (dùng cho modal quản lý LOAI_LIKE) */
+    @RequirePermission("COMMENT_MANAGE_REACTION")
     @GetMapping("/reaction-types")
     public ApiResponse<List<LoaiLikeResponse>> layLoaiLike() {
         return ApiResponse.thanhCong(commentService.layTatCaLoaiLike(), "Lấy loại reaction thành công");
     }
 
     /** Tải lên ảnh icon cho loại cảm xúc */
+    @RequirePermission("COMMENT_MANAGE_REACTION")
     @PostMapping(value = "/reaction-types/upload-icon", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<AdminEventMediaResponse> uploadIconReaction(@RequestParam("file") MultipartFile file) {
         return ApiResponse.thanhCong(commentService.uploadIconReaction(file), "Tải ảnh icon thành công");
     }
 
     /** G2: Tạo mới loại reaction */
+    @RequirePermission("COMMENT_MANAGE_REACTION")
     @PostMapping("/reaction-types")
     public ApiResponse<LoaiLikeResponse> taoLoaiLike(@Valid @RequestBody LoaiLikeRequest request) {
         return ApiResponse.thanhCong(commentService.taoLoaiLike(request), "Tạo loại reaction thành công");
     }
 
     /** G2: Cập nhật loại reaction */
+    @RequirePermission("COMMENT_MANAGE_REACTION")
     @PutMapping("/reaction-types/{id}")
     public ApiResponse<LoaiLikeResponse> capNhatLoaiLike(
             @PathVariable Integer id,
@@ -76,6 +82,7 @@ public class ApiAdminCommentController {
     }
 
     /** G2: Xóa loại reaction */
+    @RequirePermission("COMMENT_MANAGE_REACTION")
     @DeleteMapping("/reaction-types/{id}")
     public ApiResponse<Void> xoaLoaiLike(@PathVariable Integer id) {
         commentService.xoaLoaiLike(id);
@@ -83,6 +90,7 @@ public class ApiAdminCommentController {
     }
 
     /** Comment gốc chờ duyệt */
+    @RequirePermission("COMMENT_VIEW")
     @GetMapping("/pending")
     public ApiResponse<List<CmtResponse>> layCmtChuaDuyet() {
         return ApiResponse.thanhCong(commentService.layCmtChuaDuyet(), "Lấy comment chờ duyệt thành công");
@@ -94,6 +102,7 @@ public class ApiAdminCommentController {
      * targetType: null=all, POST, EVENT
      * * Đã nâng cấp thành Cỗ máy tìm kiếm đa chiều: Bổ sung lọc từ khóa, thời gian và mục tiêu.
      */
+    @RequirePermission("COMMENT_VIEW")
     @GetMapping
     public ApiResponse<Page<AdminCmtContextResponse>> timKiemBinhLuanAdmin(
             @RequestParam(required = false) String keyword,
@@ -118,6 +127,7 @@ public class ApiAdminCommentController {
      * Kiểm duyệt bình luận / reply.
      * Body: targetId, targetType (CMT|PH_CMT), actionId, reason.
      */
+    @RequirePermission("COMMENT_MODERATE")
     @PostMapping("/moderate")
     public ApiResponse<Void> kiemDuyet(
             @Valid @RequestBody CommentModerationRequest request,
@@ -132,6 +142,7 @@ public class ApiAdminCommentController {
     }
 
     /** Xóa vật lý comment gốc (cascade tất cả reply + reaction) */
+    @RequirePermission("COMMENT_DELETE")
     @DeleteMapping("/cmt/{cmtId}")
     public ApiResponse<Void> xoaCmt(@PathVariable Long cmtId) {
         commentService.xoaCmtVatLy(cmtId);
@@ -139,6 +150,7 @@ public class ApiAdminCommentController {
     }
 
     /** Xóa vật lý reply */
+    @RequirePermission("COMMENT_DELETE")
     @DeleteMapping("/reply/{phCmtId}")
     public ApiResponse<Void> xoaPhCmt(@PathVariable Long phCmtId) {
         commentService.xoaPhCmtVatLy(phCmtId);
@@ -146,6 +158,7 @@ public class ApiAdminCommentController {
     }
 
     /** Kiểm duyệt hàng loạt (APPROVE / HIDE / WARN) */
+    @RequirePermission("COMMENT_MODERATE")
     @PostMapping("/bulk/moderate")
     public ApiResponse<Void> kiemDuyetNhieu(
             @Valid @RequestBody BulkActionRequest request,
@@ -159,6 +172,7 @@ public class ApiAdminCommentController {
     }
 
     /** Xóa hàng loạt comment gốc */
+    @RequirePermission("COMMENT_DELETE")
     @DeleteMapping("/bulk")
     public ApiResponse<Void> xoaNhieu(@Valid @RequestBody BulkActionRequest request) {
         commentService.xoaNhieuCmt(request);
@@ -169,6 +183,7 @@ public class ApiAdminCommentController {
      * Truy xuất lịch sử kiểm duyệt của Bình luận gốc theo ID.
      * Trả về danh sách log sắp xếp từ mới nhất đến cũ nhất.
      */
+    @RequirePermission("COMMENT_VIEW")
     @GetMapping("/cmt/{cmtId}/moderation-log")
     public ApiResponse<List<CmtModerationLogResponse>> layLichSuKiemDuyetCmt(@PathVariable Long cmtId) {
         return ApiResponse.thanhCong(commentService.layLichSuKiemDuyetCmt(cmtId), "Lấy lịch sử kiểm duyệt bình luận thành công");
@@ -178,6 +193,7 @@ public class ApiAdminCommentController {
      * Truy xuất lịch sử kiểm duyệt của Phản hồi thứ cấp theo ID.
      * Trả về danh sách log sắp xếp từ mới nhất đến cũ nhất.
      */
+    @RequirePermission("COMMENT_VIEW")
     @GetMapping("/reply/{phCmtId}/moderation-log")
     public ApiResponse<List<CmtModerationLogResponse>> layLichSuKiemDuyetPhCmt(@PathVariable Long phCmtId) {
         return ApiResponse.thanhCong(commentService.layLichSuKiemDuyetPhCmt(phCmtId), "Lấy lịch sử kiểm duyệt phản hồi thành công");

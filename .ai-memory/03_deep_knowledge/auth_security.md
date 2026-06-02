@@ -1,6 +1,6 @@
 # Auth & Security
-> Last updated: 2026-05-18
-> Source files: `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/utils/SecurityConfig.java`, `controller/api/ApiAuthController.java`, `entities/User.java`, `config/ultraSecureLibrary/Service/JwtService.java`, `config/ultraSecureLibrary/Service/CookieUtils.java`, `adapter/UserSecurityAdapter.java`
+> Last updated: 2026-06-01
+> Source files: `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/utils/SecurityConfig.java`, `controller/api/ApiAuthController.java`, `entities/User.java`, `config/ultraSecureLibrary/Service/JwtService.java`, `config/ultraSecureLibrary/Service/CookieUtils.java`, `adapter/UserSecurityAdapter.java`, `config/interceptor/PermissionInterceptor.java`, `validators/annotations/RequirePermission.java`, `config/WebMvcConfig.java`
 > Confidence: HIGH
 
 ## Mô tả chức năng
@@ -18,10 +18,15 @@ Module xác thực/ủy quyền dùng Spring Security với JWT cookie, OAuth2 G
 
 ## Business Rules quan trọng
 
-- `SecurityConfig` đang cấu hình `SessionCreationPolicy.STATELESS` và `csrf().disable()`.
-- Public routes gồm `/`, `/home`, static `/css/**`, `/js/**`, `/images/**`, auth pages, `/api/auth/**`, `/posts/**`, `/events/**`, một số API public posts/events/comments.
-- Admin APIs `/api/admin/**` yêu cầu role `ADMIN` hoặc `SUPERADMIN`; trang admin rộng hơn cho `EMPLOYEE`, `ADMIN`, `SUPERADMIN`.
+- `SecurityConfig` cấu hình `SessionCreationPolicy.STATELESS` và `csrf().disable()`.
+- **Phase 5 (2026-05-31)**: SecurityConfig KHÔNG CÒN hardcode role — chỉ phân biệt `permitAll()` vs `authenticated()`. Mọi check quyền cụ thể do `PermissionInterceptor` xử lý qua `@RequirePermission`.
+- Public routes: `/`, `/home`, static, auth pages, `/api/auth/**`, `/posts/**`, `/events/**`, một số API public posts/events/comments.
+- Admin APIs `/api/admin/**`: chỉ yêu cầu `authenticated()`, quyền chi tiết do `@RequirePermission` enforce.
 - `User.getAuthorities()` thêm prefix `ROLE_` cho role, permission giữ nguyên string.
+- `napQuyenChoNguoiDung()` đã lọc `CT_USER_PERMISSION_BLACKLIST` trước khi bơm authorities (fix Phase 5).
+- SUPERADMIN (roleLevel=0) = GOD MODE — bypass mọi `@RequirePermission` check.
+- `PermissionInterceptor` đăng ký qua `WebMvcConfig.addInterceptors()` cho `/api/admin/**`, `/api/comments/**`, `/api/reports/**`, `/api/events/**`, `/api/posts/**`.
+- Endpoint không có `@RequirePermission` annotation vẫn hoạt động bình thường (backward compatible).
 - Lỗi xác thực nghiệp vụ ném `AppException` với status 401/403/400.
 - Không hardcode secret/key mới. `application.properties` chứa secret-bearing keys; khi kiểm tra config phải đọc targeted key và mask value.
 - Auth/security là critical path; sửa lớn cần security review.
@@ -43,6 +48,14 @@ Module xác thực/ủy quyền dùng Spring Security với JWT cookie, OAuth2 G
 | Quyết định | Phương án (chọn / bỏ) | Lý do | Ngày ghi | Hết hạn | Dead End |
 |-----------|------------------------|-------|----------|---------|----------|
 | Chưa có | N/A | Bootstrap chỉ ghi nhận code hiện tại | 2026-05-18 | N/A | N/A |
+
+## Thay đổi Phase 5 — Phân quyền Động (2026-05-31)
+
+- SecurityConfig bỏ hết `hasAnyRole()` hardcode → chỉ `permitAll()` vs `authenticated()`.
+- `napQuyenChoNguoiDung()` đã fix blacklist bug — query `CT_USER_PERMISSION_BLACKLIST` lọc trước khi gán authorities.
+- `registerLocalUser()` tìm role có `roleLevel` cao nhất (yếu nhất) thay vì hardcode `"USER"`.
+- `xoaChucVu()` chỉ bảo vệ `roleLevel == 0` thay vì hardcode tên role.
+- Chi tiết cơ chế phân quyền: xem `admin_rbac.md`.
 
 ## Ghi chú
 

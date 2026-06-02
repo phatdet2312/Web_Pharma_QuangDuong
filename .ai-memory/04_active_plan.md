@@ -1,4 +1,237 @@
-# Active Plan - Phase 4: Rich Content Editor + Live Preview
+# Active Plan - Phase 5: Hệ thống Phân quyền Động 100% Database-Driven
+> Last updated: 2026-05-31
+> Status: DONE (Phase A-E implemented, build+test pass)
+> Planner persisted before implementation: YES
+> Planner model: Opus 4.6
+
+## Mục tiêu Phase 5
+
+Triển khai hệ thống phân quyền động thật sự: khởi nguồn web trắng tinh chỉ có SUPERADMIN. Mọi role, permission hạt lựu đều do quản trị viên tạo và gán qua giao diện admin — KHÔNG cần can thiệp code backend. Thêm module mới trong tương lai chỉ cần admin tạo permission mới trên web.
+
+## Cơ chế hoạt động — 4 Lớp
+
+```
+  SUPERADMIN (con người duy nhất lúc khởi tạo)
+       │
+       ▼
+  ┌─────────────────────────────────────────────────────┐
+  │  LỚP 1: QUẢN TRỊ TRÊN GIAO DIỆN WEB               │
+  │  Admin vào /admin/role-management                   │
+  │                                                     │
+  │  ① Tạo Permission "POST_CREATE" (module "Bài viết") │
+  │     → INSERT vào bảng PERMISSIONS                   │
+  │  ② Tạo Role "Biên tập viên" (cấp bậc 2)            │
+  │     → INSERT vào bảng USER_ROLES                    │
+  │  ③ Gán POST_CREATE vào "Biên tập viên"              │
+  │     → INSERT vào CT_ROLE_PERMISSIONS                │
+  │  ④ Gán role cho user Nguyễn Văn A                   │
+  │     → INSERT vào CT_USER_ROLES                      │
+  │  ⑤ (Tuỳ chọn) Chặn riêng POST_EDIT cho user A      │
+  │     → INSERT vào CT_USER_PERMISSION_BLACKLIST       │
+  └─────────────────────────────────────────────────────┘
+       │
+       ▼
+  ┌─────────────────────────────────────────────────────┐
+  │  LỚP 2: NẠP QUYỀN KHI ĐĂNG NHẬP                    │
+  │                                                     │
+  │  Nguyễn Văn A đăng nhập                              │
+  │  → napQuyenChoNguoiDung() query 4 bảng join          │
+  │  → LỌC BLACKLIST (bỏ POST_EDIT đã bị chặn)          │
+  │  → Kết quả: roles=["BIEN_TAP_VIEN"]                │
+  │             permissions=["POST_CREATE"]              │
+  │  → Nhúng vào JWT token → gửi về trình duyệt         │
+  │  → DynamicRoleFilter tự cấp token mới nếu quyền     │
+  │    thay đổi giữa phiên                               │
+  └─────────────────────────────────────────────────────┘
+       │
+       ▼
+  ┌─────────────────────────────────────────────────────┐
+  │  LỚP 3: KIỂM TRA QUYỀN Ở MỖI ENDPOINT              │
+  │                                                     │
+  │  User A gọi POST /api/admin/posts                   │
+  │  → PermissionInterceptor đọc @RequirePermission      │
+  │  → Annotation ghi "POST_CREATE"                      │
+  │  → Check: SUPERADMIN? → BYPASS, cho qua              │
+  │  → Check: user có "POST_CREATE"? → CÓ → cho qua     │
+  │  → KHÔNG có → trả 403 Forbidden                     │
+  │  → KHÔNG có annotation → KHÔNG check (tương thích)   │
+  └─────────────────────────────────────────────────────┘
+       │
+       ▼
+  ┌─────────────────────────────────────────────────────┐
+  │  LỚP 4: FRONTEND ẨN/HIỆN UI                         │
+  │                                                     │
+  │  Trang admin load xong                               │
+  │  → JS gọi GET /api/admin/my-permissions              │
+  │  → Nhận: {permissions:["POST_CREATE"],               │
+  │           isSuperAdmin: false}                       │
+  │  → coQuyen("POST_CREATE") → true → HIỆN nút "Tạo"   │
+  │  → coQuyen("POST_DELETE") → false → ẨN nút "Xóa"    │
+  │  → SUPERADMIN → LUÔN HIỆN TẤT CẢ                    │
+  │                                                     │
+  │  ⚠ Đây CHỈ là UX — backend vẫn chặn ở Lớp 3        │
+  └─────────────────────────────────────────────────────┘
+```
+
+### Ví dụ thêm module mới trong tương lai
+
+SUPERADMIN vào role-management → tạo quyền ORDER_CREATE, ORDER_VIEW, ORDER_APPROVE (module "Đơn hàng") → tạo role "Quản lý đơn hàng" → gán 3 quyền → gán role cho user. **KHÔNG CẦN SỬA CODE.**
+
+## Gap Analysis
+
+| # | Hiện trạng (đã verify code) | Mục tiêu | Severity |
+|---|---------------------------|----------|----------|
+| G1 | SecurityConfig hardcode 4 role KHÔNG tồn tại trong DB (USER, EMPLOYEE, ADMIN) — code cũ copy sót | Chỉ phân biệt: permitAll vs authenticated. Để PermissionInterceptor check quyền cụ thể | **CRITICAL** |
+| G2 | napQuyenChoNguoiDung() KHÔNG lọc blacklist — quyền bị cấm vẫn có trong authorities | Lọc CT_USER_PERMISSION_BLACKLIST trước khi bơm vào danhSachTenPermission | **CRITICAL** |
+| G3 | KHÔNG có annotation @RequirePermission — endpoint chỉ check role | Custom annotation + HandlerInterceptor kiểm tra permission code từ DB | **HIGH** |
+| G4 | KHÔNG có API /api/admin/my-permissions — frontend mù | Endpoint trả về roles + permissions + isSuperAdmin | **HIGH** |
+| G5 | Permission entity THIẾU cột MODULE — không nhóm quyền theo domain | Thêm cột module VARCHAR(50) | **HIGH** |
+| G6 | Frontend admin KHÔNG ẩn/hiện UI theo quyền — mọi admin thấy hết | JS PermissionManager + data-permission attribute | **HIGH** |
+| G7 | registerLocalUser tìm role "USER" nhưng nó KHÔNG tồn tại → crash | Tìm role có roleLevel cao nhất (yếu nhất), hoặc bỏ qua nếu không có | **MEDIUM** |
+| G8 | xoaChucVu bảo vệ hardcode "ADMIN","USER" — chúng không tồn tại | Chỉ bảo vệ roleLevel=0 (SUPERADMIN) | **MEDIUM** |
+| G9 | PermissionRequest thiếu trường module | Thêm module vào DTO request + response | **MEDIUM** |
+| G10 | role-management.html chưa hiện cột module, chưa filter | Thêm cột, dropdown filter, search | **MEDIUM** |
+| G11 | ApiRoleManagementController thiếu @Valid | Thêm @Valid cho RoleRequest, PermissionRequest | **LOW** |
+| G12 | Sidebar admin menu không ẩn/hiện theo quyền | Sidebar item ẩn/hiện theo PermissionManager | **MEDIUM** |
+
+## Phase 5A — Database + Entity (nền tảng)
+
+| # | Task | Mô tả | Output | Agent | Dependency | Effort |
+|---|------|-------|--------|-------|------------|--------|
+| A1 | Thêm cột MODULE vào Permission entity | Thêm field `module` (String, length=50, nullable=true), mapping @Column. Hibernate tự update schema | Sửa Permission.java +3 dòng | db-specialist | Không | XS |
+| A2 | Thêm module vào PermissionRequest | Thêm field `private String module;` + getter/setter | Sửa PermissionRequest.java | implementer | Không | XS |
+| A3 | Thêm module vào PermissionResponse | Thêm field module + cập nhật fromEntity() | Sửa PermissionResponse.java | implementer | A1 | XS |
+
+**A1 trước → A2, A3 song song**
+
+## Phase 5B — Backend Core Fix (6 task, song song)
+
+| # | Task | Mô tả | Output | Agent | Dependency | Effort |
+|---|------|-------|--------|-------|------------|--------|
+| B1 | Fix blacklist bug trong napQuyenChoNguoiDung() | Sau khi gom permission, query CT_USER_PERMISSION_BLACKLIST theo userId. Vòng lặp for lọc bỏ permission bị blacklist khỏi danhSachTenPermission. Tiêm thêm ICtUserPermissionBlacklistRepository | Sửa UserServiceImpl.java +15-20 dòng | implementer | Không | M |
+| B2 | Viết lại SecurityConfig bỏ hết hardcode role | Thay hasAnyRole() bằng: (1) Public routes: permitAll(). (2) /admin/** và /api/admin/**: authenticated(). (3) /api/** còn lại: authenticated(). Bỏ warforge | Sửa SecurityConfig.java filterChain() | implementer | Không | S |
+| B3 | Fix default role khi đăng ký user | Thay findByRoleName("USER") bằng findTopByOrderByRoleLevelDesc(). Nếu không có role → bỏ qua, user thường không cần role | Sửa UserServiceImpl.java 2 method + IUserRoleRepository +1 method | implementer | Không | S |
+| B4 | Fix xoaChucVu bỏ hardcode tên role | Thay điều kiện "SUPERADMIN/ADMIN/USER".equals() bằng: chỉ bảo vệ role có roleLevel == 0 | Sửa RoleManagementServiceImpl.java 1 điều kiện | implementer | Không | XS |
+| B5 | Thêm @Valid vào ApiRoleManagementController | Thêm @Valid trước @RequestBody tại 4 endpoint POST/PUT. Thêm @NotBlank/@Size cho DTO | Sửa 1 controller + 2 DTO | implementer | Không | XS |
+| B6 | Service xử lý module cho Permission | Cập nhật taoQuyenMoi(), capNhatQuyen(), layTatCaQuyenHatLuu() để đọc/ghi/trả field module | Sửa RoleManagementServiceImpl.java 3 method | implementer | A1-A3 | S |
+
+**B1, B2, B3, B4, B5 song song (độc lập). B6 chờ A1-A3.**
+
+## Phase 5C — Custom Annotation + PermissionInterceptor (LÕI CỦA HỆ THỐNG)
+
+| # | Task | Mô tả | Output | Agent | Dependency | Effort |
+|---|------|-------|--------|-------|------------|--------|
+| C1 | Tạo annotation @RequirePermission | Tạo annotation dùng trên method controller. Attribute value() kiểu String (mã quyền). Retention RUNTIME, Target METHOD | File mới: annotations/RequirePermission.java ~15 dòng | implementer | Không | XS |
+| C2 | Tạo PermissionInterceptor | HandlerInterceptor.preHandle(): (1) Đọc annotation. (2) Không có → cho qua. (3) Có → lấy user. (4) SUPERADMIN (roleLevel=0) → BYPASS. (5) User có permission → cho qua. (6) Không → throw AppException(403) | File mới: config/interceptor/PermissionInterceptor.java ~60 dòng | implementer | B1, B2 | M |
+| C3 | Đăng ký Interceptor vào WebMvcConfigurer | Sửa WebMvcConfig: addInterceptors() đăng ký PermissionInterceptor cho /api/admin/** | Sửa config/WebMvcConfig.java | implementer | C2 | XS |
+| C4 | Tạo endpoint GET /api/admin/my-permissions | Trả về: {roles: [...], permissions: [...], isSuperAdmin: boolean}. Tạo MyPermissionResponse DTO | 1 DTO mới + 1 endpoint ~25 dòng | implementer | B1 | S |
+
+**C1 → C2 → C3 (tuần tự). C4 độc lập với C1-C3.**
+
+## Phase 5D — Frontend Permission-Aware (4 task)
+
+| # | Task | Mô tả | Output | Agent | Dependency | Effort |
+|---|------|-------|--------|-------|------------|--------|
+| D1 | Tạo JS utility PermissionManager | File permission-manager.js: napQuyenTuServer(), coQuyen(code), coRole(name), anHienTheoQuyen(selector, code), renderMenuTheoQuyen(). KHÔNG arrow function, KHÔNG Stream, vòng lặp for, comment trước mỗi hàm | File mới: static/js/permission-manager.js ~100-120 dòng | implementer | C4 | M |
+| D2 | Tích hợp vào admin_layout.html | Thêm script src, gọi napQuyenTuServer() khi load. Sidebar menu item thêm data-permission attribute. Gọi renderMenuTheoQuyen() sau khi nạp xong. SUPERADMIN thấy tất cả | Sửa admin_layout.html | implementer | D1 | M |
+| D3 | Cập nhật role-management.html — module UI | Tab Permissions: thêm cột Module, dropdown filter theo module, modal tạo/sửa có input Module, badge module màu sắc | Sửa role-management.html ~50-80 dòng | implementer | A3, B6 | M |
+| D4 | Search permission live trong role-management | Ô tìm kiếm filter client-side cho tab Permissions | Sửa role-management.html ~20 dòng | implementer | D3 | S |
+
+**D1 → D2 (tuần tự). D3 → D4 (tuần tự). D1-D2 và D3-D4 song song.**
+
+## Phase 5E — Gán @RequirePermission cho Controller hiện tại (5 task, song song)
+
+| # | Task | Mô tả | Output | Agent | Dependency | Effort |
+|---|------|-------|--------|-------|------------|--------|
+| E1 | Gợi ý permission codes trong role-management UI | Section hướng dẫn gợi ý mã quyền nên tạo cho từng module: POST_CREATE, EVENT_EDIT, COMMENT_MODERATE... Chỉ là gợi ý — SUPERADMIN tự quyết | Sửa role-management.html thêm section | implementer | D3 | S |
+| E2 | Gán annotation cho ApiAdminPostController | @RequirePermission("POST_CREATE") cho tạo, "POST_EDIT" cho sửa, "POST_DELETE" cho xóa, "POST_VIEW" cho xem | Sửa controller +5 annotation | implementer | C3 | S |
+| E3 | Gán annotation cho ApiAdminEventController | EVENT_CREATE, EVENT_EDIT, EVENT_DELETE, EVENT_VIEW | Sửa controller +5 annotation | implementer | C3 | S |
+| E4 | Gán annotation cho ApiAdminCommentController | COMMENT_VIEW, COMMENT_MODERATE, COMMENT_DELETE | Sửa controller +5 annotation | implementer | C3 | S |
+| E5 | Gán annotation cho ApiRoleManagementController | ROLE_MANAGE cho tất cả CRUD role/permission. Chỉ SUPERADMIN mới có quyền này | Sửa controller +6 annotation | implementer | C3 | S |
+
+**E1 độc lập. E2-E5 song song (chờ C3).**
+
+## Phase 5F — Review + Test + Memory (4 task, tuần tự)
+
+| # | Task | Mô tả | Output | Agent | Dependency | Effort |
+|---|------|-------|--------|-------|------------|--------|
+| F1 | Review DieuKienCode | Comment trước hàm, không ternary/lambda phức tạp, naming tường minh, không lộ DB, full code | Báo cáo findings | reviewer | E1-E5 | S |
+| F2 | Build + Test | mvnw compile, mvnw test, JS syntax check | Build log | tester | F1 fix | S |
+| F3 | Smoke test phân quyền động | Checklist: SUPERADMIN bypass mọi check, user có quyền → 200, user thiếu quyền → 403, blacklist → bị chặn, UI ẩn/hiện đúng | Báo cáo test | tester | F2 | M |
+| F4 | Memory sync | Cập nhật 04_active_plan DONE, 03_deep_knowledge, 06_evolution_log | Memory files | memory-keeper | F3 | XS |
+
+## Dependency tổng thể
+
+```
+Phase A (XS)              Phase B (song song)
+ A1→A2,A3                  B1,B2,B3,B4,B5 song song
+                            B6 chờ A1-A3
+        │                        │
+        └────────┬───────────────┘
+                 ▼
+          Phase C (tuần tự)
+           C1→C2→C3    C4 (độc lập)
+                 │
+       ┌─────────┴──────────┐
+       ▼                    ▼
+  Phase D               Phase E (song song)
+   D1→D2                 E2,E3,E4,E5
+   D3→D4                 E1
+       │                    │
+       └─────────┬──────────┘
+                 ▼
+          Phase F (tuần tự)
+           F1→F2→F3→F4
+```
+
+## Tiêu chí nghiệm thu (12 items)
+
+1. SecurityConfig KHÔNG còn hardcode tên role — chỉ có permitAll và authenticated
+2. napQuyenChoNguoiDung() lọc blacklist đúng — permission bị cấm KHÔNG xuất hiện trong authorities
+3. Permission entity có cột MODULE — admin tạo quyền mới có thể chọn module
+4. @RequirePermission annotation hoạt động — endpoint có annotation trả 403 nếu user thiếu quyền
+5. SUPERADMIN bypass mọi @RequirePermission check — luôn trả 200
+6. Endpoint không có @RequirePermission vẫn hoạt động bình thường (backward compatible)
+7. GET /api/admin/my-permissions trả đúng danh sách roles + permissions + isSuperAdmin
+8. PermissionManager.coQuyen() trả đúng true/false
+9. Sidebar admin ẩn/hiện menu theo quyền — SUPERADMIN thấy hết
+10. role-management.html: tạo/sửa quyền có trường module, bảng hiện cột module, filter theo module
+11. registerLocalUser/saveGoogleUser không crash khi không có role "USER" trong DB
+12. Build pass (mvnw compile + test), JS không lỗi syntax
+
+## Decisions Phase 5
+
+| Quyết định | Phương án chọn | Phương án bỏ | Lý do | Ngày | Hết hạn |
+|-----------|---------------|-------------|-------|------|---------|
+| Cơ chế check quyền | HandlerInterceptor + @RequirePermission annotation | Spring Security @PreAuthorize (SpEL bị cấm) | Tường minh, backward compatible, không dùng Lambda/SpEL | 2026-05-31 | 2026-08-31 |
+| SecurityConfig | Chỉ permitAll vs authenticated | Giữ hasAnyRole hardcode | Mọi role là động, không tồn tại role cố định ngoài SUPERADMIN | 2026-05-31 | 2026-08-31 |
+| SUPERADMIN | GOD MODE — bypass mọi permission check | Check từng permission riêng | User yêu cầu, giảm phức tạp, tránh admin tự khóa mình | 2026-05-31 | 2026-08-31 |
+| Default role đăng ký | Tìm roleLevel cao nhất (yếu nhất) | Hardcode "USER" | Role "USER" không tồn tại trong DB, cần linh hoạt | 2026-05-31 | 2026-08-31 |
+| MODULE trong Permission | **Thực tế: tạo bảng `PERMISSION_MODULES` riêng + FK `moduleId`** | Cột VARCHAR(50) đơn giản (plan gốc) | Implementation chọn bảng riêng: entity `PermissionModule` (id, moduleCode, moduleName, description, displayOrder), Permission.moduleId FK. Khác plan gốc nhưng linh hoạt hơn | 2026-05-31 | 2026-08-31 |
+| Frontend ẩn/hiện UI | JS PermissionManager + API my-permissions | Server-side Thymeleaf sec:authorize | Nhất quán kiến trúc SPA-like hiện tại, backend vẫn enforce | 2026-05-31 | 2026-08-31 |
+
+## Rủi ro
+
+| # | Rủi ro | Mức độ | Giải pháp |
+|---|--------|--------|-----------|
+| R1 | DynamicRoleFilter conflict với SecurityConfig mới | HIGH | KHÔNG SỬA DynamicRoleFilter. Test kỹ sau khi đổi SecurityConfig. Filter chỉ compare JWT vs DB — vẫn tương thích |
+| R2 | SUPERADMIN quên tạo permission trước khi gán annotation vào code | MEDIUM | E1 cung cấp gợi ý permission codes. Annotation trên endpoint chỉ có hiệu lực nếu permission code tồn tại trong DB |
+| R3 | User đăng nhập không có role nào — bị chặn mọi admin page | MEDIUM | SecurityConfig chỉ check authenticated. User vào được trang nhưng PermissionInterceptor chặn thao tác cần quyền |
+| R4 | Frontend ẩn UI nhưng user bypass qua DevTools/API | EXPECTED | Frontend chỉ là UX. Backend PermissionInterceptor là tường chắn chính — user bypass UI vẫn bị 403 |
+| R5 | role-management.html đã 1080 dòng — thêm tính năng sẽ phình | MEDIUM | Chấp nhận — events.html 3300+ dòng là tiền lệ |
+
+## Lưu ý quan trọng cho implementer
+
+1. **KHÔNG SỬA ultraSecureLibrary** — DynamicRoleFilter, JwtAuthenticationFilter, JwtService trong thư mục cấm
+2. **KHÔNG seed permission mẫu** — DatabaseSeeder CHỈ giữ SUPERADMIN + VIEW. Mọi permission khác do SUPERADMIN tự tạo
+3. **KHÔNG seed gán quyền cho role** — SUPERADMIN tự quyết định role nào có quyền gì
+4. **Backward compatible** — Method controller không có @RequirePermission vẫn hoạt động bình thường
+5. **Convention**: Không Stream/Lambda phức tạp, vòng lặp for, comment tiếng Việt trước mỗi hàm, naming tường minh
+6. **Test với SUPERADMIN trước** — đảm bảo bypass mọi check, rồi test user thường
+
+---
+
+# Historical Plan - Phase 4: Rich Content Editor + Live Preview
 > Last updated: 2026-05-31
 > Status: DONE (tach file dung chung, tich hop admin posts + events)
 > Planner persisted before implementation: YES

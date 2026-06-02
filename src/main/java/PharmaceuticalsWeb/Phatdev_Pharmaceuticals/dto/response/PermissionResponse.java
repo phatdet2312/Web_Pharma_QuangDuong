@@ -22,8 +22,11 @@ public class PermissionResponse {
     private String permissionCode;
     private String description;
     private String riskLevel;
+    private Integer moduleId;
+    private String moduleCode;
+    private String moduleName;
 
-    // Hàm tiện ích chuyển đổi từ Entity sang DTO
+    // Hàm tiện ích chuyển đổi từ Entity sang DTO (không kèm thông tin module)
     public static PermissionResponse fromEntity(Permission entity) {
         if (entity == null) {
             return null;
@@ -32,6 +35,7 @@ public class PermissionResponse {
                 .id(entity.getId())
                 .permissionCode(entity.getPermissionCode())
                 .description(entity.getDescription())
+                .moduleId(entity.getModuleId())
                 .riskLevel("SAFE")
                 .build();
     }

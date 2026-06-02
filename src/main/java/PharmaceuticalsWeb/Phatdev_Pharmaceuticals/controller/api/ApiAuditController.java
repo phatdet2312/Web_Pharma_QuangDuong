@@ -5,6 +5,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ApiResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.AuditLogPageResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ModerationActionResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAuditService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ public class ApiAuditController {
 
     // [SỬA] Endpoint nay hỗ trợ lọc theo loại hành vi và phân trang.
     // actionCode mặc định = 'ALL' (không lọc); pageNo bắt đầu từ 0; pageSize mặc định = 10.
+    @RequirePermission("AUDIT_VIEW")
     @GetMapping("/users/{userId}")
     public ApiResponse<AuditLogPageResponse> getUserAuditLogs(
             @PathVariable Long userId,
@@ -36,6 +38,7 @@ public class ApiAuditController {
     }
 
     //Trả danh mục hành vi kiểm duyệt từ DB để Frontend populate dropdown bộ lọc.
+    @RequirePermission("AUDIT_VIEW")
     @GetMapping("/moderation-actions")
     public ApiResponse<List<ModerationActionResponse>> getDanhSachHanhViKiemDuyet() {
         List<ModerationActionResponse> result = auditService.getDanhSachHanhViKiemDuyet();

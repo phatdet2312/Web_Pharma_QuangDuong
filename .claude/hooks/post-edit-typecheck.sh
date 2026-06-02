@@ -60,7 +60,15 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 
 case "$ext" in
   java)
-    [ -f "$PROJECT_DIR/pom.xml" ]          && run_check "cd \"$PROJECT_DIR\" && mvn compile -q"
+    if [ -f "$PROJECT_DIR/pom.xml" ]; then
+      if [ -f "$PROJECT_DIR/mvnw" ]; then
+        run_check "cd \"$PROJECT_DIR\" && bash mvnw compile -q"
+      elif [ -f "$PROJECT_DIR/mvnw.cmd" ]; then
+        run_check "cd \"$PROJECT_DIR\" && cmd.exe /c mvnw.cmd compile -q"
+      else
+        run_check "cd \"$PROJECT_DIR\" && mvn compile -q"
+      fi
+    fi
     [ -f "$PROJECT_DIR/build.gradle" ]     && run_check "cd \"$PROJECT_DIR\" && gradle compileJava -q"
     [ -f "$PROJECT_DIR/build.gradle.kts" ] && run_check "cd \"$PROJECT_DIR\" && gradle compileJava -q"
     ;;

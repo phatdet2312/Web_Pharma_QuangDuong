@@ -1,15 +1,36 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/WebMvcConfig.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.interceptor.PermissionInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * =========================================================================
+ * CẤU HÌNH WEB MVC: RESOURCE HANDLER + INTERCEPTOR PHÂN QUYỀN ĐỘNG
+ * =========================================================================
+ */
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final PermissionInterceptor permissionInterceptor;
+
+    /**
+     * Đăng ký PermissionInterceptor cho tất cả endpoint admin API.
+     * Interceptor sẽ kiểm tra @RequirePermission annotation trước khi controller xử lý.
+     */
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(permissionInterceptor)
+                .addPathPatterns("/api/admin/**", "/api/comments/**", "/api/reports/**", "/api/events/**", "/api/posts/**");
+    }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {

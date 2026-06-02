@@ -1,5 +1,5 @@
 # Data Model
-> Last updated: 2026-05-25
+> Last updated: 2026-06-01
 > Source files: `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/entities/*`, `repositories/IRepository/*`, `src/main/resources/application.properties`, `CSDL/FileKhoiTaoCSDL.sql`
 > Confidence: HIGH
 
@@ -20,7 +20,7 @@ Data layer dung Spring Data JPA anh xa SQL Server. Entity dung JPA annotation va
 
 | Nhom | Tables/Entities chinh | Ghi chu |
 |------|------------------------|---------|
-| User/Auth | `USERS`, `USER_ROLES`, `PERMISSIONS`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST` | Dynamic role/permission, blacklist theo user |
+| User/Auth | `USERS`, `USER_ROLES`, `PERMISSIONS`, `PERMISSION_MODULES`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST` | Dynamic role/permission, module nhóm quyền, blacklist theo user |
 | Audit/User history | `CT_USER_LOGIN_LOG`, `CT_USER_ACTION_LOG`, `CT_USER_MODERATION_LOG`, `OTP_CODES` | Login/action/moderation/OTP history |
 | Posts | `POSTS`, `CATEGORIES`, `TAGS`, `CT_POST_TAGS`, `CT_POST_ROLES`, `POST_IMAGES`, `POST_FILES`, `POST_VIEW_LOGS`, `CT_FILE_DOWNLOADS` | Content, category/tag, paywall, assets, analytics |
 | Events | `EVENTS`, `CT_EVENTS`, `EVENT_TYPES`, `LOCATIONS`, `EVENT_SPEAKERS`, `EVENT_AGENDAS`, `CT_AGENDA_SPEAKERS`, `CT_EVENT_TAGS`, `CT_EVENT_SESSION_ROLES`, `CT_EVENT_STATUS_HISTORY`, `CT_EVENT_REGISTRATIONS`, `CT_POST_EVENTS` | Campaign/session, speaker/agenda, status history, capacity, registration |

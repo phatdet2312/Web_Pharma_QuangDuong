@@ -15,6 +15,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IAuditService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IRolesService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +56,7 @@ public class ApiRolesController {
         return ApiResponse.thanhCong(responseDto, "Lấy thông tin quản trị viên thành công");
     }
 
+    @RequirePermission("USER_VIEW")
     @GetMapping
     public ApiResponse<List<UserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int pageNo,
@@ -76,6 +78,7 @@ public class ApiRolesController {
         return ApiResponse.thanhCong(userResponses, "Lấy danh sách người dùng thành công");
     }
 
+    @RequirePermission("USER_VIEW")
     @GetMapping("/search-advanced")
     public ApiResponse<Map<String, Object>> searchAdvanced(
             @RequestParam(defaultValue = "") String keyword,
@@ -106,6 +109,7 @@ public class ApiRolesController {
         return ApiResponse.thanhCong(responseData, "Truy xuất dữ liệu đa chiều thành công");
     }
 
+    @RequirePermission("USER_VIEW")
     @GetMapping("/stats")
     public ApiResponse<Map<String, Long>> getUserStats() {
         long total = userService.countTotalUsers();
@@ -121,6 +125,7 @@ public class ApiRolesController {
         return ApiResponse.thanhCong(stats, "Lấy thống kê thành công");
     }
 
+    @RequirePermission("USER_VIEW")
     @GetMapping("/{id}")
     public ApiResponse<UserResponse> getUserDetail(@PathVariable Long id) {
         User user = userService.findById(id);
@@ -128,6 +133,7 @@ public class ApiRolesController {
         return ApiResponse.thanhCong(responseDto, "Lấy thông tin người dùng thành công");
     }
 
+    @RequirePermission("USER_ASSIGN_ROLE")
     @PostMapping("/{id}/roles")
     public ApiResponse<String> updateRoles(@PathVariable Long id, @RequestBody Map<String, List<String>> body) {
         List<String> roleStrings = body.get("roles");
@@ -145,6 +151,7 @@ public class ApiRolesController {
         return ApiResponse.thanhCong(null, "Cập nhật phân quyền thành công");
     }
 
+    @RequirePermission("USER_LOCK")
     @PostMapping("/{id}/lock")
     public ApiResponse<String> lockUser(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         boolean lock = Boolean.parseBoolean(body.get("lock").toString());
@@ -181,6 +188,7 @@ public class ApiRolesController {
         return ApiResponse.thanhCong(null, message);
     }
 
+    @RequirePermission("USER_LOCK")
     @PostMapping("/bulk-lock")
     public ApiResponse<String> bulkLockUnlockUsers(@RequestBody BulkLockRequest request) {
         User currentUser = userService.getCurrentAuthenticatedUser();
@@ -204,12 +212,14 @@ public class ApiRolesController {
         return ApiResponse.thanhCong(null, "Thực thi kiểm duyệt hàng loạt thành công");
     }
 
+    @RequirePermission("USER_VIEW")
     @GetMapping("/total-pages")
     public ApiResponse<Integer> getTotalPages(@RequestParam int pageSize) {
         int totalPages = rolesService.getTotalPages(pageSize);
         return ApiResponse.thanhCong(totalPages, "Lấy tổng số trang thành công");
     }
 
+    @RequirePermission("USER_VIEW")
     @GetMapping("/search")
     public ApiResponse<List<UserResponse>> searchUsers(@RequestParam String keyword) {
         List<User> users = rolesService.searchUsers(keyword);

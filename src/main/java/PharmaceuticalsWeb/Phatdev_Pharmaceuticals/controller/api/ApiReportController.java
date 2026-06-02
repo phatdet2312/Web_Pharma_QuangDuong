@@ -2,6 +2,7 @@
 
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.CommentReportRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.ApiResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
@@ -29,6 +30,7 @@ public class ApiReportController {
     private final IPublicReportService publicReportService;
     private final IUserService userService;
 
+    @RequirePermission("USER_REPORT")
     @PostMapping("/comments")
     public ApiResponse<Void> guiBaoCaoBinhLuan(
             @Valid @RequestBody CommentReportRequest request,
