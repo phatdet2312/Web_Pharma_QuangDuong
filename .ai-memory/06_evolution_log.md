@@ -8,6 +8,7 @@ Moi dong = 1 thay doi quan trong.
 
 | Ngay | Type | Mo ta | Files changed |
 |------|------|-------|---------------|
+| 2026-06-03 | SYNC | Dong bo memory sau granular RBAC permissions: bo `ROLE_MANAGE` khoi source/templates/static JS, dung `RBAC_*` cho role/permission/module/blacklist, `system-permissions` dung `RBAC_PERMISSION_VIEW`, `/admin/role-management` dung `RBAC_ROLE_VIEW`, DatabaseSeeder seed idempotent PermissionRegistry; node check pass, Maven compile blocked do Maven Central `Permission denied: getsockopt`. | `.ai-memory/03_deep_knowledge/admin_rbac.md`, `.ai-memory/04_active_plan.md`, `.ai-memory/05_active_workspace.md`, `.ai-memory/06_evolution_log.md` |
 | 2026-06-03 | fix | Fix 6 findings audit phân quyền động: N+1 query batch (UserServiceImpl, RoleManagementServiceImpl), DTO thay Map (PermissionModuleRequest mới + controller), SUPERADMIN detection nhất quán (controller roleLevel==0), import AppException, xóa tên bảng DB trong comment frontend | UserServiceImpl.java, RoleManagementServiceImpl.java, ApiRoleManagementController.java, PermissionInterceptor.java, PermissionModuleRequest.java (NEW), role-management.html |
 | 2026-06-03 | AUDIT | Audit toàn diện phân quyền động Phase 5: PASS (1M, 3L, 2I). F1 module CRUD cần chuyển sang Service. | 33 file code reviewed |
 | 2026-05-18 | DRIFT | Phat hien 51 file da thay doi ngoai Codex truoc bootstrap; khong revert, dung code thuc te lam nguon su that. | `.claude/**`, `.codex/**`, `.agents/**`, `.ai-memory/**`, `README.md`, `docs/coding-guidelines.md` |

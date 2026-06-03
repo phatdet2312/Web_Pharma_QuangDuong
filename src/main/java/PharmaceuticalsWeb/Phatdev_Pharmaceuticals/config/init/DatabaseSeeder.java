@@ -1,13 +1,16 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/init/DatabaseSeeder.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.init;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.PermissionRegistry;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtUserRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.ModerationAction;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Permission;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.PermissionModule;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.UserRole;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.ICtUserRoleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IModerationActionRepository;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPermissionModuleRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IPermissionRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRepository;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.repositories.IRepository.IUserRoleRepository;
@@ -17,6 +20,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -41,6 +45,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final ICtUserRoleRepository ctUserRoleRepository;
     private final IModerationActionRepository moderationActionRepository;
     private final IPermissionRepository permissionRepository;
+    private final IPermissionModuleRepository permissionModuleRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -75,6 +80,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         // CT_USER_MODERATION_LOG — không phụ thuộc vào tên Role động.
         // =====================================================================
         khoiTaoViewPermission();
+        khoiTaoQuyenHeThongTuRegistry();
 
         // =====================================================================
         // PHẦN 3: KHỞI TẠO TÀI KHOẢN SUPER ADMIN MẶC ĐỊNH
@@ -209,6 +215,38 @@ public class DatabaseSeeder implements CommandLineRunner {
             viewPerm.setDescription("Quyền truy cập giao diện chức năng được phân công");
             permissionRepository.save(viewPerm);
             log.info("[DatabaseSeeder] Đã khởi tạo quyền nền tảng: VIEW");
+        }
+    }
+
+    /**
+     * Seed toan bo permission code backend dang enforce trong PermissionRegistry.
+     * Idempotent: chi tao permission con thieu, khong gan role va khong ghi de mo ta admin da sua.
+     */
+    private void khoiTaoQuyenHeThongTuRegistry() {
+        List<String[]> danhSachQuyenHeThong = PermissionRegistry.layDanhSachQuyenHeThong();
+
+        for (int i = 0; i < danhSachQuyenHeThong.size(); i = i + 1) {
+            String[] hangMuc = danhSachQuyenHeThong.get(i);
+            String permissionCode = hangMuc[0];
+            String description = hangMuc[1];
+            String moduleCode = hangMuc[2];
+
+            boolean daCoSan = permissionRepository.findByPermissionCode(permissionCode).isPresent();
+            if (daCoSan == true) {
+                continue;
+            }
+
+            Permission permission = new Permission();
+            permission.setPermissionCode(permissionCode);
+            permission.setDescription(description);
+
+            PermissionModule module = permissionModuleRepository.findByModuleCode(moduleCode).orElse(null);
+            if (module != null) {
+                permission.setModuleId(module.getId());
+            }
+
+            permissionRepository.save(permission);
+            log.info("[DatabaseSeeder] Da khoi tao permission he thong: " + permissionCode);
         }
     }
 }

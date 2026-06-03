@@ -1,6 +1,6 @@
 # Learnings — Bài học từ sai lầm
 > Last updated: 2026-06-03
-> Tổng entries: 24
+> Tổng entries: 25
 > Entries sẵn sàng promote (Lần >= 3): 5
 
 <!-- File này là nơi agent ghi nhận PATTERN sai lầm đã mắc -->
@@ -35,6 +35,7 @@
 | 2026-05-30 | LOGIC | Sai: dùng file.transferTo(path.toFile()) thay vì file.transferTo(path) — trên Windows relative path gây IOException. Đúng: LUÔN copy chính xác method signature từ code tham chiếu đang hoạt động (events dùng transferTo(Path), không phải transferTo(File)). | 1 |
 | 2026-06-03 | SECURITY | Sai: tách nhiều lệnh cấm bảo mật cụ thể khi một rule tổng quát theo cấp bậc đã bao phủ, làm kế hoạch dư và dễ gây hiểu nhầm. Đúng: LUÔN mô hình hóa authorization bằng invariant tổng quát trước (không tạo/sửa/gán role mạnh hơn hoặc ngang mình, trừ level 0), rồi để rule cụ thể chỉ là hệ quả. | 1 |
 | 2026-06-03 | SECURITY | Sai: đề xuất phân loại độ nhạy permission khi có thể enforce bằng tập quyền actor đang sở hữu. Đúng: LUÔN ưu tiên capability subset rule — actor non-level-0 chỉ được tạo/sửa/clone/gán role chứa các permission nằm trong tập quyền hiệu lực của chính actor, trừ level 0. | 1 |
+| 2026-06-03 | SECURITY | Sai: dùng một permission tổng như `ROLE_MANAGE` để che nhiều thao tác RBAC nhỏ, làm mất ý nghĩa phân quyền động. Đúng: LUÔN tách quyền hạt lựu theo action thật như view/create/update/delete/clone/assign cho role, permission, module, blacklist. | 1 |
 <!-- Loại: LOGIC | CONVENTION | ARCHITECTURE | PERFORMANCE | SECURITY -->
 <!-- Pattern: "Sai: [pattern sai]. Đúng: LUÔN/KHÔNG BAO GIỜ [rule]" -->
 <!-- Lần >= 3 → ⚠️ candidate promote -->

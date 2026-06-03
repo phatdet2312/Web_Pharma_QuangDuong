@@ -1,3 +1,42 @@
+﻿# Active Plan Update - Granular RBAC Permissions thay ROLE_MANAGE
+> Last updated: 2026-06-03
+> Status: IMPLEMENTED_COMPILE_BLOCKED
+> Planner persisted before implementation: YES
+> Planner model: User-provided plan
+
+## Mục tiêu
+Tách `ROLE_MANAGE` thành các permission action riêng để triển khai RBAC hạt lựu theo từng thao tác:
+- Role: `RBAC_ROLE_VIEW`, `RBAC_ROLE_CREATE`, `RBAC_ROLE_UPDATE`, `RBAC_ROLE_DELETE`, `RBAC_ROLE_CLONE`.
+- Permission: `RBAC_PERMISSION_VIEW`, `RBAC_PERMISSION_CREATE`, `RBAC_PERMISSION_UPDATE`, `RBAC_PERMISSION_DELETE`.
+- Permission module: `RBAC_MODULE_VIEW`, `RBAC_MODULE_CREATE`, `RBAC_MODULE_UPDATE`, `RBAC_MODULE_DELETE`.
+- User permission blacklist: `RBAC_BLACKLIST_VIEW`, `RBAC_BLACKLIST_TOGGLE`.
+
+## Phạm vi triển khai
+- Backend endpoint dùng `@RequirePermission` mới theo từng action thay vì `ROLE_MANAGE`.
+- `AdminViewController` dùng `RBAC_ROLE_VIEW` cho trang quản lý role/RBAC.
+- UI ẩn/hiện nút, action, khu vực chức năng theo permission mới.
+- Giữ invariant `roleLevel` và permission subset rule đã có.
+- Không dùng `ROLE_MANAGE` trong code source, templates, static JS; nếu DB production còn dữ liệu cũ thì không còn là guard chính.
+- `DatabaseSeeder` seed idempotent permission code trong `PermissionRegistry` nếu DB thiếu, không gán role và không ghi đè permission đã có.
+
+## Kết quả triển khai 2026-06-03
+
+- Implemented: bỏ `ROLE_MANAGE` khỏi `src/main/java`, templates và static JS.
+- Implemented: `PermissionRegistry` thêm nhóm `RBAC_ROLE_*`, `RBAC_PERMISSION_*`, `RBAC_MODULE_*`, `RBAC_BLACKLIST_*`.
+- Implemented: `ApiRoleManagementController` gắn `@RequirePermission` riêng cho từng endpoint role/permission/module/blacklist; `/system-permissions` dùng `RBAC_PERMISSION_VIEW`.
+- Implemented: `AdminViewController` route `/admin/role-management` dùng `RBAC_ROLE_VIEW`.
+- Implemented: `DatabaseSeeder` seed idempotent mọi permission code từ registry nếu DB thiếu, set `moduleId` khi module tồn tại, không gán role và không ghi đè permission đã có.
+- Implemented: UI admin layout/users/role-management/user-details dùng `RBAC_*`; user detail tránh hiển thị trạng thái blacklist sai nếu thiếu `RBAC_BLACKLIST_VIEW`; toggle dùng `RBAC_BLACKLIST_TOGGLE`; `USER_ASSIGN_ROLE`/`USER_LOCK` guard rõ hơn.
+- Verification: `rg ROLE_MANAGE src/main/java src/main/resources/templates src/main/resources/static/js` không còn kết quả.
+- Verification: `node --check src/main/resources/static/js/permission-manager.js` pass.
+- Verification: `bash mvnw -q -DskipTests compile` blocked do Maven Central parent POM không tải được (`Permission denied: getsockopt`).
+
+## Decision
+| Quyết định | Phương án | Lý do | Ngày ghi | Hết hạn |
+|-----------|-----------|-------|----------|---------|
+| Tách `ROLE_MANAGE` thành permission hạt lựu theo action | Dùng `RBAC_*` riêng cho CRUD/clone/toggle | Đúng RBAC động, giảm leo quyền do một permission tổng bao phủ quá rộng, tránh va chạm Spring Security `ROLE_` authority | 2026-06-03 | 2026-09-03 |
+
+---
 # Active Plan — Hardening Phân Quyền Động Theo Cấp Bậc
 > Last updated: 2026-06-03
 > Status: IMPLEMENTED_COMPILE_BLOCKED

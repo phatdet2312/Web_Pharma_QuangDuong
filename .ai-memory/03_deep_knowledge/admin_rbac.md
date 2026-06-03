@@ -1,102 +1,110 @@
-# Admin RBAC — Phân quyền Động 100% Database-Driven
+# Admin RBAC - Phan quyen dong 100% Database-Driven
 > Last updated: 2026-06-03
-> Source files: `controller/api/ApiRoleManagementController.java`, `controller/api/ApiRolesController.java`, `service/impl/RoleManagementServiceImpl.java`, `service/impl/RolesServiceImpl.java`, `entities/User.java`, `entities/UserRole.java`, `entities/Permission.java`, `entities/PermissionModule.java`, `entities/CtRolePermission.java`, `entities/CtUserPermissionBlacklist.java`, `config/interceptor/PermissionInterceptor.java`, `config/PermissionRegistry.java`, `validators/annotations/RequirePermission.java`, `config/WebMvcConfig.java`, `static/js/permission-manager.js`, `repositories/IRepository/IPermissionModuleRepository.java`, `dto/request/PermissionRequest.java`, `dto/response/PermissionResponse.java`, `dto/response/PermissionModuleResponse.java`, `dto/response/MyPermissionResponse.java`
+> Source files: `controller/api/ApiRoleManagementController.java`, `controller/api/ApiRolesController.java`, `controller/view/AdminViewController.java`, `service/impl/RoleManagementServiceImpl.java`, `service/impl/UserServiceImpl.java`, `config/init/DatabaseSeeder.java`, `entities/User.java`, `entities/UserRole.java`, `entities/Permission.java`, `entities/PermissionModule.java`, `entities/CtRolePermission.java`, `entities/CtUserPermissionBlacklist.java`, `config/interceptor/PermissionInterceptor.java`, `config/PermissionRegistry.java`, `validators/annotations/RequirePermission.java`, `config/WebMvcConfig.java`, `static/js/permission-manager.js`, `templates/admin_layout.html`, `templates/admin/users.html`, `templates/admin/role-management.html`, `templates/admin/user-details.html`
 > Confidence: HIGH
 
-## Mô tả chức năng
+## Mo ta chuc nang
 
-Module phân quyền động 100% database-driven. Mọi role, permission hạt lựu đều do SUPERADMIN tạo và gán qua giao diện admin. Thêm module mới chỉ cần admin tạo permission mới trên web — KHÔNG sửa code.
+Module phan quyen dong 100% database-driven. Role, permission hat luu va permission module duoc quan tri qua giao dien admin. Cac ma permission backend dang enforce duoc khai bao trong `PermissionRegistry` de lam registry he thong va seed idempotent khi DB thieu.
 
-**Kiến trúc 4 lớp:**
-1. **Lớp 1 (CSDL)**: Admin tạo role/permission/module, gán qua 6 bảng RBAC (`USER_ROLES`, `PERMISSIONS`, `PERMISSION_MODULES`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST`)
-2. **Lớp 2 (Nạp quyền)**: `napQuyenChoNguoiDung()` query 4 bảng + lọc blacklist → bơm vào JWT
-3. **Lớp 3 (Enforce)**: `PermissionInterceptor` + `@RequirePermission` check quyền mỗi endpoint
-4. **Lớp 4 (UX)**: `permission-manager.js` ẩn/hiện UI (chỉ UX, backend vẫn enforce)
+Kien truc 4 lop:
+1. CSDL: `USER_ROLES`, `PERMISSIONS`, `PERMISSION_MODULES`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST`.
+2. Nap quyen: `napQuyenChoNguoiDung()` query role/permission, loc blacklist ca nhan, bom roles + permissions vao principal/JWT.
+3. Enforce: `PermissionInterceptor` doc `@RequirePermission` tren controller method va view route.
+4. UX: `permission-manager.js` va `data-permission` an/hien UI. Frontend chi la UX, backend van enforce.
 
-## Luồng xử lý chính
+## Business Rules quan trong
 
-1. SUPERADMIN tạo Role/Permission/gán qua `/api/admin/role-management` (11+ endpoint).
-2. User đăng nhập → `napQuyenChoNguoiDung()` query CT_USER_ROLES → USER_ROLES → CT_ROLE_PERMISSIONS → PERMISSIONS, LỌC CT_USER_PERMISSION_BLACKLIST, bơm vào @Transient.
-3. `User.getAuthorities()` trả `ROLE_X` + permission codes → nhúng vào JWT.
-4. `DynamicRoleFilter` (ultraSecureLibrary) tự sync JWT khi quyền thay đổi giữa phiên.
-5. Mỗi request admin → `PermissionInterceptor.preHandle()` đọc `@RequirePermission` annotation → SUPERADMIN bypass → check authorities → 403 nếu thiếu quyền.
-6. Frontend gọi `GET /api/admin/my-permissions` → `PermissionManager.coQuyen()` ẩn/hiện UI.
+- Spring Security role authority dang dung prefix `ROLE_`; permission quan tri RBAC dung prefix `RBAC_*` de tranh va cham.
+- `ROLE_MANAGE` da bi bo khoi `src/main/java`, templates va static JS. Khong them lai permission tong nay cho endpoint/control chinh.
+- SUPERADMIN duoc xac dinh bang backend `roleLevel == 0` cho bypass; khong dua vao frontend.
+- Actor level 0 bypass cac invariant quan tri RBAC. Actor khac level 0 khong duoc tao/sua/clone/xoa/gan role co `roleLevel <= actorLevel`, khong duoc tu sua role dang cap quyen cho chinh minh.
+- Permission subset rule: actor khac level 0 chi duoc tao/sua/clone/gan role chua cac permission nam trong tap quyen hieu luc cua chinh actor, co xet blacklist ca nhan.
+- Tao/sua role fail ro neu permission code khong ton tai; tao/sua permission fail ro neu `moduleId` khong ton tai.
+- Blacklist ca nhan chan target user ngang/manh hon actor, chan tu thao tac chinh minh va validate request bang `@Valid`.
+- Endpoint khong co `@RequirePermission` annotation khong bi permission check rieng de giu backward compatible.
+- `GET /api/admin/role-management/my-permissions` khong gan annotation rieng; user authenticated can goi duoc de frontend biet UX permission.
+- `GET /api/admin/role-management/system-permissions` dung `RBAC_PERMISSION_VIEW`.
 
-## Business Rules quan trọng
+## Granular RBAC Permission Codes
 
-- SecurityConfig KHÔNG còn hardcode role — chỉ `permitAll()` vs `authenticated()`. Mọi check quyền cụ thể do PermissionInterceptor xử lý.
-- SUPERADMIN (roleLevel=0) = GOD MODE — backend `roleLevel` là nguồn sự thật duy nhất cho bypass, không dựa vào tên role hoặc frontend.
-- Hardening 2026-06-03: các hàm ghi role (`taoChucVuMoi`, `capNhatChucVu`, `xoaChucVu`, `nhanBanChucVu`) nhận `currentUser` và kiểm tra cấp bậc trước khi lưu. Actor level 0 được phép thao tác toàn hệ thống; actor khác level 0 không được tạo/sửa/clone/xóa role mạnh hơn hoặc ngang mình (`targetRoleLevel <= actorLevel`) và không được sửa role đang gán cho chính actor.
-- Hardening 2026-06-03: gán role cho user khác trong `UserServiceImpl.updateUserRoles()` chặn target ngang/mạnh hơn và chặn gán role ngang/mạnh hơn actor; actor level 0 là ngoại lệ. Tự đổi role của chính mình vẫn bị chặn.
-- Hardening 2026-06-03: blacklist quyền cá nhân chặn target user ngang/mạnh hơn actor, chặn tự thao tác chính mình và validate request bằng `@Valid`.
-- Hardening 2026-06-03: tạo/sửa role fail rõ nếu permission code không tồn tại; tạo/sửa permission fail rõ nếu `moduleId` không tồn tại.
-- Hardening 2026-06-03: permission subset rule. Actor non-level-0 chỉ được tạo/sửa/clone/gán role chứa các permission nằm trong tập quyền hiệu lực của chính actor, có xét `CT_USER_PERMISSION_BLACKLIST`. Actor level 0 bypass rule này. Rule này thay cho hướng phân loại độ nhạy permission.
-- Permission entity có FK `moduleId` tới bảng `PERMISSION_MODULES` (entity `PermissionModule`). Admin nhóm quyền theo module (VD: POST, EVENT, COMMENT, SYSTEM). Implementation dùng bảng riêng thay vì cột VARCHAR — khác plan ban đầu.
-- Blacklist hoạt động thật: `napQuyenChoNguoiDung()` lọc CT_USER_PERMISSION_BLACKLIST trước khi bơm authorities.
-- Endpoint không có `@RequirePermission` annotation = không bị check (backward compatible).
-- `GET /my-permissions` KHÔNG gán annotation — mọi user authenticated đều gọi được.
-- Role cần prefix `ROLE_` khi đưa vào Spring Security authority; permission không cần prefix.
-- Đây là critical path auth/authorization; sửa logic phân quyền phải review bảo mật.
-- KHÔNG SỬA ultraSecureLibrary — chỉ gọi và dùng.
+| Nhom | Permission codes |
+|------|------------------|
+| Role | `RBAC_ROLE_VIEW`, `RBAC_ROLE_CREATE`, `RBAC_ROLE_UPDATE`, `RBAC_ROLE_DELETE`, `RBAC_ROLE_CLONE` |
+| Permission | `RBAC_PERMISSION_VIEW`, `RBAC_PERMISSION_CREATE`, `RBAC_PERMISSION_UPDATE`, `RBAC_PERMISSION_DELETE` |
+| Module | `RBAC_MODULE_VIEW`, `RBAC_MODULE_CREATE`, `RBAC_MODULE_UPDATE`, `RBAC_MODULE_DELETE` |
+| Blacklist | `RBAC_BLACKLIST_VIEW`, `RBAC_BLACKLIST_TOGGLE` |
 
 ## API Endpoints
 
-| Method | Path | Mô tả | Auth | @RequirePermission |
-|--------|------|-------|------|-------------------|
-| GET | `/api/admin/role-management/my-permissions` | Quyền user hiện tại (frontend UX) | Authenticated | Không (mọi user gọi được) |
-| GET | `/api/admin/role-management/system-permissions` | Danh sách mã quyền từ PermissionRegistry | Authenticated | Không |
-| GET | `/api/admin/role-management/roles` | Danh sách role | Admin | ROLE_MANAGE |
-| POST | `/api/admin/role-management/roles` | Tạo role | Admin | ROLE_MANAGE |
-| PUT | `/api/admin/role-management/roles/{id}` | Cập nhật role | Admin | ROLE_MANAGE |
-| DELETE | `/api/admin/role-management/roles/{id}` | Xóa role | Admin | ROLE_MANAGE |
-| POST | `/api/admin/role-management/roles/{id}/clone` | Clone role | Admin | ROLE_MANAGE |
-| GET | `/api/admin/role-management/permissions` | Danh sách permission | Admin | ROLE_MANAGE |
-| POST | `/api/admin/role-management/permissions` | Tạo permission | Admin | ROLE_MANAGE |
-| PUT | `/api/admin/role-management/permissions/{id}` | Cập nhật permission | Admin | ROLE_MANAGE |
-| DELETE | `/api/admin/role-management/permissions/{id}` | Xóa permission | Admin | ROLE_MANAGE |
-| GET | `/api/admin/role-management/modules` | Danh sách nhóm chức năng | Admin | ROLE_MANAGE |
-| POST | `/api/admin/role-management/modules` | Tạo nhóm chức năng | Admin | ROLE_MANAGE |
-| PUT | `/api/admin/role-management/modules/{id}` | Cập nhật nhóm chức năng | Admin | ROLE_MANAGE |
-| DELETE | `/api/admin/role-management/modules/{id}` | Xóa nhóm chức năng (FK check) | Admin | ROLE_MANAGE |
-| GET | `/api/admin/role-management/blacklist/users/{userId}` | Permission blacklist của user | Admin | ROLE_MANAGE |
-| POST | `/api/admin/role-management/blacklist/users/{userId}` | Toggle permission blacklist | Admin | ROLE_MANAGE |
-| GET/POST | `/api/admin/users/**` | User list/search/detail/role/lock/bulk-lock | Admin | USER_VIEW/USER_ASSIGN_ROLE/USER_LOCK |
+| Method | Path | Mo ta | @RequirePermission |
+|--------|------|-------|-------------------|
+| GET | `/api/admin/role-management/my-permissions` | Quyen user hien tai cho frontend UX | Khong |
+| GET | `/api/admin/role-management/system-permissions` | Danh sach ma quyen tu PermissionRegistry | `RBAC_PERMISSION_VIEW` |
+| GET | `/api/admin/role-management/roles` | Danh sach role | `RBAC_ROLE_VIEW` |
+| POST | `/api/admin/role-management/roles` | Tao role | `RBAC_ROLE_CREATE` |
+| PUT | `/api/admin/role-management/roles/{id}` | Cap nhat role | `RBAC_ROLE_UPDATE` |
+| DELETE | `/api/admin/role-management/roles/{id}` | Xoa role | `RBAC_ROLE_DELETE` |
+| POST | `/api/admin/role-management/roles/{id}/clone` | Clone role | `RBAC_ROLE_CLONE` |
+| GET | `/api/admin/role-management/permissions` | Danh sach permission | `RBAC_PERMISSION_VIEW` |
+| POST | `/api/admin/role-management/permissions` | Tao permission | `RBAC_PERMISSION_CREATE` |
+| PUT | `/api/admin/role-management/permissions/{id}` | Cap nhat permission | `RBAC_PERMISSION_UPDATE` |
+| DELETE | `/api/admin/role-management/permissions/{id}` | Xoa permission | `RBAC_PERMISSION_DELETE` |
+| GET | `/api/admin/role-management/modules` | Danh sach nhom chuc nang | `RBAC_MODULE_VIEW` |
+| POST | `/api/admin/role-management/modules` | Tao nhom chuc nang | `RBAC_MODULE_CREATE` |
+| PUT | `/api/admin/role-management/modules/{id}` | Cap nhat nhom chuc nang | `RBAC_MODULE_UPDATE` |
+| DELETE | `/api/admin/role-management/modules/{id}` | Xoa nhom chuc nang | `RBAC_MODULE_DELETE` |
+| GET | `/api/admin/role-management/blacklist/users/{userId}` | Permission blacklist cua user | `RBAC_BLACKLIST_VIEW` |
+| POST | `/api/admin/role-management/blacklist/users/{userId}` | Toggle permission blacklist | `RBAC_BLACKLIST_TOGGLE` |
+| GET/POST | `/api/admin/users/**` | User list/search/detail/role/lock/bulk-lock | `USER_VIEW`, `USER_ASSIGN_ROLE`, `USER_LOCK` |
 
-## Decision Log
+## View va UI Guards
 
-| Quyết định | Phương án (chọn / bỏ) | Lý do | Ngày ghi | Hết hạn | Dead End |
-|-----------|------------------------|-------|----------|---------|----------|
-| Chưa có | N/A | Bootstrap chỉ ghi nhận code hiện tại | 2026-05-18 | N/A | N/A |
+- `AdminViewController` route `/admin/role-management` dung `@RequirePermission("RBAC_ROLE_VIEW")`.
+- `admin_layout.html`, `admin/users.html`, `admin/role-management.html`, `admin/user-details.html` dung `RBAC_*` trong `data-permission` va guard JS.
+- `user-details.html` khong hien trang thai blacklist neu thieu `RBAC_BLACKLIST_VIEW`.
+- Blacklist toggle dung `RBAC_BLACKLIST_TOGGLE`.
+- User role assignment va lock UI guard ro bang `USER_ASSIGN_ROLE` va `USER_LOCK`.
 
-## @RequirePermission đã gán trên controller (tính tới 2026-06-01)
+## DatabaseSeeder
 
-| Controller | Permission codes sử dụng |
-|------------|-------------------------|
+`DatabaseSeeder.khoiTaoQuyenHeThongTuRegistry()` seed idempotent toan bo permission code trong `PermissionRegistry` neu DB thieu:
+
+- Chi tao permission con thieu.
+- Khong gan role.
+- Khong ghi de permission da co, bao gom mo ta admin da sua.
+- Set `moduleId` neu `moduleCode` trong registry ton tai trong `PERMISSION_MODULES`.
+
+## @RequirePermission da gan tren controller
+
+| Controller | Permission codes su dung |
+|------------|--------------------------|
 | `ApiAdminPostController` | POST_VIEW, POST_CREATE, POST_EDIT, POST_DELETE, POST_MANAGE_CATEGORY, POST_MANAGE_TAG |
 | `ApiAdminEventController` | EVENT_VIEW, EVENT_CREATE, EVENT_EDIT, EVENT_DELETE, EVENT_MANAGE_TYPE, EVENT_MANAGE_LOCATION |
 | `ApiAdminCommentController` | COMMENT_VIEW, COMMENT_MODERATE, COMMENT_DELETE, COMMENT_MANAGE_REACTION |
 | `ApiAdminSpeakerAgendaController` | EVENT_MANAGE_SPEAKER, EVENT_MANAGE_AGENDA |
 | `ApiAdminReportController` | REPORT_VIEW, REPORT_RESOLVE |
-| `ApiRoleManagementController` | ROLE_MANAGE (tất cả CRUD role/permission/blacklist/module) |
+| `ApiRoleManagementController` | RBAC_ROLE_VIEW/CREATE/UPDATE/DELETE/CLONE, RBAC_PERMISSION_VIEW/CREATE/UPDATE/DELETE, RBAC_MODULE_VIEW/CREATE/UPDATE/DELETE, RBAC_BLACKLIST_VIEW/TOGGLE |
 | `ApiRolesController` | USER_VIEW, USER_ASSIGN_ROLE, USER_LOCK |
 | `ApiAuditController` | AUDIT_VIEW |
-| `ApiCommentController` | USER_COMMENT (write), USER_REACT (reaction) |
-| `ApiPostController` | USER_REACT |
-| `ApiEventController` | USER_REGISTER, USER_COMMENT |
-| `ApiReportController` | USER_REPORT |
+| Public write controllers | USER_COMMENT, USER_REACT, USER_REGISTER, USER_REPORT |
 
-## PermissionRegistry
+## Verification 2026-06-03
 
-`config/PermissionRegistry.java` khai báo danh sách tĩnh 30 mã quyền chia 7 nhóm: POST (6), EVENT (8), COMMENT (4), USER (4), REPORT (2), USER_ACTION (4), SYSTEM (3). Mỗi entry gồm `{mã_quyền, mô_tả, mã_module}`. API đọc từ đây để cung cấp dropdown cho giao diện admin.
+- `rg ROLE_MANAGE src/main/java src/main/resources/templates src/main/resources/static/js` khong con ket qua.
+- `rg RBAC_ROLE_|RBAC_PERMISSION_|RBAC_MODULE_|RBAC_BLACKLIST_ src/main/java src/main/resources/templates src/main/resources/static/js` xac nhan backend/view/UI dang dung permission granular.
+- `node --check src/main/resources/static/js/permission-manager.js` pass.
+- `bash mvnw -q -DskipTests compile` blocked do Maven Central parent POM khong tai duoc: `Permission denied: getsockopt`.
 
-## Ghi chú
+## Decision Log
 
-- @Valid đã được thêm cho 4 endpoint POST/PUT trong ApiRoleManagementController.
-- Permission codes nên theo convention: `MODULE_ACTION` (VD: POST_CREATE, EVENT_DELETE, COMMENT_MODERATE, ROLE_MANAGE).
-- Khi tạo endpoint admin MỚI: thêm `@RequirePermission("CODE")` trước mapping annotation. Nếu admin chưa tạo permission code đó → user (trừ SUPERADMIN) sẽ bị 403.
-- Frontend dùng `PermissionManager.coQuyen("CODE")` hoặc `data-permission="CODE"` attribute trên element HTML.
-- `PermissionRequest` có field `moduleId` (Integer FK), `PermissionResponse` trả kèm `moduleId`, `moduleCode`, `moduleName`, `riskLevel`.
-- `RoleRequest` có field `permissions` (List<String>) — danh sách mã quyền gán cho role khi tạo/sửa.
-- `MyPermissionResponse` trả `roles`, `permissions`, `roleLevel`, `superAdmin` cho frontend.
-- `WebMvcConfig.addInterceptors()` đăng ký PermissionInterceptor cho: `/admin/**`, `/api/admin/**`, `/api/comments/**`, `/api/reports/**`, `/api/events/**`, `/api/posts/**`.
-- Admin view hardening 2026-06-03: `AdminViewController` gắn `@RequirePermission` cho users (`USER_VIEW`), role-management (`ROLE_MANAGE`), posts (`POST_VIEW`), events (`EVENT_VIEW`), comments (`COMMENT_VIEW`). Dashboard chưa có annotation riêng nên vẫn dựa vào authenticated/admin route tổng.
+| Quyet dinh | Phuong an | Ly do | Ngay ghi | Het han |
+|-----------|-----------|-------|----------|---------|
+| Dung prefix `RBAC_*` cho permission quan tri role/permission/module/blacklist | Chon `RBAC_*`; bo `ROLE_MANAGE` va khong dung `ROLE_VIEW/ROLE_CREATE` | Tranh va cham voi Spring Security role authority `ROLE_`, dong thoi tach quyen quan tri RBAC theo action hat luu | 2026-06-03 | 2026-09-03 |
+| DatabaseSeeder seed PermissionRegistry idempotent | Chi insert permission con thieu, khong gan role, khong ghi de permission da co | Dam bao backend-enforced permission co trong DB sau deploy ma khong pha tuy bien cua admin | 2026-06-03 | 2026-09-03 |
+
+## Ghi chu
+
+- Khi them endpoint admin moi: them `@RequirePermission("CODE")`, cap nhat `PermissionRegistry`, va cap nhat UI guard neu co.
+- Permission code nen theo convention `MODULE_ACTION`; rieng permission quan tri RBAC dung `RBAC_*`.
+- Day la critical path authorization; sua logic phan quyen can review bao mat.

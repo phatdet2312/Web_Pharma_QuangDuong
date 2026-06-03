@@ -44,7 +44,7 @@ public class AdminViewController {
     // ĐƯỜNG DẪN MỚI CHO TÍNH NĂNG TẠO ROLE ĐỘNG
     // =====================================================================
     @GetMapping("/role-management")
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_ROLE_VIEW")
     public String roleManagement(Model model) {
         model.addAttribute("title", "Quản trị Chức vụ (Roles)");
         return "admin/role-management";

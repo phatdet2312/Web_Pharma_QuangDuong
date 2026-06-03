@@ -67,6 +67,7 @@ public class ApiRoleManagementController {
      * Frontend dùng để hiện dropdown khi admin tạo quyền mới — admin CHỌN chứ không TỰ GÕ.
      * Mỗi phần tử gồm: code, description, moduleCode.
      */
+    @RequirePermission("RBAC_PERMISSION_VIEW")
     @GetMapping("/system-permissions")
     public ApiResponse<List<Map<String, String>>> layDanhSachQuyenHeThong() {
         List<String[]> danhSachGoc = PermissionRegistry.layDanhSachQuyenHeThong();
@@ -88,14 +89,14 @@ public class ApiRoleManagementController {
     // PHẦN 1: API QUẢN LÝ CHỨC VỤ (ROLES)
     // =====================================================================
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_ROLE_VIEW")
     @GetMapping("/roles")
     public ApiResponse<List<RoleResponse>> layDanhSachChucVu() {
         List<RoleResponse> roles = roleManagementService.layTatCaChucVu();
         return ApiResponse.thanhCong(roles, "Lấy danh sách chức vụ thành công");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_ROLE_CREATE")
     @PostMapping("/roles")
     public ApiResponse<String> taoChucVuMoi(@Valid @RequestBody RoleRequest request) {
         User currentUser = userService.getCurrentAuthenticatedUser();
@@ -103,7 +104,7 @@ public class ApiRoleManagementController {
         return ApiResponse.thanhCong(null, "Đã tạo chức vụ thành công");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_ROLE_UPDATE")
     @PutMapping("/roles/{id}")
     public ApiResponse<String> capNhatChucVu(@PathVariable Integer id, @Valid @RequestBody RoleRequest request) {
         User currentUser = userService.getCurrentAuthenticatedUser();
@@ -111,7 +112,7 @@ public class ApiRoleManagementController {
         return ApiResponse.thanhCong(null, "Cập nhật chức vụ thành công");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_ROLE_DELETE")
     @DeleteMapping("/roles/{id}")
     public ApiResponse<String> xoaChucVu(@PathVariable Integer id) {
         User currentUser = userService.getCurrentAuthenticatedUser();
@@ -119,7 +120,7 @@ public class ApiRoleManagementController {
         return ApiResponse.thanhCong(null, "Xóa chức vụ thành công");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_ROLE_CLONE")
     @PostMapping("/roles/{id}/clone")
     public ApiResponse<String> nhanBanChucVu(@PathVariable Integer id, @RequestBody Map<String, String> body) {
         String tenChucVuBanSao = body.get("roleName");
@@ -132,42 +133,42 @@ public class ApiRoleManagementController {
     // PHẦN 2: API QUẢN LÝ QUYỀN THAO TÁC VÀ BLACKLIST
     // =====================================================================
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_PERMISSION_VIEW")
     @GetMapping("/permissions")
     public ApiResponse<List<PermissionResponse>> layDanhSachQuyenHatLuu() {
         List<PermissionResponse> permissions = roleManagementService.layTatCaQuyenHatLuu();
         return ApiResponse.thanhCong(permissions, "Lấy danh sách quyền thao tác thành công");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_PERMISSION_CREATE")
     @PostMapping("/permissions")
     public ApiResponse<String> taoQuyenMoi(@Valid @RequestBody PermissionRequest request) {
         roleManagementService.taoQuyenMoi(request);
         return ApiResponse.thanhCong(null, "Đã khởi tạo quyền thao tác thành công");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_PERMISSION_UPDATE")
     @PutMapping("/permissions/{id}")
     public ApiResponse<String> capNhatQuyen(@PathVariable Integer id, @Valid @RequestBody PermissionRequest request) {
         roleManagementService.capNhatQuyen(id, request);
         return ApiResponse.thanhCong(null, "Cập nhật quyền thao tác thành công");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_PERMISSION_DELETE")
     @DeleteMapping("/permissions/{id}")
     public ApiResponse<String> xoaQuyen(@PathVariable Integer id) {
         roleManagementService.xoaQuyen(id);
         return ApiResponse.thanhCong(null, "Đã xóa quyền thao tác khỏi hệ thống");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_BLACKLIST_VIEW")
     @GetMapping("/blacklist/users/{userId}")
     public ApiResponse<List<Integer>> layBlacklistCuaUser(@PathVariable Long userId) {
         List<Integer> danhSachBiCam = roleManagementService.layBlacklistPermissionCuaUser(userId);
         return ApiResponse.thanhCong(danhSachBiCam, "Lấy danh sách quyền bị đóng băng thành công");
     }
 
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_BLACKLIST_TOGGLE")
     @PostMapping("/blacklist/users/{userId}")
     public ApiResponse<String> toggleBlacklist(@PathVariable Long userId, @Valid @RequestBody UserBlacklistRequest request) {
         User currentUser = userService.getCurrentAuthenticatedUser();
@@ -180,7 +181,7 @@ public class ApiRoleManagementController {
     // =====================================================================
 
     /** Lấy danh sách tất cả nhóm chức năng (sắp xếp theo thứ tự hiển thị) */
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_MODULE_VIEW")
     @GetMapping("/modules")
     public ApiResponse<List<PermissionModuleResponse>> layDanhSachModule() {
         List<PermissionModuleResponse> modules = roleManagementService.layTatCaModule();
@@ -188,7 +189,7 @@ public class ApiRoleManagementController {
     }
 
     /** Tạo nhóm chức năng mới */
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_MODULE_CREATE")
     @PostMapping("/modules")
     public ApiResponse<String> taoModuleMoi(@Valid @RequestBody PermissionModuleRequest request) {
         roleManagementService.taoModuleMoi(request);
@@ -196,7 +197,7 @@ public class ApiRoleManagementController {
     }
 
     /** Cập nhật nhóm chức năng */
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_MODULE_UPDATE")
     @PutMapping("/modules/{id}")
     public ApiResponse<String> capNhatModule(@PathVariable Integer id, @Valid @RequestBody PermissionModuleRequest request) {
         roleManagementService.capNhatModule(id, request);
@@ -204,7 +205,7 @@ public class ApiRoleManagementController {
     }
 
     /** Xóa nhóm chức năng (chỉ khi không có permission nào đang dùng) */
-    @RequirePermission("ROLE_MANAGE")
+    @RequirePermission("RBAC_MODULE_DELETE")
     @DeleteMapping("/modules/{id}")
     public ApiResponse<String> xoaModule(@PathVariable Integer id) {
         roleManagementService.xoaModule(id);

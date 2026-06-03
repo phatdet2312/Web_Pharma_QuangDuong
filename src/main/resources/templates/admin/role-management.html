@@ -310,13 +310,13 @@
 
         <!-- TAB NAVIGATION (tự xây, không dùng Bootstrap Tab để kiểm soát hoàn toàn) -->
         <div class="rm-nav-tabs">
-            <button class="rm-tab-btn active" id="tabBtnRoles" onclick="switchTab('roles')">
+            <button class="rm-tab-btn active" id="tabBtnRoles" onclick="switchTab('roles')" data-permission="RBAC_ROLE_VIEW">
                 <i class="fas fa-user-tie me-2"></i>Nhóm Chức Vụ (Roles)
             </button>
-            <button class="rm-tab-btn" id="tabBtnPerms" onclick="switchTab('perms')">
+            <button class="rm-tab-btn" id="tabBtnPerms" onclick="switchTab('perms')" data-permission="RBAC_PERMISSION_VIEW">
                 <i class="fas fa-key me-2"></i>Từ điển Quyền Hạt Lựu
             </button>
-            <button class="rm-tab-btn" id="tabBtnModules" onclick="switchTab('modules')">
+            <button class="rm-tab-btn" id="tabBtnModules" onclick="switchTab('modules')" data-permission="RBAC_MODULE_VIEW">
                 <i class="fas fa-folder-open me-2"></i>Nhóm Chức Năng
             </button>
         </div>
@@ -333,7 +333,7 @@
                         <button class="btn-ghost" onclick="loadRoles()" style="padding: 7px 14px;">
                             <i class="fas fa-sync-alt me-1"></i>Làm mới
                         </button>
-                        <button class="btn-hc-primary" onclick="moModalThemChucVu()" style="padding: 7px 16px;">
+                        <button class="btn-hc-primary" onclick="moModalThemChucVu()" style="padding: 7px 16px;" data-permission="RBAC_ROLE_CREATE">
                             <i class="fas fa-plus-circle me-2"></i>Thêm Chức Vụ
                         </button>
                     </div>
@@ -372,7 +372,7 @@
                         <button class="btn-ghost" onclick="loadPermissionsForTab2()" style="padding: 7px 14px;">
                             <i class="fas fa-sync-alt me-1"></i>Làm mới
                         </button>
-                        <button class="btn-hc-primary" onclick="moModalThemQuyen()"
+                        <button class="btn-hc-primary" onclick="moModalThemQuyen()" data-permission="RBAC_PERMISSION_CREATE"
                             style="padding: 7px 16px; background: #10b981; border-color: #10b981;">
                             <i class="fas fa-plus-circle me-2"></i>Tạo Quyền Mới
                         </button>
@@ -412,7 +412,7 @@
                         <button class="btn-ghost" onclick="loadModules()" style="padding: 7px 14px;">
                             <i class="fas fa-sync-alt me-1"></i>Làm mới
                         </button>
-                        <button class="btn-hc-primary" onclick="moModalThemModule()"
+                        <button class="btn-hc-primary" onclick="moModalThemModule()" data-permission="RBAC_MODULE_CREATE"
                             style="padding: 7px 16px; background: #f59e0b; border-color: #f59e0b;">
                             <i class="fas fa-plus-circle me-2"></i>Thêm nhóm mới
                         </button>
@@ -638,10 +638,34 @@
             var modalCloneInstance = null;
             var modalQuyenInstance = null;
 
+            function coQuyenTrang(permissionCode) {
+                if (typeof PermissionManager === 'undefined') {
+                    return false;
+                }
+                return PermissionManager.coQuyen(permissionCode);
+            }
+
+            function baoLoiThieuQuyen() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Không đủ quyền',
+                    text: 'Bạn không có quyền thực hiện thao tác này.',
+                    confirmButtonColor: '#3b82f6'
+                });
+            }
+
             // ================================================================
             // TAB SWITCHING — xử lý 3 tab: roles, perms, modules
             // ================================================================
             function switchTab(tabName) {
+                if (tabName === 'perms' && coQuyenTrang('RBAC_PERMISSION_VIEW') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
+                if (tabName === 'modules' && coQuyenTrang('RBAC_MODULE_VIEW') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 // Ẩn tất cả panel
                 document.getElementById('panelRoles').style.display = 'none';
                 document.getElementById('panelPerms').style.display = 'none';
@@ -695,13 +719,21 @@
                     this.setSelectionRange(pos, pos);
                 });
 
+                if (typeof PermissionManager !== 'undefined' && PermissionManager.daNapXong() === false) {
+                    PermissionManager.napQuyenTuServer(khoiDongDuLieuTrang);
+                } else {
+                    khoiDongDuLieuTrang();
+                }
+            });
+
+            function khoiDongDuLieuTrang() {
                 loadRoles();
                 loadPermissionsForTab2();
                 loadPermissionsForCheckbox();
                 loadModules();
                 loadModulesDropdown();
                 loadSystemPermissionsDropdown();
-            });
+            }
 
             // ================================================================
             // PHẦN 1: CHỨC VỤ (ROLES)
@@ -752,12 +784,26 @@
                             }
                             var descEscaped = (r.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
-                            // Bảo vệ chức vụ lõi — không cho xóa
-                            var deleteBtn = '';
-                            if (r.roleName !== 'SUPERADMIN' && r.roleName !== 'ADMIN' && r.roleName !== 'USER') {
-                                deleteBtn = '<button class="btn-tbl btn-tbl-delete" title="Xóa chức vụ" onclick="xoaChucVu(' + r.id + ', \'' + r.roleName + '\')">' +
+                            // Render nút theo từng quyền hạt lựu, backend vẫn là lớp enforce cuối cùng.
+                            var actionHtml = '';
+                            if (coQuyenTrang('RBAC_ROLE_UPDATE') === true) {
+                                actionHtml += '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
+                                    'onclick=\'moModalSuaChucVu(' + r.id + ',"' + r.roleName + '",' + r.roleLevel + ',"' + descEscaped + '",' + permsJson + ')\'>' +
+                                    '<i class="fas fa-edit"></i>' +
+                                    '</button>';
+                            }
+                            if (coQuyenTrang('RBAC_ROLE_CLONE') === true) {
+                                actionHtml += '<button class="btn-tbl btn-tbl-clone me-1" title="Nhân bản" onclick="moModalClone(' + r.id + ', \'' + r.roleName + '\')">' +
+                                    '<i class="fas fa-copy"></i>' +
+                                    '</button>';
+                            }
+                            if (coQuyenTrang('RBAC_ROLE_DELETE') === true && r.roleName !== 'SUPERADMIN' && r.roleName !== 'ADMIN' && r.roleName !== 'USER') {
+                                actionHtml += '<button class="btn-tbl btn-tbl-delete" title="Xóa chức vụ" onclick="xoaChucVu(' + r.id + ', \'' + r.roleName + '\')">' +
                                     '<i class="fas fa-trash-alt"></i>' +
                                     '</button>';
+                            }
+                            if (actionHtml === '') {
+                                actionHtml = '<span style="color:#cbd5e1;font-size:.74rem;">Không có</span>';
                             }
 
                             html += '<tr>' +
@@ -769,16 +815,7 @@
                                 '<td style="text-align:center;"><span class="level-badge">Lv ' + r.roleLevel + '</span></td>' +
                                 '<td style="max-width:280px;">' + permsHtml + '</td>' +
                                 '<td style="text-align:center;">' + countHtml + '</td>' +
-                                '<td style="text-align:right;">' +
-                                '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
-                                'onclick=\'moModalSuaChucVu(' + r.id + ',"' + r.roleName + '",' + r.roleLevel + ',"' + descEscaped + '",' + permsJson + ')\'>' +
-                                '<i class="fas fa-edit"></i>' +
-                                '</button>' +
-                                '<button class="btn-tbl btn-tbl-clone me-1" title="Nhân bản" onclick="moModalClone(' + r.id + ', \'' + r.roleName + '\')">' +
-                                '<i class="fas fa-copy"></i>' +
-                                '</button>' +
-                                deleteBtn +
-                                '</td>' +
+                                '<td style="text-align:right;">' + actionHtml + '</td>' +
                                 '</tr>';
                         }
                     }
@@ -792,6 +829,10 @@
             }
 
             window.moModalThemChucVu = function () {
+                if (coQuyenTrang('RBAC_ROLE_CREATE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 document.getElementById('modalChucVuTitle').innerHTML = '<i class="fas fa-plus-circle text-primary me-2"></i>Thêm Chức Vụ Mới';
                 document.getElementById('chucVuId').value = '';
                 document.getElementById('chucVuName').value = '';
@@ -804,6 +845,10 @@
             };
 
             window.moModalSuaChucVu = function (id, name, level, desc, permsArray) {
+                if (coQuyenTrang('RBAC_ROLE_UPDATE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 document.getElementById('modalChucVuTitle').innerHTML = '<i class="fas fa-edit text-primary me-2"></i>Chỉnh sửa: <span style="color:#3b82f6;">' + name + '</span>';
                 document.getElementById('chucVuId').value = id;
                 document.getElementById('chucVuName').value = name;
@@ -916,6 +961,11 @@
 
             window.luuChucVu = function () {
                 var id = document.getElementById('chucVuId').value;
+                var quyenCanCo = (id === '') ? 'RBAC_ROLE_CREATE' : 'RBAC_ROLE_UPDATE';
+                if (coQuyenTrang(quyenCanCo) === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 var roleName = document.getElementById('chucVuName').value.trim();
                 var roleLevel = document.getElementById('chucVuLevel').value;
                 var description = document.getElementById('chucVuDesc').value.trim();
@@ -961,6 +1011,10 @@
             };
 
             window.xoaChucVu = function (id, roleName) {
+                if (coQuyenTrang('RBAC_ROLE_DELETE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 Swal.fire({
                     title: 'Xóa chức vụ ' + roleName + '?',
                     html: '<div style="color:#64748b;font-size:.9rem;">Không thể xóa nếu đang có nhân sự giữ chức vụ này.<br>Mọi liên kết sẽ bị hủy vĩnh viễn.</div>',
@@ -982,6 +1036,10 @@
             };
 
             window.moModalClone = function (id, roleName) {
+                if (coQuyenTrang('RBAC_ROLE_CLONE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 document.getElementById('cloneSourceId').value = id;
                 document.getElementById('cloneNewName').value = '';
                 document.getElementById('cloneNameError').style.display = 'none';
@@ -991,6 +1049,10 @@
             };
 
             window.luuClone = function () {
+                if (coQuyenTrang('RBAC_ROLE_CLONE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 var sourceId = document.getElementById('cloneSourceId').value;
                 var newName = document.getElementById('cloneNewName').value.trim();
 
@@ -1013,6 +1075,10 @@
             // PHẦN 2: QUYỀN HẠT LỰU (PERMISSIONS)
             // ================================================================
             function loadPermissionsForCheckbox() {
+                if (coQuyenTrang('RBAC_PERMISSION_VIEW') === false) {
+                    danhSachPermissionsGoc = [];
+                    return;
+                }
                 callApi('/api/admin/role-management/permissions', 'GET', null, '', function (response) {
                     danhSachPermissionsGoc = response.data || [];
                 }, function () {
@@ -1021,6 +1087,11 @@
             }
 
             function loadPermissionsForTab2() {
+                if (coQuyenTrang('RBAC_PERMISSION_VIEW') === false) {
+                    document.getElementById('permsTableBody').innerHTML =
+                        '<tr><td colspan="6" style="padding:30px;text-align:center;color:#94a3b8;">Bạn không có quyền xem từ điển quyền thao tác.</td></tr>';
+                    return;
+                }
                 // colspan đã tăng từ 5 lên 6 (thêm cột Nhóm)
                 document.getElementById('permsTableBody').innerHTML =
                     '<tr><td colspan="6" style="padding:40px;text-align:center;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:#94a3b8;"></i></td></tr>';
@@ -1055,6 +1126,21 @@
 
                             // moduleId để truyền vào hàm sửa
                             var moduleIdVal = (p.moduleId !== null && p.moduleId !== undefined) ? p.moduleId : '';
+                            var permissionActionHtml = '';
+                            if (coQuyenTrang('RBAC_PERMISSION_UPDATE') === true) {
+                                permissionActionHtml += '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
+                                    'onclick=\'moModalSuaQuyen(' + p.id + ',"' + p.permissionCode + '","' + descEscaped + '",' + (moduleIdVal === '' ? 'null' : moduleIdVal) + ')\'>' +
+                                    '<i class="fas fa-edit"></i>' +
+                                    '</button>';
+                            }
+                            if (coQuyenTrang('RBAC_PERMISSION_DELETE') === true) {
+                                permissionActionHtml += '<button class="btn-tbl btn-tbl-delete" title="Xóa" onclick="xoaQuyen(' + p.id + ', \'' + p.permissionCode + '\')">' +
+                                    '<i class="fas fa-trash-alt"></i>' +
+                                    '</button>';
+                            }
+                            if (permissionActionHtml === '') {
+                                permissionActionHtml = '<span style="color:#cbd5e1;font-size:.74rem;">Không có</span>';
+                            }
 
                             html += '<tr>' +
                                 '<td style="font-weight:700;color:#64748b;font-size:.85rem;">#' + p.id + '</td>' +
@@ -1062,15 +1148,7 @@
                                 '<td>' + moduleBadge + '</td>' +
                                 '<td style="font-size:.82rem;color:#475569;">' + desc + '</td>' +
                                 '<td style="text-align:center;"><span class="risk-badge ' + riskLevel + '">' + riskLabel + '</span></td>' +
-                                '<td style="text-align:right;">' +
-                                '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
-                                'onclick=\'moModalSuaQuyen(' + p.id + ',"' + p.permissionCode + '","' + descEscaped + '",' + (moduleIdVal === '' ? 'null' : moduleIdVal) + ')\'>' +
-                                '<i class="fas fa-edit"></i>' +
-                                '</button>' +
-                                '<button class="btn-tbl btn-tbl-delete" title="Xóa" onclick="xoaQuyen(' + p.id + ', \'' + p.permissionCode + '\')">' +
-                                '<i class="fas fa-trash-alt"></i>' +
-                                '</button>' +
-                                '</td>' +
+                                '<td style="text-align:right;">' + permissionActionHtml + '</td>' +
                                 '</tr>';
                         }
                     }
@@ -1085,6 +1163,10 @@
 
             // Mở modal tạo quyền thao tác mới — admin CHỌN từ dropdown, không tự gõ mã
             window.moModalThemQuyen = function () {
+                if (coQuyenTrang('RBAC_PERMISSION_CREATE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Tạo Quyền Hạt Lựu Mới';
                 document.getElementById('quyenId').value = '';
                 document.getElementById('quyenCode').value = '';
@@ -1098,6 +1180,10 @@
 
             // Mở modal sửa quyền thao tác — mã quyền KHÔNG đổi được, chỉ sửa mô tả + nhóm
             window.moModalSuaQuyen = function (id, code, desc, moduleId) {
+                if (coQuyenTrang('RBAC_PERMISSION_UPDATE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Sửa Quyền: <span style="color:#10b981;">' + layMoTaQuyen(code) + '</span>';
                 document.getElementById('quyenId').value = id;
                 document.getElementById('quyenCode').value = code;
@@ -1116,6 +1202,11 @@
 
             window.luuQuyen = function () {
                 var id = document.getElementById('quyenId').value;
+                var quyenCanCo = (id === '') ? 'RBAC_PERMISSION_CREATE' : 'RBAC_PERMISSION_UPDATE';
+                if (coQuyenTrang(quyenCanCo) === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 // Khi tạo mới: đọc mã từ dropdown. Khi sửa: đọc từ hidden input (dropdown disabled)
                 var code = document.getElementById('quyenCode').value.trim();
                 if (code === '') {
@@ -1158,6 +1249,10 @@
 
             // Xóa quyền thao tác (chỉ xóa được nếu chưa gắn vào chức vụ nào)
             window.xoaQuyen = function (id, code) {
+                if (coQuyenTrang('RBAC_PERMISSION_DELETE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 Swal.fire({
                     title: 'Xóa quyền ' + code + '?',
                     html: '<div style="color:#64748b;font-size:.9rem;">Chỉ xóa được nếu quyền này chưa gắn vào bất kỳ chức vụ nào.<br>Hành động này không thể hoàn tác.</div>',
@@ -1184,6 +1279,11 @@
 
             // Tải danh sách nhóm chức năng cho Tab 3
             function loadModules() {
+                if (coQuyenTrang('RBAC_MODULE_VIEW') === false) {
+                    document.getElementById('modulesTableBody').innerHTML =
+                        '<tr><td colspan="6" style="padding:30px;text-align:center;color:#94a3b8;">Bạn không có quyền xem nhóm chức năng.</td></tr>';
+                    return;
+                }
                 document.getElementById('modulesTableBody').innerHTML =
                     '<tr><td colspan="6" style="padding:40px;text-align:center;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:#94a3b8;"></i></td></tr>';
 
@@ -1204,6 +1304,21 @@
                             var displayOrder = (m.displayOrder !== null && m.displayOrder !== undefined) ? m.displayOrder : 0;
                             var descEscaped = (m.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
                             var moduleNameEscaped = (m.moduleName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            var moduleActionHtml = '';
+                            if (coQuyenTrang('RBAC_MODULE_UPDATE') === true) {
+                                moduleActionHtml += '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
+                                    'onclick=\'moModalSuaModule(' + m.id + ',"' + m.moduleCode + '","' + moduleNameEscaped + '","' + descEscaped + '",' + displayOrder + ')\'>' +
+                                    '<i class="fas fa-edit"></i>' +
+                                    '</button>';
+                            }
+                            if (coQuyenTrang('RBAC_MODULE_DELETE') === true) {
+                                moduleActionHtml += '<button class="btn-tbl btn-tbl-delete" title="Xóa" onclick="xoaModule(' + m.id + ', \'' + m.moduleCode + '\')">' +
+                                    '<i class="fas fa-trash-alt"></i>' +
+                                    '</button>';
+                            }
+                            if (moduleActionHtml === '') {
+                                moduleActionHtml = '<span style="color:#cbd5e1;font-size:.74rem;">Không có</span>';
+                            }
 
                             html += '<tr>' +
                                 '<td style="font-weight:700;color:#64748b;font-size:.85rem;">#' + m.id + '</td>' +
@@ -1211,15 +1326,7 @@
                                 '<td style="font-weight:600;color:#1e293b;font-size:.85rem;">' + m.moduleName + '</td>' +
                                 '<td style="font-size:.82rem;color:#475569;">' + descText + '</td>' +
                                 '<td style="text-align:center;font-weight:700;color:#64748b;">' + displayOrder + '</td>' +
-                                '<td style="text-align:right;">' +
-                                '<button class="btn-tbl btn-tbl-edit me-1" title="Chỉnh sửa" ' +
-                                'onclick=\'moModalSuaModule(' + m.id + ',"' + m.moduleCode + '","' + moduleNameEscaped + '","' + descEscaped + '",' + displayOrder + ')\'>' +
-                                '<i class="fas fa-edit"></i>' +
-                                '</button>' +
-                                '<button class="btn-tbl btn-tbl-delete" title="Xóa" onclick="xoaModule(' + m.id + ', \'' + m.moduleCode + '\')">' +
-                                '<i class="fas fa-trash-alt"></i>' +
-                                '</button>' +
-                                '</td>' +
+                                '<td style="text-align:right;">' + moduleActionHtml + '</td>' +
                                 '</tr>';
                         }
                     }
@@ -1234,6 +1341,10 @@
 
             // Nạp danh sách module vào dropdown select trong modal tạo/sửa quyền
             function loadModulesDropdown() {
+                if (coQuyenTrang('RBAC_MODULE_VIEW') === false) {
+                    danhSachModulesGoc = [];
+                    return;
+                }
                 callApi('/api/admin/role-management/modules', 'GET', null, '', function (response) {
                     var modules = response.data || [];
                     danhSachModulesGoc = modules;
@@ -1255,6 +1366,10 @@
 
             // Mở SweetAlert tạo nhóm chức năng mới
             window.moModalThemModule = function () {
+                if (coQuyenTrang('RBAC_MODULE_CREATE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 Swal.fire({
                     title: '<i class="fas fa-folder-plus me-2" style="color:#f59e0b;"></i>Tạo nhóm chức năng mới',
                     html: '<div style="text-align:left;">' +
@@ -1319,6 +1434,10 @@
 
             // Mở SweetAlert sửa nhóm chức năng (không cho sửa moduleCode)
             window.moModalSuaModule = function (id, moduleCode, moduleName, description, displayOrder) {
+                if (coQuyenTrang('RBAC_MODULE_UPDATE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 Swal.fire({
                     title: '<i class="fas fa-edit me-2" style="color:#f59e0b;"></i>Sửa nhóm: <span style="color:#f59e0b;">' + moduleCode + '</span>',
                     html: '<div style="text-align:left;">' +
@@ -1365,6 +1484,10 @@
 
             // Xóa nhóm chức năng — backend sẽ kiểm tra FK trước khi xóa
             window.xoaModule = function (id, moduleCode) {
+                if (coQuyenTrang('RBAC_MODULE_DELETE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 Swal.fire({
                     title: 'Xóa nhóm ' + moduleCode + '?',
                     html: '<div style="color:#64748b;font-size:.9rem;">Chỉ xóa được nếu nhóm này chưa có quyền nào thuộc về.<br>Hành động này không thể hoàn tác.</div>',
@@ -1395,6 +1518,10 @@
 
             // Nạp danh sách mã quyền từ backend vào dropdown modal tạo quyền
             function loadSystemPermissionsDropdown() {
+                if (coQuyenTrang('RBAC_PERMISSION_VIEW') === false) {
+                    danhSachQuyenHeThong = [];
+                    return;
+                }
                 callApi('/api/admin/role-management/system-permissions', 'GET', null, '', function (response) {
                     danhSachQuyenHeThong = response.data || [];
                     var selectEl = document.getElementById('quyenCodeSelect');

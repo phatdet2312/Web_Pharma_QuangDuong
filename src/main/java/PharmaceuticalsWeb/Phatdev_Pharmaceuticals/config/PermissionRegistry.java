@@ -66,7 +66,24 @@ public class PermissionRegistry {
 
         // ─── Nhóm: Hệ thống ───
         danhSach.add(new String[]{"VIEW",                   "Quyền truy cập giao diện chức năng được phân công",    "SYSTEM"});
-        danhSach.add(new String[]{"ROLE_MANAGE",            "Quản lý chức vụ và phân quyền động",                    "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_ROLE_VIEW",         "Xem danh sách chức vụ và quyền đang gán",               "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_ROLE_CREATE",       "Tạo chức vụ mới",                                       "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_ROLE_UPDATE",       "Cập nhật chức vụ và danh sách quyền của chức vụ",       "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_ROLE_DELETE",       "Xóa chức vụ khi không còn người dùng đang gán",         "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_ROLE_CLONE",        "Nhân bản chức vụ trong phạm vi quyền được cấp",         "SYSTEM"});
+
+        danhSach.add(new String[]{"RBAC_PERMISSION_VIEW",   "Xem từ điển quyền thao tác và danh sách mã quyền hệ thống", "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_PERMISSION_CREATE", "Tạo quyền thao tác mới",                                "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_PERMISSION_UPDATE", "Cập nhật mô tả hoặc nhóm chức năng của quyền thao tác",  "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_PERMISSION_DELETE", "Xóa quyền thao tác khi chưa được gán vào chức vụ",       "SYSTEM"});
+
+        danhSach.add(new String[]{"RBAC_MODULE_VIEW",       "Xem danh sách nhóm chức năng phân quyền",               "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_MODULE_CREATE",     "Tạo nhóm chức năng phân quyền",                         "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_MODULE_UPDATE",     "Cập nhật nhóm chức năng phân quyền",                    "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_MODULE_DELETE",     "Xóa nhóm chức năng khi chưa có quyền thuộc nhóm",        "SYSTEM"});
+
+        danhSach.add(new String[]{"RBAC_BLACKLIST_VIEW",    "Xem danh sách quyền bị khóa riêng theo người dùng",      "SYSTEM"});
+        danhSach.add(new String[]{"RBAC_BLACKLIST_TOGGLE",  "Khóa hoặc mở khóa quyền thao tác riêng theo người dùng", "SYSTEM"});
         danhSach.add(new String[]{"AUDIT_VIEW",             "Xem nhật ký kiểm toán hệ thống",                        "SYSTEM"});
 
         return danhSach;

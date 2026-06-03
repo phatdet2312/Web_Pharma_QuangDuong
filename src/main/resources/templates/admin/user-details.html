@@ -815,6 +815,22 @@
             var modalKhoaInstance = null;
             var modalBlacklistInstance = null;
 
+            function coQuyenTrang(permissionCode) {
+                if (typeof PermissionManager === 'undefined') {
+                    return false;
+                }
+                return PermissionManager.coQuyen(permissionCode);
+            }
+
+            function baoLoiThieuQuyen() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Không đủ quyền',
+                    text: 'Bạn không có quyền thực hiện thao tác này.',
+                    confirmButtonColor: '#3b82f6'
+                });
+            }
+
             // ================================================================
             // UTILITY FUNCTIONS
             // ================================================================
@@ -908,6 +924,11 @@
             }
 
             function buoc3_LayDanhSachChucVu() {
+                if (coQuyenTrang('RBAC_ROLE_VIEW') === false) {
+                    danhSachChucVuToanCuc = [];
+                    buoc4_LayDanhSachQuyen();
+                    return;
+                }
                 callApi('/api/admin/role-management/roles', 'GET', null, '', function (res) {
                     danhSachChucVuToanCuc = res.data || [];
                     buoc4_LayDanhSachQuyen();
@@ -918,6 +939,11 @@
             }
 
             function buoc4_LayDanhSachQuyen() {
+                if (coQuyenTrang('RBAC_PERMISSION_VIEW') === false) {
+                    danhSachQuyenToanCuc = [];
+                    buoc5_LayBlacklist();
+                    return;
+                }
                 callApi('/api/admin/role-management/permissions', 'GET', null, '', function (res) {
                     danhSachQuyenToanCuc = res.data || [];
                     buoc5_LayBlacklist();
@@ -929,6 +955,11 @@
 
             // [SỬA] Gọi buoc6_LayHanhViKiemDuyet thay vì buoc6_LayAuditLog trực tiếp
             function buoc5_LayBlacklist() {
+                if (coQuyenTrang('RBAC_BLACKLIST_VIEW') === false) {
+                    danhSachBlacklist = [];
+                    buoc6_LayHanhViKiemDuyet();
+                    return;
+                }
                 callApi('/api/admin/role-management/blacklist/users/' + targetUserId, 'GET', null, '', function (res) {
                     danhSachBlacklist = res.data || [];
                     buoc6_LayHanhViKiemDuyet();
@@ -1110,6 +1141,14 @@
                 var lockBtnIcon = isLocked ? 'fa-lock-open' : 'fa-lock';
                 var lockBtnText = isLocked ? 'Mở Khóa Tài Khoản' : 'Khóa Tài Khoản';
                 var lockBtnOnClick = isLocked ? 'moModalKhoa(false)' : 'moModalKhoa(true)';
+                var lockActionHtml = '';
+                if (coQuyenTrang('USER_LOCK') === true) {
+                    lockActionHtml = '<button class="btn-lock ' + lockBtnClass + '" onclick="' + lockBtnOnClick + '">' +
+                        '<i class="fas ' + lockBtnIcon + '"></i>' + lockBtnText +
+                        '</button>';
+                } else {
+                    lockActionHtml = '<span style="display:block;text-align:center;color:#94a3b8;font-size:.84rem;">Bạn không có quyền khóa hoặc mở khóa tài khoản.</span>';
+                }
 
                 var html =
                     '<div class="ud-card-title"><i class="fas fa-id-card" style="color:#3b82f6;"></i> Hồ sơ tài khoản</div>' +
@@ -1132,9 +1171,7 @@
                     '<div class="hero-meta-row"><div class="hero-meta-icon"><i class="fas fa-calendar-plus"></i></div><div><div class="hero-meta-label">Ngày tham gia</div><div class="hero-meta-value">' + formatDateTime(u.createdAt) + '</div></div></div>' +
                     '</div>' +
                     '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f1f5f9;">' +
-                    '<button class="btn-lock ' + lockBtnClass + '" onclick="' + lockBtnOnClick + '">' +
-                    '<i class="fas ' + lockBtnIcon + '"></i>' + lockBtnText +
-                    '</button>' +
+                    lockActionHtml +
                     '</div>';
 
                 document.getElementById('heroCard').innerHTML = html;
@@ -1231,6 +1268,7 @@
             function veKhoi1RoleAssigner() {
                 var currentRoles = (userInfo.roles !== null && userInfo.roles !== undefined) ? Array.from(userInfo.roles) : [];
                 var maxLevel = adminInfo.maxRoleLevel;
+                var coQuyenGanRole = coQuyenTrang('USER_ASSIGN_ROLE');
 
                 var html =
                     '<div class="ud-card-title"><i class="fas fa-user-shield" style="color:#3b82f6;"></i> Thiết lập Chức vụ</div>' +
@@ -1247,7 +1285,7 @@
                         var cv = danhSachChucVuToanCuc[k];
                         var isChecked = coTrongMangChuoi(currentRoles, cv.roleName);
                         // Anti-privilege-escalation: Không được gán chức vụ có level <= level của chính mình
-                        var isDisabled = (cv.roleLevel !== null && cv.roleLevel !== undefined && cv.roleLevel <= maxLevel);
+                        var isDisabled = (coQuyenGanRole === false) || (cv.roleLevel !== null && cv.roleLevel !== undefined && cv.roleLevel <= maxLevel);
                         var permCount = (cv.permissions !== null && cv.permissions !== undefined) ? cv.permissions.length : 0;
                         var desc = (cv.description !== null && cv.description !== undefined && cv.description !== '') ? cv.description : 'Không có mô tả chi tiết.';
 
@@ -1285,9 +1323,11 @@
                     '</div>' +
                     '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">' +
                     '<a href="/admin/users" class="btn-ghost" style="padding:10px 22px;text-decoration:none;">Hủy bỏ</a>' +
-                    '<button type="button" id="btnLuuPhanQuyen" class="btn-hc-primary" onclick="luuPhanQuyen()" style="padding:10px 22px;">' +
-                    '<i class="fas fa-check-circle me-2"></i>Lưu Phân Quyền' +
-                    '</button>' +
+                    (coQuyenGanRole === true ?
+                        '<button type="button" id="btnLuuPhanQuyen" class="btn-hc-primary" onclick="luuPhanQuyen()" style="padding:10px 22px;">' +
+                        '<i class="fas fa-check-circle me-2"></i>Lưu Phân Quyền' +
+                        '</button>' :
+                        '<span style="color:#94a3b8;font-size:.85rem;align-self:center;">Bạn không có quyền gán chức vụ.</span>') +
                     '</div>';
 
                 document.getElementById('block1').innerHTML = html;
@@ -1351,6 +1391,10 @@
             }
 
             window.luuPhanQuyen = function () {
+                if (coQuyenTrang('USER_ASSIGN_ROLE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 var cards = document.querySelectorAll('#roleCardsGrid .role-card');
                 var danhSachDuocChon = [];
 
@@ -1393,11 +1437,18 @@
             // RENDER: BLOCK 2 — PERMISSION MATRIX (nhóm theo prefix)
             // ================================================================
             function veKhoi2MatranQuyen() {
+                var coQuyenXemBlacklist = coQuyenTrang('RBAC_BLACKLIST_VIEW');
+                var blacklistNote = '';
+                if (coQuyenXemBlacklist === true) {
+                    blacklistNote = '<span style="background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:3px;font-size:.75rem;font-weight:700;">Bị đóng băng</span> = quyền bị khóa cấp cá nhân.';
+                } else {
+                    blacklistNote = '<span style="background:#f1f5f9;color:#64748b;padding:1px 6px;border-radius:3px;font-size:.75rem;font-weight:700;">Chưa hiển thị khóa cá nhân</span> = bạn không có quyền xem blacklist.';
+                }
                 var html =
                     '<div class="ud-card-title"><i class="fas fa-th" style="color:#f59e0b;"></i> Ma trận Quyền thao tác</div>' +
                     '<p style="color:#64748b;font-size:.84rem;margin-bottom:16px;">' +
                     'Toàn bộ quyền trong hệ thống và trạng thái thực tế của tài khoản này. ' +
-                    '<span style="background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:3px;font-size:.75rem;font-weight:700;">Bị đóng băng</span> = quyền bị khóa cấp cá nhân.' +
+                    blacklistNote +
                     '</p>';
 
                 if (danhSachQuyenToanCuc.length === 0) {
@@ -1448,7 +1499,10 @@
                     for (var pg = 0; pg < groupPerms.length; pg = pg + 1) {
                         var p = groupPerms[pg];
                         var hasPerm = coTrongMangChuoi(currentPerms, p.permissionCode);
-                        var isBlocked = coTrongMangSo(danhSachBlacklist, p.id);
+                        var isBlocked = false;
+                        if (coQuyenXemBlacklist === true) {
+                            isBlocked = coTrongMangSo(danhSachBlacklist, p.id);
+                        }
                         var rowStyle = '';
                         var statusClass = 'none';
                         var statusText = 'Chưa được cấp';
@@ -1460,6 +1514,9 @@
                         } else if (hasPerm) {
                             statusClass = 'active';
                             statusText = '<i class="fas fa-check me-1"></i>Đang có';
+                            if (coQuyenXemBlacklist === false) {
+                                statusText = '<i class="fas fa-check me-1"></i>Đang có role';
+                            }
                         }
 
                         var riskLevel = p.riskLevel || 'SAFE';
@@ -1489,6 +1546,15 @@
                     '<p style="color:#64748b;font-size:.84rem;margin-bottom:16px;">' +
                     'Đóng băng quyền cụ thể ở cấp cá nhân, không ảnh hưởng đến tài khoản khác cùng chức vụ. Mỗi thay đổi cần nhập lý do và được ghi vào sổ kiểm toán.' +
                     '</p>';
+
+                if (coQuyenTrang('RBAC_BLACKLIST_VIEW') === false) {
+                    html += '<div style="text-align:center;padding:28px 0;color:#94a3b8;">' +
+                        '<i class="fas fa-lock fa-2x" style="display:block;margin-bottom:10px;"></i>' +
+                        '<span style="font-size:.85rem;">Bạn không có quyền xem danh sách quyền bị khóa riêng của người dùng.</span>' +
+                        '</div>';
+                    document.getElementById('block3').innerHTML = html;
+                    return;
+                }
 
                 var currentPerms = (userInfo.permissions !== null && userInfo.permissions !== undefined) ? Array.from(userInfo.permissions) : [];
 
@@ -1522,6 +1588,13 @@
                     var riskLevel = p.riskLevel || 'SAFE';
                     // willBan = hành động tiếp theo nếu user click (toggle): nếu đang bị cấm thì click = bỏ cấm, ngược lại
                     var willBanNext = !isBanned;
+                    var toggleAttr = '';
+                    var toggleOpacity = '';
+                    if (coQuyenTrang('RBAC_BLACKLIST_TOGGLE') === true) {
+                        toggleAttr = ' onclick="moModalBlacklist(' + p.id + ', \'' + p.permissionCode + '\', ' + willBanNext + ')"';
+                    } else {
+                        toggleOpacity = ' opacity:.45;cursor:not-allowed;';
+                    }
 
                     html += '<div class="bl-row' + rowClass + '">' +
                         '<div class="bl-info">' +
@@ -1532,7 +1605,7 @@
                         '<div class="bl-perm-desc">' + (p.description || '') + '</div>' +
                         '</div>' +
                         '<div class="bl-switch-wrap">' +
-                        '<div class="bl-switch-btn ' + switchClass + '" onclick="moModalBlacklist(' + p.id + ', \'' + p.permissionCode + '\', ' + willBanNext + ')">' +
+                        '<div class="bl-switch-btn ' + switchClass + '"' + toggleAttr + ' style="' + toggleOpacity + '">' +
                         '<div class="bl-switch-thumb ' + thumbClass + '"></div>' +
                         '</div>' +
                         '<div style="font-size:.62rem;font-weight:700;color:' + labelColor + ';text-align:center;">' + labelText + '</div>' +
@@ -1548,6 +1621,10 @@
             // ACTION: KHÓA / MỞ KHÓA TÀI KHOẢN
             // ================================================================
             window.moModalKhoa = function (lock) {
+                if (coQuyenTrang('USER_LOCK') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 pendingLockAction = lock;
                 var nameDisplay = userInfo.fullName || userInfo.username || 'tài khoản này';
 
@@ -1577,6 +1654,10 @@
             };
 
             window.thucThiKhoaTaiKhoan = function () {
+                if (coQuyenTrang('USER_LOCK') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 var reason = document.getElementById('khoaReason').value.trim();
                 if (reason === '') {
                     document.getElementById('khoaReasonError').style.display = 'block';
@@ -1605,6 +1686,10 @@
             // ACTION: BLACKLIST / UNBLACKLIST QUYỀN HẠT LỰU
             // ================================================================
             window.moModalBlacklist = function (permId, permCode, willBan) {
+                if (coQuyenTrang('RBAC_BLACKLIST_TOGGLE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 pendingBlacklistPermId = permId;
                 pendingBlacklistBanned = willBan;
 
@@ -1634,6 +1719,10 @@
             };
 
             window.thucThiBlacklist = function () {
+                if (coQuyenTrang('RBAC_BLACKLIST_TOGGLE') === false) {
+                    baoLoiThieuQuyen();
+                    return;
+                }
                 var reason = document.getElementById('blacklistReason').value.trim();
                 if (reason === '') {
                     document.getElementById('blacklistReasonError').style.display = 'block';
@@ -1683,10 +1772,18 @@
             // INITIALIZATION
             // ================================================================
             document.addEventListener('DOMContentLoaded', function () {
+                if (typeof PermissionManager !== 'undefined' && PermissionManager.daNapXong() === false) {
+                    PermissionManager.napQuyenTuServer(khoiDongTrang);
+                } else {
+                    khoiDongTrang();
+                }
+            });
+
+            function khoiDongTrang() {
                 var pathArray = window.location.pathname.split('/');
                 targetUserId = pathArray[pathArray.length - 1];
                 buoc1_LayThongTinAdmin();
-            });
+            }
         </script>
 
     </div>

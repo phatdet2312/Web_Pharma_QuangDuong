@@ -82,7 +82,11 @@ var PermissionManager = (function () {
             return true;
         }
         for (var i = 0; i < danhSachQuyen.length; i = i + 1) {
-            if (coQuyen(danhSachQuyen[i]) === true) {
+            var permissionCode = danhSachQuyen[i];
+            if (permissionCode !== null && permissionCode !== undefined) {
+                permissionCode = permissionCode.trim();
+            }
+            if (permissionCode !== '' && coQuyen(permissionCode) === true) {
                 return true;
             }
         }
