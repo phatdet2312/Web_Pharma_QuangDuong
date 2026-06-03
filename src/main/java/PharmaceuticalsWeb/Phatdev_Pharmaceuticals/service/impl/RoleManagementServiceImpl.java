@@ -1,9 +1,11 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/service/impl/RoleManagementServiceImpl.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.impl;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.PermissionModuleRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.PermissionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.RoleRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.UserBlacklistRequest;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PermissionModuleResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PermissionResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.RoleResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.CtRolePermission;
@@ -259,15 +261,24 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
         List<Permission> tatCaQuyen = permissionRepository.findAll();
         List<PermissionResponse> responseList = new ArrayList<>();
 
+        // Nạp toàn bộ module 1 lần duy nhất, xây Map tra cứu — tránh N+1 query
+        List<PermissionModule> tatCaModule = permissionModuleRepository.findAll();
+        java.util.Map<Integer, PermissionModule> mapModule = new java.util.HashMap<>();
+        Object[] moduleArray = tatCaModule.toArray();
+        for (int m = 0; m < moduleArray.length; m = m + 1) {
+            PermissionModule mod = (PermissionModule) moduleArray[m];
+            mapModule.put(mod.getId(), mod);
+        }
+
         if (tatCaQuyen != null) {
             Object[] permsArray = tatCaQuyen.toArray();
             for (int i = 0; i < permsArray.length; i = i + 1) {
                 Permission p = (Permission) permsArray[i];
                 PermissionResponse dto = PermissionResponse.fromEntity(p);
 
-                // Nạp thông tin module nếu permission có moduleId
+                // Tra cứu module từ Map đã nạp sẵn (O(1) thay vì query DB)
                 if (p.getModuleId() != null) {
-                    PermissionModule mod = permissionModuleRepository.findById(p.getModuleId()).orElse(null);
+                    PermissionModule mod = mapModule.get(p.getModuleId());
                     if (mod != null) {
                         dto.setModuleCode(mod.getModuleCode());
                         dto.setModuleName(mod.getModuleName());
@@ -420,9 +431,77 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
         } else {
             if (blacklistRepository.existsById(blacklistId) == true) {
                 blacklistRepository.deleteById(blacklistId);
-                
+
                 auditService.logAction(targetUserId, "UNBLACKLIST_PERM", p.getId(), currentUser.getId(), request.getReason());
             }
         }
+    }
+
+    // =====================================================================
+    // 4. NGHIỆP VỤ QUẢN LÝ NHÓM CHỨC NĂNG (PERMISSION MODULES)
+    // =====================================================================
+
+    // Lấy toàn bộ nhóm chức năng, chuyển đổi sang DTO trả về cho Controller
+    @Override
+    public List<PermissionModuleResponse> layTatCaModule() {
+        List<PermissionModule> modules = permissionModuleRepository.findAllByOrderByDisplayOrderAsc();
+        List<PermissionModuleResponse> responseList = new ArrayList<>();
+
+        Object[] modulesArray = modules.toArray();
+        for (int i = 0; i < modulesArray.length; i = i + 1) {
+            PermissionModule mod = (PermissionModule) modulesArray[i];
+            responseList.add(PermissionModuleResponse.fromEntity(mod));
+        }
+
+        return responseList;
+    }
+
+    // Tạo nhóm chức năng mới sau khi kiểm tra trùng mã module
+    @Override
+    public void taoModuleMoi(PermissionModuleRequest request) {
+        String moduleCode = request.getModuleCode().toUpperCase().trim();
+
+        if (permissionModuleRepository.findByModuleCode(moduleCode).isPresent()) {
+            throw new AppException(400, "Mã module đã tồn tại");
+        }
+
+        PermissionModule mod = new PermissionModule();
+        mod.setModuleCode(moduleCode);
+        mod.setModuleName(request.getModuleName().trim());
+        mod.setDescription(request.getDescription());
+        mod.setDisplayOrder(request.getDisplayOrder() != null ? request.getDisplayOrder() : 0);
+        permissionModuleRepository.save(mod);
+    }
+
+    // Cập nhật thông tin nhóm chức năng theo ID
+    @Override
+    public void capNhatModule(Integer moduleId, PermissionModuleRequest request) {
+        PermissionModule mod = permissionModuleRepository.findById(moduleId)
+                .orElseThrow(() -> new AppException(404, "Không tìm thấy nhóm chức năng"));
+
+        mod.setModuleName(request.getModuleName().trim());
+        mod.setDescription(request.getDescription());
+        if (request.getDisplayOrder() != null) {
+            mod.setDisplayOrder(request.getDisplayOrder());
+        }
+        permissionModuleRepository.save(mod);
+    }
+
+    // Xóa nhóm chức năng (từ chối nếu còn quyền hạt lựu đang thuộc nhóm)
+    @Override
+    public void xoaModule(Integer moduleId) {
+        PermissionModule mod = permissionModuleRepository.findById(moduleId)
+                .orElseThrow(() -> new AppException(404, "Không tìm thấy nhóm chức năng"));
+
+        List<Permission> tatCaQuyen = permissionRepository.findAll();
+        Object[] quyenArray = tatCaQuyen.toArray();
+        for (int i = 0; i < quyenArray.length; i = i + 1) {
+            Permission p = (Permission) quyenArray[i];
+            if (p.getModuleId() != null && p.getModuleId().equals(moduleId)) {
+                throw new AppException(400, "Từ chối xóa: Nhóm này đang chứa quyền hạt lựu. Hãy chuyển quyền sang nhóm khác trước.");
+            }
+        }
+
+        permissionModuleRepository.delete(mod);
     }
 }

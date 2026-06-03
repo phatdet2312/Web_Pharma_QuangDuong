@@ -21,7 +21,8 @@ import java.util.Collection;
  * =========================================================================
  * Đọc annotation @RequirePermission trên controller method.
  * Nếu có → kiểm tra user hiện tại có quyền tương ứng trong GrantedAuthority.
- * SUPERADMIN (có role "ROLE_SUPERADMIN") luôn BYPASS mọi kiểm tra.
+ * SUPERADMIN (roleLevel = 0, authority "ROLE_SUPERADMIN") luôn BYPASS mọi kiểm tra.
+ * Check authority string thay vì query DB roleLevel để tránh thêm DB call mỗi request.
  * Method không có annotation → cho qua (backward compatible).
  */
 @Component
@@ -62,6 +63,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 
         // Kiểm tra SUPERADMIN — bypass mọi kiểm tra quyền (GOD MODE)
+        // Dùng authority "ROLE_SUPERADMIN" đã nạp sẵn trong RAM (tương đương roleLevel=0, không tốn DB call)
         boolean laSuperAdmin = false;
         Object[] authorityArray = authorities.toArray();
         for (int i = 0; i < authorityArray.length; i = i + 1) {

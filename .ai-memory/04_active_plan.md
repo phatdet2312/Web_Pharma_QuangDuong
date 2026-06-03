@@ -1,3 +1,97 @@
+# Active Plan — Audit Toàn Diện Phân Quyền Động Phase 5
+> Last updated: 2026-06-03
+> Status: DONE
+> Planner persisted before implementation: YES
+> Planner model: Opus 4.6
+
+## Mục tiêu
+Kiểm tra toàn diện (READ-ONLY, không sửa file) sự nâng cấp phân quyền động từ commit 035a691 đến HEAD df729aa.
+So sánh + đánh giá chất lượng + tuân thủ quy tắc hệ thống.
+
+## Task breakdown
+
+| # | Task | Mục tiêu | Agent | Effort | Trạng thái |
+|---|------|----------|-------|--------|-----------|
+| A1 | Audit Lớp 3 — Enforce Core | PermissionInterceptor, RequirePermission, WebMvcConfig, SecurityConfig | deep-reviewer | M | DONE |
+| A2 | Audit Lớp 2 — Nạp quyền + Blacklist | UserServiceImpl (napQuyenChoNguoiDung, blacklist, N+1) | deep-reviewer | M | DONE |
+| A3 | Audit Lớp 1 — CRUD Role/Permission/Module | ApiRoleManagementController, RoleManagementServiceImpl, DTO | deep-reviewer | M | DONE |
+| A4 | Audit Lớp 4 — Frontend UX | permission-manager.js, role-management.html, admin_layout.html | deep-reviewer | M | DONE |
+| A5 | Audit Coverage @RequirePermission | 12 controller admin có annotation | deep-reviewer | M | DONE |
+| A6 | Audit Security bypass/escalation | PermissionInterceptor, SecurityConfig, path gap | security-auditor | M | DONE |
+| A7 | Audit DieuKienCode compliance | Tất cả file thay đổi | reviewer | S | DONE |
+| A8 | Audit tính đồng bộ 4 lớp | Cross-reference tất cả file | deep-reviewer | S | DONE |
+
+## Luồng thực thi
+Đợt 1 (song song): A1 + A2 + A3 + A4 ✅
+Đợt 2 (song parallel): A5 + A6 + A7 ✅
+Đợt 3: A8 (tổng hợp) ✅
+
+## Kết quả Audit
+
+**Verdict: PASS — 1 MEDIUM, 3 LOW, 2 INFO**
+
+| # | Severity | Mô tả | File | Trạng thái |
+|---|----------|-------|------|-----------|
+| F1 | MEDIUM | Module CRUD logic nằm trong Controller thay vì Service layer | ApiRoleManagementController.java:183-256 | FIX_IN_PROGRESS |
+| F2 | LOW | FK check xoaModule load ALL permissions thay vì query countByModuleId | ApiRoleManagementController.java:244-252 | NOTED |
+| F3 | LOW | Error message lộ permission code nội bộ | PermissionInterceptor.java:91 | NOTED |
+| F4 | LOW | Không audit trail cho module CRUD | ApiRoleManagementController.java | NOTED |
+| F5 | INFO | Interceptor chạy trên public endpoint (pass nhanh khi no annotation) | WebMvcConfig.java:31 | ACCEPTED |
+| F6 | INFO | SUPERADMIN detection 2 cách khác nhau (cả 2 đúng) | PermissionInterceptor vs Controller | ACCEPTED |
+
+DieuKienCode: 10/10 quy tắc PASS
+Tiêu chí hệ thống: 9/9 PASS
+Tiêu chí nghiệm thu Phase 5: 11/12 PASS (1 cần verify build)
+
+---
+
+# Active Plan — Fix 6 Findings Audit Phân Quyền Động
+> Last updated: 2026-06-03
+> Status: DONE
+> Planner persisted before implementation: YES
+> Planner model: Opus 4.6
+
+## Mục tiêu
+Fix 6 findings từ audit phân quyền động Phase 5 (0 CRITICAL, 3 HIGH, 2 MEDIUM, 1 LOW).
+Giữ nguyên kiến trúc, backward compatible, không break API response.
+
+## Task breakdown
+
+| # | Task | File | Chi tiết | Agent | Dependency | Effort | Trạng thái |
+|---|------|------|----------|-------|------------|--------|-----------|
+| T1 | Fix N+1 blacklist | UserServiceImpl.java:121-133 | Thay vòng lặp findById → gom IDs, gọi findAllById 1 lần, xây Map, for loop xóa | implementer | Không | S | DONE |
+| T2 | Fix N+1 module loading | RoleManagementServiceImpl.java:258-275 | Load all modules 1 lần trước vòng lặp, xây Map<Integer,PermissionModule>, thay findById | implementer | Không | S | DONE |
+| T3 | Tạo DTO + fix module CRUD + import (gộp F3+F5) | PermissionModuleRequest.java (MỚI) + ApiRoleManagementController.java | Tạo DTO @Valid, đổi Map→DTO 3 endpoint, import AppException | implementer | Không | M | DONE |
+| T4 | Thống nhất SUPERADMIN detection (F4) | PermissionInterceptor.java + ApiRoleManagementController.java | Controller dùng roleLevel==0. Interceptor giữ ROLE_SUPERADMIN (tránh DB/request), thêm comment giải thích | implementer | T3 | M | DONE |
+| T6 | Xóa tên bảng DB trong comment frontend (F6) | role-management.html:846 | Xóa cụm "(từ bảng PERMISSION_MODULES)" | implementer | Không | XS | DONE |
+| T7 | Build + verify | mvnw compile + test | Kiểm tra không break | tester | T1-T6 | S | DONE |
+| T8 | Memory sync | 04, 06 | Cập nhật plan + evolution log | memory-keeper | T7 | XS | DONE |
+
+## Luồng thực thi
+
+Đợt 1 (song song): T1 + T2 + T6 (3 file khác nhau)
+Đợt 2 (tuần tự): T3 (ApiRoleManagementController + DTO mới)
+Đợt 3 (tuần tự): T4 (PermissionInterceptor + Controller — sau T3 để tránh conflict)
+Đợt 4: T7 (build+test)
+Đợt 5: T8 (memory)
+
+## Tiêu chí nghiệm thu
+1. napQuyenChoNguoiDung() "Bước E" chỉ gọi findAllById 1 lần
+2. layTatCaQuyenHatLuu() gọi findAll() module 1 lần trước vòng lặp
+3. 3 endpoint module CRUD nhận PermissionModuleRequest DTO với @Valid
+4. SUPERADMIN detection nhất quán: roleLevel == 0 ở cả interceptor và controller
+5. Không còn full-qualified AppException
+6. Không còn tên bảng PERMISSION_MODULES trong frontend
+7. Build pass
+8. API response format không đổi
+
+## Decision
+| Quyết định | Phương án chọn | Lý do | Ngày | Hết hạn |
+|-----------|---------------|-------|------|---------|
+| SUPERADMIN detection | roleLevel == 0 | Không phụ thuộc tên role, nhất quán với API my-permissions | 2026-06-03 | 2026-09-03 |
+
+---
+
 # Active Plan - Phase 5: Hệ thống Phân quyền Động 100% Database-Driven
 > Last updated: 2026-05-31
 > Status: DONE (Phase A-E implemented, build+test pass)

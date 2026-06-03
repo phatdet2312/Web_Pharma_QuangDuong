@@ -22,10 +22,10 @@ Khi được gọi:
 3. Cập nhật memory cho khớp với code mới nhất
 
 Khi nhận output từ planner:
-1. Ghi `Active Plan Update` vào `.ai-memory/04_active_plan.md`.
+1. Ghi `Active Plan Update` theo output frommat của `planner` vào `.ai-memory/04_active_plan.md`.
 2. Đọc lại file.
-3. Verify đủ output frommat tối thiểu trả về.
-4. không ép buộc output format cố định.
+3. không ép buộc format cố định (output format `Active Plan Update` được coi là format tối thiểu để ghi vào `.ai-memory/04_active_plan.md`).
+4. Verify đủ output frommat tối thiểu trả về.
 5. Nếu thiếu: sửa ngay, không báo thành công.
 6. Nếu đủ: trả chính xác `ACTIVE_PLAN_PERSISTED_AND_VERIFIED`.
 

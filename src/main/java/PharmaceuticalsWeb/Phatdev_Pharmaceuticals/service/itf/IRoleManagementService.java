@@ -1,9 +1,11 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/service/itf/IRoleManagementService.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.PermissionModuleRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.PermissionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.RoleRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.UserBlacklistRequest;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PermissionModuleResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.PermissionResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.response.RoleResponse;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.Permission;
@@ -77,4 +79,20 @@ public interface IRoleManagementService {
      * Lấy danh sách Entity Permission gốc (dùng khi cần kiểm tra FK trước xóa module).
      */
     List<Permission> layTatCaQuyenEntity();
+
+    // =====================================================================
+    // PHẦN 4: QUẢN LÝ NHÓM CHỨC NĂNG (PERMISSION MODULES)
+    // =====================================================================
+
+    // Lấy toàn bộ nhóm chức năng, sắp xếp theo thứ tự hiển thị
+    List<PermissionModuleResponse> layTatCaModule();
+
+    // Tạo nhóm chức năng mới (kiểm tra trùng mã module)
+    void taoModuleMoi(PermissionModuleRequest request);
+
+    // Cập nhật tên, mô tả, thứ tự hiển thị của nhóm chức năng
+    void capNhatModule(Integer moduleId, PermissionModuleRequest request);
+
+    // Xóa nhóm chức năng (chỉ khi không còn permission nào thuộc nhóm)
+    void xoaModule(Integer moduleId);
 }

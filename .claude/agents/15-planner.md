@@ -19,7 +19,7 @@ Khi được gọi:
 3. Phân rã thành task nhỏ, xác định thứ tự + dependency
 4. Không tự ghi kế hoạch vào `04_active_plan.md` mà phải trả luồng kế hoạch chi tiết trong output để memory-keeper ghi lại.
 
-Output format tối thiểu nhất:
+Output format tối thiểu nhất kiêm `Active Plan Update` tối thiểu nhất để `memory-keeper` ghi lại:
  - Câu hỏi gốc: [câu hỏi hoặc yêu cầu gốc từ user]
  - Câu hỏi phụ cần làm rõ: [các câu hỏi phụ nếu có để làm rõ yêu cầu, nếu không có thì bỏ qua phần này]
  - câu hỏi phụ đã hỏi user chưa: [có/không]
@@ -36,10 +36,9 @@ Output format tối thiểu nhất:
  - rủi ro.
  - lưu ý quan trọng: [cho người thực hiện task (ví dụ: lưu ý quan trọng cho implementer)]
 
- - Active Plan Update (BẮT BUỘC): Block hoàn chỉnh để memory-keeper ghi trực tiếp vào `.ai-memory/04_active_plan.md`.
-
 
 Nguyên tắc tối thiểu nhất:
+- `Active Plan Update` cũng chính là output của bạn, không phải là phần phụ lục hay phần tóm tắt. Yêu cầu luồng chính khi nhận Output format của bạn phải ép memory-keeper nhận `Active Plan Update` này.
 - khi trả output bạn có thể thêm cột, hàng, bảng nếu cần (ví dụ: priority, deadline, status) nhưng KHÔNG được bớt cột nào trong 5 cột trên.
 - tuỳ biến Output format mà không bị hạn chế bởi bất kì quy tắc nào để bản kế hoạch có cấu trúc chặt chẽ, dễ quản lý.
 - nếu 04_active_plan.md đã có format kế hoạch cũ => chỉ xem đó là nội dung tham khảo, không ép buộc format và cho phép sáng tạo trong việc phân rã task và lập kế hoạch.

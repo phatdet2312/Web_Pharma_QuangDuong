@@ -118,18 +118,23 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         }
         
         // Bước E: Lọc bỏ các quyền hạt lựu nằm trong danh sách đóng băng (Blacklist)
+        // Dùng batch query 1 lần thay vì N lần findById — tối ưu hiệu năng
         List<CtUserPermissionBlacklist> danhSachBiCam = blacklistRepository.findByUserId(user.getId());
-        if (danhSachBiCam != null) {
+        if (danhSachBiCam != null && danhSachBiCam.isEmpty() == false) {
+            // Gom tất cả permissionId bị đóng băng vào 1 danh sách
+            List<Integer> danhSachIdBiCam = new ArrayList<>();
             Object[] mangBiCam = danhSachBiCam.toArray();
             for (int bl = 0; bl < mangBiCam.length; bl = bl + 1) {
                 CtUserPermissionBlacklist banGhi = (CtUserPermissionBlacklist) mangBiCam[bl];
+                danhSachIdBiCam.add(banGhi.getPermissionId());
+            }
 
-                // Tra cứu mã quyền từ permissionId bị đóng băng
-                Permission quyenBiCam = permissionRepository.findById(banGhi.getPermissionId()).orElse(null);
-                if (quyenBiCam != null) {
-                    // Gỡ bỏ mã quyền khỏi danh sách đã gom (nếu tồn tại)
-                    danhSachTenPermission.remove(quyenBiCam.getPermissionCode());
-                }
+            // Truy vấn batch 1 lần duy nhất lấy tất cả permission bị đóng băng
+            List<Permission> danhSachQuyenBiCam = permissionRepository.findAllById(danhSachIdBiCam);
+            Object[] mangQuyenBiCam = danhSachQuyenBiCam.toArray();
+            for (int q = 0; q < mangQuyenBiCam.length; q = q + 1) {
+                Permission quyenBiCam = (Permission) mangQuyenBiCam[q];
+                danhSachTenPermission.remove(quyenBiCam.getPermissionCode());
             }
         }
 

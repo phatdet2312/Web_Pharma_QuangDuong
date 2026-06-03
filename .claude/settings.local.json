@@ -68,7 +68,8 @@
       "Bash(findstr /n \"campaignModal sessionModal modal-box modal-head modal-body modal-footer sessionStatus sessionSeoTitle sessionSeoDescription sessionPostChips sessionRoleChips sessionTagChips campaignThumbnail btnUploadCampaign campaignSlug campaignType\")",
       "Bash(sed 's/.java//')",
       "Bash(findstr /I \"ERROR BUILD\")",
-      "Bash(Select-Object -Last 30)"
+      "Bash(Select-Object -Last 30)",
+      "Bash(./mvnw -q test)"
     ]
   }
 }
