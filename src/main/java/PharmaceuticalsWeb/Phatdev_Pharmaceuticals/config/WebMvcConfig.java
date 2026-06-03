@@ -29,7 +29,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(permissionInterceptor)
-                .addPathPatterns("/api/admin/**", "/api/comments/**", "/api/reports/**", "/api/events/**", "/api/posts/**");
+                .addPathPatterns("/admin/**", "/api/admin/**", "/api/comments/**", "/api/reports/**", "/api/events/**", "/api/posts/**");
     }
 
     @Override

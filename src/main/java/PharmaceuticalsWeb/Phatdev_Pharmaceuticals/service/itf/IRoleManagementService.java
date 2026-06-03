@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * =========================================================================
- * GIAO DIỆN: QUẢN LÝ CHỨC VỤ & QUYỀN HẠT LỰU ĐỘNG (CHUẨN MÙ)
+ * GIAO DIỆN: QUẢN LÝ CHỨC VỤ & QUYỀN THAO TÁC ĐỘNG (CHUẨN MÙ)
  * =========================================================================
  * Cung cấp hợp đồng cho API Controller gọi đến, hoàn toàn giấu kín 
  * thuật toán lặp 6 bảng bên trong thư mục impl.
@@ -26,29 +26,29 @@ public interface IRoleManagementService {
     // PHẦN 1: QUẢN LÝ NHÓM CHỨC VỤ (ROLES)
     // =====================================================================
     
-    // Lấy toàn bộ danh sách chức vụ kèm theo các quyền hạt lựu bên trong
+    // Lấy toàn bộ danh sách chức vụ kèm theo các quyền thao tác bên trong
     List<RoleResponse> layTatCaChucVu();
     
     // Lưu một chức vụ vào CSDL
-    void taoChucVuMoi(RoleRequest request);
+    void taoChucVuMoi(RoleRequest request, User currentUser);
     
-    // Cập nhật cấp bậc, mô tả hoặc thay đổi danh sách quyền hạt lựu của 1 chức vụ
-    void capNhatChucVu(Integer roleId, RoleRequest request);
+    // Cập nhật cấp bậc, mô tả hoặc thay đổi danh sách quyền thao tác của 1 chức vụ
+    void capNhatChucVu(Integer roleId, RoleRequest request, User currentUser);
     
     // Xóa vĩnh viễn một chức vụ (Cần kiểm tra có ai đang giữ chức này không)
-    void xoaChucVu(Integer roleId);
+    void xoaChucVu(Integer roleId, User currentUser);
 
     /**
      * Nghiệp vụ nhân bản chức vụ.
-     * Tạo ra một Chức vụ sao chép kế thừa toàn bộ quyền hạt lựu từ Chức vụ gốc.
+     * Tạo ra một Chức vụ sao chép kế thừa toàn bộ quyền thao tác từ Chức vụ gốc.
      */
-    void nhanBanChucVu(Integer sourceRoleId, String tenChucVuBanSao);
+    void nhanBanChucVu(Integer sourceRoleId, String tenChucVuBanSao, User currentUser);
     
     // =====================================================================
-    // PHẦN 2: QUẢN LÝ QUYỀN HẠT LỰU (PERMISSIONS)
+    // PHẦN 2: QUẢN LÝ QUYỀN THAO TÁC (PERMISSIONS)
     // =====================================================================
     
-    // Lấy danh mục các quyền hạt lựu gốc (Dùng để vẽ danh sách Checkbox và Quản lý)
+    // Lấy danh mục các quyền thao tác gốc (Dùng để vẽ danh sách Checkbox và Quản lý)
     List<PermissionResponse> layTatCaQuyenHatLuu();
     
     // Tạo ra một đặc quyền thao tác hoàn toàn vào CSDL
@@ -61,7 +61,7 @@ public interface IRoleManagementService {
     void xoaQuyen(Integer permissionId);
 
     // =====================================================================
-    // PHẦN 3: KIỂM SOÁT QUYỀN HẠT LỰU CỤC BỘ (BLACKLIST)
+    // PHẦN 3: KIỂM SOÁT QUYỀN THAO TÁC CỤC BỘ (BLACKLIST)
     // =====================================================================
     
     /**

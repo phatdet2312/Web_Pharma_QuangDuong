@@ -303,8 +303,8 @@
         <div class="admin-page-header" style="margin-bottom: 24px;">
             <div>
                 <h4 style="margin-bottom: 4px;">Quản lý Chức vụ & Quyền thao tác (RBAC)</h4>
-                <p style="color: #64748b; margin: 0;">Khởi tạo nhóm quyền động và tự định nghĩa các quyền hạt lựu trực
-                    tiếp từ CSDL.</p>
+                <p style="color: #64748b; margin: 0;">Khởi tạo nhóm quyền động và tự định nghĩa các quyền thao tác thông
+                    qua API hệ thống.</p>
             </div>
         </div>
 
@@ -550,7 +550,7 @@
                         <input type="text" id="cloneNewName" class="form-control text-uppercase"
                             placeholder="VD: ADMIN_2, KETOAN_CAP2..." style="font-weight: 700; border-radius: 8px;">
                         <p style="font-size: .72rem; color: #94a3b8; margin-top: 5px;">Tên mới sẽ được tạo với toàn bộ
-                            quyền hạt lựu từ chức vụ gốc.</p>
+                            quyền thao tác từ chức vụ gốc.</p>
                         <p id="cloneNameError"
                             style="color: #dc2626; font-size: .75rem; margin-top: 6px; display: none;">
                             <i class="fas fa-exclamation-circle me-1"></i>Vui lòng nhập tên chức vụ bản sao.
@@ -838,7 +838,7 @@
 
                 if (danhSachPermissionsGoc === null || danhSachPermissionsGoc === undefined || danhSachPermissionsGoc.length === 0) {
                     grid.innerHTML = '<div style="background:#fff7ed;border:1px solid #fbbf24;border-radius:8px;padding:14px;font-size:.85rem;color:#92400e;">' +
-                        '<i class="fas fa-exclamation-triangle me-2"></i>Chưa có Quyền hạt lựu nào. Hãy sang tab <strong>Từ điển Quyền Hạt Lựu</strong> để tạo trước.' +
+                        '<i class="fas fa-exclamation-triangle me-2"></i>Chưa có quyền thao tác nào. Hãy sang tab <strong>Từ điển quyền thao tác</strong> để tạo trước.' +
                         '</div>';
                     return;
                 }
@@ -986,7 +986,7 @@
                 document.getElementById('cloneNewName').value = '';
                 document.getElementById('cloneNameError').style.display = 'none';
                 document.getElementById('cloneSourceDesc').innerHTML =
-                    'Nhân bản từ chức vụ: <strong>' + roleName + '</strong>. Bản sao sẽ thừa kế toàn bộ quyền hạt lựu của chức vụ gốc.';
+                    'Nhân bản từ chức vụ: <strong>' + roleName + '</strong>. Bản sao sẽ thừa kế toàn bộ quyền thao tác của chức vụ gốc.';
                 modalCloneInstance.show();
             };
 
@@ -1031,7 +1031,7 @@
                     var html = '';
 
                     if (perms.length === 0) {
-                        html = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;">Hệ thống chưa có quyền hạt lựu nào.</td></tr>';
+                        html = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;">Hệ thống chưa có quyền thao tác nào.</td></tr>';
                     } else {
                         for (var i = 0; i < perms.length; i = i + 1) {
                             var p = perms[i];
@@ -1083,7 +1083,7 @@
                 });
             }
 
-            // Mở modal tạo quyền hạt lựu mới — admin CHỌN từ dropdown, không tự gõ mã
+            // Mở modal tạo quyền thao tác mới — admin CHỌN từ dropdown, không tự gõ mã
             window.moModalThemQuyen = function () {
                 document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Tạo Quyền Hạt Lựu Mới';
                 document.getElementById('quyenId').value = '';
@@ -1096,7 +1096,7 @@
                 modalQuyenInstance.show();
             };
 
-            // Mở modal sửa quyền hạt lựu — mã quyền KHÔNG đổi được, chỉ sửa mô tả + nhóm
+            // Mở modal sửa quyền thao tác — mã quyền KHÔNG đổi được, chỉ sửa mô tả + nhóm
             window.moModalSuaQuyen = function (id, code, desc, moduleId) {
                 document.getElementById('modalQuyenTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Sửa Quyền: <span style="color:#10b981;">' + layMoTaQuyen(code) + '</span>';
                 document.getElementById('quyenId').value = id;
@@ -1156,7 +1156,7 @@
                 });
             };
 
-            // Xóa quyền hạt lựu (chỉ xóa được nếu chưa gắn vào chức vụ nào)
+            // Xóa quyền thao tác (chỉ xóa được nếu chưa gắn vào chức vụ nào)
             window.xoaQuyen = function (id, code) {
                 Swal.fire({
                     title: 'Xóa quyền ' + code + '?',

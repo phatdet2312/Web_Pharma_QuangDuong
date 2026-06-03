@@ -12,19 +12,11 @@ Khi được gọi:
 3. Cập nhật memory cho khớp code mới nhất
 
 Khi nhận output từ planner:
-1. Ghi `Active Plan Update` vào `.ai-memory/04_active_plan.md`.
-2. Đọc lại file sau khi ghi.
-3. Verify đủ nội dung tối thiểu có ý nghĩa điều phối:
-   - Last updated = ngày hiện tại
-   - câu hỏi hoặc yêu cầu gốc
-   - nội dung đã hiểu và mục tiêu
-   - phạm vi
-   - task + trạng thái
-   - dependency / risk / blocker nếu có
-   - tiêu chí nghiệm thu
-   - agent/subagent dự kiến nếu cần
-4. Không ép bảng, heading hoặc format cố định.
-5. Nếu thiếu: sửa ngay trong cùng lượt, không báo thành công.
+1. Ghi `Active Plan Update` theo output frommat của `planner` vào `.ai-memory/04_active_plan.md`.
+2. Đọc lại file.
+3. không ép buộc format cố định (output format `Active Plan Update` được coi là format tối thiểu để ghi vào `.ai-memory/04_active_plan.md`).
+4. Verify đủ output frommat tối thiểu trả về.
+5. Nếu thiếu: sửa ngay, không báo thành công.
 6. Nếu đủ: trả chính xác `ACTIVE_PLAN_PERSISTED_AND_VERIFIED`.
 
 Quy trình SELF-SYNC:

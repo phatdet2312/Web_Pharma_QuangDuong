@@ -2,6 +2,7 @@
 
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.view;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,12 +26,14 @@ public class AdminViewController {
     }
 
     @GetMapping("/users")
+    @RequirePermission("USER_VIEW")
     public String manageUsers(Model model) {
         model.addAttribute("title", "Quản lý Người dùng");
         return "admin/users"; 
     }
 
     @GetMapping("/users/phan-quyen/{id}")
+    @RequirePermission("USER_VIEW")
     public String userDetail(@PathVariable Long id, Model model) {
         model.addAttribute("title", "Hồ sơ Phân quyền");
         // Js sẽ tự đọc ID từ URL để gọi API lấy chi tiết User
@@ -41,6 +44,7 @@ public class AdminViewController {
     // ĐƯỜNG DẪN MỚI CHO TÍNH NĂNG TẠO ROLE ĐỘNG
     // =====================================================================
     @GetMapping("/role-management")
+    @RequirePermission("ROLE_MANAGE")
     public String roleManagement(Model model) {
         model.addAttribute("title", "Quản trị Chức vụ (Roles)");
         return "admin/role-management";
@@ -52,18 +56,21 @@ public class AdminViewController {
 
     /** Trang quản trị bài viết y khoa */
     @GetMapping("/posts")
+    @RequirePermission("POST_VIEW")
     public String quanTriBaiViet() {
         return "admin/posts";
     }
 
     /** Trang quản trị sự kiện & chiến dịch */
     @GetMapping("/events")
+    @RequirePermission("EVENT_VIEW")
     public String quanTriSuKien() {
         return "admin/events";
     }
 
     /** Trang quản trị bình luận */
     @GetMapping("/comments")
+    @RequirePermission("COMMENT_VIEW")
     public String quanTriBinhLuan() {
         return "admin/comments";
     }

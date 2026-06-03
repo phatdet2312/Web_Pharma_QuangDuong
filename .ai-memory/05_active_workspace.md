@@ -1,9 +1,9 @@
 # Active Workspace - Ban lam viec hien tai
-> Last updated: 2026-06-01
+> Last updated: 2026-06-03
 
 ## Trang thai hien tai
 
-- **IDLE** — Phase 5 (Phan quyen Dong) DA HOAN CHINH. Commit `035a691` (2026-06-01) dong bo memory.
+- **IMPLEMENTED_COMPILE_BLOCKED** — Hardening phan quyen dong theo cap bac + permission subset da trien khai; compile/test chua xac nhan duoc vi Maven Central bi chan (`Permission denied: getsockopt`).
 - He thong phan quyen dong 4 lop: CSDL → Nap quyen → PermissionInterceptor + @RequirePermission → PermissionManager JS.
 - 100+ annotation @RequirePermission da gan tren 12 controller (admin + public write endpoints).
 - Entity moi: `PermissionModule` (nhom chuc nang), Permission co FK `moduleId`.
@@ -20,8 +20,10 @@
 - Hai file `posts/detail.html` va `events/detail.html` co comment system tuong dong — khi sua 1 ben nen kiem tra ben kia.
 - Admin comments reply dung prefix `adm-` cho CSS class de tranh xung dot voi user-side.
 - Rich Content Editor dung bien `rceHienTaiEditorId`/`rceHienTaiPreviewId` ho tro nhieu editor tren 1 trang.
-- WebMvcConfig dang ky PermissionInterceptor cho: `/api/admin/**`, `/api/comments/**`, `/api/reports/**`, `/api/events/**`, `/api/posts/**`.
+- WebMvcConfig dang ky PermissionInterceptor cho: `/admin/**`, `/api/admin/**`, `/api/comments/**`, `/api/reports/**`, `/api/events/**`, `/api/posts/**`.
 - Endpoint khong co @RequirePermission van hoat dong binh thuong (backward compatible).
+- RBAC invariant moi: actor roleLevel 0 bypass; actor khac level 0 khong duoc tao/sua/clone/xoa/gán role co `roleLevel <= actorLevel`, khong duoc sua role/quyen cua chinh minh qua duong vong.
+- RBAC permission subset: actor khac level 0 chi duoc tao/sua/clone/gan role chua permission nam trong tap quyen hieu luc cua chinh actor; tap quyen nay co xet blacklist ca nhan.
 
 ## Debug Notes
 
@@ -34,4 +36,6 @@
 2026-05-28: Admin comments rewrite API-driven + PageTransitionManager, commit ffcced1 + ecf601d.
 2026-05-29: Fix LOAI_LIKE upload + reply tree branch, commit 1bb9565.
 2026-05-31: Nang cap admin post va event + Phase 5 phan quyen dong, commit 89977f7 + 035a691.
+2026-06-03: Hardening phan quyen dong theo cap bac: role service nhan currentUser, backend roleLevel la source of truth SUPERADMIN, admin view co @RequirePermission, frontend role-management bo text CSDL.
+2026-06-03: Bo sung permission subset rule: actor non-level-0 chi duoc tao/sua/clone/gan role trong khuon kho permission hieu luc cua chinh actor.
 ```

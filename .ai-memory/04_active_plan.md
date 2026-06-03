@@ -1,3 +1,90 @@
+# Active Plan — Hardening Phân Quyền Động Theo Cấp Bậc
+> Last updated: 2026-06-03
+> Status: IMPLEMENTED_COMPILE_BLOCKED
+> Planner persisted before implementation: YES
+> Planner model: Codex orchestrator
+
+## Mục tiêu
+Triển khai toàn bộ hardening phân quyền động sau audit, theo correction mới của user:
+- Nguồn sự thật quyền cấp bậc là backend và dựa trên `roleLevel`.
+- Ngoại lệ duy nhất: actor có level 0 được phép quản trị toàn hệ thống.
+- Actor khác level 0 không được tạo/sửa/gán role mạnh hơn hoặc ngang mình.
+- Không cho role tự sửa role/quyền của chính mình theo đường vòng.
+- Frontend chỉ nhận kết quả quyền từ API, không tự trích xuất cấp bậc từ CSDL.
+
+## Task breakdown
+
+| # | Task | File | Trạng thái |
+|---|------|------|-----------|
+| H1 | Truyền `currentUser` vào các API quản lý role/permission/module cần kiểm tra cấp bậc | `ApiRoleManagementController.java`, `IRoleManagementService.java`, `RoleManagementServiceImpl.java` | DONE |
+| H2 | Enforce invariant cấp bậc khi tạo/sửa/clone role: non-level-0 không được thao tác role mạnh hơn hoặc ngang mình; không sửa role đang cấp quyền cho chính actor | `RoleManagementServiceImpl.java` | DONE |
+| H3 | Enforce khi phân quyền tài khoản khác: giữ rule hiện có và đồng bộ với invariant mới | `UserServiceImpl.java` | DONE |
+| H4 | Thống nhất SUPERADMIN theo backend `roleLevel`: interceptor dùng principal/current user đã nạp quyền để xác định level 0 thay vì chỉ tên role | `PermissionInterceptor.java` | DONE |
+| H5 | Siết validation RBAC: `@Valid` blacklist, kiểm tra `moduleId`, không bỏ qua permission code sai khi tạo/sửa role | Controller/Service/DTO liên quan | DONE |
+| H6 | Bảo vệ admin view theo quyền tối thiểu từng route | `AdminViewController.java` hoặc cơ chế tương đương | DONE |
+| H7 | Dọn frontend khỏi text biết CSDL; giữ frontend chỉ nói theo API/hệ thống | `role-management.html` | DONE |
+| H8 | Self-eval: compile/test liên quan + convention check | Maven + git diff check | BLOCKED_MAVEN_CENTRAL |
+| H9 | Sync memory sau khi triển khai | `.ai-memory/03_deep_knowledge/*`, `04`, `05`, `06` | DONE |
+
+## Kết quả triển khai 2026-06-03
+
+- Implemented: các đường create/update/delete/clone role đều nhận `currentUser` và enforce trước khi lưu.
+- Implemented: actor non-level-0 không tạo/lưu/thao tác role có `roleLevel <= actorLevel`; actor level 0 bypass.
+- Implemented: actor non-level-0 không sửa role đang gán cho chính actor; gán role cho user khác vẫn chặn role ngang/mạnh hơn và chặn tự gán cho chính mình.
+- Implemented: SUPERADMIN trong interceptor nhận diện bằng backend `roleLevel == 0`, không dựa tên role/authority string hoặc frontend.
+- Implemented: admin view `/admin/**` được interceptor kiểm tra; các trang users/role/posts/events/comments có `@RequirePermission`.
+- Implemented: permission code sai/moduleId sai fail rõ ràng; blacklist request dùng `@Valid`.
+- Verification: `git diff --check` trong phạm vi file RBAC sửa đổi PASS. `bash mvnw -q -DskipTests compile` BLOCKED vì không tải được parent POM từ Maven Central (`Permission denied: getsockopt`), kể cả khi xin quyền escalated.
+
+## Tiêu chí nghiệm thu
+1. Actor level 0 vẫn quản trị toàn hệ thống.
+2. Actor level > 0 không tạo/sửa/clone/gán role có `roleLevel <= actorLevel`.
+3. Actor level > 0 không sửa role đang được gán cho chính mình.
+4. Permission code gửi lên khi tạo/sửa role phải tồn tại; sai thì fail rõ ràng, không âm thầm bỏ qua.
+5. `moduleId` gửi lên khi tạo/sửa permission phải tồn tại.
+6. Admin view không chỉ dựa vào `authenticated()` cho các trang quản trị chính.
+7. Frontend không hiển thị câu biết trực tiếp CSDL.
+8. Compile/test liên quan pass hoặc báo rõ blocker.
+
+---
+
+# Active Plan — Hardening Permission Subset Rule
+> Last updated: 2026-06-03
+> Status: IMPLEMENTED_COMPILE_BLOCKED
+> Planner persisted before implementation: YES
+> Planner model: Codex orchestrator
+
+## Mục tiêu
+Triển khai rule bổ sung cho phân quyền động: actor non-level-0 chỉ được tạo/sửa/clone/gán role chứa các permission nằm trong tập quyền hiệu lực của chính actor. Không dùng phân loại độ nhạy permission.
+
+## Task breakdown
+
+| # | Task | File | Trạng thái |
+|---|------|------|-----------|
+| S1 | Thêm helper đọc tập permission hiệu lực của actor từ DB, có xét blacklist | `RoleManagementServiceImpl.java`, `UserServiceImpl.java` nếu cần | DONE |
+| S2 | Chặn create/update role khi danh sách permission request có mã ngoài tập quyền actor | `RoleManagementServiceImpl.java` | DONE |
+| S3 | Chặn clone role nếu role gốc chứa permission ngoài tập quyền actor | `RoleManagementServiceImpl.java` | DONE |
+| S4 | Chặn assign role cho user khác nếu role được gán chứa permission ngoài tập quyền actor | `UserServiceImpl.java` | DONE |
+| S5 | Self-eval: static check + Maven compile nếu môi trường cho phép | `git diff --check`, `bash mvnw` | BLOCKED_MAVEN_CENTRAL |
+| S6 | Sync memory | `.ai-memory/03_deep_knowledge/admin_rbac.md`, `04`, `05`, `06` | DONE |
+
+## Kết quả triển khai 2026-06-03
+
+- Implemented: `RoleManagementServiceImpl` đọc permission hiệu lực của actor từ DB, có loại blacklist cá nhân.
+- Implemented: create/update role chặn permission request ngoài tập quyền hiệu lực của actor non-level-0.
+- Implemented: clone role chặn nếu role gốc chứa permission ngoài tập quyền hiệu lực của actor non-level-0.
+- Implemented: `UserServiceImpl.updateUserRoles()` reload quyền actor từ DB và chặn gán role chứa permission ngoài tập quyền hiệu lực của actor non-level-0.
+- Verification: `git diff --check` trong phạm vi file sửa PASS. `bash mvnw -q -DskipTests compile` vẫn BLOCKED vì không tải được parent POM từ Maven Central (`Permission denied: getsockopt`), kể cả khi xin quyền escalated.
+
+## Tiêu chí nghiệm thu
+1. Actor level 0 bypass permission subset rule.
+2. Actor non-level-0 tạo/sửa role chỉ được gán permission chính actor đang có hiệu lực.
+3. Actor non-level-0 clone role chỉ được clone role có toàn bộ permission nằm trong tập quyền actor.
+4. Actor non-level-0 gán role cho user khác chỉ được gán role có toàn bộ permission nằm trong tập quyền actor.
+5. Permission code sai vẫn fail rõ ràng, không silent skip.
+
+---
+
 # Active Plan — Audit Toàn Diện Phân Quyền Động Phase 5
 > Last updated: 2026-06-03
 > Status: DONE

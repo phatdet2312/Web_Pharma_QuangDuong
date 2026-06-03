@@ -174,6 +174,46 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         return capDoManhNhat;
     }
 
+    /**
+     * Kiểm tra danh sách string có chứa giá trị hay không.
+     */
+    private boolean danhSachCoGiaTri(List<String> danhSach, String giaTri) {
+        if (danhSach == null || giaTri == null) {
+            return false;
+        }
+
+        Object[] mangGiaTri = danhSach.toArray();
+        for (int i = 0; i < mangGiaTri.length; i = i + 1) {
+            if (giaTri.equals(mangGiaTri[i].toString())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Chặn actor non-level-0 gán role chứa permission ngoài tập quyền hiệu lực của actor.
+     */
+    private void damBaoRoleNamTrongTapQuyenActor(UserRole role, List<String> actorPermissionCodes, int actorLevel) {
+        if (actorLevel == 0) {
+            return;
+        }
+
+        List<CtRolePermission> rolePermissions = ctRolePermissionRepository.findByRoleId(role.getId());
+        if (rolePermissions != null) {
+            Object[] rolePermArray = rolePermissions.toArray();
+            for (int i = 0; i < rolePermArray.length; i = i + 1) {
+                CtRolePermission rolePermission = (CtRolePermission) rolePermArray[i];
+                Permission permission = permissionRepository.findById(rolePermission.getPermissionId())
+                        .orElseThrow(() -> new AppException(400, "Role được gán chứa quyền thao tác không tồn tại"));
+
+                if (danhSachCoGiaTri(actorPermissionCodes, permission.getPermissionCode()) == false) {
+                    throw new AppException(403, "Không được gán role chứa quyền mà chính tài khoản của bạn không có: " + permission.getPermissionCode());
+                }
+            }
+        }
+    }
+
     // =========================================================================
     // IMPLEMENT CỦA SPRING SECURITY VÀ TÌM KIẾM CƠ BẢN
     // =========================================================================
@@ -371,6 +411,7 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
                 .orElseThrow(() -> new AppException(404, "Không tìm thấy người dùng cần phân quyền"));
 
         napQuyenChoNguoiDung(targetUser); // Nạp danhSachTenRole vào @Transient để chụp role cũ và so sánh Level
+        napQuyenChoNguoiDung(currentUser); // Reload quyền actor từ DB trước khi quyết định phân quyền nhạy cảm
 
         if (targetUser.getId().equals(currentUser.getId())) {
             throw new AppException(403, "Bạn không thể tự thay đổi quyền của chính mình");
@@ -378,9 +419,10 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
 
         int currentLevel = getRoleLevel(currentUser);
         int targetLevel  = getRoleLevel(targetUser);
+        List<String> actorPermissionCodes = currentUser.getDanhSachTenPermission();
 
         // Quy tắc: Phải có Level NHỎ HƠN (Quyền to hơn) mới được sửa người ta.
-        if (currentLevel >= targetLevel) {
+        if (currentLevel != 0 && currentLevel >= targetLevel) {
             throw new AppException(403, "Bạn không đủ thẩm quyền sửa tài khoản này");
         }
 
@@ -412,9 +454,11 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
                     int newLevel = roleTuDb.getRoleLevel();
 
                     // Admin không được phép gán chức vụ to hơn hoặc bằng quyền của chính Admin
-                    if (currentLevel >= newLevel) {
+                    if (currentLevel != 0 && currentLevel >= newLevel) {
                         throw new AppException(403, "Bạn không thể cấp quyền " + roleName + " vì nó vượt quá hoặc ngang bằng thẩm quyền của bạn");
                     }
+
+                    damBaoRoleNamTrongTapQuyenActor(roleTuDb, actorPermissionCodes, currentLevel);
 
                     // Lưu liên kết mới
                     CtUserRole ctUserRole = new CtUserRole(targetUserId, roleTuDb.getId());
@@ -429,6 +473,7 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         if (coQuyenHopLe == false) {
             UserRole defaultRole = userRoleRepository.findTopByRoleLevelGreaterThanOrderByRoleLevelDesc(0).orElse(null);
             if (defaultRole != null) {
+                damBaoRoleNamTrongTapQuyenActor(defaultRole, actorPermissionCodes, currentLevel);
                 CtUserRole ctUserRole = new CtUserRole(targetUserId, defaultRole.getId());
                 ctUserRoleRepository.save(ctUserRole);
                 danhSachRoleMoi.add(defaultRole.getRoleName());
@@ -510,7 +555,7 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         int currentLevel = getRoleLevel(currentUser);
         int targetLevel = getRoleLevel(targetUser);
 
-        if (currentLevel >= targetLevel) {
+        if (currentLevel != 0 && currentLevel >= targetLevel) {
             throw new AppException(403, "Bạn không đủ thẩm quyền khóa/mở khóa người này");
         }
 

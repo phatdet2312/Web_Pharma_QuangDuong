@@ -1,6 +1,6 @@
 # Learnings — Bài học từ sai lầm
-> Last updated: 2026-05-29
-> Tổng entries: 19
+> Last updated: 2026-06-03
+> Tổng entries: 24
 > Entries sẵn sàng promote (Lần >= 3): 5
 
 <!-- File này là nơi agent ghi nhận PATTERN sai lầm đã mắc -->
@@ -33,6 +33,8 @@
 | 2026-05-30 | CONVENTION | Sai: tự viết upload bằng raw XMLHttpRequest thay vì dùng pattern upload đã có sẵn trong hệ thống (apiUploadComment dùng $.ajax + JWT + loading). Đúng: LUÔN đọc code upload/tương tác API đã có trong các trang tham chiếu (comments, events), copy chính xác pattern đó, KHÔNG tự sáng tạo cách gọi API riêng ngoài callApi hoặc hàm upload chung. | 1 |
 | 2026-05-30 | FRONTEND | Sai: thay thế HTML element (input text URL) bằng element mới (hidden input) mà không giữ lại chức năng cũ. Đúng: KHÔNG BAO GIỜ xóa/thay thế input đang hoạt động — chỉ BỔ SUNG thêm, giữ nguyên cả 2 luồng (nhập URL thủ công + upload file). | 1 |
 | 2026-05-30 | LOGIC | Sai: dùng file.transferTo(path.toFile()) thay vì file.transferTo(path) — trên Windows relative path gây IOException. Đúng: LUÔN copy chính xác method signature từ code tham chiếu đang hoạt động (events dùng transferTo(Path), không phải transferTo(File)). | 1 |
+| 2026-06-03 | SECURITY | Sai: tách nhiều lệnh cấm bảo mật cụ thể khi một rule tổng quát theo cấp bậc đã bao phủ, làm kế hoạch dư và dễ gây hiểu nhầm. Đúng: LUÔN mô hình hóa authorization bằng invariant tổng quát trước (không tạo/sửa/gán role mạnh hơn hoặc ngang mình, trừ level 0), rồi để rule cụ thể chỉ là hệ quả. | 1 |
+| 2026-06-03 | SECURITY | Sai: đề xuất phân loại độ nhạy permission khi có thể enforce bằng tập quyền actor đang sở hữu. Đúng: LUÔN ưu tiên capability subset rule — actor non-level-0 chỉ được tạo/sửa/clone/gán role chứa các permission nằm trong tập quyền hiệu lực của chính actor, trừ level 0. | 1 |
 <!-- Loại: LOGIC | CONVENTION | ARCHITECTURE | PERFORMANCE | SECURITY -->
 <!-- Pattern: "Sai: [pattern sai]. Đúng: LUÔN/KHÔNG BAO GIỜ [rule]" -->
 <!-- Lần >= 3 → ⚠️ candidate promote -->

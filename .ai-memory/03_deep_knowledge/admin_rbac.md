@@ -1,5 +1,5 @@
 # Admin RBAC — Phân quyền Động 100% Database-Driven
-> Last updated: 2026-06-01
+> Last updated: 2026-06-03
 > Source files: `controller/api/ApiRoleManagementController.java`, `controller/api/ApiRolesController.java`, `service/impl/RoleManagementServiceImpl.java`, `service/impl/RolesServiceImpl.java`, `entities/User.java`, `entities/UserRole.java`, `entities/Permission.java`, `entities/PermissionModule.java`, `entities/CtRolePermission.java`, `entities/CtUserPermissionBlacklist.java`, `config/interceptor/PermissionInterceptor.java`, `config/PermissionRegistry.java`, `validators/annotations/RequirePermission.java`, `config/WebMvcConfig.java`, `static/js/permission-manager.js`, `repositories/IRepository/IPermissionModuleRepository.java`, `dto/request/PermissionRequest.java`, `dto/response/PermissionResponse.java`, `dto/response/PermissionModuleResponse.java`, `dto/response/MyPermissionResponse.java`
 > Confidence: HIGH
 
@@ -25,7 +25,12 @@ Module phân quyền động 100% database-driven. Mọi role, permission hạt 
 ## Business Rules quan trọng
 
 - SecurityConfig KHÔNG còn hardcode role — chỉ `permitAll()` vs `authenticated()`. Mọi check quyền cụ thể do PermissionInterceptor xử lý.
-- SUPERADMIN (roleLevel=0) = GOD MODE — bypass mọi `@RequirePermission` check.
+- SUPERADMIN (roleLevel=0) = GOD MODE — backend `roleLevel` là nguồn sự thật duy nhất cho bypass, không dựa vào tên role hoặc frontend.
+- Hardening 2026-06-03: các hàm ghi role (`taoChucVuMoi`, `capNhatChucVu`, `xoaChucVu`, `nhanBanChucVu`) nhận `currentUser` và kiểm tra cấp bậc trước khi lưu. Actor level 0 được phép thao tác toàn hệ thống; actor khác level 0 không được tạo/sửa/clone/xóa role mạnh hơn hoặc ngang mình (`targetRoleLevel <= actorLevel`) và không được sửa role đang gán cho chính actor.
+- Hardening 2026-06-03: gán role cho user khác trong `UserServiceImpl.updateUserRoles()` chặn target ngang/mạnh hơn và chặn gán role ngang/mạnh hơn actor; actor level 0 là ngoại lệ. Tự đổi role của chính mình vẫn bị chặn.
+- Hardening 2026-06-03: blacklist quyền cá nhân chặn target user ngang/mạnh hơn actor, chặn tự thao tác chính mình và validate request bằng `@Valid`.
+- Hardening 2026-06-03: tạo/sửa role fail rõ nếu permission code không tồn tại; tạo/sửa permission fail rõ nếu `moduleId` không tồn tại.
+- Hardening 2026-06-03: permission subset rule. Actor non-level-0 chỉ được tạo/sửa/clone/gán role chứa các permission nằm trong tập quyền hiệu lực của chính actor, có xét `CT_USER_PERMISSION_BLACKLIST`. Actor level 0 bypass rule này. Rule này thay cho hướng phân loại độ nhạy permission.
 - Permission entity có FK `moduleId` tới bảng `PERMISSION_MODULES` (entity `PermissionModule`). Admin nhóm quyền theo module (VD: POST, EVENT, COMMENT, SYSTEM). Implementation dùng bảng riêng thay vì cột VARCHAR — khác plan ban đầu.
 - Blacklist hoạt động thật: `napQuyenChoNguoiDung()` lọc CT_USER_PERMISSION_BLACKLIST trước khi bơm authorities.
 - Endpoint không có `@RequirePermission` annotation = không bị check (backward compatible).
@@ -93,4 +98,5 @@ Module phân quyền động 100% database-driven. Mọi role, permission hạt 
 - `PermissionRequest` có field `moduleId` (Integer FK), `PermissionResponse` trả kèm `moduleId`, `moduleCode`, `moduleName`, `riskLevel`.
 - `RoleRequest` có field `permissions` (List<String>) — danh sách mã quyền gán cho role khi tạo/sửa.
 - `MyPermissionResponse` trả `roles`, `permissions`, `roleLevel`, `superAdmin` cho frontend.
-- `WebMvcConfig.addInterceptors()` đăng ký PermissionInterceptor cho: `/api/admin/**`, `/api/comments/**`, `/api/reports/**`, `/api/events/**`, `/api/posts/**`.
+- `WebMvcConfig.addInterceptors()` đăng ký PermissionInterceptor cho: `/admin/**`, `/api/admin/**`, `/api/comments/**`, `/api/reports/**`, `/api/events/**`, `/api/posts/**`.
+- Admin view hardening 2026-06-03: `AdminViewController` gắn `@RequirePermission` cho users (`USER_VIEW`), role-management (`ROLE_MANAGE`), posts (`POST_VIEW`), events (`EVENT_VIEW`), comments (`COMMENT_VIEW`). Dashboard chưa có annotation riêng nên vẫn dựa vào authenticated/admin route tổng.

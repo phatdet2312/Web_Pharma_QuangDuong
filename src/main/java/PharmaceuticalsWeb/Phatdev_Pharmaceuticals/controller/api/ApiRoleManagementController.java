@@ -25,7 +25,7 @@ import java.util.Map;
 
 /**
  * =========================================================================
- * API CONTROLLER: QUẢN LÝ CHỨC VỤ ĐỘNG VÀ QUYỀN HẠT LỰU
+ * API CONTROLLER: QUẢN LÝ CHỨC VỤ ĐỘNG VÀ QUYỀN THAO TÁC
  * =========================================================================
  */
 @RestController
@@ -98,21 +98,24 @@ public class ApiRoleManagementController {
     @RequirePermission("ROLE_MANAGE")
     @PostMapping("/roles")
     public ApiResponse<String> taoChucVuMoi(@Valid @RequestBody RoleRequest request) {
-        roleManagementService.taoChucVuMoi(request);
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        roleManagementService.taoChucVuMoi(request, currentUser);
         return ApiResponse.thanhCong(null, "Đã tạo chức vụ thành công");
     }
 
     @RequirePermission("ROLE_MANAGE")
     @PutMapping("/roles/{id}")
     public ApiResponse<String> capNhatChucVu(@PathVariable Integer id, @Valid @RequestBody RoleRequest request) {
-        roleManagementService.capNhatChucVu(id, request);
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        roleManagementService.capNhatChucVu(id, request, currentUser);
         return ApiResponse.thanhCong(null, "Cập nhật chức vụ thành công");
     }
 
     @RequirePermission("ROLE_MANAGE")
     @DeleteMapping("/roles/{id}")
     public ApiResponse<String> xoaChucVu(@PathVariable Integer id) {
-        roleManagementService.xoaChucVu(id);
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        roleManagementService.xoaChucVu(id, currentUser);
         return ApiResponse.thanhCong(null, "Xóa chức vụ thành công");
     }
 
@@ -120,19 +123,20 @@ public class ApiRoleManagementController {
     @PostMapping("/roles/{id}/clone")
     public ApiResponse<String> nhanBanChucVu(@PathVariable Integer id, @RequestBody Map<String, String> body) {
         String tenChucVuBanSao = body.get("roleName");
-        roleManagementService.nhanBanChucVu(id, tenChucVuBanSao);
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        roleManagementService.nhanBanChucVu(id, tenChucVuBanSao, currentUser);
         return ApiResponse.thanhCong(null, "Nhân bản chức vụ thành công");
     }
 
     // =====================================================================
-    // PHẦN 2: API QUẢN LÝ QUYỀN HẠT LỰU VÀ BLACKLIST
+    // PHẦN 2: API QUẢN LÝ QUYỀN THAO TÁC VÀ BLACKLIST
     // =====================================================================
 
     @RequirePermission("ROLE_MANAGE")
     @GetMapping("/permissions")
     public ApiResponse<List<PermissionResponse>> layDanhSachQuyenHatLuu() {
         List<PermissionResponse> permissions = roleManagementService.layTatCaQuyenHatLuu();
-        return ApiResponse.thanhCong(permissions, "Lấy danh sách quyền hạt lựu thành công");
+        return ApiResponse.thanhCong(permissions, "Lấy danh sách quyền thao tác thành công");
     }
 
     @RequirePermission("ROLE_MANAGE")
@@ -165,10 +169,10 @@ public class ApiRoleManagementController {
 
     @RequirePermission("ROLE_MANAGE")
     @PostMapping("/blacklist/users/{userId}")
-    public ApiResponse<String> toggleBlacklist(@PathVariable Long userId, @RequestBody UserBlacklistRequest request) {
+    public ApiResponse<String> toggleBlacklist(@PathVariable Long userId, @Valid @RequestBody UserBlacklistRequest request) {
         User currentUser = userService.getCurrentAuthenticatedUser();
         roleManagementService.togglePermissionBlacklist(userId, request, currentUser);
-        return ApiResponse.thanhCong(null, "Đã thực thi lệnh kiểm soát quyền hạt lựu");
+        return ApiResponse.thanhCong(null, "Đã thực thi lệnh kiểm soát quyền thao tác");
     }
 
     // =====================================================================
