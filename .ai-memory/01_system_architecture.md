@@ -1,151 +1,121 @@
 # System Architecture
-> Last updated: 2026-06-01
+> Last updated: 2026-06-03
 > Status: BOOTSTRAPPED
+> Sync basis: Current code snapshot under `src/` and `pom.xml`; git history was not used.
 
 ## Tech Stack
 
-| Layer | Technology | Version |
-|-------|------------|---------|
+| Layer | Technology | Version / note |
+|-------|------------|----------------|
 | Language | Java | 21 |
-| Framework | Spring Boot, Spring MVC, Spring Data JPA, Spring Security, Thymeleaf | Spring Boot 4.0.2 |
-| Database | Microsoft SQL Server via `mssql-jdbc`, Hibernate SQL Server dialect | Driver managed by Spring Boot BOM |
-| Cache | Chưa phát hiện cache chuyên dụng | N/A |
-| Auth | Spring Security, JWT cookie, Google OAuth2 Client, dynamic roles/permissions | `jjwt` 0.12.6 |
-| Frontend | Thymeleaf templates, Bootstrap, jQuery, custom static JS/CSS | Server-rendered + JSON API |
-| Build Tool | Maven wrapper | Maven via `mvnw` / `mvnw.cmd` |
-| Mail | Spring Mail + Gmail SMTP | Config in `application.properties` |
-| Payment | VNPay integration classes and config keys | Internal package `config/vnpay` |
+| Framework | Spring Boot, Spring MVC, Spring Data JPA, Spring Security, Thymeleaf | Spring Boot `4.0.2` from `pom.xml` |
+| Database | Microsoft SQL Server via `mssql-jdbc`, Hibernate SQL Server dialect | Schema managed outside Hibernate |
+| Auth | Spring Security, JWT cookie, Google OAuth2 Client, dynamic DB-driven roles/permissions | `jjwt` 0.12.6 |
+| Frontend | Thymeleaf templates, Bootstrap, jQuery, custom JS/CSS | Server-rendered pages plus JSON APIs |
+| Build Tool | Maven wrapper | Use `bash mvnw` when wrapper/network behavior is unreliable |
+| Mail | Spring Mail + Gmail SMTP settings | Values in config may be sensitive |
+| Payment | VNPay integration | `config/vnpay` |
 
 ## Project Type
 
-- **Type:** web-fullstack
-- **Đặc điểm:** Spring Boot modular monolith: cùng repo chứa backend API JSON, Spring Security, JPA entities/repositories, Thymeleaf HTML views, static JS/CSS, SQL Server schema mapping.
-- **Evidence:** Có `pom.xml`, `src/main/java/.../controller/api`, `src/main/java/.../controller/view`, `src/main/resources/templates`, `src/main/resources/static`, `src/main/resources/application.properties`.
+- Modular monolith full-stack web app.
+- Backend API, security, JPA data access, Thymeleaf views, static JS/CSS and SQL Server schema mapping live in the same repository.
+- Evidence: `pom.xml`, `src/main/java/.../controller/api`, `controller/view`, `entities`, `repositories/IRepository`, `src/main/resources/templates`, `src/main/resources/static`.
 
-## Kiến trúc tổng quan
+## Runtime Architecture
 
-Ứng dụng là modular monolith Spring Boot. Luồng thường gặp:
+1. Browser opens a view route such as `/posts`, `/events`, `/admin/posts`, `/admin/role-management`.
+2. `controller.view` returns only a Thymeleaf template name.
+3. Template JavaScript calls JSON APIs under `/api/**`.
+4. `controller.api` validates request DTOs with Jakarta Validation and returns `ApiResponse<T>`.
+5. Service interfaces live in `service.itf`; implementations in `service.impl` hold business rules, mapping and transactions.
+6. `service.support` holds reusable policy/context helpers such as `NguCanhNguoiDung`, `NguCanhNguoiDungFactory`, `EventStatusDisplayPolicy`.
+7. Repositories in `repositories.IRepository` use Spring Data JPA.
+8. Entities in `entities` map SQL Server tables. `spring.jpa.hibernate.ddl-auto=none`, so schema/script is the DB source of truth.
 
-1. Browser mở route view như `/posts`, `/events`, `/admin/...`.
-2. `controller.view` trả về Thymeleaf template.
-3. JavaScript trong template gọi JSON API dưới `/api/...`.
-4. `controller.api` nhận request, validate DTO bằng Jakarta Validation, trả `ApiResponse<T>`.
-5. Service interface trong `service.itf` được implement ở `service.impl`; service chứa business rule, mapping DTO thủ công và transaction.
-6. `service.support` chứa policy/helper dùng chung giữa service (VD: `NguCanhNguoiDung`, `EventStatusDisplayPolicy`); không truy cập DB trực tiếp.
-7. Repository trong `repositories.IRepository` dùng Spring Data JPA, derived query hoặc JPQL `@Query`.
-8. Entity trong `entities` ánh xạ bảng SQL Server bằng JPA annotation.
+## Security Architecture
 
-Security flow:
+- `SecurityConfig` configures stateless sessions, JWT cookie, OAuth2 Google login, public routes and authenticated routes.
+- SecurityConfig distinguishes public vs authenticated routes; fine-grained authorization is handled by `PermissionInterceptor` + `@RequirePermission`.
+- `PermissionInterceptor` is registered for `/admin/**`, `/api/admin/**`, `/api/comments/**`, `/api/reports/**`, `/api/events/**`, `/api/posts/**`.
+- Methods without `@RequirePermission` pass through for backward compatibility.
+- SUPERADMIN bypass is determined by backend role level: `userService.layCapBacQuyenLucCaoNhat(currentUser) == 0`.
+- `User.getAuthorities()` emits roles with `ROLE_` prefix and permission codes as raw authorities.
+- RBAC admin permissions use `RBAC_*` to avoid collision with Spring Security role authority naming.
 
-1. `SecurityConfig` đăng ký `SecurityFilterChain`, custom security configurer/filter, OAuth2 login, JWT cookie và authorization matcher.
-2. Local login: `ApiAuthController` dùng `AuthenticationManager`, tạo JWT bằng `JwtService`, ghi cookie bằng `CookieUtils`.
-3. Google OAuth2: success handler tìm user DB, tạo JWT cookie, redirect về `/`.
-4. `User` implements `UserDetails`; authorities được tạo động từ `danhSachTenRole` và `danhSachTenPermission`.
+## Dynamic RBAC Layers
 
-## Ports & Endpoints
+1. Database: `USER_ROLES`, `PERMISSIONS`, `PERMISSION_MODULES`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST`.
+2. Permission loading: `UserServiceImpl.napQuyenChoNguoiDung()` loads roles/permissions and removes blacklisted permissions in batch.
+3. Enforcement: `PermissionInterceptor` reads `@RequirePermission` from controller/view methods.
+4. UX: `permission-manager.js` and `data-permission` hide/show UI only; backend remains the source of truth.
 
-| Service | Port | Base URL |
-|---------|------|----------|
-| Backend API | 8080 mặc định Spring Boot (không thấy `server.port`) | `http://localhost:8080/api` |
-| Frontend | 8080 cùng Spring Boot process | `http://localhost:8080/` |
-| Database | SQL Server local instance; port không khai báo trực tiếp | `jdbc:sqlserver://LAPTOP-S1U5MI7D\\SQLEXPRESS;databaseName=Web_Pharma_QuangDuong;...` |
+## Core Modules
 
-## Hệ thống Phân quyền Động
-
-Phân quyền 100% database-driven qua 4 lớp:
-1. **CSDL**: Admin tạo role/permission/module qua web, gán qua 6 bảng RBAC (`USER_ROLES`, `PERMISSIONS`, `PERMISSION_MODULES`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST`).
-2. **Nạp quyền**: `napQuyenChoNguoiDung()` query 4 bảng + lọc blacklist → bơm vào JWT.
-3. **Enforce**: `PermissionInterceptor` (config/interceptor) + `@RequirePermission` annotation (validators/annotations) kiểm tra quyền mỗi endpoint. SUPERADMIN bypass.
-4. **UX**: `permission-manager.js` ẩn/hiện UI frontend (chỉ UX, backend vẫn enforce).
-
-`PermissionRegistry` (config/) khai báo danh sách mã quyền hệ thống đang sử dụng.
-
-## External Dependencies
-
-- Microsoft SQL Server: datasource trong `src/main/resources/application.properties`.
-- Gmail SMTP: `spring.mail.*` keys có trong config. Không đọc/paste raw password.
-- Google OAuth2 Client: `spring.security.oauth2.client.registration.google.*` keys có trong config. Không đọc/paste raw client secret.
-- VNPay: package `config/vnpay` và keys `vnpay.*` trong config. Không đọc/paste raw hash secret.
-- Custom internal security library: `config/ultraSecureLibrary`.
-
-## Cách chạy dự án
-
-```powershell
-# Build
-.\mvnw.cmd package
-
-# Chạy dev
-.\mvnw.cmd spring-boot:run
-
-# Test
-.\mvnw.cmd test
-
-# Lint/typecheck
-# Chưa phát hiện linter riêng; dùng Maven compile/test làm kiểm tra chính.
-.\mvnw.cmd test
-```
-
-```bash
-# Unix tương đương
-./mvnw package
-./mvnw spring-boot:run
-./mvnw test
-```
+- Auth/security/profile.
+- Public posts and admin posts.
+- Public events/registrations and admin events.
+- Comments/replies/reactions/reports/moderation.
+- Admin RBAC/user management/audit.
+- Profile/address/partner profile.
 
 ## Project Convention
 
-### Kiến trúc phân lớp
+### Layering
 
-- API JSON: `controller.api` -> `service.itf` interface -> `service.impl` implementation -> `repositories.IRepository` -> `entities`.
-- View route: `controller.view` chỉ trả template name, không chứa business logic hay truy vấn DB.
-- DTO tách `dto.request` và `dto.response`; response API bọc bằng `ApiResponse<T>`.
-- Transaction đặt tại service method có ghi dữ liệu hoặc quy trình nhiều bước (`@Transactional`).
-- Mapping entity sang DTO đang làm thủ công bằng vòng lặp và setter, chưa dùng MapStruct/ModelMapper.
-- Repository dùng interface prefix `I`, ví dụ `IPostRepository`, `IUserRepository`; service interface cũng dùng prefix `I`, ví dụ `IPostService`.
+- API JSON flow: `controller.api` -> `service.itf` -> `service.impl` -> `repositories.IRepository` -> `entities`.
+- View controllers should return template names only.
+- DTOs are split into `dto.request` and `dto.response`.
+- API responses are wrapped in `ApiResponse<T>`.
+- Write/multi-step business flows should be transactional at service layer.
+- Mapping is manual with setters/builders; no MapStruct/ModelMapper detected.
+- Service and repository interfaces use `I` prefix, for example `IAdminPostService`, `IPostRepository`.
 
-### Naming Convention
+### Naming
 
 - Java class/interface: PascalCase.
-- Method/field/local variable: camelCase; dự án có nhiều tên tiếng Việt không dấu/tiếng Việt camelCase như `layChiTietBaiViet`, `timKiemSuKien`.
-- Entity table/column mapping: tên bảng/cột SQL Server uppercase snake/camel theo DB, ví dụ `POSTS`, `CT_EVENTS`, `USER_ROLES`.
-- Controller API đặt prefix `Api...Controller`; view controller đặt theo domain như `PostViewController`.
-- Admin API dùng path `/api/admin/...`; public API dùng `/api/posts`, `/api/events`, `/api/comments`, `/api/auth`.
+- Method/field/local variable: camelCase; Vietnamese non-accent names are common, for example `layDanhSachBaiViet`, `capNhatChucVu`.
+- SQL table/column names are mapped explicitly to uppercase/snake/camel DB names.
+- Admin API controllers use `ApiAdmin...Controller`; public APIs use `Api...Controller`.
+- Public API paths use `/api/posts`, `/api/events`, `/api/comments`, `/api/auth`; admin paths use `/api/admin/...`.
 
-### Error Handling
+### Validation And Errors
 
-- Business error ném `AppException(status, message)`.
-- `GlobalExceptionHandler` dùng `@RestControllerAdvice` để chuyển exception thành `ApiResponse.loi(...)`.
-- Validation error `MethodArgumentNotValidException` được gom field error thành message HTTP 400.
-- Runtime/Exception fallback trả HTTP 500; hiện có `System.err`/`printStackTrace`, chưa thấy logging framework wrapper.
+- Request DTOs use Jakarta Validation such as `@Valid`, `@NotBlank`, `@NotNull`, `@Size`, `@Email`.
+- Business errors throw `AppException(status, message)`.
+- `GlobalExceptionHandler` converts exceptions to `ApiResponse.loi(...)`.
+- Some older comments still mention role names such as `ROLE_ADMIN`; trust executable annotations and service logic over stale comments.
 
-### Test Framework & Pattern
+### Frontend
 
-- Test framework hiện tại: JUnit 5 + Spring Boot Test.
-- Test hiện có: `PhatdevPharmaceuticalsWebApplicationTests.contextLoads()`.
-- Chưa thấy unit test/service/controller test chuyên sâu; khi sửa logic critical path nên thêm test tập trung hoặc ít nhất chạy `.\mvnw.cmd test`.
+- Thymeleaf templates contain substantial inline JS for domain pages.
+- Common static utilities: `security-core.js`, `auth-sync.js`, `page-transition-manager.js`, `permission-manager.js`, `rich-content-editor.js`.
+- Admin posts/events/comments use PageTransitionManager to avoid flicker.
+- Rich Content Editor is shared by admin posts and admin events.
 
-### Validation
+### Testing
 
-- Controller API thường dùng `@Valid @RequestBody` cho request DTO public/auth/profile/comment/event/post.
-- DTO request dùng Jakarta Validation như `@NotBlank`, `@NotNull`, `@Size`, `@Email`, custom `@ValidUsername`.
-- Một số admin endpoint nhận `@RequestBody` chưa có `@Valid`; khi thêm/sửa endpoint mới phải validate toàn bộ input từ client.
+- Test framework: JUnit 5 + Spring Boot Test.
+- Existing test entry: `AuctionSystemNhom6ApplicationTests.contextLoads()`.
+- For code changes, prefer `bash mvnw -q -DskipTests compile`, then `bash mvnw -q test` when dependency/network access works.
+- Current known blocker from previous runs: Maven Central access can fail with `Permission denied: getsockopt`.
 
-### Code Doc Style
+## External Dependencies And Sensitive Config
 
-- Code có nhiều Javadoc/block comment tiếng Việt mô tả nhiệm vụ file, flow và business rule.
-- Comment được dùng để giải thích domain/security rule; khi thêm comment mới, giữ ngắn và tập trung vào rule khó hiểu.
+- `application.properties` contains datasource, mail, OAuth2, JWT and VNPay settings. Never paste raw sensitive values.
+- During the 2026-06-03 sync, config was inspected by property names only.
+- `SecurityConfig` still contains a hardcoded remember-me secret literal; do not copy this pattern.
 
 ## Architecture Decisions
 
-Chưa ghi decision cross-cutting mới trong bootstrap. Các mục trên là convention quan sát từ code hiện tại, không phải decision đã cân nhắc giữa nhiều phương án.
+| Quyet dinh | Phuong an | Ly do | Ngay ghi | Het han |
+|-----------|-----------|-------|----------|---------|
+| Fine-grained authorization via `@RequirePermission` | Spring Security authenticates broad route groups; `PermissionInterceptor` enforces DB permission codes | Keeps authorization database-driven and editable through admin RBAC | 2026-06-03 | 2026-09-03 |
+| SUPERADMIN source of truth is `roleLevel == 0` | Do not rely on role name, authority string or frontend state | Prevents bypass drift when role names/authorities change | 2026-06-03 | 2026-09-03 |
+| RBAC admin permissions use `RBAC_*` | Do not use `ROLE_MANAGE` or `ROLE_*` permission codes for RBAC management | Avoids collision with Spring Security `ROLE_` authority prefix and supports granular actions | 2026-06-03 | 2026-09-03 |
 
-| Quyết định | Phương án (chọn / bỏ) | Lý do | Ngày ghi | Hết hạn |
-|-----------|------------------------|-------|----------|---------|
-| Chưa có | N/A | N/A | 2026-05-18 | N/A |
+## Important Notes
 
-## Ghi chú quan trọng
-
-- Phát hiện 51 file đã thay đổi ngoài Codex trước bootstrap; chủ yếu là chuyển bộ agent từ `.claude` sang `.codex/.agents`, cập nhật README/docs và memory template. Không revert các thay đổi này.
-- `application.properties` chứa nhiều key có thể liên quan secret (`password`, `secret`, `token`, `key`); chỉ đọc targeted key và phải mask raw value khi báo cáo.
-- Auth, role/permission, event registration, payment và migration/schema là critical path; cần review sâu hoặc security review khi sửa lớn.
-- `SecurityConfig` hiện có hardcoded remember-me key dạng literal; khi sửa auth/security cần xử lý như debt bảo mật, không nhân rộng pattern này.
+- Auth, RBAC, payment, registration, migration/schema and moderation are critical paths.
+- Code is more authoritative than memory and docs when there is conflict.
+- This memory snapshot was synchronized from code currently present in the workspace, not from git history.

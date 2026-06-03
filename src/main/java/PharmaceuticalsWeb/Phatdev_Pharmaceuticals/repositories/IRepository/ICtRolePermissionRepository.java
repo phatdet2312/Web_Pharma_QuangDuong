@@ -10,4 +10,10 @@ import java.util.List;
 public interface ICtRolePermissionRepository extends JpaRepository<CtRolePermission, CtRolePermissionId> {
     // Tìm toàn bộ quyền hạt lựu nằm trong 1 Nhóm chức vụ
     List<CtRolePermission> findByRoleId(Integer roleId);
+
+    // Tìm toàn bộ quyền hạt lựu của nhiều chức vụ cùng lúc (batch query tránh N+1)
+    List<CtRolePermission> findByRoleIdIn(List<Integer> roleIds);
+
+    // Tìm toàn bộ chức vụ đang sử dụng 1 quyền hạt lựu cụ thể
+    List<CtRolePermission> findByPermissionId(Integer permissionId);
 }

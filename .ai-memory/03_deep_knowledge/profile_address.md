@@ -1,54 +1,49 @@
 # Profile & Address
-> Last updated: 2026-06-01
-> Source files: `controller/api/ApiProfileController.java`, `controller/view/PartnerViewController.java`, `service/impl/ProfileServiceImpl.java`, `service/impl/AddressServiceImpl.java`, `entities/PublicProfile.java`, `entities/PartnerProfile.java`, `entities/Address.java`, `entities/Province.java`, `entities/District.java`, `entities/Ward.java`
+> Last updated: 2026-06-03
+> Source files: `controller/api/ApiProfileController.java`, `controller/view/PartnerViewController.java`, `service/impl/ProfileServiceImpl.java`, `service/impl/AddressServiceImpl.java`, `entities/PublicProfile.java`, `entities/PartnerProfile.java`, `entities/Address.java`, `entities/Province.java`, `entities/District.java`, `entities/Ward.java`, `templates/partner/profile.html`
 > Confidence: HIGH
 
-## Mô tả chức năng
+## Summary
 
-Module profile quản lý hồ sơ cá nhân, hồ sơ doanh nghiệp/partner, đổi mật khẩu, lịch sử OTP/login/account, permission summary, stats và địa chỉ. View `/profile` hoặc `/partner` trả template partner profile; dữ liệu dùng API `/api/profile/**`.
+Profile module manages personal profile, partner/business profile, password change, OTP/login/account history, permission summary, profile stats and address CRUD. View routes `/profile` and `/partner` return the partner profile template; data comes from `/api/profile/**`.
 
-## Luồng xử lý chính
+## Main Flow
 
-1. User authenticated gọi `GET /api/profile/me` để lấy thông tin profile.
-2. Cập nhật cá nhân/partner/password/address qua `ApiProfileController`.
-3. Controller dùng DTO request có validation như `UpdatePersonalRequest`, `UpdatePartnerRequest`, `ChangePasswordRequest`, `AddressRequest`.
-4. Service kiểm tra user hiện tại, thao tác profile/address repositories, trả response DTO.
-5. Address API hỗ trợ province/district/ward lookup và CRUD địa chỉ user.
+1. Authenticated user calls `GET /api/profile/me`.
+2. Updates go through `ApiProfileController` using validated request DTOs such as `UpdatePersonalRequest`, `UpdatePartnerRequest`, `ChangePasswordRequest`, `AddressRequest`.
+3. Services use current authenticated user; do not trust arbitrary client user IDs.
+4. Address service enforces ownership for CRUD/default operations.
 
-## Business Rules quan trọng
+## Endpoints
 
-- `/api/profile/**` yêu cầu `authenticated()` (Phase 5 bỏ hardcode role, chỉ cần đăng nhập).
-- Mọi thao tác profile/address phải dùng current authenticated user, không tin userId từ client nếu không có rule admin riêng.
-- Partner profile có file/avatar/license upload endpoints; cần kiểm soát path/upload theo `.codexignore` và rule bảo mật khi sửa.
-- Address CRUD phải đảm bảo record thuộc user hiện tại.
-
-## API Endpoints
-
-| Method | Path | Mô tả | Auth |
-|--------|------|-------|------|
-| GET | `/api/profile/me` | Hồ sơ cá nhân | Yes |
-| PUT | `/api/profile/me` | Cập nhật cá nhân | Yes |
-| GET | `/api/profile/partner` | Hồ sơ doanh nghiệp | Yes |
-| PUT | `/api/profile/partner` | Cập nhật doanh nghiệp | Yes |
-| POST | `/api/profile/partner/avatar` | Upload avatar partner | Yes |
-| POST | `/api/profile/partner/license` | Upload license partner | Yes |
-| PUT | `/api/profile/security/password` | Đổi mật khẩu | Yes |
-| GET | `/api/profile/security/otp-history` | Lịch sử OTP | Yes |
-| GET | `/api/profile/security/login-history` | Lịch sử đăng nhập | Yes |
-| GET | `/api/profile/account-history` | Lịch sử tài khoản | Yes |
-| GET | `/api/profile/permissions` | Quyền hiện tại | Yes |
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/api/profile/me` | Personal profile | Yes |
+| PUT | `/api/profile/me` | Update personal profile | Yes |
+| GET | `/api/profile/partner` | Partner/business profile | Yes |
+| PUT | `/api/profile/partner` | Update partner profile | Yes |
+| POST | `/api/profile/partner/avatar` | Upload partner avatar | Yes |
+| POST | `/api/profile/partner/license` | Upload partner license | Yes |
+| PUT | `/api/profile/security/password` | Change password | Yes |
+| GET | `/api/profile/security/otp-history` | OTP history | Yes |
+| GET | `/api/profile/security/login-history` | Login history | Yes |
+| GET | `/api/profile/account-history` | Account history | Yes |
+| GET | `/api/profile/permissions` | Current permissions | Yes |
 | GET | `/api/profile/stats` | Profile stats | Yes |
 | GET | `/api/profile/address/provinces` | Provinces | Yes |
 | GET | `/api/profile/address/districts` | Districts | Yes |
 | GET | `/api/profile/address/wards` | Wards | Yes |
 | GET/POST/PUT/DELETE/PATCH | `/api/profile/address/**` | Address CRUD/default | Yes |
 
+## Business Rules
+
+- `/api/profile/**` requires authentication in `SecurityConfig`.
+- Profile/address operations must use the authenticated user.
+- Partner avatar/license upload touches runtime upload paths; apply path/size/type checks if modifying.
+- Do not leak other users' profile/address/history data in response DTOs.
+
 ## Decision Log
 
-| Quyết định | Phương án (chọn / bỏ) | Lý do | Ngày ghi | Hết hạn | Dead End |
-|-----------|------------------------|-------|----------|---------|----------|
-| Chưa có | N/A | Bootstrap chỉ ghi nhận code hiện tại | 2026-05-18 | N/A | N/A |
-
-## Ghi chú
-
-- Profile/address liên quan dữ liệu cá nhân; khi sửa response cần tránh leak dữ liệu user khác.
+| Decision | Option | Reason | Date | Expiry |
+|----------|--------|--------|------|--------|
+| No module-specific decision currently active | N/A | Current file reflects observed code | 2026-06-03 | N/A |

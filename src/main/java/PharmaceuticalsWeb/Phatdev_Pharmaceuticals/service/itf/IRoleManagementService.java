@@ -54,11 +54,11 @@ public interface IRoleManagementService {
     // Tạo ra một đặc quyền thao tác hoàn toàn vào CSDL
     void taoQuyenMoi(PermissionRequest request);
     
-    // Cập nhật lại mô tả hoặc mã của Quyền
-    void capNhatQuyen(Integer permissionId, PermissionRequest request);
-    
-    // Xóa Quyền (Chỉ cho phép xóa nếu quyền này chưa được gắn cho bất kỳ Chức vụ nào)
-    void xoaQuyen(Integer permissionId);
+    // Cập nhật lại mô tả hoặc mã của Quyền (kiểm tra cấp bậc actor trước khi sửa)
+    void capNhatQuyen(Integer permissionId, PermissionRequest request, User currentUser);
+
+    // Xóa Quyền (kiểm tra cấp bậc actor + chỉ cho phép xóa nếu quyền chưa được gắn chức vụ)
+    void xoaQuyen(Integer permissionId, User currentUser);
 
     // =====================================================================
     // PHẦN 3: KIỂM SOÁT QUYỀN THAO TÁC CỤC BỘ (BLACKLIST)
@@ -90,9 +90,9 @@ public interface IRoleManagementService {
     // Tạo nhóm chức năng mới (kiểm tra trùng mã module)
     void taoModuleMoi(PermissionModuleRequest request);
 
-    // Cập nhật tên, mô tả, thứ tự hiển thị của nhóm chức năng
-    void capNhatModule(Integer moduleId, PermissionModuleRequest request);
+    // Cập nhật tên, mô tả, thứ tự hiển thị của nhóm chức năng (kiểm tra cấp bậc actor)
+    void capNhatModule(Integer moduleId, PermissionModuleRequest request, User currentUser);
 
-    // Xóa nhóm chức năng (chỉ khi không còn permission nào thuộc nhóm)
-    void xoaModule(Integer moduleId);
+    // Xóa nhóm chức năng (kiểm tra cấp bậc actor + chỉ khi không còn permission thuộc nhóm)
+    void xoaModule(Integer moduleId, User currentUser);
 }

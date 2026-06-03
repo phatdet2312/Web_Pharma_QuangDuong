@@ -1,128 +1,89 @@
 # Comments & Moderation
-> Last updated: 2026-05-30
-> Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, `dto/request/EditContentRequest.java`, `dto/response/CmtModerationLogResponse.java`, `dto/response/CommentStatsResponse.java`, `repositories/IRepository/ICtPostCmtRepository.java`, `repositories/IRepository/ICtEventCmtRepository.java`, `utils/SecurityConfig.java`, comment/report/moderation entities, `templates/posts/detail.html`, `templates/events/detail.html`, `templates/admin/comments.html`
+> Last updated: 2026-06-03
+> Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, comment/report/moderation entities and repositories, `templates/posts/detail.html`, `templates/events/detail.html`, `templates/admin/comments.html`
 > Confidence: HIGH
 
-## Mô tả chức năng
+## Summary
 
-Module comment xử lý comment/reply cho post và event session, reaction, lịch sử chỉnh sửa/xóa, public report và admin moderation. Post detail và event detail chia sẻ cùng hệ thống comment (cùng DB `CMT`/`PH_CMT`, cùng backend `ApiCommentController`), UI JS/CSS giống nhau ~100% — khi sửa logic comment ở 1 bên cần kiểm tra bên kia.
+Comments support post and event-session conversations, replies, reactions, edit/delete history, public reports and admin moderation. Public post detail and event detail share very similar comment systems; changes to one should be checked against the other.
 
-## Luồng xử lý chính
+## Current Size / Inventory
 
-1. Client gọi `/api/comments/posts/{postId}` hoặc `/api/comments/events/{eventId}` để lấy comment.
-2. User đăng nhập gửi comment/reply/update/delete qua `ApiCommentController`.
-3. Reaction cho comment/reply gọi `/api/comments/like/cmt` hoặc `/api/comments/like/reply`.
-4. Public report gọi `/api/reports/comments`.
-5. Admin xử lý pending/moderate/delete/bulk qua `/api/admin/comments` và `/api/admin/reports`.
-6. Service ghi log action/moderation/report để giữ audit trail.
+- `admin/comments.html`: 2620 lines.
+- `CommentServiceImpl`: 1595 lines.
+- Admin reaction icon upload endpoint: `POST /api/admin/comments/reaction-types/upload-icon`.
+- Reaction icon upload directory: `/uploads/comments/reaction-icons/`.
 
-## Business Rules quan trọng
+## Public Comment Rules
 
-- Public đọc comment được phép, nhưng write/update/delete/reaction cần user authenticated theo pattern controller.
-- Input comment/reply/report dùng DTO có `@Valid` như `CommentRequest`, `ReplyRequest`, `LikeRequest`, `CommentReportRequest`.
-- Có hai thực thể comment: `Cmt` là comment gốc, `PhCmt` là phản hồi từ cấp 2 trở xuống.
-- `PH_CMT` lưu cây bằng `PARENT_PH_ID` và có thể lồng vô hạn tầng, nhưng UI public post chỉ hiển thị 3 tầng: CMT cấp 1, PH_CMT cấp 2, và mọi con cháu sâu hơn được gom về cấp 3 kèm tag người được trả lời.
-- API danh sách comment post không nạp kèm toàn bộ `cmt.replies`; chỉ trả `replyCount`, frontend gọi endpoint lazy-load khi người dùng bấm "Xem X câu trả lời".
-- Tag người được trả lời là chip có thể xóa trong form reply ở mọi cấp. Khi user giữ chip, frontend gửi `@Tên` như một phần của `content`; khi render chỉ highlight `@Tên` nếu nó thật sự nằm đầu `content`, không được tự ép thêm tag bằng metadata.
-- Frontend reply post detail đang dựa vào DOM lồng cấp: `reply-thread-cmt-*` nằm trong output của CMT cấp 1, `reply-thread-phcmt-*` nằm trong output của PH_CMT cấp 2. Không được cộng thêm margin thủ công cho cấp 3 nếu mục tiêu là bắt đầu từ đầu output của cấp 2.
-- Action row phải đồng bộ giữa CMT và PH_CMT: reaction/like ở trái, nút phản hồi ở phải bằng class riêng của button (`cia-reply`/`ria-reply`), không đảo thứ tự DOM.
-- Khi lazy-load reply trả `totalElements <= 0`, frontend phải clear thread và navigation bằng helper dùng chung; không render lại nút "Xem 0 câu trả lời" hay "Ẩn câu trả lời".
-- Có cặp entity/log/report riêng cho comment gốc và reply: `CtCmt*` và `CtPhCmt*`.
-- Khi sửa logic moderation/report, cần đọc kỹ `CommentServiceImpl` và các repository liên quan trước khi patch.
+- Public read is allowed for post/event comments and reaction types.
+- Write/update/delete/reaction/report require authentication and relevant permission where annotated.
+- Root comments use `Cmt`; replies use `PhCmt`.
+- `PH_CMT` supports arbitrary depth through `PARENT_PH_ID`; UI shows root, level 2, and deeper replies grouped visually at level 3.
+- Root comment list returns `replyCount`; replies are lazy-loaded.
+- Reply mention chips are user-editable content. Do not force-add a tag at render time if content does not contain it.
+- For post/event comment UI, preserve DOM classes that tree-branch CSS depends on (`ci-bubble-wrapper`, `ri-bubble-wrapper`, `reply-thread`, `has-replies`, etc.).
 
-## Lifecycle Delete Notes
+## Public Endpoints
 
-- `PH_CMT` la cay tu tham chieu qua `PARENT_PH_ID`. Khi xoa vat ly mot reply, service phai xoa theo hau tu: tat ca con chau truoc, node cha sau. Xoa phang theo danh sach se co nguy co vi pham FK khi cha bi xoa truoc con.
-- Cac thao tac dem/loc con chau cua `PH_CMT` phai dung ban do `parentId -> childIds` duoc dung lai trong cung request; khong dung map roi lai dung lai map trong tung vong lap.
-- Xoa vat ly `PH_CMT` khong dung de quy theo do sau. Phai dung thu tu hau tu iterative: tao map `parentId -> childIds`, gom toan bo nhanh can xoa, xoa con truoc cha. Neu phat hien vong lap du lieu thi nem `AppException` de transaction rollback, khong duoc xoa dang do.
-- Truoc khi xoa report cua `CMT`/`PH_CMT`, phai xoa `CT_CMT_REPORT_MOD_LOG`/`CT_PH_CMT_REPORT_MOD_LOG` lien quan. Report mod log tham chieu report, nen xoa report truoc log se gay loi rang buoc.
-- Bulk delete comment phai di qua lifecycle `xoaCmtVatLy`, khong duoc xoa truc tiep link/action log/comment vi se bo sot reply, reaction, report, moderation log va cay `PH_CMT`.
-- Sau khi tao reply thanh cong tren frontend post detail, phai dong form reply dang mo va refresh dung nhanh lazy-load thay vi reload toan bo comment root.
-- SecurityConfig `permitAll()` phai co CA HAI `/api/comments/posts/**` VA `/api/comments/events/**` — thieu 1 trong 2 se gay 403 cho user chua co role.
-- Event detail va post detail co comment system tuong dong (~40 ham JS, CSS giong nhau). Khi sua comment logic o 1 file phai kiem tra file kia. Event dung `ctEventId` (session ID), post dung `maBaiVietHienTai` (post ID).
-- Event comment endpoint dung `/api/comments/events/{eventId}` (khong phai `/api/events/sessions/{id}/comments` cu cua ApiEventController).
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/api/comments/reaction-types` | Reaction types | No |
+| GET | `/api/comments/posts/{postId}` | Post comments | No |
+| GET | `/api/comments/events/{eventId}` | Event/session comments | No |
+| GET | `/api/comments/{cmtId}/replies` | Replies under root comment | No |
+| GET | `/api/comments/reply/{phCmtId}/replies` | Deeper replies anchored by reply | No |
+| POST | `/api/comments/posts/{postId}` | Create post comment | `USER_COMMENT` |
+| POST | `/api/comments/events/{eventId}` | Create event comment | `USER_COMMENT` |
+| POST | `/api/comments/reply` | Create reply | `USER_COMMENT` |
+| PUT | `/api/comments/{cmtId}` | Edit comment using `EditContentRequest` | `USER_COMMENT` |
+| DELETE | `/api/comments/{cmtId}` | Delete comment | Authenticated |
+| PUT | `/api/comments/reply/{phCmtId}` | Edit reply using `EditContentRequest` | `USER_COMMENT` |
+| DELETE | `/api/comments/reply/{phCmtId}` | Delete reply | Authenticated |
+| GET | `/api/comments/{cmtId}/history` | Comment edit/action history | Yes |
+| GET | `/api/comments/reply/{phCmtId}/history` | Reply history | Yes |
+| POST | `/api/comments/like/cmt` | React to comment | `USER_REACT` |
+| POST | `/api/comments/like/reply` | React to reply | `USER_REACT` |
+| POST | `/api/reports/comments` | Report comment/reply | `USER_REPORT` |
 
-## API Endpoints
+## Admin Endpoints
 
-| Method | Path | Mô tả | Auth |
-|--------|------|-------|------|
-| GET | `/api/comments/reaction-types` | Loại reaction | No |
-| GET | `/api/comments/posts/{postId}` | Comment bài viết | No |
-| GET | `/api/comments/events/{eventId}` | Comment sự kiện/session | No |
-| GET | `/api/comments/{cmtId}/replies` | Phản hồi cấp 2 của comment gốc | No |
-| GET | `/api/comments/reply/{phCmtId}/replies` | Phản hồi cấp 3, gom tầng sâu hơn theo neo cấp 2 | No |
-| POST | `/api/comments/posts/{postId}` | Gửi comment post | Yes |
-| POST | `/api/comments/events/{eventId}` | Gửi comment event | Yes |
-| POST | `/api/comments/reply` | Gửi reply | Yes |
-| PUT | `/api/comments/{cmtId}` | Sửa comment | Yes |
-| DELETE | `/api/comments/{cmtId}` | Xóa comment | Yes |
-| PUT | `/api/comments/reply/{phCmtId}` | Sửa reply | Yes |
-| DELETE | `/api/comments/reply/{phCmtId}` | Xóa reply | Yes |
-| GET | `/api/comments/{cmtId}/history` | Lịch sử comment | Yes |
-| GET | `/api/comments/reply/{phCmtId}/history` | Lịch sử reply | Yes |
-| POST | `/api/comments/like/cmt` | Reaction comment | Yes |
-| POST | `/api/comments/like/reply` | Reaction reply | Yes |
-| POST | `/api/reports/comments` | Report comment/reply | Yes |
-| GET | `/api/admin/comments/cmt/{cmtId}/moderation-log` | Lịch sử kiểm duyệt CMT | Admin |
-| GET | `/api/admin/comments/reply/{phCmtId}/moderation-log` | Lịch sử kiểm duyệt PH_CMT | Admin |
-| POST | `/api/admin/comments/reaction-types/upload-icon` | Upload ảnh icon cảm xúc (multipart) | Admin |
-| GET/POST/PUT/DELETE | `/api/admin/comments/**` | Admin moderation/comment tooling | Admin |
-| GET/PATCH | `/api/admin/reports/comments/**` | Admin xử lý report | Admin |
+| Method | Path | Description | Permission |
+|--------|------|-------------|------------|
+| GET | `/api/admin/comments/stats` | Admin comment stats | `COMMENT_VIEW` |
+| GET/POST/PUT/DELETE | `/api/admin/comments/reaction-types/**` | Reaction type CRUD/upload | `COMMENT_MANAGE_REACTION` |
+| GET | `/api/admin/comments/pending` | Pending moderation queue | `COMMENT_VIEW` |
+| GET | `/api/admin/comments` | Search/filter/page admin comments | `COMMENT_VIEW` |
+| POST | `/api/admin/comments/moderate` | Moderate one target | `COMMENT_MODERATE` |
+| DELETE | `/api/admin/comments/cmt/{cmtId}` | Delete root comment | `COMMENT_DELETE` |
+| DELETE | `/api/admin/comments/reply/{phCmtId}` | Delete reply | `COMMENT_DELETE` |
+| POST | `/api/admin/comments/bulk/moderate` | Bulk moderate | `COMMENT_MODERATE` |
+| DELETE | `/api/admin/comments/bulk` | Bulk delete | `COMMENT_DELETE` |
+| GET | `/api/admin/comments/cmt/{cmtId}/moderation-log` | Root comment moderation log | `COMMENT_VIEW` |
+| GET | `/api/admin/comments/reply/{phCmtId}/moderation-log` | Reply moderation log | `COMMENT_VIEW` |
+| GET/PATCH | `/api/admin/reports/comments/**` | View/resolve reports | `REPORT_VIEW` / `REPORT_RESOLVE` |
+
+## Delete Lifecycle
+
+- Physical delete of `PH_CMT` must delete descendants before parent.
+- Use an iterative post-order approach with `parentId -> childIds`; detect cycles and throw `AppException` to rollback.
+- Delete report moderation logs before report rows.
+- Bulk delete comment must call the central `xoaCmtVatLy` lifecycle, not delete direct rows ad hoc.
+- Root comment delete must handle replies, reactions, reports, moderation logs and join rows.
+
+## Admin Comments UI Rules
+
+- Admin sees original content even when hidden; do not reuse public hiding behavior.
+- All user-generated content in `innerHTML` must pass `lamSachChuoiHTML()`.
+- Admin comments uses PageTransitionManager for skeleton/swap and supports silent reload after bulk actions.
+- Reply admin DOM uses `adm-ri-bubble-wrapper` and tree branch CSS adapted from `posts/detail.html`.
+- Status labels use lookup maps (`cauHinhTrangThaiCmt`, `cauHinhTrangThaiReport`) with fallback to moderation action data.
+- `CommentStatsResponse` fills `postCmt` and `eventCmt` from repository counts (`ICtPostCmtRepository.demTong`, `ICtEventCmtRepository.demTong`).
 
 ## Decision Log
 
-| Quyết định | Phương án (chọn / bỏ) | Lý do | Ngày ghi | Hết hạn | Dead End |
-|-----------|------------------------|-------|----------|---------|----------|
-| Chưa có | N/A | Bootstrap chỉ ghi nhận code hiện tại | 2026-05-18 | N/A | N/A |
-| Lazy-load reply public post | Chọn: root API chỉ trả `replyCount`, reply cấp 2/cấp 3 có endpoint riêng; Bỏ: trả cả cây `PH_CMT` trong `/api/comments/posts/{postId}` | Giảm payload, tránh frontend biết toàn bộ cây reply, giữ UI tối đa 3 tầng nhưng DB vẫn hỗ trợ vô hạn tầng để mở rộng sau này | 2026-05-23 | 2026-08-23 | Trả full `cmt.replies` làm UI rối và tốn payload |
-| Delete lifecycle cho cay reply | Chon: xoa `PH_CMT` theo hau tu va don log/report truoc node chinh; Bo: xoa phang reply theo danh sach hoac bulk delete comment truc tiep | Dam bao khong vi pham FK khi reply co nhieu tang, giu delete flow tap trung va de bao tri khi tang so cap hien thi sau nay | 2026-05-23 | 2026-08-23 | Xoa cha truoc con gay loi he thong ngoai y muon khi `PARENT_PH_ID` con tro ve node cha |
-
-## Bug Fix - EditContentRequest (2026-05-24)
-
-**Root cause:** PUT `/api/comments/reply/{id}` dùng `ReplyRequest` có `@NotNull rootCmtId`, nhưng frontend chỉ gửi `{content}` khi sửa reply → validate fail.
-
-**Fix:**
-- Tạo DTO `EditContentRequest` chỉ có `@NotBlank content`.
-- Sửa `capNhatCmt` và `capNhatPhCmt` trong `ICommentService` + `CommentServiceImpl`: signature đổi từ `CommentRequest`/`ReplyRequest` → `EditContentRequest`.
-- `ApiCommentController`: PUT endpoints (cmt cấp 1 và reply cấp 2+) dùng `EditContentRequest`.
-- Controller không thay đổi logic validate, chỉ DTO bỏ field không cần khi chỉnh sửa.
-
-**Phương án bỏ:** Sửa `ReplyRequest` thêm field `rootCmtId` optional → sai design; request creation và update không nên dùng DTO chung khi contract khác nhau.
-
-## UI Comment Threading - Facebook Tree Branch (2026-05-25)
-
-User tự implement CSS vẽ nhánh cây kiểu Facebook cho comment post detail:
-- CSS variables: `--avatar-size-l1/l2`, `--gap-l1/l2`, `--trunk-offset-l1/l2`, `--trunk-start-gap`
-- Trục dọc (trunk): `::after` trên `.ci-bubble`/`.ri-bubble` khi parent có `.has-replies` hoặc có `.reply-nav-row:not(:empty)`
-- Nhánh L (branch): `::before` trên `.reply-item` rẽ từ trục vào mỗi reply, border-radius tạo cong
-- Cắt trục ở `:last-child::after { display: none }`
-- Nối xuyên form reply inline: `.reply-form-wrapper::before` vẽ trục tiếp nối
-- Hai cấp: Level 1→2 (biến `l1`, selector `.ci-bubble-wrapper > .reply-thread`) và Level 2→3 (biến `l2`, selector `.ri-bubble-wrapper > .reply-thread`)
-- Selector dùng `:has()` cho trường hợp chưa mở reply nhưng có nút navigation
-
-**Quy tắc khi sửa UI comment:** Không xóa/đổi class `.has-replies`, `.ci-bubble-wrapper`, `.ri-bubble-wrapper`, `.reply-form-wrapper` vì tree branch CSS phụ thuộc vào cấu trúc DOM này.
-
-## Admin Comments Page (admin/comments.html)
-
-Admin comments đã chuyển từ demo tĩnh sang API-driven hoàn chỉnh (2026-05-28/29), khai thác 16 bảng DB. Các tính năng chính:
-- Stats hero bar: tổng comment, reply, pending, hidden, reactions, reported, post/event count (dùng `CommentStatsResponse` với `postCmt`/`eventCmt`).
-- Search đa chiều + pagination, tab filter theo status/targetType.
-- Bulk moderation (APPROVE/HIDE/WARN) + single moderate + chi tiết comment modal.
-- Report modal: list/filter/resolve/reject.
-- LOAI_LIKE CRUD modal: toggle emoji text / upload ảnh, preview ảnh trước submit. Endpoint upload: `POST /api/admin/comments/reaction-types/upload-icon` (multipart). Icon được lưu tại `/uploads/comments/reaction-icons/`.
-- Reply lazy-load cấp 2/3 + mod actions (APPROVE/HIDE/UNHIDE/WARN/DELETE/Chi tiết).
-- Reply DOM dùng `adm-ri-bubble-wrapper` + tree branch CSS (trục dọc + nhánh L) theo pattern `posts/detail.html`.
-- Tích hợp `PageTransitionManager` skeleton + swapContent + anLang cho CRUD không nháy trang.
-- Admin luôn thấy nội dung gốc khi HIDE, không che giấu thông tin.
-
-**Quy tắc khi sửa admin comments:** Đối chiếu `admin/events.html` để giữ pattern UX đồng bộ (modal confirm, toast, loading, upload flow). Không dùng logic hiển thị user (ẩn/che nội dung) cho admin. Mọi user-generated content (noiDung, userFullName, reason, targetTitle) phải qua `lamSachChuoiHTML()` trước khi gán innerHTML — hàm này đã có trong file (2026-05-30). Trạng thái kiểm duyệt dùng lookup map `cauHinhTrangThaiCmt` + `cauHinhTrangThaiReport` (data-driven, đồng bộ với admin/events), fallback `danhSachHanhDong` cho code mới. Hộp thoại xác nhận dùng `confirmAction()` từ layout chung, wording chứa "lưu"/"xóa" để auto-detect chế độ SAVE/DELETE.
-
-## Repository Methods cho Stats
-
-- `ICtPostCmtRepository.demTong()`: đếm tổng bình luận gốc thuộc bài viết.
-- `ICtEventCmtRepository.demTong()`: đếm tổng bình luận gốc thuộc sự kiện.
-- Dùng trong `CommentServiceImpl.layThongKeBinhLuan()` để fill `postCmt`/`eventCmt`.
-
-## Ghi chú
-
-- Module này có blast radius cao do liên quan content public, audit log và moderation. Khi sửa nên chạy targeted test/compile và review endpoint auth.
+| Decision | Option | Reason | Date | Expiry |
+|----------|--------|--------|------|--------|
+| Lazy-load replies | Root API returns `replyCount`, reply APIs load branches | Smaller payload and simpler UI control | 2026-05-23 | 2026-08-23 |
+| Delete reply tree post-order | Children before parent, central lifecycle | Prevent FK failures and partial deletes | 2026-05-23 | 2026-08-23 |
+| Admin reaction icon supports upload | `/uploads/comments/reaction-icons/` | User explicitly required image upload, not text-only icon input | 2026-05-29 | 2026-08-29 |

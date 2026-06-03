@@ -91,7 +91,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
         }
 
         if (coQuyen == false) {
-            throw new AppException(403, "Bạn không có quyền thực hiện thao tác này (" + permissionCanThiet + ")");
+            throw new AppException(403, "Bạn không có quyền thực hiện thao tác này");
         }
 
         return true;

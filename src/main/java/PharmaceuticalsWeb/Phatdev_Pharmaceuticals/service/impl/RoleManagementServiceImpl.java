@@ -56,6 +56,7 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
     /**
      * Lấy cấp bậc mạnh nhất của một tài khoản trực tiếp từ DB.
      * Số càng nhỏ quyền càng mạnh; không có role hợp lệ được xem là yếu nhất.
+     * Dùng batch query findAllById — 2 câu SQL thay vì N+1.
      */
     private int layCapBacManhNhatTuDb(User user) {
         int capBacManhNhat = 999;
@@ -63,17 +64,30 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
             return capBacManhNhat;
         }
 
+        // Query 1: Lấy danh sách roleId của user
         List<CtUserRole> roleMaps = ctUserRoleRepository.findByUserId(user.getId());
-        if (roleMaps != null) {
-            Object[] roleMapArray = roleMaps.toArray();
-            for (int i = 0; i < roleMapArray.length; i = i + 1) {
-                CtUserRole roleMap = (CtUserRole) roleMapArray[i];
-                UserRole role = userRoleRepository.findById(roleMap.getRoleId()).orElse(null);
-                if (role != null && role.getRoleLevel() != null && role.getRoleLevel() < capBacManhNhat) {
-                    capBacManhNhat = role.getRoleLevel();
-                }
+        if (roleMaps == null || roleMaps.isEmpty() == true) {
+            return capBacManhNhat;
+        }
+
+        // Gom tất cả roleId vào 1 danh sách
+        List<Integer> roleIds = new ArrayList<>();
+        Object[] roleMapArray = roleMaps.toArray();
+        for (int i = 0; i < roleMapArray.length; i = i + 1) {
+            CtUserRole roleMap = (CtUserRole) roleMapArray[i];
+            roleIds.add(roleMap.getRoleId());
+        }
+
+        // Query 2: Lấy tất cả role cùng lúc (1 câu SQL thay vì N câu)
+        List<UserRole> roles = userRoleRepository.findAllById(roleIds);
+        Object[] rolesArray = roles.toArray();
+        for (int i = 0; i < rolesArray.length; i = i + 1) {
+            UserRole role = (UserRole) rolesArray[i];
+            if (role.getRoleLevel() != null && role.getRoleLevel() < capBacManhNhat) {
+                capBacManhNhat = role.getRoleLevel();
             }
         }
+
         return capBacManhNhat;
     }
 
@@ -162,6 +176,7 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
 
     /**
      * Lấy danh sách mã quyền hiệu lực của actor trực tiếp từ DB và loại bỏ blacklist cá nhân.
+     * Dùng batch query — 4 câu SQL thay vì N+1 lồng nhau.
      */
     private List<String> layPermissionCodeHieuLucTuDb(User actor) {
         List<String> permissionCodes = new ArrayList<>();
@@ -169,38 +184,85 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
             return permissionCodes;
         }
 
+        // Query 1: Lấy danh sách roleId của actor
         List<CtUserRole> roleMaps = ctUserRoleRepository.findByUserId(actor.getId());
-        if (roleMaps != null) {
-            Object[] roleMapArray = roleMaps.toArray();
-            for (int i = 0; i < roleMapArray.length; i = i + 1) {
-                CtUserRole roleMap = (CtUserRole) roleMapArray[i];
-                List<CtRolePermission> rolePermissions = ctRolePermissionRepository.findByRoleId(roleMap.getRoleId());
-                if (rolePermissions != null) {
-                    Object[] rolePermArray = rolePermissions.toArray();
-                    for (int j = 0; j < rolePermArray.length; j = j + 1) {
-                        CtRolePermission rolePermission = (CtRolePermission) rolePermArray[j];
-                        Permission permission = permissionRepository.findById(rolePermission.getPermissionId()).orElse(null);
-                        if (permission != null && permission.getPermissionCode() != null) {
-                            themNeuChuaCo(permissionCodes, permission.getPermissionCode());
-                        }
-                    }
+        if (roleMaps == null || roleMaps.isEmpty() == true) {
+            return permissionCodes;
+        }
+
+        // Gom tất cả roleId vào 1 danh sách
+        List<Integer> roleIds = new ArrayList<>();
+        Object[] roleMapArray = roleMaps.toArray();
+        for (int i = 0; i < roleMapArray.length; i = i + 1) {
+            CtUserRole roleMap = (CtUserRole) roleMapArray[i];
+            roleIds.add(roleMap.getRoleId());
+        }
+
+        // Query 2: Lấy tất cả permission mapping của tất cả role cùng lúc
+        List<CtRolePermission> tatCaRolePerms = ctRolePermissionRepository.findByRoleIdIn(roleIds);
+
+        // Gom tất cả permissionId vào 1 danh sách (loại trùng)
+        List<Integer> permissionIds = new ArrayList<>();
+        if (tatCaRolePerms != null) {
+            Object[] rolePermArray = tatCaRolePerms.toArray();
+            for (int i = 0; i < rolePermArray.length; i = i + 1) {
+                CtRolePermission rolePermission = (CtRolePermission) rolePermArray[i];
+                Integer permId = rolePermission.getPermissionId();
+                if (danhSachSoCoGiaTri(permissionIds, permId) == false) {
+                    permissionIds.add(permId);
                 }
             }
         }
 
+        // Query 3: Lấy tất cả permission cùng lúc
+        if (permissionIds.isEmpty() == false) {
+            List<Permission> permissions = permissionRepository.findAllById(permissionIds);
+            Object[] permArray = permissions.toArray();
+            for (int i = 0; i < permArray.length; i = i + 1) {
+                Permission permission = (Permission) permArray[i];
+                if (permission.getPermissionCode() != null) {
+                    themNeuChuaCo(permissionCodes, permission.getPermissionCode());
+                }
+            }
+        }
+
+        // Query 4: Lọc bỏ blacklist — batch query 1 lần
         List<CtUserPermissionBlacklist> blacklist = blacklistRepository.findByUserId(actor.getId());
-        if (blacklist != null) {
+        if (blacklist != null && blacklist.isEmpty() == false) {
+            List<Integer> blacklistPermIds = new ArrayList<>();
             Object[] blacklistArray = blacklist.toArray();
             for (int i = 0; i < blacklistArray.length; i = i + 1) {
                 CtUserPermissionBlacklist banGhi = (CtUserPermissionBlacklist) blacklistArray[i];
-                Permission permission = permissionRepository.findById(banGhi.getPermissionId()).orElse(null);
-                if (permission != null && permission.getPermissionCode() != null) {
-                    permissionCodes.remove(permission.getPermissionCode());
+                blacklistPermIds.add(banGhi.getPermissionId());
+            }
+
+            List<Permission> quyenBiCam = permissionRepository.findAllById(blacklistPermIds);
+            Object[] mangBiCam = quyenBiCam.toArray();
+            for (int i = 0; i < mangBiCam.length; i = i + 1) {
+                Permission quyenCam = (Permission) mangBiCam[i];
+                if (quyenCam.getPermissionCode() != null) {
+                    permissionCodes.remove(quyenCam.getPermissionCode());
                 }
             }
         }
 
         return permissionCodes;
+    }
+
+    /**
+     * Kiểm tra danh sách Integer có chứa giá trị hay không.
+     */
+    private boolean danhSachSoCoGiaTri(List<Integer> danhSach, Integer giaTri) {
+        if (danhSach == null || giaTri == null) {
+            return false;
+        }
+        Object[] mangGiaTri = danhSach.toArray();
+        for (int i = 0; i < mangGiaTri.length; i = i + 1) {
+            if (giaTri.equals(mangGiaTri[i])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -284,6 +346,63 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
         String codeChuan = permissionCode.toUpperCase().trim().replaceAll("\\s+", "_");
         return permissionRepository.findByPermissionCode(codeChuan)
                 .orElseThrow(() -> new AppException(400, "Mã quyền không tồn tại trong hệ thống: " + codeChuan));
+    }
+
+    /**
+     * Chặn actor non-level-0 xóa hoặc sửa permission đang gắn cho role mạnh hơn hoặc ngang mình.
+     * Triết lý nhất quán với damBaoDuocThaoTacRole: chỉ động vào thứ yếu hơn mình.
+     * Dùng batch query findAllById — 2 câu SQL thay vì N+1.
+     */
+    private void damBaoKhongAnhHuongRoleManhHon(User actor, Integer permissionId) {
+        int actorLevel = layCapBacManhNhatTuDb(actor);
+        if (actorLevel == 0) {
+            return;
+        }
+
+        // Query 1: Tìm tất cả role đang dùng permission này
+        List<CtRolePermission> mappings = ctRolePermissionRepository.findByPermissionId(permissionId);
+        if (mappings == null || mappings.isEmpty() == true) {
+            return;
+        }
+
+        // Gom tất cả roleId vào 1 danh sách
+        List<Integer> roleIds = new ArrayList<>();
+        Object[] mappingArray = mappings.toArray();
+        for (int i = 0; i < mappingArray.length; i = i + 1) {
+            CtRolePermission mapping = (CtRolePermission) mappingArray[i];
+            roleIds.add(mapping.getRoleId());
+        }
+
+        // Query 2: Lấy tất cả role cùng lúc
+        List<UserRole> roles = userRoleRepository.findAllById(roleIds);
+        Object[] rolesArray = roles.toArray();
+        for (int i = 0; i < rolesArray.length; i = i + 1) {
+            UserRole role = (UserRole) rolesArray[i];
+            if (role.getRoleLevel() != null && role.getRoleLevel() <= actorLevel) {
+                throw new AppException(403,
+                        "Không được thao tác quyền đang gắn cho chức vụ mạnh hơn hoặc ngang cấp với bạn (" + role.getRoleName() + ")");
+            }
+        }
+    }
+
+    /**
+     * Chặn actor non-level-0 xóa hoặc sửa module chứa permission đang gắn cho role mạnh hơn.
+     * Quét tất cả permission thuộc module, với mỗi permission kiểm tra role đang dùng.
+     */
+    private void damBaoKhongAnhHuongModuleManhHon(User actor, Integer moduleId) {
+        int actorLevel = layCapBacManhNhatTuDb(actor);
+        if (actorLevel == 0) {
+            return;
+        }
+
+        List<Permission> tatCaQuyen = permissionRepository.findAll();
+        Object[] quyenArray = tatCaQuyen.toArray();
+        for (int i = 0; i < quyenArray.length; i = i + 1) {
+            Permission p = (Permission) quyenArray[i];
+            if (p.getModuleId() != null && p.getModuleId().equals(moduleId)) {
+                damBaoKhongAnhHuongRoleManhHon(actor, p.getId());
+            }
+        }
     }
 
     /**
@@ -576,9 +695,12 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
 
     @Override
     @Transactional
-    public void capNhatQuyen(Integer permissionId, PermissionRequest request) {
+    public void capNhatQuyen(Integer permissionId, PermissionRequest request, User currentUser) {
         Permission p = permissionRepository.findById(permissionId)
                 .orElseThrow(() -> new AppException(404, "Không tìm thấy quyền hạt lựu này"));
+
+        // Guard động: chặn nếu quyền này đang gắn cho role mạnh hơn hoặc ngang actor
+        damBaoKhongAnhHuongRoleManhHon(currentUser, permissionId);
         damBaoModuleTonTaiNeuCo(request.getModuleId());
 
         // Nếu client có gửi mã quyền mới lên, ta cần kiểm tra trùng lặp
@@ -601,26 +723,17 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
 
     @Override
     @Transactional
-    public void xoaQuyen(Integer permissionId) {
+    public void xoaQuyen(Integer permissionId, User currentUser) {
         Permission p = permissionRepository.findById(permissionId)
                 .orElseThrow(() -> new AppException(404, "Không tìm thấy quyền hạt lựu này"));
 
-        // Kiểm tra xem Quyền này có đang được gán cho Chức vụ nào không (Chống mồ côi)
-        List<CtRolePermission> allMappings = ctRolePermissionRepository.findAll();
-        boolean dangDuocSuDung = false;
-        
-        if (allMappings != null) {
-            Object[] mapArray = allMappings.toArray();
-            for (int i = 0; i < mapArray.length; i = i + 1) {
-                CtRolePermission map = (CtRolePermission) mapArray[i];
-                if (map.getPermissionId().equals(permissionId)) {
-                    dangDuocSuDung = true;
-                    break;
-                }
-            }
-        }
+        // Guard động: chặn nếu quyền này đang gắn cho role mạnh hơn hoặc ngang actor
+        damBaoKhongAnhHuongRoleManhHon(currentUser, permissionId);
 
-        if (dangDuocSuDung == true) {
+        // Kiểm tra xem Quyền này có đang được gán cho Chức vụ nào không (Chống mồ côi)
+        List<CtRolePermission> mappingsCuaQuyen = ctRolePermissionRepository.findByPermissionId(permissionId);
+
+        if (mappingsCuaQuyen != null && mappingsCuaQuyen.isEmpty() == false) {
             throw new AppException(400, "Từ chối xóa: Quyền này đang được gán cho một số chức vụ. Hãy gỡ quyền khỏi chức vụ trước!");
         }
 
@@ -726,9 +839,12 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
     // Cập nhật thông tin nhóm chức năng theo ID
     @Override
     @Transactional
-    public void capNhatModule(Integer moduleId, PermissionModuleRequest request) {
+    public void capNhatModule(Integer moduleId, PermissionModuleRequest request, User currentUser) {
         PermissionModule mod = permissionModuleRepository.findById(moduleId)
                 .orElseThrow(() -> new AppException(404, "Không tìm thấy nhóm chức năng"));
+
+        // Guard động: chặn nếu module chứa permission đang gắn role mạnh hơn actor
+        damBaoKhongAnhHuongModuleManhHon(currentUser, moduleId);
 
         String moduleCode = request.getModuleCode().toUpperCase().trim();
         if (moduleCode.equals(mod.getModuleCode()) == false) {
@@ -749,9 +865,12 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
     // Xóa nhóm chức năng (từ chối nếu còn quyền hạt lựu đang thuộc nhóm)
     @Override
     @Transactional
-    public void xoaModule(Integer moduleId) {
+    public void xoaModule(Integer moduleId, User currentUser) {
         PermissionModule mod = permissionModuleRepository.findById(moduleId)
                 .orElseThrow(() -> new AppException(404, "Không tìm thấy nhóm chức năng"));
+
+        // Guard động: chặn nếu module chứa permission đang gắn role mạnh hơn actor
+        damBaoKhongAnhHuongModuleManhHon(currentUser, moduleId);
 
         List<Permission> tatCaQuyen = permissionRepository.findAll();
         Object[] quyenArray = tatCaQuyen.toArray();

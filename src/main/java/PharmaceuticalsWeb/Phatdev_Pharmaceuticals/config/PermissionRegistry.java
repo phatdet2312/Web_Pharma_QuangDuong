@@ -2,6 +2,7 @@
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -13,14 +14,19 @@ import java.util.List;
  *
  * Khi lập trình viên thêm @RequirePermission mới trên endpoint,
  * bổ sung vào danh sách bên dưới → frontend tự hiện thêm trong dropdown.
+ *
+ * Danh sách được khởi tạo 1 lần duy nhất khi class load (static final),
+ * tránh tạo mới ArrayList mỗi lần gọi.
  */
 public class PermissionRegistry {
 
     /**
-     * Lấy danh sách tất cả quyền hệ thống đang sử dụng.
+     * Danh sách quyền hệ thống — bất biến sau khi khởi tạo.
      * Mỗi phần tử gồm 3 giá trị: {MÃ_QUYỀN, MÔ_TẢ_NGHIỆP_VỤ, MÃ_MODULE}
      */
-    public static List<String[]> layDanhSachQuyenHeThong() {
+    private static final List<String[]> DANH_SACH_QUYEN;
+
+    static {
         List<String[]> danhSach = new ArrayList<>();
 
         // ─── Nhóm: Bài viết ───
@@ -86,6 +92,13 @@ public class PermissionRegistry {
         danhSach.add(new String[]{"RBAC_BLACKLIST_TOGGLE",  "Khóa hoặc mở khóa quyền thao tác riêng theo người dùng", "SYSTEM"});
         danhSach.add(new String[]{"AUDIT_VIEW",             "Xem nhật ký kiểm toán hệ thống",                        "SYSTEM"});
 
-        return danhSach;
+        DANH_SACH_QUYEN = Collections.unmodifiableList(danhSach);
+    }
+
+    /**
+     * Trả về danh sách quyền hệ thống (bất biến, khởi tạo 1 lần duy nhất).
+     */
+    public static List<String[]> layDanhSachQuyenHeThong() {
+        return DANH_SACH_QUYEN;
     }
 }

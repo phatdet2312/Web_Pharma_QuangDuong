@@ -1,41 +1,47 @@
 # Data Model
-> Last updated: 2026-06-01
-> Source files: `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/entities/*`, `repositories/IRepository/*`, `src/main/resources/application.properties`, `CSDL/FileKhoiTaoCSDL.sql`
+> Last updated: 2026-06-03
+> Source files: `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/entities/*`, `repositories/IRepository/*`, `src/main/resources/application.properties` (property names only), SQL schema files when explicitly needed
 > Confidence: HIGH
 
-## Mo ta chuc nang
+## Summary
 
-Data layer dung Spring Data JPA anh xa SQL Server. Entity dung JPA annotation va Lombok; repository extend `JpaRepository`. Schema do SQL/script quan ly, khong de Hibernate tu sinh.
+Data layer uses Spring Data JPA over SQL Server. Entities use JPA annotations and Lombok. Repositories extend `JpaRepository`. Hibernate does not own schema creation: current config has `spring.jpa.hibernate.ddl-auto=none`.
 
-## Business Rules quan trong
+## Current Inventory
 
-- `spring.jpa.hibernate.ddl-auto=none`: schema/script la nguon quan ly DB.
-- Lazy relationship pho bien; can tranh access ngoai transaction khi them mapping moi.
-- Nhieu join table bat dau bang `Ct...`, vi du `CtUserRole`, `CtPostRole`, `CtEventRegistration`.
-- Nhieu business rule dua vao status string thay vi enum; khi sua phai doi chieu repository/query/template/frontend.
-- DatabaseSeeder quan ly role/permission/moderation actions; data mau khong duoc ghi de seed core.
-- Neu data mau can test paywall/report flow thi phai co rows nghiep vu phu hop (`CT_POST_ROLES`, `CT_EVENT_SESSION_ROLES`, report moderation log) ma khong sua seed core.
+- Entities: 55 Java files.
+- Repositories: 56 Java files.
+- Request DTOs: 36 Java files.
+- Response DTOs: 61 Java files.
+
+## Rules
+
+- Schema is managed by SQL/scripts, not Hibernate auto-DDL.
+- Many relationships are lazy; avoid accessing lazy relations outside transaction when adding mappings.
+- Join table entities commonly start with `Ct...`, for example `CtUserRole`, `CtPostRole`, `CtEventRegistration`.
+- Many statuses are strings, not enums. When adding/changing status values, update service validation, repository queries and frontend mappings together.
+- `DatabaseSeeder` initializes core admin/default/moderation/permission data; do not use it for large sample data that overwrites admin customization.
+- Config files contain sensitive values; inspect property names only unless user explicitly asks and values are masked.
 
 ## Entity Groups
 
-| Nhom | Tables/Entities chinh | Ghi chu |
-|------|------------------------|---------|
-| User/Auth | `USERS`, `USER_ROLES`, `PERMISSIONS`, `PERMISSION_MODULES`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST` | Dynamic role/permission, module nhóm quyền, blacklist theo user |
-| Audit/User history | `CT_USER_LOGIN_LOG`, `CT_USER_ACTION_LOG`, `CT_USER_MODERATION_LOG`, `OTP_CODES` | Login/action/moderation/OTP history |
-| Posts | `POSTS`, `CATEGORIES`, `TAGS`, `CT_POST_TAGS`, `CT_POST_ROLES`, `POST_IMAGES`, `POST_FILES`, `POST_VIEW_LOGS`, `CT_FILE_DOWNLOADS` | Content, category/tag, paywall, assets, analytics |
-| Events | `EVENTS`, `CT_EVENTS`, `EVENT_TYPES`, `LOCATIONS`, `EVENT_SPEAKERS`, `EVENT_AGENDAS`, `CT_AGENDA_SPEAKERS`, `CT_EVENT_TAGS`, `CT_EVENT_SESSION_ROLES`, `CT_EVENT_STATUS_HISTORY`, `CT_EVENT_REGISTRATIONS`, `CT_POST_EVENTS` | Campaign/session, speaker/agenda, status history, capacity, registration |
-| Comments | `CMT`, `PH_CMT`, `CT_POST_CMT`, `CT_EVENT_CMT`, `CT_LIKECMT`, `CT_LIKEPHCMT`, `CT_LIKEPOST`, `LOAI_LIKE` | Comment/reply, reaction types |
-| Moderation/Reports | `CT_CMT_REPORTS`, `CT_PH_CMT_REPORTS`, `CT_CMT_REPORT_MOD_LOG`, `CT_PH_CMT_REPORT_MOD_LOG`, `CT_CMT_MODERATION_LOG`, `CT_PH_CMT_MODERATION_LOG`, `CT_CMT_ACTION_LOG`, `CT_PH_CMT_ACTION_LOG`, `MODERATION_ACTIONS` | Report/report-mod-log/action/moderation audit |
-| Profile/Address | `PUBLIC_PROFILES`, `PARTNER_PROFILES`, `ADDRESSES`, `PROVINCES`, `DISTRICTS`, `WARDS` | User public/partner profile and location tree |
+| Group | Main entities/tables | Notes |
+|-------|----------------------|-------|
+| User/Auth/RBAC | `User`, `UserRole`, `Permission`, `PermissionModule`, `CtUserRole`, `CtRolePermission`, `CtUserPermissionBlacklist` | Dynamic permission system and blacklist |
+| Audit/User history | `CtUserLoginLog`, `CtUserActionLog`, `CtUserModerationLog`, `OtpCode` | Login/action/moderation/OTP history |
+| Posts | `Post`, `Category`, `Tag`, `CtPostTag`, `CtPostRole`, `PostImage`, `PostFile`, `PostViewLog`, `CtFileDownload`, `CtLikePost`, `CtPostCmt`, `CtPostEvent` | Content, gates, assets, analytics, linked events |
+| Events | `Event`, `CtEvent`, `EventType`, `Location`, `EventSpeaker`, `EventAgenda`, `CtAgendaSpeaker`, `CtEventTag`, `CtEventSessionRole`, `CtEventStatusHistory`, `CtEventRegistration`, `CtEventCmt` | Campaign/session, capacity, status, speakers, agenda |
+| Comments/reactions | `Cmt`, `PhCmt`, `LoaiLike`, `CtLikeCmt`, `CtLikePhCmt` | Root comments, reply tree and reactions |
+| Reports/moderation | `CtCmtReport`, `CtPhCmtReport`, `CtCmtReportModLog`, `CtPhCmtReportModLog`, `CtCmtModerationLog`, `CtPhCmtModerationLog`, `CtCmtActionLog`, `CtPhCmtActionLog`, `ModerationAction` | Report and moderation audit |
+| Profile/address | `PublicProfile`, `PartnerProfile`, `Address`, `Province`, `District`, `Ward` | User public/partner profile and location tree |
 
-## Ghi chu ve CSDL/
+## Config Properties Observed Without Values
 
-- `DuLieuMau.sql` va cac file lien quan (`BAO_CAO_KIEM_TRA_DULIEUMAU.md`, `DULIEUMAU_POST_SOURCE_MATRIX.md`, `TEST.MD`) da bi user xoa khoi repo ngay 2026-05-25.
-- Chi con `FileKhoiTaoCSDL.sql` (schema) va file Excel san pham.
-- Schema DB do SQL script quan ly (`ddl-auto=none`), khong de Hibernate tu sinh.
+Important property groups in `application.properties`: datasource, Hibernate dialect/ddl-auto, mail, OAuth2 Google, JWT, VNPay, multipart limits, Tomcat limits, trusted proxy, admin default user, custom security library toggles.
 
 ## Decision Log
 
-| Quyet dinh | Phuong an (chon / bo) | Ly do | Ngay ghi | Het han |
-|-----------|------------------------|-------|----------|---------|
-| Data mau phai co audit validator truoc khi chap nhan | Chon: validate status, row relation, future event, capacity, paywall, moderation log, uniqueness/content repetition; Bo: chi dat row count roi xem la dat | Audit 2026-05-20 cho thay file lon van fail business rule va chat luong noi dung | 2026-05-20 | 2026-08-20 |
+| Decision | Option | Reason | Date | Expiry |
+|----------|--------|--------|------|--------|
+| Schema source is SQL/script, not Hibernate | Keep `ddl-auto=none` | Prevent accidental DB drift from entity changes | 2026-06-03 | 2026-09-03 |
+| Permission module FK uses `Permission.moduleId` | `PERMISSIONS.moduleId -> PERMISSION_MODULES` | Current code and repository/service logic use FK ID, not free-form module string | 2026-06-03 | 2026-09-03 |

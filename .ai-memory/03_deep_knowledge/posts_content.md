@@ -1,120 +1,90 @@
 # Posts & Content
-> Last updated: 2026-05-31
-> Source files: `controller/view/PostViewController.java`, `controller/api/ApiPostController.java`, `controller/api/ApiAdminPostController.java`, `service/impl/PostServiceImpl.java`, `service/impl/AdminPostServiceImpl.java`, `service/itf/IAdminPostService.java`, `repositories/IRepository/IPostRepository.java`, `entities/Post.java`
+> Last updated: 2026-06-03
+> Source files: `controller/view/PostViewController.java`, `controller/api/ApiPostController.java`, `controller/api/ApiAdminPostController.java`, `service/impl/PostServiceImpl.java`, `service/impl/AdminPostServiceImpl.java`, `service/itf/IAdminPostService.java`, `repositories/IRepository/IPostRepository.java`, `entities/Post.java`, `templates/posts/list.html`, `templates/posts/detail.html`, `templates/admin/posts.html`
 > Confidence: HIGH
 
-## Mô tả chức năng
+## Summary
 
-Module bài viết gồm 2 phần: (1) Public — trang danh sách/chi tiết content y khoa, API public, analytics view/download, reaction và gated content theo role level; (2) Admin — trang quản trị `admin/posts.html` CRUD bài viết, danh mục, tag, gallery ảnh, file đính kèm, bình luận preview, reactions, sự kiện liên kết, Rich Content Editor. View controller chỉ trả template; dữ liệu thực tế được frontend gọi từ `/api/posts` (public) và `/api/admin/posts` (admin).
+Posts are split into public content APIs/pages and admin post management. Public pages render `/posts` and slug details; admin page `admin/posts.html` manages posts, categories, tags, media, files, comments preview, reactions, linked events, publish/featured state, bulk actions and Rich Content Editor.
 
-## Luồng xử lý chính
+## Current Size / Inventory
 
-### Public
-1. Client mở `/posts`, `/tin-tuc`, `/tin-tuc-y-khoa` hoặc slug detail.
-2. `PostViewController` trả template `posts/list` hoặc `posts/detail`.
-3. JavaScript gọi `ApiPostController` dưới `/api/posts`.
-4. `PostServiceImpl` truy vấn `IPostRepository` và các repository phụ.
-5. Service mapping entity sang DTO thủ công, tính stats, reaction counts, related posts, author profile.
-6. Response trả bằng `ApiResponse<T>`.
+- `admin/posts.html`: 2565 lines.
+- `AdminPostServiceImpl`: 1288 lines.
+- `ApiAdminPostController`: 33 mapped admin endpoints under `/api/admin/posts`.
 
-### Admin
-1. Admin mở `/admin/posts` → `AdminViewController` trả template `admin/posts`.
-2. JavaScript gọi `ApiAdminPostController` dưới `/api/admin/posts`.
-3. `AdminPostServiceImpl` (1287 dòng, 33 public methods) xử lý CRUD posts, categories, tags, gallery, files, comments preview, reactions, events linking, dictionary, bulk actions.
-4. Upload ảnh/file ghi vào `/uploads/posts/` (thumbnail, gallery, files).
-5. Rich Content Editor (file dùng chung `rich-content-editor.js` + `rich-content-editor.css`) cho soạn thảo nội dung WYSIWYG.
+## Public Flow
 
-## Business Rules quan trọng
+1. `PostViewController` returns `posts/list` or `posts/detail`.
+2. Template JS calls `ApiPostController` under `/api/posts`.
+3. `PostServiceImpl` reads posts/categories/tags/reactions/view/download data and maps to DTOs.
+4. Gated content is resolved in backend using `CtPostRole` and `UserRole.roleLevel`.
 
-- Public list chỉ lấy post `isPublished = true`.
-- Admin list lấy tất cả bất kể trạng thái, hỗ trợ filter keyword/category/roleId/published/dateRange/sort.
-- Search dùng keyword/category/roleId/page/size; sort hiện fallback `createdAt` cho views.
-- Detail theo slug ném `AppException(404)` nếu không tìm thấy.
-- Gated content dùng `CtPostRole` + `UserRole.roleLevel`: level càng nhỏ quyền càng cao; nếu user level đủ thì trả content, nếu không thì `content = null` và trả `requiredRoles`.
-- Bài viết không gắn quyền nào được xem là public.
-- Author profile có privacy shield: ưu tiên `PublicProfile`, fallback `PartnerProfile`, fallback user mặc định; nếu profile ẩn thì trả tác giả ẩn danh.
-- `ghiNhanLuotXem` lưu `PostViewLog`; guest vẫn có IP, user nullable.
-- `ghiNhanTaiTaiLieu` chỉ log download nếu đã đăng nhập; guest bỏ qua để giữ lead data sạch.
-- Xóa bài viết cascade 9 bảng: tags, images, files, view logs, downloads, comments, reactions, post-events, post-roles.
-- Upload ảnh/file validate file type + size cả client + server.
-- Entity `Post` có field `isFeatured` (boolean) để đánh dấu bài viết nổi bật.
+## Public Endpoints
 
-## API Endpoints — Public
-
-| Method | Path | Mô tả | Auth |
-|--------|------|-------|------|
-| GET | `/api/posts/stats` | Thống kê trang bài viết | No |
-| GET | `/api/posts/categories` | Danh mục kèm số bài | No |
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/api/posts/stats` | Public post stats | No |
+| GET | `/api/posts/categories` | Categories with counts | No |
 | GET | `/api/posts/tags` | Tag cloud | No |
-| GET | `/api/posts/featured` | Bài viết nổi bật | No |
-| GET | `/api/posts` | Search/filter/page bài viết | No |
-| GET | `/api/posts/{slug}` | Chi tiết bài viết theo slug | No, nhưng auth ảnh hưởng gated content |
-| POST | `/api/posts/{postId}/view` | Ghi nhận lượt xem | No |
-| POST | `/api/posts/like` | Reaction bài viết | Yes |
-| POST | `/api/posts/files/{fileId}/download-track` | Log tải tài liệu | Optional, chỉ log khi có user |
+| GET | `/api/posts/featured` | Featured posts | No |
+| GET | `/api/posts` | Search/filter/page posts | No |
+| GET | `/api/posts/{slug}` | Post detail by slug; auth affects gated content | Optional |
+| POST | `/api/posts/{postId}/view` | Track view | No |
+| POST | `/api/posts/like` | React to post | `USER_REACT` |
+| POST | `/api/posts/files/{fileId}/download-track` | Track file download when logged in | Optional |
 
-## API Endpoints — Admin (`/api/admin/posts`)
+## Admin Endpoints (`/api/admin/posts`)
 
-| Method | Path | Mô tả |
-|--------|------|-------|
-| GET | `/stats` | Thống kê admin (tổng, nháp, gated, downloads, views, comments, reactions, featured) |
-| GET | `/` | Danh sách + filter keyword/category/roleId/published/dateRange/sort + phân trang |
-| GET | `/{postId}` | Chi tiết bài viết (admin, bao gồm nháp) |
-| POST | `/` | Tạo bài viết mới (cần Authentication) |
-| PUT | `/{postId}` | Cập nhật bài viết |
-| DELETE | `/{postId}` | Xóa bài viết (cascade 9 bảng) |
-| PATCH | `/{postId}/publish` | Bật/tắt xuất bản |
-| PATCH | `/{postId}/featured` | Bật/tắt nổi bật |
-| GET | `/dictionaries` | Danh mục từ điển (roles cho dropdown) |
-| POST | `/upload-thumbnail` | Upload ảnh thumbnail (multipart) |
-| PATCH | `/bulk/publish` | Đổi trạng thái xuất bản hàng loạt |
-| DELETE | `/bulk` | Xóa hàng loạt bài viết |
-| GET | `/categories` | Lấy tất cả danh mục |
-| POST | `/categories` | Tạo danh mục |
-| PUT | `/categories/{id}` | Cập nhật danh mục |
-| DELETE | `/categories/{id}` | Xóa danh mục (FK check) |
-| GET | `/tags` | Lấy tất cả tag |
-| POST | `/tags` | Tạo tag |
-| PUT | `/tags/{id}` | Cập nhật tag |
-| DELETE | `/tags/{id}` | Xóa tag (FK check) |
-| GET | `/{postId}/images` | Lấy ảnh gallery |
-| POST | `/{postId}/images` | Upload ảnh gallery (multipart) |
-| DELETE | `/{postId}/images/{imageId}` | Xóa ảnh gallery |
-| PATCH | `/{postId}/images/reorder` | Đổi thứ tự ảnh |
-| GET | `/{postId}/files` | Lấy file đính kèm |
-| POST | `/{postId}/files` | Upload file đính kèm (multipart) |
-| DELETE | `/{postId}/files/{fileId}` | Xóa file đính kèm |
-| GET | `/{postId}/comments` | Bình luận preview (phân trang, truncate 200 ký tự) |
-| GET | `/{postId}/reactions` | Reactions grouped by type |
-| GET | `/{postId}/events` | Sự kiện liên kết |
-| POST | `/{postId}/events` | Liên kết bài viết với buổi sự kiện |
-| DELETE | `/{postId}/events/{ctEventId}` | Xóa liên kết |
+| Method | Path | Description | Permission |
+|--------|------|-------------|------------|
+| GET | `/stats` | Admin stats | `POST_VIEW` |
+| GET | `/` | List with keyword/category/role/published/date range/sort/page/size | `POST_VIEW` |
+| POST | `/` | Create post | `POST_CREATE` |
+| PUT | `/{postId}` | Update post | `POST_EDIT` |
+| DELETE | `/{postId}` | Delete post with cascade cleanup | `POST_DELETE` |
+| GET | `/{postId}` | Admin detail including drafts | `POST_VIEW` |
+| POST | `/upload-thumbnail` | Upload thumbnail to `/uploads/posts/thumbnails/` | `POST_EDIT` |
+| PATCH | `/{postId}/publish` | Toggle published | `POST_EDIT` |
+| PATCH | `/{postId}/featured` | Toggle featured | `POST_EDIT` |
+| GET | `/dictionaries` | Roles/options for UI | `POST_VIEW` |
+| PATCH | `/bulk/publish` | Bulk publish/unpublish | `POST_EDIT` |
+| DELETE | `/bulk` | Bulk delete | `POST_DELETE` |
+| GET/POST/PUT/DELETE | `/categories/**` | Category CRUD and FK checks | `POST_MANAGE_CATEGORY` |
+| GET/POST/PUT/DELETE | `/tags/**` | Tag CRUD and FK checks | `POST_MANAGE_TAG` |
+| GET/POST/DELETE/PATCH | `/{postId}/images/**` | Gallery list/upload/delete/reorder | `POST_EDIT` |
+| GET/POST/DELETE | `/{postId}/files/**` | Attachment list/upload/delete | `POST_EDIT` |
+| GET | `/{postId}/comments` | Comment preview | `POST_VIEW` |
+| GET | `/{postId}/reactions` | Reactions grouped by type | `POST_VIEW` |
+| GET/POST/DELETE | `/{postId}/events/**` | Linked event sessions | `POST_EDIT` |
 
-## DTO mới cho Admin Posts
+## Business Rules
 
-| DTO | Mô tả |
-|-----|-------|
-| `AdminPostDictionaryResponse` | Gom roles cho dropdown cấp độ truy cập |
-| `AdminPostMediaResponse` | Kết quả upload (url + fileName) |
-| `PostCommentPreviewResponse` | Preview bình luận (cmtId, authorName, authorAvatar, content truncate, createdAt) |
-| `PostLinkedEventResponse` | Buổi sự kiện liên kết (ctEventId, eventTitle, startTime, endTime) |
-| `PostReactionSummary` | Reaction grouped (code, name, iconUrl, count) |
-| `RoleOptionResponse` | Option dropdown role (id, roleName, roleLevel) |
+- Public list only returns published posts.
+- Admin list returns all posts and supports keyword/category/role/published/date range/sort.
+- `Post.isFeatured` controls featured state.
+- If a post has no `CtPostRole`, it is public.
+- If a post has role gates and user lacks sufficient level, backend returns limited data/content according to DTO contract.
+- Author profile resolves through public profile, partner profile, then user fallback, with privacy handling.
+- View logs record guest IP/user nullable.
+- Download tracking logs only authenticated users to keep lead data clean.
+- Delete post cleans dependent post tables: tags, roles, images, files, view logs, downloads, comments, reactions and post-event links.
+- File/image upload validates type and size server-side.
+- Admin frontend escapes user-generated strings and uses PageTransitionManager for lists/categories/tags.
+- Rich Content Editor shared files are `rich-content-editor.js` and `rich-content-editor.css`.
+
+## DTOs
+
+- `AdminPostDictionaryResponse`: options for admin dropdowns.
+- `AdminPostMediaResponse`: upload result (`url`, `fileName`).
+- `PostCommentPreviewResponse`: truncated comment preview.
+- `PostLinkedEventResponse`: linked event session DTO.
+- `PostReactionSummary`: grouped reactions.
+- `RoleOptionResponse`: role option for gates.
 
 ## Decision Log
 
-| Quyết định | Phương án (chọn / bỏ) | Lý do | Ngày ghi | Hết hạn | Dead End |
-|-----------|------------------------|-------|----------|---------|----------|
-| Detail modal dùng tab system 5 tab | Tab system (không accordion) | events.html dùng tab, consistency | 2026-05-30 | 2026-08-30 | N/A |
-| Images/Files là sub-resource REST nested | /posts/{id}/images, /posts/{id}/files | REST convention, events cũng dùng | 2026-05-30 | 2026-08-30 | N/A |
-| Category/Tag CRUD dùng modal inline | Modal table + form cùng 1 modal | events dùng modal cho Type/Location | 2026-05-30 | 2026-08-30 | N/A |
-| Editor dùng contenteditable div | contenteditable + execCommand | User yêu cầu không dùng thư viện, vanilla JS | 2026-05-30 | 2026-08-30 | N/A |
-| RCE tách file dùng chung | CSS + JS standalone, include từ admin_layout | Dùng cho cả posts và events editor | 2026-05-30 | 2026-08-30 | N/A |
-
-## Ghi chú
-
-- `PostServiceImpl` rất lớn, chứa nhiều mapping helper; `AdminPostServiceImpl` (700+ dòng) tách riêng cho admin.
-- `admin/posts.html` 2564 dòng: tab system 5 tab, gallery CRUD, files CRUD, comments preview, reactions/events linking, category/tag CRUD modals, 8 stats cards, Rich Content Editor, escapeHtml XSS protection.
-- Rich Content Editor (`rich-content-editor.js` + `rich-content-editor.css`) là file dùng chung, include từ `admin_layout.html`, dùng cho cả admin posts và admin events.
-- Upload ảnh/file ghi vào `/uploads/posts/` (thumbnail, gallery, files).
-- Table liên quan chính: `POSTS`, `CATEGORIES`, `TAGS`, `CT_POST_TAGS`, `CT_POST_ROLES`, `POST_IMAGES`, `POST_FILES`, `POST_VIEW_LOGS`, `CT_FILE_DOWNLOADS`, `CT_LIKEPOST`, `CT_POST_CMT`, `CT_POST_EVENTS`.
+| Decision | Option | Reason | Date | Expiry |
+|----------|--------|--------|------|--------|
+| RCE extracted to shared static files | `rich-content-editor.js/css` used by posts/events | Avoid duplicated editor logic in large admin templates | 2026-05-30 | 2026-08-30 |
+| Admin post media uses server upload namespaces | `/uploads/posts/thumbnails`, `/images`, `/files` | Avoid asking admin users to type internal paths | 2026-05-31 | 2026-08-31 |

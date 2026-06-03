@@ -150,14 +150,16 @@ public class ApiRoleManagementController {
     @RequirePermission("RBAC_PERMISSION_UPDATE")
     @PutMapping("/permissions/{id}")
     public ApiResponse<String> capNhatQuyen(@PathVariable Integer id, @Valid @RequestBody PermissionRequest request) {
-        roleManagementService.capNhatQuyen(id, request);
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        roleManagementService.capNhatQuyen(id, request, currentUser);
         return ApiResponse.thanhCong(null, "Cập nhật quyền thao tác thành công");
     }
 
     @RequirePermission("RBAC_PERMISSION_DELETE")
     @DeleteMapping("/permissions/{id}")
     public ApiResponse<String> xoaQuyen(@PathVariable Integer id) {
-        roleManagementService.xoaQuyen(id);
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        roleManagementService.xoaQuyen(id, currentUser);
         return ApiResponse.thanhCong(null, "Đã xóa quyền thao tác khỏi hệ thống");
     }
 
@@ -200,7 +202,8 @@ public class ApiRoleManagementController {
     @RequirePermission("RBAC_MODULE_UPDATE")
     @PutMapping("/modules/{id}")
     public ApiResponse<String> capNhatModule(@PathVariable Integer id, @Valid @RequestBody PermissionModuleRequest request) {
-        roleManagementService.capNhatModule(id, request);
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        roleManagementService.capNhatModule(id, request, currentUser);
         return ApiResponse.thanhCong(null, "Cập nhật nhóm chức năng thành công");
     }
 
@@ -208,7 +211,8 @@ public class ApiRoleManagementController {
     @RequirePermission("RBAC_MODULE_DELETE")
     @DeleteMapping("/modules/{id}")
     public ApiResponse<String> xoaModule(@PathVariable Integer id) {
-        roleManagementService.xoaModule(id);
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        roleManagementService.xoaModule(id, currentUser);
         return ApiResponse.thanhCong(null, "Đã xóa nhóm chức năng");
     }
 }

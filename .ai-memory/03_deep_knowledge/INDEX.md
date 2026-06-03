@@ -1,15 +1,16 @@
-# Deep Knowledge Index - Router
-> Last updated: 2026-06-01
+# Deep Knowledge Index
+> Last updated: 2026-06-03
 > Status: BOOTSTRAPPED
+> Sync basis: Current code snapshot, not git history.
 
-Đọc file này trước, chỉ mở file chi tiết đúng module đang cần sửa.
+Open only the module file needed for the current task.
 
-| Module | File | Mô tả 1 câu |
-|--------|------|-------------|
-| Auth & Security | `auth_security.md` | Local login, Google OAuth2, JWT cookie, dynamic roles/permissions và security filter chain. |
-| Posts & Content | `posts_content.md` | Public post APIs + Admin post CRUD 30+ endpoints, gallery/files/comments/reactions/events, Rich Content Editor, 6 DTO moi, gated content theo role level. |
-| Events & Registration | `events_registration.md` | Event campaign/session APIs, time filter, slot/capacity, registration, status history và paywall session. |
-| Comments & Moderation | `comments_moderation.md` | Comment/reply APIs, reactions, report flow, moderation log và admin comment tools. |
-| Admin RBAC | `admin_rbac.md` | Role, permission, permission module, user lock, permission blacklist, @RequirePermission annotation, PermissionInterceptor, PermissionManager JS, admin user-management endpoints. |
-| Profile & Address | `profile_address.md` | User profile, partner profile, password change, address CRUD và audit/profile stats. |
-| Data Model | `data_model.md` | Nhóm entity/table chính và quan hệ dữ liệu cần nhớ trước khi sửa repository/entity. |
+| Module | File | Summary |
+|--------|------|---------|
+| Auth & Security | `auth_security.md` | Spring Security, JWT cookie, Google OAuth2, dynamic permission enforcement and route authorization. |
+| Posts & Content | `posts_content.md` | Public posts plus admin posts CRUD, media, gallery/files, comments preview, reactions, linked events and RCE. |
+| Events & Registration | `events_registration.md` | Public event campaign/session flows, registration/paywall/privacy and admin event management. |
+| Comments & Moderation | `comments_moderation.md` | Comment/reply/reaction/report APIs plus admin moderation tooling and delete lifecycle. |
+| Admin RBAC | `admin_rbac.md` | DB-driven role/permission/module/blacklist management, `@RequirePermission`, PermissionRegistry and PermissionManager JS. |
+| Profile & Address | `profile_address.md` | User/partner profile, password/history/stats, uploads and address CRUD. |
+| Data Model | `data_model.md` | Entity/table groups, repository conventions and schema ownership rules. |

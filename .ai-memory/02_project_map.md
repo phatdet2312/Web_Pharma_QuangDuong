@@ -1,25 +1,25 @@
-# Project Map - Bản đồ dự án
-> Last updated: 2026-06-01
+# Project Map
+> Last updated: 2026-06-03
 > Status: BOOTSTRAPPED
+> Sync basis: Current code snapshot under `src/` and `pom.xml`; git history intentionally not used.
 
-## Cấu trúc thư mục chính
+## Top-Level Structure
 
 ```text
 project-root/
-├── .agents/skills/                 # Skills workflow cho Codex agent
-├── .ai-memory/                     # Memory bank của agent
-├── .claude/                        # Claude Code settings, hooks, rules
-├── .codex/                         # Codex agent config
-├── docs/                           # Tài liệu dự án; chỉ dùng file có Status: ACTIVE
-├── CSDL/                           # SQL Server schema (seed data đã xóa 2026-05-25)
-├── uploads/                        # File upload runtime (books/, files/, partners/)
+├── .agents/skills/                 # Codex workflow skills
+├── .ai-memory/                     # Agent memory bank
+├── agent-config/                   # Codex config/hooks/rules area
+├── docs/                           # Use only files marked Status: ACTIVE
+├── CSDL/                           # SQL Server schema/data files; ignored for broad scans
+├── uploads/                        # Runtime uploaded files; ignored for broad scans
 ├── src/
 │   ├── main/
 │   │   ├── java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/
 │   │   │   ├── adapter/
 │   │   │   ├── config/
-│   │   │   │   ├── init/
-│   │   │   │   ├── interceptor/          # PermissionInterceptor.java
+│   │   │   │   ├── init/DatabaseSeeder.java
+│   │   │   │   ├── interceptor/PermissionInterceptor.java
 │   │   │   │   ├── ultraSecureLibrary/
 │   │   │   │   ├── vnpay/
 │   │   │   │   ├── PermissionRegistry.java
@@ -37,21 +37,9 @@ project-root/
 │   │   │   ├── utils/
 │   │   │   └── validators/
 │   │   └── resources/
-│   │       ├── static/
-│   │       │   ├── css/page-transitions.css    # Skeleton + fade CSS (prefix ptm-)
-│   │       │   └── js/page-transition-manager.js # Utility chống nháy trang (IIFE)
+│   │       ├── static/css/
+│   │       ├── static/js/
 │   │       ├── templates/
-│   │       │   ├── admin/
-│   │       │   ├── auth/
-│   │       │   ├── email/
-│   │       │   ├── errors/
-│   │       │   ├── events/
-│   │       │   ├── home/
-│   │       │   ├── partner/
-│   │       │   ├── posts/
-│   │       │   ├── admin_layout.html
-│   │       │   ├── auth_layout.html
-│   │       │   └── user_layout.html
 │   │       ├── application.properties
 │   │       └── application-prod.properties
 │   └── test/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/
@@ -60,114 +48,88 @@ project-root/
 └── mvnw.cmd
 ```
 
+## Inventory From Current Code
+
+| Area | Count / note |
+|------|--------------|
+| API controllers | 15 Java files |
+| View controllers | 7 Java files |
+| Entities | 55 Java files |
+| Repositories | 56 Java files |
+| DTO request | 36 Java files |
+| DTO response | 61 Java files |
+| `@RequirePermission` usage | 126 annotations under controllers/views |
+| Permission registry | 44 permission codes |
+| `ROLE_MANAGE` in source/templates/static JS | 0 matches |
+
 ## Module Map
 
-| Module/Package | Đường dẫn | Vai trò | Files chính |
-|----------------|-----------|---------|-------------|
+| Module/Package | Path | Role | Key files |
+|----------------|------|------|-----------|
 | Main app | `src/main/java/.../` | Spring Boot entry point | `PhatdevPharmaceuticalsWebApplication.java` |
-| API controllers | `src/main/java/.../controller/api` | REST/JSON endpoints `/api/**` | `ApiAuthController`, `ApiPostController`, `ApiEventController`, `ApiCommentController`, `ApiProfileController`, `ApiReportController`, `ApiRolesController`, `ApiAuditController`, `ApiPublicSpeakerAgendaController`, `ApiAdminPostController`, `ApiAdminEventController`, `ApiAdminCommentController`, `ApiAdminReportController`, `ApiAdminSpeakerAgendaController`, `ApiRoleManagementController` |
-| View controllers | `src/main/java/.../controller/view` | Route trả Thymeleaf templates | `HomeViewController`, `AuthViewController`, `PostViewController`, `EventViewController`, `AdminViewController`, `PartnerViewController`, `ErrorViewController` |
-| Services interfaces | `src/main/java/.../service/itf` | Hợp đồng business service | `IUserService`, `IPostService`, `IEventService`, `ICommentService`, `IProfileService`, `IAddressService`, `IEmailService`, `IAuditService`, `IAdminPostService`, `IAdminEventService` (thêm dictionary/upload/bulkStatus), `IAdminReportService`, `IPublicReportService`, `IRoleManagementService`, `IRolesService`, `ISpeakerAgendaService`, `IUserTrackingService` |
-| Services impl | `src/main/java/.../service/impl` | Business logic, transaction, DTO mapping | `UserServiceImpl`, `PostServiceImpl`, `EventServiceImpl`, `CommentServiceImpl`, `ProfileServiceImpl`, `AddressServiceImpl`, `EmailServiceImpl`, `AuditServiceImpl`, `AdminPostServiceImpl`, `AdminEventServiceImpl`, `AdminReportServiceImpl`, `PublicReportServiceImpl`, `RoleManagementServiceImpl`, `RolesServiceImpl`, `SpeakerAgendaServiceImpl`, `UserTrackingServiceImpl` |
-| Service support | `src/main/java/.../service/support` | Policy/helper dùng chung, không truy cập DB trực tiếp | `EventStatusDisplayPolicy`, `NguCanhNguoiDung`, `NguCanhNguoiDungFactory` |
-| Utils | `src/main/java/.../utils` | Lớp tiện ích tĩnh dùng chung | `SecurityConfig`, `ImagePathUtil` (validate/chuẩn hóa URL ảnh upload event), `PagingUtil` (chuẩn hóa page/size, default 12, max 100) |
-| Repositories | `src/main/java/.../repositories/IRepository` | Spring Data JPA (56 files) | `IUserRepository`, `IPostRepository`, `IEventRepository`, `ICtEventRepository`, `ICmtRepository`, `IPhCmtRepository`, `ICategoryRepository`, `ITagRepository`, `IUserRoleRepository`, `IRolesRepository`, `IPermissionRepository`, `IPermissionModuleRepository`, `ICtUserRoleRepository`, `ICtRolePermissionRepository`, `ICtUserPermissionBlacklistRepository`, `ICtPostTagRepository`, `ICtPostRoleRepository`, `ICtPostEventRepository`, `ICtPostCmtRepository`, `IPostImageRepository`, `IPostFileRepository`, `IPostViewLogRepository`, `ICtFileDownloadRepository`, `ICtLikePostRepository`, `ICtLikeCmtRepository`, `ICtLikePhCmtRepository`, `ILoaiLikeRepository`, `ICtEventRegistrationRepository`, `ICtEventStatusHistoryRepository`, `ICtEventSessionRoleRepository`, `ICtEventTagRepository`, `ICtEventCmtRepository`, `IEventTypeRepository`, `ILocationRepository`, `IEventSpeakerRepository`, `IEventAgendaRepository`, `ICtAgendaSpeakerRepository`, `ICtCmtReportRepository`, `ICtPhCmtReportRepository`, `ICtCmtReportModLogRepository`, `ICtPhCmtReportModLogRepository`, `ICtCmtActionLogRepository`, `ICtPhCmtActionLogRepository`, `ICtCmtModerationLogRepository`, `ICtPhCmtModerationLogRepository`, `IModerationActionRepository`, `IOtpCodeRepository`, `IPublicProfileRepository`, `IPartnerProfileRepository`, `IAddressRepository`, `IProvinceRepository`, `IDistrictRepository`, `IWardRepository`, `ICtUserActionLogRepository`, `ICtUserLoginLogRepository`, `ICtUserModerationLogRepository` |
-| Entities | `src/main/java/.../entities` | JPA table mapping (55 files) | `User`, `UserRole`, `Permission`, `PermissionModule`, `Post`, `Category`, `Tag`, `Event`, `CtEvent`, `EventType`, `EventAgenda`, `EventSpeaker`, `Location`, `Cmt`, `PhCmt`, `CtEventCmt`, `CtPostCmt`, `CtEventRegistration`, `CtEventStatusHistory`, `CtEventSessionRole`, `CtEventTag`, `CtPostEvent`, `CtPostTag`, `CtPostRole`, `PostImage`, `PostFile`, `PostViewLog`, `CtFileDownload`, `CtLikePost`, `CtLikeCmt`, `CtLikePhCmt`, `LoaiLike`, `CtAgendaSpeaker`, `CtCmtReport`, `CtPhCmtReport`, `CtCmtReportModLog`, `CtPhCmtReportModLog`, `CtCmtActionLog`, `CtPhCmtActionLog`, `CtCmtModerationLog`, `CtPhCmtModerationLog`, `ModerationAction`, `CtRolePermission`, `CtUserRole`, `CtUserPermissionBlacklist`, `CtUserActionLog`, `CtUserLoginLog`, `CtUserModerationLog`, `PublicProfile`, `PartnerProfile`, `Address`, `Province`, `District`, `Ward`, `OtpCode` |
-| DTO request | `src/main/java/.../dto/request` | Client input + validation (35 files) | `LoginRequest`, `RegisterRequest`, `RegisterTemp`, `PostRequest`, `EventRequest`, `CtEventRequest`, `CommentRequest`, `ReplyRequest`, `EditContentRequest`, `LikeRequest`, `LoaiLikeRequest`, `CommentReportRequest`, `CommentModerationRequest`, `ReportResolutionRequest`, `EventRegistrationRequest`, `EventStatusRequest`, `EventTypeRequest`, `EventSpeakerRequest`, `EventAgendaRequest`, `LocationRequest`, `CategoryRequest`, `TagRequest`, `RoleRequest`, `PermissionRequest`, `AddressRequest`, `ChangePasswordRequest`, `ForgotPasswordRequest`, `ResetPasswordRequest`, `OtpVerificationRequest`, `PublicProfileRequest`, `UpdatePartnerRequest`, `UpdatePersonalRequest`, `UserBlacklistRequest`, `BulkActionRequest`, `BulkLockRequest` |
-| DTO response | `src/main/java/.../dto/response` | API output (61 files) | `ApiResponse`, `PostResponse`, `PostDetailResponse`, `PostStatsResponse`, `PostFileResponse`, `PostImageResponse`, `AdminPostDictionaryResponse` (roles dropdown), `AdminPostMediaResponse` (URL+fileName upload post), `PostCommentPreviewResponse` (preview CMT truncate), `PostLinkedEventResponse` (event session link), `PostReactionSummary` (reaction grouped), `RoleOptionResponse` (role dropdown option), `EventResponse`, `CtEventResponse`, `EventStatsResponse`, `EventStatusHistoryResponse`, `EventRegistrationResponse`, `EventAttendeePublicResponse`, `EventTypeResponse`, `EventSpeakerResponse`, `EventAgendaResponse`, `LocationResponse`, `AdminEventDictionaryResponse` (gom event+registration statuses), `AdminEventMediaResponse` (URL+fileName upload), `StatusOptionResponse` (code+label cho select), `CmtResponse`, `PhCmtResponse`, `CmtActionLogResponse`, `CmtModerationLogResponse` (moderation log comment/reply), `CommentReportResponse`, `CommentStatsResponse`, `AdminCmtContextResponse`, `ReportModLogResponse`, `ModerationActionResponse`, `CategoryResponse`, `TagResponse`, `LoaiLikeResponse`, `UserResponse`, `AdminMeResponse`, `ProfileMeResponse`, `ProfileStatsResponse`, `PublicProfileResponse`, `PartnerProfileResponse`, `UserPermissionResponse`, `RoleResponse`, `PermissionResponse`, `PermissionModuleResponse` (nhóm chức năng), `MyPermissionResponse` (quyền user hiện tại cho frontend), `AddressDetailResponse`, `ProvinceResponse`, `DistrictResponse`, `WardResponse`, `AuditLogResponse`, `AuditLogPageResponse`, `LoginHistoryResponse`, `LoginHistoryPageResponse`, `OtpHistoryResponse`, `OtpHistoryPageResponse`, `AccountHistoryResponse`, `AccountHistoryPageResponse`, `ActivityFeedItemResponse` |
-| Exception | `src/main/java/.../exception` | Global API error format | `AppException`, `GlobalExceptionHandler` |
-| Security | `src/main/java/.../utils`, `.../config/ultraSecureLibrary`, `.../adapter` | Spring Security, JWT, OAuth2, custom filters | `SecurityConfig` (utils), `UserSecurityAdapter`, `SecurityUserProviderImpl` (adapter), `JwtService`, `CookieUtils`, `InterClusterSyncCamouflage`, `MaTranLuoiLocChongPhatLai`, `MaTranLuoiLocNghiaTrangQuyenHanCu`, `MaTranNhiPhanNguyenTu`, `TramPhatSongVoTuyenP2P`, `SecurityLibraryProperties` (ultraSecureLibrary/Service), `JwtAuthenticationFilter`, `DynamicRoleFilter`, `BodyIntegrityFilter`, `FormDataHashCheckerInterceptor`, `PublicApiSizeFilter`, `TomcatServerConfig` (ultraSecureLibrary/Filter), `SecurityConfigurer`, `LibraryFilterRegistryConfig`, `LibraryWebMvcAutoConfig` (ultraSecureLibrary/AutoConfig), `ISecurityUserAdapter` (ultraSecureLibrary/Adapter), `ISecurityUserProvider` (ultraSecureLibrary/Provider) |
-| Payment | `src/main/java/.../config/vnpay` | VNPay integration | `VNPayService`, `VNPayLibrary`, `VNPayUtils`, `VNPayModels` |
-| Seed/init | `src/main/java/.../config/init` | Initial database/user seed | `DatabaseSeeder` |
-| Config | `src/main/java/.../config` | Web MVC config + permission infrastructure | `WebMvcConfig.java` (đăng ký PermissionInterceptor), `PermissionRegistry.java` (danh sách mã quyền hệ thống) |
-| Interceptor | `src/main/java/.../config/interceptor` | Permission enforcement | `PermissionInterceptor.java` (đọc @RequirePermission, SUPERADMIN bypass, check authorities) |
-| SQL scripts | `CSDL/` | Schema SQL Server (seed data đã xóa) | `FileKhoiTaoCSDL.sql` |
-| Validators | `src/main/java/.../validators` | Custom Jakarta validation + permission annotation | `annotations/ValidUsername.java`, `annotations/RequirePermission.java` (đánh dấu endpoint cần quyền hạt lựu), `ValidUsernameValidator.java` |
-| Templates | `src/main/resources/templates` | Thymeleaf pages | `admin/` (dashboard, posts 2564L, events 3663L, comments 2619L, users, user-details, role-management, test; demo: comments-demo, events-demo, posts-demo), `auth/`, `email/`, `errors/`, `events/` (list 2488L, detail 3818L, my_registrations), `home/` (index), `partner/`, `posts/` (list 1308L, detail 3914L), layouts (`admin_layout`, `auth_layout`, `user_layout`) |
-| Static assets | `src/main/resources/static` | CSS/JS/images | JS: `security-core.js`, `auth-sync.js`, `bootstrap.min.js`, `jquery-3.7.0.min.js`, `page-transition-manager.js` (IIFE chống nháy trang), `rich-content-editor.js` (Rich Content Editor WYSIWYG 1017 dòng), `permission-manager.js` (PermissionManager ẩn/hiện UI theo quyền); CSS: `design-system.css`, `user.css`, `admin.css`, `checkout.css`, `checkout-result.css`, `order-history.css`, `bootstrap.min.css`, `page-transitions.css` (skeleton + fade prefix ptm-), `rich-content-editor.css` (editor CSS prefix rce- 196 dòng) |
-| Tests | `src/test/java/...` | Spring Boot tests | `AuctionSystemNhom6ApplicationTests.java` |
+| API controllers | `controller/api` | REST/JSON endpoints under `/api/**` | `ApiAuthController`, `ApiPostController`, `ApiEventController`, `ApiCommentController`, `ApiProfileController`, `ApiReportController`, `ApiRolesController`, `ApiAuditController`, `ApiPublicSpeakerAgendaController`, `ApiAdminPostController`, `ApiAdminEventController`, `ApiAdminCommentController`, `ApiAdminReportController`, `ApiAdminSpeakerAgendaController`, `ApiRoleManagementController` |
+| View controllers | `controller/view` | Thymeleaf route mapping | `HomeViewController`, `AuthViewController`, `PostViewController`, `EventViewController`, `AdminViewController`, `PartnerViewController`, `ErrorViewController` |
+| Services interfaces | `service/itf` | Business service contracts | `IUserService`, `IPostService`, `IEventService`, `ICommentService`, `IProfileService`, `IAddressService`, `IAuditService`, `IAdminPostService`, `IAdminEventService`, `IAdminReportService`, `IPublicReportService`, `IRoleManagementService`, `IRolesService`, `ISpeakerAgendaService`, `IUserTrackingService` |
+| Services impl | `service/impl` | Business logic, transactions, DTO mapping | `AdminPostServiceImpl` 1288L, `AdminEventServiceImpl` 1318L, `CommentServiceImpl` 1595L, `RoleManagementServiceImpl` 886L, `UserServiceImpl` 639L, plus public/profile/report services |
+| Service support | `service/support` | Reusable policy/context classes | `EventStatusDisplayPolicy`, `NguCanhNguoiDung`, `NguCanhNguoiDungFactory` |
+| Utils | `utils` | Shared static/config utility | `SecurityConfig`, `ImagePathUtil`, `PagingUtil` |
+| Security infra | `config/ultraSecureLibrary`, `adapter` | JWT, filters, custom library integration | `JwtService`, `CookieUtils`, `SecurityConfigurer`, `JwtAuthenticationFilter`, `DynamicRoleFilter`, `BodyIntegrityFilter`, `UserSecurityAdapter`, `SecurityUserProviderImpl` |
+| RBAC config | `config`, `validators/annotations` | Permission registry and enforcement | `PermissionRegistry`, `PermissionInterceptor`, `WebMvcConfig`, `RequirePermission` |
+| Payment | `config/vnpay` | VNPay integration | `VNPayService`, `VNPayLibrary`, `VNPayUtils`, `VNPayModels` |
+| Seed/init | `config/init` | Core data initialization | `DatabaseSeeder` |
+| Exception | `exception` | API error wrapping | `AppException`, `GlobalExceptionHandler` |
 
-## Entry Points quan trọng
+## Key DTO Requests
 
-| Mục đích | File path |
-|----------|-----------|
-| Main Application | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/PhatdevPharmaceuticalsWebApplication.java` |
-| Security Config | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/utils/SecurityConfig.java` |
-| JWT/Auth internals | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Service/JwtService.java` |
-| Global Exception | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/exception/GlobalExceptionHandler.java` |
-| API Response Wrapper | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/dto/response/ApiResponse.java` |
-| App Config | `src/main/resources/application.properties` |
-| SQL Schema | `CSDL/FileKhoiTaoCSDL.sql` |
-| Test Entry | `src/test/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/AuctionSystemNhom6ApplicationTests.java` |
+`AddressRequest`, `BulkActionRequest`, `BulkLockRequest`, `CategoryRequest`, `ChangePasswordRequest`, `CommentModerationRequest`, `CommentReportRequest`, `CommentRequest`, `CtEventRequest`, `EditContentRequest`, `EventAgendaRequest`, `EventRegistrationRequest`, `EventRequest`, `EventSpeakerRequest`, `EventStatusRequest`, `EventTypeRequest`, `ForgotPasswordRequest`, `LikeRequest`, `LoaiLikeRequest`, `LocationRequest`, `LoginRequest`, `OtpVerificationRequest`, `PermissionModuleRequest`, `PermissionRequest`, `PostRequest`, `PublicProfileRequest`, `RegisterRequest`, `RegisterTemp`, `ReplyRequest`, `ReportResolutionRequest`, `ResetPasswordRequest`, `RoleRequest`, `TagRequest`, `UpdatePartnerRequest`, `UpdatePersonalRequest`, `UserBlacklistRequest`.
 
-## Database Entities
+## Key DTO Responses
 
-| Entity | Table | Quan hệ chính |
-|--------|-------|---------------|
-| `User` | `USERS` | Implements `UserDetails`; quyền động qua `CtUserRole`, `CtRolePermission`, blacklist permission |
-| `UserRole` | `USER_ROLES` | Role level dùng cho dynamic access/paywall |
-| `Permission` | `PERMISSIONS` | Quyền thao tác hạt lựu, gắn qua `CtRolePermission`, FK `moduleId` tới `PermissionModule` |
-| `PermissionModule` | `PERMISSION_MODULES` | Nhóm chức năng phân loại quyền (VD: POST, EVENT, COMMENT, SYSTEM) |
-| `CtUserRole` | `CT_USER_ROLES` | Join user-role |
-| `CtRolePermission` | `CT_ROLE_PERMISSIONS` | Join role-permission |
-| `CtUserPermissionBlacklist` | `CT_USER_PERMISSION_BLACKLIST` | Chặn permission ở cấp user |
-| `Post` | `POSTS` | Many-to-one `Category`, `User` author; liên kết tag/role/file/image/view/comment |
-| `Category` | `CATEGORIES` | Danh mục bài viết |
-| `Tag` | `TAGS` | Dùng cho bài viết và sự kiện qua join table |
-| `CtPostTag` | `CT_POST_TAGS` | Join post-tag |
-| `CtPostRole` | `CT_POST_ROLES` | Paywall role cho bài viết |
-| `PostImage` | `POST_IMAGES` | Ảnh bài viết |
-| `PostFile` | `POST_FILES` | Tài liệu đính kèm bài viết |
-| `PostViewLog` | `POST_VIEW_LOGS` | Log lượt xem |
-| `CtFileDownload` | `CT_FILE_DOWNLOADS` | Log tải tài liệu |
-| `CtLikePost` | `CT_LIKEPOST` | Reaction/like bài viết |
-| `CtPostCmt` | `CT_POST_CMT` | Join post-comment |
-| `Event` | `EVENTS` | Campaign, many-to-one `EventType`, có nhiều `CtEvent` |
-| `CtEvent` | `CT_EVENTS` | Session, many-to-one `Event` và `Location` |
-| `EventType` | `EVENT_TYPES` | Loại sự kiện |
-| `EventSpeaker` | `EVENT_SPEAKERS` | Diễn giả sự kiện |
-| `EventAgenda` | `EVENT_AGENDAS` | Chương trình từng session |
-| `CtAgendaSpeaker` | `CT_AGENDA_SPEAKERS` | Join agenda-speaker |
-| `Location` | `LOCATIONS` | Địa điểm/online location |
-| `CtEventRegistration` | `CT_EVENT_REGISTRATIONS` | Đăng ký session, nullable `User` cho guest |
-| `CtEventStatusHistory` | `CT_EVENT_STATUS_HISTORY` | Current status lấy từ bản ghi mới nhất |
-| `CtEventSessionRole` | `CT_EVENT_SESSION_ROLES` | Paywall role cho session |
-| `CtEventTag` | `CT_EVENT_TAGS` | Join event/session-tag |
-| `CtEventCmt` | `CT_EVENT_CMT` | Join event-comment |
-| `CtPostEvent` | `CT_POST_EVENTS` | Liên kết bài viết liên quan tới event/session |
-| `Cmt` | `CMT` | Bình luận gốc, liên kết user/target |
-| `PhCmt` | `PH_CMT` | Reply/comment con, cây qua `PARENT_PH_ID` + `ROOT_CMT_ID` |
-| `CtLikeCmt` | `CT_LIKECMT` | Reaction comment gốc |
-| `CtLikePhCmt` | `CT_LIKEPHCMT` | Reaction reply |
-| `LoaiLike` | `LOAI_LIKE` | Loại reaction (thích, yêu, haha...) |
-| `CtCmtReport` | `CT_CMT_REPORTS` | Báo cáo comment gốc |
-| `CtPhCmtReport` | `CT_PH_CMT_REPORTS` | Báo cáo reply |
-| `CtCmtReportModLog` | `CT_CMT_REPORT_MOD_LOG` | Log xử lý report comment |
-| `CtPhCmtReportModLog` | `CT_PH_CMT_REPORT_MOD_LOG` | Log xử lý report reply |
-| `CtCmtActionLog` | `CT_CMT_ACTION_LOG` | Lịch sử hành động comment (sửa/xóa) |
-| `CtPhCmtActionLog` | `CT_PH_CMT_ACTION_LOG` | Lịch sử hành động reply |
-| `CtCmtModerationLog` | `CT_CMT_MODERATION_LOG` | Audit moderation comment |
-| `CtPhCmtModerationLog` | `CT_PH_CMT_MODERATION_LOG` | Audit moderation reply |
-| `ModerationAction` | `MODERATION_ACTIONS` | Danh sách hành động kiểm duyệt |
-| `PublicProfile` | `PUBLIC_PROFILES` | Hồ sơ public/chuyên gia |
-| `PartnerProfile` | `PARTNER_PROFILES` | Hồ sơ doanh nghiệp |
-| `Address` | `ADDRESSES` | Địa chỉ người dùng |
-| `Province` | `PROVINCES` | Tỉnh/thành |
-| `District` | `DISTRICTS` | Quận/huyện |
-| `Ward` | `WARDS` | Phường/xã |
-| `OtpCode` | `OTP_CODES` | OTP register/forgot password |
-| `CtUserLoginLog` | `CT_USER_LOGIN_LOG` | Nhật ký đăng nhập |
-| `CtUserActionLog` | `CT_USER_ACTION_LOG` | Nhật ký hành động |
-| `CtUserModerationLog` | `CT_USER_MODERATION_LOG` | Kiểm duyệt user |
+Includes `ApiResponse`, post/admin post DTOs (`AdminPostDictionaryResponse`, `AdminPostMediaResponse`, `PostCommentPreviewResponse`, `PostLinkedEventResponse`, `PostReactionSummary`, `RoleOptionResponse`), event/admin event DTOs (`AdminEventDictionaryResponse`, `AdminEventMediaResponse`, `StatusOptionResponse`), comment/moderation DTOs, profile/address DTOs, audit/history DTOs, and RBAC DTOs (`MyPermissionResponse`, `PermissionResponse`, `PermissionModuleResponse`, `RoleResponse`, `UserPermissionResponse`).
+
+## Database Entity Groups
+
+| Group | Main entities/tables |
+|-------|----------------------|
+| User/Auth/RBAC | `User`, `UserRole`, `Permission`, `PermissionModule`, `CtUserRole`, `CtRolePermission`, `CtUserPermissionBlacklist` |
+| Audit/User history | `CtUserLoginLog`, `CtUserActionLog`, `CtUserModerationLog`, `OtpCode` |
+| Posts | `Post`, `Category`, `Tag`, `CtPostTag`, `CtPostRole`, `PostImage`, `PostFile`, `PostViewLog`, `CtFileDownload`, `CtLikePost`, `CtPostCmt`, `CtPostEvent` |
+| Events | `Event`, `CtEvent`, `EventType`, `Location`, `EventSpeaker`, `EventAgenda`, `CtAgendaSpeaker`, `CtEventTag`, `CtEventSessionRole`, `CtEventStatusHistory`, `CtEventRegistration`, `CtEventCmt` |
+| Comments/reactions | `Cmt`, `PhCmt`, `LoaiLike`, `CtLikeCmt`, `CtLikePhCmt` |
+| Reports/moderation | `CtCmtReport`, `CtPhCmtReport`, `CtCmtReportModLog`, `CtPhCmtReportModLog`, `CtCmtModerationLog`, `CtPhCmtModerationLog`, `CtCmtActionLog`, `CtPhCmtActionLog`, `ModerationAction` |
+| Profile/address | `PublicProfile`, `PartnerProfile`, `Address`, `Province`, `District`, `Ward` |
+
+## Template And Static Assets
+
+| Area | Current files / notes |
+|------|-----------------------|
+| Admin templates | `admin/posts.html` 2565L, `admin/events.html` 3663L, `admin/comments.html` 2620L, `admin/role-management.html` 1636L, `admin/users.html` 1059L, `admin/user-details.html` 1792L, dashboard/test/demo pages |
+| Public templates | `posts/detail.html` 3915L, `posts/list.html`, `events/detail.html` 3818L, `events/list.html`, `events/my_registrations.html`, `home/index.html`, `partner/profile.html`, auth/error/email layouts |
+| Static JS | `security-core.js`, `auth-sync.js`, `page-transition-manager.js` 350L, `permission-manager.js` 183L, `rich-content-editor.js` 1017L, jQuery/Bootstrap |
+| Static CSS | `design-system.css`, `admin.css`, `user.css`, `page-transitions.css`, `rich-content-editor.css` 196L, checkout/order/bootstrap CSS |
+
+## Critical Entry Points
+
+| Purpose | File |
+|---------|------|
+| Main application | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/PhatdevPharmaceuticalsWebApplication.java` |
+| Security config | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/utils/SecurityConfig.java` |
+| Permission enforcement | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/interceptor/PermissionInterceptor.java` |
+| Permission registry | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/PermissionRegistry.java` |
+| MVC interceptor/static uploads | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/WebMvcConfig.java` |
+| JWT internals | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Service/JwtService.java` |
+| Global exception | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/exception/GlobalExceptionHandler.java` |
+| App config | `src/main/resources/application.properties` |
+| Test entry | `src/test/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/AuctionSystemNhom6ApplicationTests.java` |
 
 ## Deep Knowledge Router
 
-Đọc `.ai-memory/03_deep_knowledge/INDEX.md` trước, rồi mở đúng file module cần sửa:
+Read `.ai-memory/03_deep_knowledge/INDEX.md` first, then open only the relevant file:
 
 - Auth/Security: `auth_security.md`
-- Bài viết/content: `posts_content.md`
-- Sự kiện/đăng ký: `events_registration.md`
-- Comment/moderation: `comments_moderation.md`
-- Admin roles/permissions: `admin_rbac.md`
+- Posts/content: `posts_content.md`
+- Events/registration: `events_registration.md`
+- Comments/moderation: `comments_moderation.md`
+- Admin RBAC/user permissions: `admin_rbac.md`
 - Profile/address: `profile_address.md`
-- Data model tổng quan: `data_model.md`
+- Data model: `data_model.md`

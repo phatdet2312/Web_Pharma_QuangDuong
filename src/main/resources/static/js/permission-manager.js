@@ -48,7 +48,7 @@ var PermissionManager = (function () {
                 }
             },
             error: function () {
-                // Nạp thất bại — giữ nguyên UI, không ẩn gì (fail-open cho UX)
+                // Nạp thất bại — danh sách quyền rỗng, menu bị ẩn (fail-closed — đúng chiều an toàn)
                 _daNap = true;
                 if (typeof callback === 'function') {
                     callback();
