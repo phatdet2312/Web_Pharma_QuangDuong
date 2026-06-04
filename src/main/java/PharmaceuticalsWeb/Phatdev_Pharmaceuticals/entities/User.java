@@ -90,6 +90,12 @@ public class User implements UserDetails {
     @Transient
     private List<String> danhSachTenPermission = new ArrayList<>();
 
+    @Transient
+    private List<String> danhSachTenPermissionBlacklist = new ArrayList<>();
+
+    @Transient
+    private Integer capBacQuyenLuc = 999;
+
     // =====================================================================
     // CẤP QUYỀN CHO SPRING SECURITY (TUÂN THỦ VÒNG LẶP FOR)
     // =====================================================================

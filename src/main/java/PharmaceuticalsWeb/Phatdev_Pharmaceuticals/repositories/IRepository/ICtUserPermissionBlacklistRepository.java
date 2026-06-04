@@ -22,4 +22,6 @@ public interface ICtUserPermissionBlacklistRepository extends JpaRepository<CtUs
      * @return Danh sách các quyền bị cấm
      */
     List<CtUserPermissionBlacklist> findByUserId(Long userId);
+
+    List<CtUserPermissionBlacklist> findByPermissionId(Integer permissionId);
 }

@@ -24,6 +24,7 @@ import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Serv
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.MaTranLuoiLocChongPhatLai;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.MaTranLuoiLocNghiaTrangQuyenHanCu;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.MaTranNhiPhanNguyenTu;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.PhienBanPhanQuyenBaoMat;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.TramPhatSongVoTuyenP2P;
 
 import java.io.IOException;
@@ -118,7 +119,11 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
             // Lấy ID trực tiếp từ Principal (Hỗ trợ cả trường hợp web dùng Session)
             Long userId = null;
             Long tokenCreatedAt = 0L;
-            List<String> danhSachQuyenTrongToken = new ArrayList<>();
+            List<String> danhSachChucVuTrongToken = new ArrayList<>();
+            List<String> danhSachPermissionTrongToken = new ArrayList<>();
+            List<String> danhSachBlacklistTrongToken = new ArrayList<>();
+            Integer roleLevelTrongToken = 999;
+            boolean tokenThieuSnapshotPhanQuyen = false;
             String maDnaQuyenHanHienTai = null;
 
             // NHẬN LẠI DỮ LIỆU ĐÃ GIẢI MÃ TỪ FILTER 1 (Không tốn CPU tính toán lại)
@@ -141,17 +146,35 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
                     }
 
                     // TÁI TẠO DNA QUYỀN HẠN
-                    List<?> rolesRaw = claimsJwt.get("roles", List.class);
+                    Object permissionsClaim = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS);
+                    Object roleLevelClaim = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_ROLE_LEVEL);
+                    Object blacklistClaim = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_BLACKLIST);
+                    if (PhienBanPhanQuyenBaoMat.coDuBonManh(permissionsClaim, roleLevelClaim, blacklistClaim) == false) {
+                        tokenThieuSnapshotPhanQuyen = true;
+                    }
+
+                    List<?> rolesRaw = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_ROLES, List.class);
+                    List<?> permissionsRaw = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS, List.class);
+                    List<?> blacklistRaw = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_BLACKLIST, List.class);
+                    if (rolesRaw == null) {
+                        tokenThieuSnapshotPhanQuyen = true;
+                    }
                     if (rolesRaw != null) {
                         for (int i = 0; i < rolesRaw.size(); i = i + 1) {
-                            danhSachQuyenTrongToken.add(rolesRaw.get(i).toString());
+                            danhSachChucVuTrongToken.add(rolesRaw.get(i).toString());
                         }
 
+                        danhSachChucVuTrongToken = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(danhSachChucVuTrongToken);
+                        danhSachPermissionTrongToken = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(permissionsRaw);
+                        danhSachBlacklistTrongToken = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(blacklistRaw);
+                        roleLevelTrongToken = PhienBanPhanQuyenBaoMat.docSoNguyen(roleLevelClaim, 999);
+
                         // Rút con số v_adn từ Token ra (Mặc định là 0 nếu hệ thống cũ chưa có)
-                        Integer v_adn = claimsJwt.get("v_adn", Integer.class);
+                        Integer v_adn = PhienBanPhanQuyenBaoMat.docSoNguyen(claimsJwt.get("v_adn"), 0);
                         if (userId != null) {
-                            maDnaQuyenHanHienTai = userId.toString() + "|" + danhSachQuyenTrongToken.toString() + "|v"
-                                    + v_adn;
+                            maDnaQuyenHanHienTai = PhienBanPhanQuyenBaoMat.taoDna(userId,
+                                    danhSachChucVuTrongToken, danhSachPermissionTrongToken,
+                                    roleLevelTrongToken, danhSachBlacklistTrongToken, v_adn);
                         }
                         // SOÁT XÉT NGHĨA TRANG QUYỀN HẠN BẰNG DNA (CHỐNG PHANTOM CLONE ATTACK)
                         if (maDnaQuyenHanHienTai != null
@@ -349,6 +372,9 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
             if (tokenCreatedAt < MaTranNhiPhanNguyenTu.THOI_DIEM_KHOI_DONG) {
                 laTokenDoiCu = true;
             }
+            if (tokenThieuSnapshotPhanQuyen == true) {
+                laTokenDoiCu = true;
+            }
             // ĐÚNG: kiểm tra null trước
             boolean biAdminDanhDau = false;
             if (userId != null) {
@@ -391,16 +417,20 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
                 }
 
                 // TRƯỜNG HỢP: TÀI KHOẢN CÒN SỐNG -> LẤY QUYỀN TRONG DB RA ĐỂ ĐỐI SOÁT
-                List<String> danhSachQuyenTrongDB = new ArrayList<>();
-                Object[] rolesArray = userAdapter.layDanhSachQuyen().toArray();
-                for (int i = 0; i < rolesArray.length; i = i + 1) {
-                    danhSachQuyenTrongDB.add(rolesArray[i].toString());
-                }
-
-                Collections.sort(danhSachQuyenTrongDB);
+                List<String> danhSachChucVuTrongDB = PhienBanPhanQuyenBaoMat
+                        .chuanHoaDanhSach(userAdapter.layDanhSachChucVu());
+                List<String> danhSachPermissionTrongDB = PhienBanPhanQuyenBaoMat
+                        .chuanHoaDanhSach(userAdapter.layDanhSachQuyenThaoTac());
+                List<String> danhSachBlacklistTrongDB = PhienBanPhanQuyenBaoMat
+                        .chuanHoaDanhSach(userAdapter.layDanhSachQuyenBiChan());
+                Integer roleLevelTrongDB = PhienBanPhanQuyenBaoMat
+                        .chuanHoaCapBac(userAdapter.layCapBacQuyenLuc());
                 // THUẬT TOÁN: CÓ THỰC SỰ CẦN CHỮA LÀNH KHÔNG?
                 boolean quyenHanBiThayDoi = false;
-                if (danhSachQuyenTrongToken.equals(danhSachQuyenTrongDB) == false) {
+                if (PhienBanPhanQuyenBaoMat.trungPhienBan(danhSachChucVuTrongToken,
+                        danhSachPermissionTrongToken, roleLevelTrongToken, danhSachBlacklistTrongToken,
+                        danhSachChucVuTrongDB, danhSachPermissionTrongDB, roleLevelTrongDB,
+                        danhSachBlacklistTrongDB) == false) {
                     quyenHanBiThayDoi = true;
                 }
 
@@ -413,14 +443,22 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
                             "[DynamicRoleFilter] Tiến hành Cấp Token Mới -> ");
                     // --- TRƯỜNG HỢP: CHỈ BỊ ĐỔI QUYỀN (KHÔNG KHÓA) ---
                     List<SimpleGrantedAuthority> newAuthorities = new ArrayList<>();
+                    Object[] rolesArray = danhSachChucVuTrongDB.toArray();
                     for (int i = 0; i < rolesArray.length; i++) {
                         newAuthorities.add(new SimpleGrantedAuthority("ROLE_" + rolesArray[i].toString()));
+                    }
+                    Object[] permissionsArray = danhSachPermissionTrongDB.toArray();
+                    for (int i = 0; i < permissionsArray.length; i = i + 1) {
+                        newAuthorities.add(new SimpleGrantedAuthority(permissionsArray[i].toString()));
                     }
 
                     UsernamePasswordAuthenticationToken newAuth = new UsernamePasswordAuthenticationToken(
                             userAdapter.layTenDangNhap(), auth.getCredentials(), newAuthorities);
                     newAuth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(newAuth);
+                    request.setAttribute(PhienBanPhanQuyenBaoMat.CLAIM_ROLES, danhSachChucVuTrongDB);
+                    request.setAttribute(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS, danhSachPermissionTrongDB);
+                    request.setAttribute(PhienBanPhanQuyenBaoMat.ATTR_ROLE_LEVEL, roleLevelTrongDB);
 
                     // TỰ CHỮA LÀNH: Cấp Token mới gửi ngầm về Frontend để nhận quyền
                     String oldClientSecret = claimsJwt.get("c_secret", String.class);

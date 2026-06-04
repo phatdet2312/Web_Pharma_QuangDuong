@@ -38,3 +38,14 @@
 2026-06-03 12:30:41 | REWORK_ALERT | src/main/resources/templates/admin/user-details.html | edited 7 times in 30min | hint: consider $reflect to capture pattern
 2026-06-03 12:31:10 | REWORK_ALERT | src/main/resources/templates/admin/user-details.html | edited 8 times in 30min | hint: consider $reflect to capture pattern
 2026-06-03 12:31:19 | REWORK_ALERT | src/main/resources/templates/admin/user-details.html | edited 8 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:02:22 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Filter/DynamicRoleFilter.java | edited 4 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:02:31 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Filter/DynamicRoleFilter.java | edited 4 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:02:41 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Filter/DynamicRoleFilter.java | edited 5 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:03:48 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Filter/DynamicRoleFilter.java | edited 7 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:04:09 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Filter/DynamicRoleFilter.java | edited 8 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:09:39 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/service/impl/UserServiceImpl.java | edited 4 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:11:26 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/interceptor/PermissionInterceptor.java | edited 4 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:14:09 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/controller/api/ApiRoleManagementController.java | edited 4 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:14:27 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/controller/api/ApiRoleManagementController.java | edited 5 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:14:55 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/controller/api/ApiRoleManagementController.java | edited 6 times in 30min | hint: consider $reflect to capture pattern
+2026-06-04 01:15:17 | REWORK_ALERT | src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Filter/DynamicRoleFilter.java | edited 9 times in 30min | hint: consider $reflect to capture pattern

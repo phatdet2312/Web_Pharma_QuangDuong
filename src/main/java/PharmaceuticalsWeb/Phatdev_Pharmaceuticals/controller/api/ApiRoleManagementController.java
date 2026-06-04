@@ -2,6 +2,8 @@
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.controller.api;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.validators.annotations.RequirePermission;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.MaTranNhiPhanNguyenTu;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.TramPhatSongVoTuyenP2P;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.PermissionModuleRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.PermissionRequest;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.dto.request.RoleRequest;
@@ -35,6 +37,7 @@ public class ApiRoleManagementController {
 
     private final IRoleManagementService roleManagementService;
     private final IUserService userService;
+    private final TramPhatSongVoTuyenP2P tramPhatSong;
 
     // =====================================================================
     // PHẦN 0: API LẤY QUYỀN CỦA USER HIỆN TẠI (PHÂN QUYỀN ĐỘNG FRONTEND)
@@ -108,7 +111,9 @@ public class ApiRoleManagementController {
     @PutMapping("/roles/{id}")
     public ApiResponse<String> capNhatChucVu(@PathVariable Integer id, @Valid @RequestBody RoleRequest request) {
         User currentUser = userService.getCurrentAuthenticatedUser();
+        List<Long> userIdsBiAnhHuong = roleManagementService.layUserIdDangGiuChucVu(id);
         roleManagementService.capNhatChucVu(id, request, currentUser);
+        danhDauPhienPhanQuyenCanLamMoi(userIdsBiAnhHuong);
         return ApiResponse.thanhCong(null, "Cập nhật chức vụ thành công");
     }
 
@@ -151,7 +156,9 @@ public class ApiRoleManagementController {
     @PutMapping("/permissions/{id}")
     public ApiResponse<String> capNhatQuyen(@PathVariable Integer id, @Valid @RequestBody PermissionRequest request) {
         User currentUser = userService.getCurrentAuthenticatedUser();
+        List<Long> userIdsBiAnhHuong = roleManagementService.layUserIdBiAnhHuongBoiQuyen(id);
         roleManagementService.capNhatQuyen(id, request, currentUser);
+        danhDauPhienPhanQuyenCanLamMoi(userIdsBiAnhHuong);
         return ApiResponse.thanhCong(null, "Cập nhật quyền thao tác thành công");
     }
 
@@ -159,7 +166,9 @@ public class ApiRoleManagementController {
     @DeleteMapping("/permissions/{id}")
     public ApiResponse<String> xoaQuyen(@PathVariable Integer id) {
         User currentUser = userService.getCurrentAuthenticatedUser();
+        List<Long> userIdsBiAnhHuong = roleManagementService.layUserIdBiAnhHuongBoiQuyen(id);
         roleManagementService.xoaQuyen(id, currentUser);
+        danhDauPhienPhanQuyenCanLamMoi(userIdsBiAnhHuong);
         return ApiResponse.thanhCong(null, "Đã xóa quyền thao tác khỏi hệ thống");
     }
 
@@ -175,6 +184,9 @@ public class ApiRoleManagementController {
     public ApiResponse<String> toggleBlacklist(@PathVariable Long userId, @Valid @RequestBody UserBlacklistRequest request) {
         User currentUser = userService.getCurrentAuthenticatedUser();
         roleManagementService.togglePermissionBlacklist(userId, request, currentUser);
+        List<Long> userIdsBiAnhHuong = new ArrayList<>();
+        userIdsBiAnhHuong.add(userId);
+        danhDauPhienPhanQuyenCanLamMoi(userIdsBiAnhHuong);
         return ApiResponse.thanhCong(null, "Đã thực thi lệnh kiểm soát quyền thao tác");
     }
 
@@ -214,5 +226,18 @@ public class ApiRoleManagementController {
         User currentUser = userService.getCurrentAuthenticatedUser();
         roleManagementService.xoaModule(id, currentUser);
         return ApiResponse.thanhCong(null, "Đã xóa nhóm chức năng");
+    }
+
+    private void danhDauPhienPhanQuyenCanLamMoi(List<Long> userIds) {
+        if (userIds == null) {
+            return;
+        }
+
+        Object[] idArray = userIds.toArray();
+        for (int i = 0; i < idArray.length; i = i + 1) {
+            Long userId = Long.valueOf(idArray[i].toString());
+            MaTranNhiPhanNguyenTu.danhDauViPham(userId);
+            tramPhatSong.phatLenhGanCoUserUDPVaToanCau(userId);
+        }
     }
 }

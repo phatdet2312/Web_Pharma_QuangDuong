@@ -72,4 +72,27 @@ public class UserSecurityAdapter implements ISecurityUserAdapter {
         
         return tatCaQuyen;
     }
+
+    @Override
+    public List<String> layDanhSachChucVu() {
+        return this.user.getDanhSachTenRole();
+    }
+
+    @Override
+    public List<String> layDanhSachQuyenThaoTac() {
+        return this.user.getDanhSachTenPermission();
+    }
+
+    @Override
+    public Integer layCapBacQuyenLuc() {
+        if (this.user.getCapBacQuyenLuc() == null) {
+            return 999;
+        }
+        return this.user.getCapBacQuyenLuc();
+    }
+
+    @Override
+    public List<String> layDanhSachQuyenBiChan() {
+        return this.user.getDanhSachTenPermissionBlacklist();
+    }
 }

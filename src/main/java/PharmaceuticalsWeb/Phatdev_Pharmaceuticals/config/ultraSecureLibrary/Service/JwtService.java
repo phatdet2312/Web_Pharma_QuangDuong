@@ -55,27 +55,29 @@ public class JwtService {
         claims.put("fullName", fullName);
         
         // Xử lý danh sách quyền bằng for cơ bản thay vì stream
-        List<String> roles = new ArrayList<>();
-        Object[] rolesArray = userAdapter.layDanhSachQuyen().toArray();
-        for (int i = 0; i < rolesArray.length; i++) {
-            roles.add(rolesArray[i].toString());
-        }
-        Collections.sort(roles);
-        claims.put("roles", roles);
+        List<String> roles = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(userAdapter.layDanhSachChucVu());
+        List<String> permissions = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(userAdapter.layDanhSachQuyenThaoTac());
+        List<String> blacklist = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(userAdapter.layDanhSachQuyenBiChan());
+        Integer roleLevel = PhienBanPhanQuyenBaoMat.chuanHoaCapBac(userAdapter.layCapBacQuyenLuc());
+
+        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_ROLES, roles);
+        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS, permissions);
+        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_ROLE_LEVEL, roleLevel);
+        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_BLACKLIST, blacklist);
         
         // =========================================================================
         // [THUẬT TOÁN DÒ MÌN TỊNH TIẾN] - VƯỢT LỖ HỔNG PHANTOM CLONE VÀ LOGOUT/LOGIN
         // Ý tưởng của ngài: Dùng Nghĩa trang làm La Bàn Định Vị Phiên Bản.
         // =========================================================================
         Long userId = userAdapter.layIdNguoiDung();
-        String chuoiCoreDna = userId + "|" + roles.toString(); 
         int v_adn = 0;
         int maxLoopSafety = 100; // Cầu chì chống treo CPU (Phòng khi Bloom Filter bị Full 100%)
 
         while (maxLoopSafety > 0) {
             maxLoopSafety--;
             // Ghép chuỗi thử nghiệm
-            String adnThuNghiem = chuoiCoreDna + "|v" + v_adn;
+            String adnThuNghiem = PhienBanPhanQuyenBaoMat.taoDna(
+                    userId, roles, permissions, roleLevel, blacklist, v_adn);
             // Rọi xuống Nghĩa Trang xem cái DNA này có phải đồ cũ không?
             if (nghiaTrangQuyenHan.kiemTraDaChet(adnThuNghiem) == false) {
                 // TÌM THẤY CHÂN LÝ! DNA này sạch sẽ, chưa từng bị chôn!
@@ -95,7 +97,7 @@ public class JwtService {
         }
 
         //Gắn thêm ID của User vào Token để lấy ra check Ma trận
-        claims.put("userId", userAdapter.layIdNguoiDung());
+        claims.put("userId", userId);
         claims.put("c_secret", clientSecret);
         claims.put("clusterId", this.dauAnLanhDia);
          //ĐÓNG ẤN CHÚ DNA VÀO TOKEN
@@ -132,7 +134,14 @@ public class JwtService {
         
         List<String> roles = new ArrayList<>();
         roles.add("SYNC_SYSTEM");
-        claims.put("roles", roles);
+        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_ROLES,
+                PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(roles));
+        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS,
+                PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(Collections.emptyList()));
+        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_ROLE_LEVEL, 999);
+        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_BLACKLIST,
+                PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(Collections.emptyList()));
+        claims.put("v_adn", 0);
 
         long thoiGianHienTai = System.currentTimeMillis();
         long thoiGianHetHan = thoiGianHienTai + 60000; // Ngựa gỗ chỉ sống 60 giây!

@@ -28,6 +28,8 @@ public interface IRoleManagementService {
     
     // Lấy toàn bộ danh sách chức vụ kèm theo các quyền thao tác bên trong
     List<RoleResponse> layTatCaChucVu();
+
+    List<Long> layUserIdDangGiuChucVu(Integer roleId);
     
     // Lưu một chức vụ vào CSDL
     void taoChucVuMoi(RoleRequest request, User currentUser);
@@ -50,6 +52,8 @@ public interface IRoleManagementService {
     
     // Lấy danh mục các quyền thao tác gốc (Dùng để vẽ danh sách Checkbox và Quản lý)
     List<PermissionResponse> layTatCaQuyenHatLuu();
+
+    List<Long> layUserIdBiAnhHuongBoiQuyen(Integer permissionId);
     
     // Tạo ra một đặc quyền thao tác hoàn toàn vào CSDL
     void taoQuyenMoi(PermissionRequest request);

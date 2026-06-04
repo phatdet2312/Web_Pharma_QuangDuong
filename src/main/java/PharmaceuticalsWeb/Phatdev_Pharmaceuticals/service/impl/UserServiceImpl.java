@@ -70,6 +70,8 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         
         List<String> danhSachTenRole = new ArrayList<>();
         List<String> danhSachTenPermission = new ArrayList<>();
+        List<String> danhSachTenPermissionBlacklist = new ArrayList<>();
+        int capBacManhNhat = 999;
         
         // Bước A: Tìm các chức vụ của User trong bảng trung gian CT_USER_ROLES
         List<CtUserRole> userRolesMap = ctUserRoleRepository.findByUserId(user.getId());
@@ -84,6 +86,9 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
                 
                 if (role != null) {
                     danhSachTenRole.add(role.getRoleName());
+                    if (role.getRoleLevel() != null && role.getRoleLevel() < capBacManhNhat) {
+                        capBacManhNhat = role.getRoleLevel();
+                    }
                     
                     // Bước C: Tìm các quyền hạt lựu của Nhóm Quyền này trong bảng CT_ROLE_PERMISSIONS
                     List<CtRolePermission> rolePermsMap = ctRolePermissionRepository.findByRoleId(role.getId());
@@ -134,13 +139,20 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
             Object[] mangQuyenBiCam = danhSachQuyenBiCam.toArray();
             for (int q = 0; q < mangQuyenBiCam.length; q = q + 1) {
                 Permission quyenBiCam = (Permission) mangQuyenBiCam[q];
-                danhSachTenPermission.remove(quyenBiCam.getPermissionCode());
+                if (quyenBiCam.getPermissionCode() != null) {
+                    if (danhSachCoGiaTri(danhSachTenPermissionBlacklist, quyenBiCam.getPermissionCode()) == false) {
+                        danhSachTenPermissionBlacklist.add(quyenBiCam.getPermissionCode());
+                    }
+                    danhSachTenPermission.remove(quyenBiCam.getPermissionCode());
+                }
             }
         }
 
         // Bơm dữ liệu tìm được vào biến tạm (Transient) của Entity User
         user.setDanhSachTenRole(danhSachTenRole);
         user.setDanhSachTenPermission(danhSachTenPermission);
+        user.setDanhSachTenPermissionBlacklist(danhSachTenPermissionBlacklist);
+        user.setCapBacQuyenLuc(Integer.valueOf(capBacManhNhat));
     }
 
     /**
@@ -153,6 +165,9 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         int capDoManhNhat = 999; // Khởi tạo cấp độ rất yếu (Số càng to càng yếu)
         
         List<String> danhSachRole = user.getDanhSachTenRole();
+        if (user.getCapBacQuyenLuc() != null && danhSachRole != null && danhSachRole.isEmpty() == false) {
+            return user.getCapBacQuyenLuc();
+        }
         
         if (danhSachRole != null) {
             Object[] rolesArray = danhSachRole.toArray();

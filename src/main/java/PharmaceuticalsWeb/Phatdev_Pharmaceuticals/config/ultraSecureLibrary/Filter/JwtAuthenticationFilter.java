@@ -18,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.SecurityLibraryProperties;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.CookieUtils;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.JwtService;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.PhienBanPhanQuyenBaoMat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -113,8 +114,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String username = claims.getSubject();
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                List<String> roles = claims.get("roles", List.class);
+                List<?> rolesRaw = claims.get(PhienBanPhanQuyenBaoMat.CLAIM_ROLES, List.class);
+                List<?> permissionsRaw = claims.get(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS, List.class);
+                List<String> roles = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(rolesRaw);
+                List<String> permissions = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(permissionsRaw);
+                Integer roleLevel = PhienBanPhanQuyenBaoMat.docSoNguyen(
+                        claims.get(PhienBanPhanQuyenBaoMat.CLAIM_ROLE_LEVEL), null);
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+                request.setAttribute(PhienBanPhanQuyenBaoMat.CLAIM_ROLES, roles);
+                request.setAttribute(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS, permissions);
+                if (roleLevel != null) {
+                    request.setAttribute(PhienBanPhanQuyenBaoMat.ATTR_ROLE_LEVEL, roleLevel);
+                }
 
                 if (roles != null) {
                     // Chuyển List thành Array để dùng vòng lặp for i (Phong cách Code 1)
@@ -131,6 +143,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
 
                     }
+                }
+
+                Object[] permissionsArray = permissions.toArray();
+                for (int i = 0; i < permissionsArray.length; i = i + 1) {
+                    authorities.add(new SimpleGrantedAuthority(permissionsArray[i].toString()));
                 }
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(

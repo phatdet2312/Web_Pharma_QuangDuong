@@ -281,6 +281,20 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
     /**
      * Kiểm tra danh sách string có chứa giá trị hay không.
      */
+    private void themUserIdNeuChuaCo(List<Long> danhSach, Long userId) {
+        if (danhSach == null || userId == null) {
+            return;
+        }
+
+        Object[] mangGiaTri = danhSach.toArray();
+        for (int i = 0; i < mangGiaTri.length; i = i + 1) {
+            if (userId.equals(mangGiaTri[i])) {
+                return;
+            }
+        }
+        danhSach.add(userId);
+    }
+
     private boolean danhSachCoGiaTri(List<String> danhSach, String giaTri) {
         if (danhSach == null || giaTri == null) {
             return false;
@@ -466,6 +480,52 @@ public class RoleManagementServiceImpl implements IRoleManagementService {
             }
         }
         return responseList;
+    }
+
+    @Override
+    public List<Long> layUserIdDangGiuChucVu(Integer roleId) {
+        List<Long> danhSachUserId = new ArrayList<>();
+        List<CtUserRole> mappings = ctUserRoleRepository.findByRoleId(roleId);
+        if (mappings != null) {
+            Object[] mappingArray = mappings.toArray();
+            for (int i = 0; i < mappingArray.length; i = i + 1) {
+                CtUserRole mapping = (CtUserRole) mappingArray[i];
+                themUserIdNeuChuaCo(danhSachUserId, mapping.getUserId());
+            }
+        }
+        return danhSachUserId;
+    }
+
+    @Override
+    public List<Long> layUserIdBiAnhHuongBoiQuyen(Integer permissionId) {
+        List<Long> danhSachUserId = new ArrayList<>();
+
+        List<CtRolePermission> roleMappings = ctRolePermissionRepository.findByPermissionId(permissionId);
+        if (roleMappings != null) {
+            Object[] roleMapArray = roleMappings.toArray();
+            for (int i = 0; i < roleMapArray.length; i = i + 1) {
+                CtRolePermission roleMapping = (CtRolePermission) roleMapArray[i];
+                List<CtUserRole> userMappings = ctUserRoleRepository.findByRoleId(roleMapping.getRoleId());
+                if (userMappings != null) {
+                    Object[] userMapArray = userMappings.toArray();
+                    for (int j = 0; j < userMapArray.length; j = j + 1) {
+                        CtUserRole userMapping = (CtUserRole) userMapArray[j];
+                        themUserIdNeuChuaCo(danhSachUserId, userMapping.getUserId());
+                    }
+                }
+            }
+        }
+
+        List<CtUserPermissionBlacklist> blacklistMappings = blacklistRepository.findByPermissionId(permissionId);
+        if (blacklistMappings != null) {
+            Object[] blacklistArray = blacklistMappings.toArray();
+            for (int i = 0; i < blacklistArray.length; i = i + 1) {
+                CtUserPermissionBlacklist blacklist = (CtUserPermissionBlacklist) blacklistArray[i];
+                themUserIdNeuChuaCo(danhSachUserId, blacklist.getUserId());
+            }
+        }
+
+        return danhSachUserId;
     }
 
     @Override

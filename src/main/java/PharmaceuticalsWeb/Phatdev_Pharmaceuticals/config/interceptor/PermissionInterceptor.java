@@ -1,6 +1,7 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/interceptor/PermissionInterceptor.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.interceptor;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.PhienBanPhanQuyenBaoMat;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
@@ -66,14 +67,17 @@ public class PermissionInterceptor implements HandlerInterceptor {
             throw new AppException(401, "Phiên đăng nhập không hợp lệ hoặc đã hết hạn");
         }
 
-        User currentUser = userService.getCurrentAuthenticatedUser();
+        int roleLevel = layRoleLevelTuRequest(request);
 
         // Lấy danh sách quyền đã được nạp vào GrantedAuthority (bởi napQuyenChoNguoiDung)
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 
         // Kiểm tra SUPERADMIN — bypass mọi kiểm tra quyền (GOD MODE)
         // Nguồn sự thật là roleLevel từ backend, không phụ thuộc tên role hay frontend.
-        int roleLevel = userService.layCapBacQuyenLucCaoNhat(currentUser);
+        if (roleLevel < 0) {
+            User currentUser = userService.getCurrentAuthenticatedUser();
+            roleLevel = userService.layCapBacQuyenLucCaoNhat(currentUser);
+        }
         if (roleLevel == 0) {
             return true;
         }
@@ -95,5 +99,14 @@ public class PermissionInterceptor implements HandlerInterceptor {
         }
 
         return true;
+    }
+
+    private int layRoleLevelTuRequest(HttpServletRequest request) {
+        Object rawRoleLevel = request.getAttribute(PhienBanPhanQuyenBaoMat.ATTR_ROLE_LEVEL);
+        Integer roleLevel = PhienBanPhanQuyenBaoMat.docSoNguyen(rawRoleLevel, null);
+        if (roleLevel == null) {
+            return -1;
+        }
+        return roleLevel.intValue();
     }
 }
