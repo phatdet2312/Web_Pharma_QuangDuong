@@ -1,5 +1,5 @@
 # Posts & Content
-> Last updated: 2026-06-03
+> Last updated: 2026-06-04
 > Source files: `controller/view/PostViewController.java`, `controller/api/ApiPostController.java`, `controller/api/ApiAdminPostController.java`, `service/impl/PostServiceImpl.java`, `service/impl/AdminPostServiceImpl.java`, `service/itf/IAdminPostService.java`, `repositories/IRepository/IPostRepository.java`, `entities/Post.java`, `templates/posts/list.html`, `templates/posts/detail.html`, `templates/admin/posts.html`
 > Confidence: HIGH
 

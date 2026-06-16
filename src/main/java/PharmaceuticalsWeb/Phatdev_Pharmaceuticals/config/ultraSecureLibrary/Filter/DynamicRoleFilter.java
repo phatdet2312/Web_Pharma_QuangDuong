@@ -18,20 +18,23 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.SecurityLibraryProperties;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Adapter.ISecurityUserAdapter;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityAuthoritySnapshot;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityClaimType;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityTokenClaim;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityTokenConstants;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityTokenVersion;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Provider.ISecurityUserProvider;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.CookieUtils;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.JwtService;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.MaTranLuoiLocChongPhatLai;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.MaTranLuoiLocNghiaTrangQuyenHanCu;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.MaTranNhiPhanNguyenTu;
-import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.PhienBanPhanQuyenBaoMat;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.TramPhatSongVoTuyenP2P;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -119,11 +122,8 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
             // Lấy ID trực tiếp từ Principal (Hỗ trợ cả trường hợp web dùng Session)
             Long userId = null;
             Long tokenCreatedAt = 0L;
-            List<String> danhSachChucVuTrongToken = new ArrayList<>();
-            List<String> danhSachPermissionTrongToken = new ArrayList<>();
-            List<String> danhSachBlacklistTrongToken = new ArrayList<>();
-            Integer roleLevelTrongToken = 999;
-            boolean tokenThieuSnapshotPhanQuyen = false;
+            String fingerprintTrongToken = null;
+            boolean tokenThieuFingerprintBaoMat = false;
             String maDnaQuyenHanHienTai = null;
 
             // NHẬN LẠI DỮ LIỆU ĐÃ GIẢI MÃ TỪ FILTER 1 (Không tốn CPU tính toán lại)
@@ -145,37 +145,22 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
                         System.out.println("[DynamicRoleFilter] Lấy time từ jwt token: " + tokenCreatedAt);
                     }
 
-                    // TÁI TẠO DNA QUYỀN HẠN
-                    Object permissionsClaim = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS);
-                    Object roleLevelClaim = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_ROLE_LEVEL);
-                    Object blacklistClaim = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_BLACKLIST);
-                    if (PhienBanPhanQuyenBaoMat.coDuBonManh(permissionsClaim, roleLevelClaim, blacklistClaim) == false) {
-                        tokenThieuSnapshotPhanQuyen = true;
+                    Object fingerprintRaw = claimsJwt.get(SecurityTokenConstants.CLAIM_SECURITY_FINGERPRINT);
+                    if (fingerprintRaw == null || fingerprintRaw.toString().trim().isEmpty()) {
+                        tokenThieuFingerprintBaoMat = true;
+                    } else {
+                        fingerprintTrongToken = fingerprintRaw.toString().trim();
                     }
 
-                    List<?> rolesRaw = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_ROLES, List.class);
-                    List<?> permissionsRaw = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS, List.class);
-                    List<?> blacklistRaw = claimsJwt.get(PhienBanPhanQuyenBaoMat.CLAIM_BLACKLIST, List.class);
-                    if (rolesRaw == null) {
-                        tokenThieuSnapshotPhanQuyen = true;
+                    Integer v_adn = SecurityTokenVersion.docSoNguyen(claimsJwt.get("v_adn"), 0);
+                    if (userId != null) {
+                        if (tokenThieuFingerprintBaoMat == true) {
+                            maDnaQuyenHanHienTai = taoDnaTuTokenDoiCu(userId, claimsJwt.get("roles"), v_adn);
+                        } else {
+                            maDnaQuyenHanHienTai = SecurityTokenVersion.taoDna(userId, fingerprintTrongToken, v_adn);
+                        }
                     }
-                    if (rolesRaw != null) {
-                        for (int i = 0; i < rolesRaw.size(); i = i + 1) {
-                            danhSachChucVuTrongToken.add(rolesRaw.get(i).toString());
-                        }
-
-                        danhSachChucVuTrongToken = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(danhSachChucVuTrongToken);
-                        danhSachPermissionTrongToken = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(permissionsRaw);
-                        danhSachBlacklistTrongToken = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(blacklistRaw);
-                        roleLevelTrongToken = PhienBanPhanQuyenBaoMat.docSoNguyen(roleLevelClaim, 999);
-
-                        // Rút con số v_adn từ Token ra (Mặc định là 0 nếu hệ thống cũ chưa có)
-                        Integer v_adn = PhienBanPhanQuyenBaoMat.docSoNguyen(claimsJwt.get("v_adn"), 0);
-                        if (userId != null) {
-                            maDnaQuyenHanHienTai = PhienBanPhanQuyenBaoMat.taoDna(userId,
-                                    danhSachChucVuTrongToken, danhSachPermissionTrongToken,
-                                    roleLevelTrongToken, danhSachBlacklistTrongToken, v_adn);
-                        }
+                    if (maDnaQuyenHanHienTai != null) {
                         // SOÁT XÉT NGHĨA TRANG QUYỀN HẠN BẰNG DNA (CHỐNG PHANTOM CLONE ATTACK)
                         if (maDnaQuyenHanHienTai != null
                                 && maTranLuoiLocNghiaTrangQuyenHanCu.kiemTraDaChet(maDnaQuyenHanHienTai) == true) {
@@ -372,7 +357,7 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
             if (tokenCreatedAt < MaTranNhiPhanNguyenTu.THOI_DIEM_KHOI_DONG) {
                 laTokenDoiCu = true;
             }
-            if (tokenThieuSnapshotPhanQuyen == true) {
+            if (tokenThieuFingerprintBaoMat == true) {
                 laTokenDoiCu = true;
             }
             // ĐÚNG: kiểm tra null trước
@@ -416,21 +401,12 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
                     return; // Chặn đứng Request tại đây
                 }
 
-                // TRƯỜNG HỢP: TÀI KHOẢN CÒN SỐNG -> LẤY QUYỀN TRONG DB RA ĐỂ ĐỐI SOÁT
-                List<String> danhSachChucVuTrongDB = PhienBanPhanQuyenBaoMat
-                        .chuanHoaDanhSach(userAdapter.layDanhSachChucVu());
-                List<String> danhSachPermissionTrongDB = PhienBanPhanQuyenBaoMat
-                        .chuanHoaDanhSach(userAdapter.layDanhSachQuyenThaoTac());
-                List<String> danhSachBlacklistTrongDB = PhienBanPhanQuyenBaoMat
-                        .chuanHoaDanhSach(userAdapter.layDanhSachQuyenBiChan());
-                Integer roleLevelTrongDB = PhienBanPhanQuyenBaoMat
-                        .chuanHoaCapBac(userAdapter.layCapBacQuyenLuc());
+                // TRƯỜNG HỢP: TÀI KHOẢN CÒN SỐNG -> LẤY SNAPSHOT OPAQUE TỪ APP RA ĐỂ ĐỐI SOÁT
+                SecurityAuthoritySnapshot snapshotTrongDB = userAdapter.layAnhChupBaoMat();
+                String fingerprintTrongDB = snapshotTrongDB.laySecurityFingerprint();
                 // THUẬT TOÁN: CÓ THỰC SỰ CẦN CHỮA LÀNH KHÔNG?
                 boolean quyenHanBiThayDoi = false;
-                if (PhienBanPhanQuyenBaoMat.trungPhienBan(danhSachChucVuTrongToken,
-                        danhSachPermissionTrongToken, roleLevelTrongToken, danhSachBlacklistTrongToken,
-                        danhSachChucVuTrongDB, danhSachPermissionTrongDB, roleLevelTrongDB,
-                        danhSachBlacklistTrongDB) == false) {
+                if (fingerprintTrongToken == null || fingerprintTrongToken.equals(fingerprintTrongDB) == false) {
                     quyenHanBiThayDoi = true;
                 }
 
@@ -443,22 +419,17 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
                             "[DynamicRoleFilter] Tiến hành Cấp Token Mới -> ");
                     // --- TRƯỜNG HỢP: CHỈ BỊ ĐỔI QUYỀN (KHÔNG KHÓA) ---
                     List<SimpleGrantedAuthority> newAuthorities = new ArrayList<>();
-                    Object[] rolesArray = danhSachChucVuTrongDB.toArray();
-                    for (int i = 0; i < rolesArray.length; i++) {
-                        newAuthorities.add(new SimpleGrantedAuthority("ROLE_" + rolesArray[i].toString()));
-                    }
-                    Object[] permissionsArray = danhSachPermissionTrongDB.toArray();
-                    for (int i = 0; i < permissionsArray.length; i = i + 1) {
-                        newAuthorities.add(new SimpleGrantedAuthority(permissionsArray[i].toString()));
+                    List<String> authoritiesTrongDB = snapshotTrongDB.layAuthoritiesChuanHoa();
+                    Object[] authoritiesArray = authoritiesTrongDB.toArray();
+                    for (int i = 0; i < authoritiesArray.length; i = i + 1) {
+                        newAuthorities.add(new SimpleGrantedAuthority(authoritiesArray[i].toString()));
                     }
 
                     UsernamePasswordAuthenticationToken newAuth = new UsernamePasswordAuthenticationToken(
                             userAdapter.layTenDangNhap(), auth.getCredentials(), newAuthorities);
                     newAuth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(newAuth);
-                    request.setAttribute(PhienBanPhanQuyenBaoMat.CLAIM_ROLES, danhSachChucVuTrongDB);
-                    request.setAttribute(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS, danhSachPermissionTrongDB);
-                    request.setAttribute(PhienBanPhanQuyenBaoMat.ATTR_ROLE_LEVEL, roleLevelTrongDB);
+                    apDungRequestAttributes(request, snapshotTrongDB);
 
                     // TỰ CHỮA LÀNH: Cấp Token mới gửi ngầm về Frontend để nhận quyền
                     String oldClientSecret = claimsJwt.get("c_secret", String.class);
@@ -500,7 +471,62 @@ public class DynamicRoleFilter extends OncePerRequestFilter {
 
     // --- HÀM TIỆN ÍCH DÙNG CHUNG TRONG CLASS ---
 
+    private void apDungRequestAttributes(HttpServletRequest request, SecurityAuthoritySnapshot snapshot) {
+        List<SecurityTokenClaim> claimsBoSung = snapshot.layClaimsBoSung();
+        Object[] mangClaim = claimsBoSung.toArray();
+        for (int i = 0; i < mangClaim.length; i = i + 1) {
+            SecurityTokenClaim claim = (SecurityTokenClaim) mangClaim[i];
+            if (claim.isExposeAsRequestAttribute() == true) {
+                request.setAttribute(claim.getClaimName(), chuyenClaimThanhRequestValue(claim));
+            }
+        }
+    }
+
     // Hàm tạo chữ ký HMAC-SHA256 (Tương tự VNPay)
+    private Object chuyenClaimThanhRequestValue(SecurityTokenClaim claim) {
+        if (SecurityClaimType.STRING.equals(claim.getClaimType())) {
+            return claim.layGiaTriChuoi();
+        }
+        if (SecurityClaimType.LONG.equals(claim.getClaimType())) {
+            return claim.layGiaTriSo();
+        }
+        if (SecurityClaimType.BOOLEAN.equals(claim.getClaimType())) {
+            return claim.layGiaTriBoolean();
+        }
+        return claim.layGiaTriDanhSachChuoi();
+    }
+
+    private String taoDnaTuTokenDoiCu(Long userId, Object rolesRaw, Integer vAdn) {
+        List<String> roles = layDanhSachChuoiTuClaim(rolesRaw);
+        if (roles.isEmpty() == true) {
+            return null;
+        }
+        return userId + "|" + roles.toString() + "|v" + vAdn;
+    }
+
+    private List<String> layDanhSachChuoiTuClaim(Object rawValue) {
+        List<String> ketQua = new ArrayList<>();
+        if (rawValue instanceof List<?> danhSachRaw) {
+            Object[] mangRaw = danhSachRaw.toArray();
+            for (int i = 0; i < mangRaw.length; i = i + 1) {
+                themChuoiNeuHopLe(ketQua, mangRaw[i]);
+            }
+            return ketQua;
+        }
+        themChuoiNeuHopLe(ketQua, rawValue);
+        return ketQua;
+    }
+
+    private void themChuoiNeuHopLe(List<String> ketQua, Object rawValue) {
+        if (rawValue == null) {
+            return;
+        }
+        String value = rawValue.toString().trim();
+        if (value.isEmpty() == false && ketQua.contains(value) == false) {
+            ketQua.add(value);
+        }
+    }
+
     private String generateHmacSHA256(String data, String key) {
         try {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");

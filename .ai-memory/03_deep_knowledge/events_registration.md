@@ -1,5 +1,5 @@
 # Events & Registration
-> Last updated: 2026-06-03
+> Last updated: 2026-06-04
 > Source files: `controller/view/EventViewController.java`, `controller/api/ApiEventController.java`, `controller/api/ApiPublicSpeakerAgendaController.java`, `controller/api/ApiAdminEventController.java`, `controller/api/ApiAdminSpeakerAgendaController.java`, `service/itf/IEventService.java`, `service/itf/IAdminEventService.java`, `service/impl/EventServiceImpl.java`, `service/impl/AdminEventServiceImpl.java`, `service/impl/SpeakerAgendaServiceImpl.java`, `service/support/EventStatusDisplayPolicy.java`, `service/support/NguCanhNguoiDung.java`, `service/support/NguCanhNguoiDungFactory.java`, `utils/ImagePathUtil.java`, `utils/PagingUtil.java`, event entities, `templates/events/*.html`, `templates/admin/events.html`
 > Confidence: HIGH
 

@@ -1,5 +1,5 @@
 # Project Map
-> Last updated: 2026-06-03
+> Last updated: 2026-06-04
 > Status: BOOTSTRAPPED
 > Sync basis: Current code snapshot under `src/` and `pom.xml`; git history intentionally not used.
 
@@ -70,11 +70,11 @@ project-root/
 | API controllers | `controller/api` | REST/JSON endpoints under `/api/**` | `ApiAuthController`, `ApiPostController`, `ApiEventController`, `ApiCommentController`, `ApiProfileController`, `ApiReportController`, `ApiRolesController`, `ApiAuditController`, `ApiPublicSpeakerAgendaController`, `ApiAdminPostController`, `ApiAdminEventController`, `ApiAdminCommentController`, `ApiAdminReportController`, `ApiAdminSpeakerAgendaController`, `ApiRoleManagementController` |
 | View controllers | `controller/view` | Thymeleaf route mapping | `HomeViewController`, `AuthViewController`, `PostViewController`, `EventViewController`, `AdminViewController`, `PartnerViewController`, `ErrorViewController` |
 | Services interfaces | `service/itf` | Business service contracts | `IUserService`, `IPostService`, `IEventService`, `ICommentService`, `IProfileService`, `IAddressService`, `IAuditService`, `IAdminPostService`, `IAdminEventService`, `IAdminReportService`, `IPublicReportService`, `IRoleManagementService`, `IRolesService`, `ISpeakerAgendaService`, `IUserTrackingService` |
-| Services impl | `service/impl` | Business logic, transactions, DTO mapping | `AdminPostServiceImpl` 1288L, `AdminEventServiceImpl` 1318L, `CommentServiceImpl` 1595L, `RoleManagementServiceImpl` 886L, `UserServiceImpl` 639L, plus public/profile/report services |
+| Services impl | `service/impl` | Business logic, transactions, DTO mapping | `AdminPostServiceImpl` 1288L, `AdminEventServiceImpl` 1318L, `CommentServiceImpl` 1595L, `RoleManagementServiceImpl` 946L, `UserServiceImpl` 654L, plus public/profile/report services |
 | Service support | `service/support` | Reusable policy/context classes | `EventStatusDisplayPolicy`, `NguCanhNguoiDung`, `NguCanhNguoiDungFactory` |
 | Utils | `utils` | Shared static/config utility | `SecurityConfig`, `ImagePathUtil`, `PagingUtil` |
-| Security infra | `config/ultraSecureLibrary`, `adapter` | JWT, filters, custom library integration | `JwtService`, `CookieUtils`, `SecurityConfigurer`, `JwtAuthenticationFilter`, `DynamicRoleFilter`, `BodyIntegrityFilter`, `UserSecurityAdapter`, `SecurityUserProviderImpl` |
-| RBAC config | `config`, `validators/annotations` | Permission registry and enforcement | `PermissionRegistry`, `PermissionInterceptor`, `WebMvcConfig`, `RequirePermission` |
+| Security infra | `config/ultraSecureLibrary`, `adapter` | JWT, filters, custom library integration | `JwtService`, `CookieUtils`, `SecurityAuthoritySnapshot`, `SecurityTokenClaim`, `SecurityTokenVersion`, `SecurityConfigurer`, `JwtAuthenticationFilter`, `DynamicRoleFilter`, `BodyIntegrityFilter`, `UserSecurityAdapter`, `SecurityUserProviderImpl` |
+| RBAC config | `config`, `config/rbac`, `validators/annotations` | Permission registry, app RBAC snapshot and enforcement | `PermissionRegistry`, `RbacSecuritySnapshot`, `PermissionInterceptor`, `WebMvcConfig`, `RequirePermission` |
 | Payment | `config/vnpay` | VNPay integration | `VNPayService`, `VNPayLibrary`, `VNPayUtils`, `VNPayModels` |
 | Seed/init | `config/init` | Core data initialization | `DatabaseSeeder` |
 | Exception | `exception` | API error wrapping | `AppException`, `GlobalExceptionHandler` |
@@ -118,6 +118,7 @@ Includes `ApiResponse`, post/admin post DTOs (`AdminPostDictionaryResponse`, `Ad
 | Permission registry | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/PermissionRegistry.java` |
 | MVC interceptor/static uploads | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/WebMvcConfig.java` |
 | JWT internals | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Service/JwtService.java` |
+| App RBAC snapshot | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/rbac/RbacSecuritySnapshot.java` |
 | Global exception | `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/exception/GlobalExceptionHandler.java` |
 | App config | `src/main/resources/application.properties` |
 | Test entry | `src/test/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/AuctionSystemNhom6ApplicationTests.java` |

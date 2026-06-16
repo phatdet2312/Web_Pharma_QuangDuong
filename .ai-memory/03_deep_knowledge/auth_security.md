@@ -1,11 +1,11 @@
 # Auth & Security
 > Last updated: 2026-06-04
-> Source files: `utils/SecurityConfig.java`, `controller/api/ApiAuthController.java`, `entities/User.java`, `config/ultraSecureLibrary/Service/JwtService.java`, `config/ultraSecureLibrary/Service/CookieUtils.java`, `config/ultraSecureLibrary/Service/PhienBanPhanQuyenBaoMat.java`, `config/ultraSecureLibrary/Filter/JwtAuthenticationFilter.java`, `config/ultraSecureLibrary/Filter/DynamicRoleFilter.java`, `config/ultraSecureLibrary/Adapter/ISecurityUserAdapter.java`, `adapter/UserSecurityAdapter.java`, `config/interceptor/PermissionInterceptor.java`, `validators/annotations/RequirePermission.java`, `config/WebMvcConfig.java`, `service/impl/UserServiceImpl.java`
+> Source files: `utils/SecurityConfig.java`, `controller/api/ApiAuthController.java`, `entities/User.java`, `config/ultraSecureLibrary/Service/JwtService.java`, `config/ultraSecureLibrary/Service/CookieUtils.java`, `config/ultraSecureLibrary/Model/SecurityAuthoritySnapshot.java`, `config/ultraSecureLibrary/Model/SecurityTokenClaim.java`, `config/ultraSecureLibrary/Model/SecurityTokenVersion.java`, `config/ultraSecureLibrary/Filter/JwtAuthenticationFilter.java`, `config/ultraSecureLibrary/Filter/DynamicRoleFilter.java`, `config/ultraSecureLibrary/Adapter/ISecurityUserAdapter.java`, `adapter/UserSecurityAdapter.java`, `config/rbac/RbacSecuritySnapshot.java`, `config/interceptor/PermissionInterceptor.java`, `validators/annotations/RequirePermission.java`, `config/WebMvcConfig.java`, `service/impl/UserServiceImpl.java`
 > Confidence: HIGH
 
 ## Summary
 
-Authentication uses Spring Security with stateless JWT cookie auth and Google OAuth2 login. Authorization is DB-driven at login/refresh/mutation time, then carried in JWT as a canonical 4-part RBAC snapshot: `roles`, `permissions`, `roleLevel`, `blacklist`. `PermissionInterceptor` enforces `@RequirePermission` from token/request authorities and avoids a DB query on each request when `roleLevel` is present.
+Authentication uses Spring Security with stateless JWT cookie auth and Google OAuth2 login. Authorization is DB-driven at login/refresh/mutation time. The app packages RBAC state into typed `RbacSecuritySnapshot`; `ultraSecureLibrary` only receives neutral authorities, typed extra claims and an opaque security fingerprint. `PermissionInterceptor` enforces `@RequirePermission` from token/request authorities and avoids a DB query on each request when `roleLevel` is present.
 
 ## Main Flow
 
@@ -13,8 +13,8 @@ Authentication uses Spring Security with stateless JWT cookie auth and Google OA
 2. `ApiAuthController` validates `LoginRequest`, authenticates through `AuthenticationManager`, gets the current `User`, wraps it in `UserSecurityAdapter`, generates a JWT with `JwtService`, and writes it through `CookieUtils`.
 3. Google OAuth2 uses `CustomOidcUserService`; success handler finds the DB user, rejects locked accounts, creates JWT cookie and redirects to `/`.
 4. `SecurityConfig` permits public pages/APIs and requires authentication for `/admin/**`, `/api/admin/**`, `/api/profile/**`, and remaining `/api/**`.
-5. `JwtAuthenticationFilter` reads snapshot claims and creates authorities: roles get `ROLE_` prefix, permissions stay raw.
-6. `DynamicRoleFilter` reuses `JWT_CLAIMS`, rebuilds DNA from all four snapshot parts and refreshes token only when old/missing snapshot, user flag, cluster mismatch or RBAC snapshot drift requires DB recheck.
+5. `JwtAuthenticationFilter` first reads neutral `securityAuthorities`; for old tokens it falls back to legacy `roles` and converts them to `ROLE_*`.
+6. `DynamicRoleFilter` reuses `JWT_CLAIMS`, rebuilds DNA from the opaque `securityFingerprint` and refreshes token only when old/missing fingerprint, user flag, cluster mismatch or snapshot drift requires DB recheck.
 7. Fine-grained permission checks happen in `PermissionInterceptor`, not in Spring Security `hasRole` matchers.
 
 ## Public/Auth Endpoints
@@ -36,21 +36,22 @@ Authentication uses Spring Security with stateless JWT cookie auth and Google OA
 - Public content APIs include `/api/posts/**`, `/api/events/**`, `/api/comments/posts/**`, `/api/comments/events/**`, `/api/comments/reaction-types`.
 - Admin/API/profile routes are authenticated; method-level permission codes decide actual operation access.
 - `User.getAuthorities()` and `JwtAuthenticationFilter` add `ROLE_` prefix to roles and raw permission strings for permission checks.
-- `ISecurityUserAdapter` keeps legacy `layDanhSachQuyen()` and adds four canonical parts through `layDanhSachChucVu()`, `layDanhSachQuyenThaoTac()`, `layCapBacQuyenLuc()`, `layDanhSachQuyenBiChan()`.
+- `ISecurityUserAdapter` keeps legacy `layDanhSachQuyen()` and adds typed `layAnhChupBaoMat()`; the library interface no longer exposes app-specific `roleLevel`, blacklist or permission-list methods.
 - `UserServiceImpl.napQuyenChoNguoiDung()` loads roles, effective permissions, blacklisted permissions and strongest role level into transient `User` fields.
-- `PhienBanPhanQuyenBaoMat` canonicalizes/sorts/deduplicates snapshot lists so JWT claims and DNA do not depend on DB query order.
+- `RbacSecuritySnapshot` canonicalizes/sorts/deduplicates app RBAC lists; `SecurityTokenVersion` in the library treats the resulting fingerprint as opaque.
 - SUPERADMIN bypass is backend `roleLevel == 0`, read from request attr/JWT when available, not role name or frontend flag.
 - `PermissionInterceptor` returns a generic 403 message and does not expose the internal permission code in the response.
 - Methods without `@RequirePermission` continue to work after authentication or public route matching.
 
 ## Dynamic JWT RBAC Snapshot
 
-- JWT claim contract now has 4 RBAC parts: `roles`, `permissions`, `roleLevel`, `blacklist`.
-- Legacy aggregate role/permission behavior is preserved through `ISecurityUserAdapter.layDanhSachQuyen()`.
-- `JwtService.generateToken()` writes all 4 claims and computes permission DNA with `PhienBanPhanQuyenBaoMat.taoDna(userId, roles, permissions, roleLevel, blacklist, v_adn)`.
-- `JwtService.generateTrojanSyncToken()` also writes all 4 claims for sync tokens, but uses `roleLevel = 999` because sync tokens are inter-server commands, not user/superadmin sessions.
-- `JwtAuthenticationFilter` places `roles`, `permissions` and `JWT_ROLE_LEVEL` into request attributes for downstream authorization.
-- `DynamicRoleFilter` treats tokens missing any canonical snapshot part as old tokens and refreshes them through the existing self-healing path.
+- JWT library contract now has neutral technical claims: `securityAuthorities`, `securityFingerprint`, `securityExposedAttributes`; app-level typed claims may still include `roles`, `permissions`, `roleLevel`, `JWT_ROLE_LEVEL`, `blacklist`.
+- Legacy aggregate role behavior is preserved through default `ISecurityUserAdapter.layAnhChupBaoMat()` which converts `layDanhSachQuyen()` to `ROLE_*` authorities.
+- `JwtService.generateToken()` writes neutral authorities/fingerprint plus typed extra claims from `SecurityAuthoritySnapshot`; it computes DNA with `SecurityTokenVersion.taoDna(userId, fingerprint, v_adn)`.
+- `RbacSecuritySnapshot` builds the RBAC fingerprint as `roles=...|permissions=...|roleLevel=...|blacklist=...`, matching the old dynamic DNA core while keeping that knowledge outside `ultraSecureLibrary`.
+- `JwtService.generateTrojanSyncToken()` writes a neutral sync authority and fingerprint; sync tokens remain inter-server commands, not user/superadmin sessions.
+- `JwtAuthenticationFilter` exposes only claim names listed in `securityExposedAttributes`; for app RBAC this includes `roleLevel` and `JWT_ROLE_LEVEL`.
+- `DynamicRoleFilter` treats tokens missing `securityFingerprint` as old tokens and refreshes them through the existing self-healing path; legacy commit-8 `roles` DNA is still checked against the graveyard.
 - Existing body hash, replay protection, graveyard, user flag and P2P sync mechanisms remain in the same filter chain; no new filter was added.
 - Sync-token authority must remain non-privileged. Inter-server sync trust is based on `sync_payload`, HMAC and replay guard, not on `roleLevel == 0`.
 
@@ -76,5 +77,6 @@ Authentication uses Spring Security with stateless JWT cookie auth and Google OA
 |----------|--------|--------|------|--------|
 | Permission enforcement moved to `PermissionInterceptor` | Spring Security only authenticates broad route groups | Keeps RBAC database-driven and granular | 2026-06-03 | 2026-09-03 |
 | SUPERADMIN detection uses backend `roleLevel == 0` | Reject name/authority/frontend-only bypass | Prevents privilege drift | 2026-06-03 | 2026-09-03 |
-| JWT RBAC state uses 4-part canonical snapshot | Store `roles`, `permissions`, `roleLevel`, `blacklist` instead of one aggregate roles list | Enables no-DB permission checks per request while preserving dynamic invalidation and token refresh | 2026-06-04 | 2026-09-04 |
-| Sync token `roleLevel` is non-privileged | Use `roleLevel = 999` for `generateTrojanSyncToken()` instead of `0` | Prevents a sync token from being interpreted as SUPERADMIN if it escapes the intended sync flow | 2026-06-04 | 2026-09-04 |
+| JWT security state uses neutral typed snapshot | Store `securityAuthorities`, `securityFingerprint`, `securityExposedAttributes`; app may add typed RBAC claims | Enables no-DB permission checks per request while keeping RBAC semantics outside library core | 2026-06-04 | 2026-12-04 |
+| Sync token is not an RBAC actor | Use neutral sync authority/fingerprint without app `roleLevel` claims | Prevents a sync token from being interpreted as SUPERADMIN if it escapes the intended sync flow | 2026-06-04 | 2026-12-04 |
+| Keep `ultraSecureLibrary` RBAC-neutral | Move RBAC snapshot construction to app package `config/rbac` and pass typed neutral snapshot into the library | Preserves library reuse across future Java projects while keeping dynamic RBAC behavior in this app | 2026-06-04 | 2026-12-04 |

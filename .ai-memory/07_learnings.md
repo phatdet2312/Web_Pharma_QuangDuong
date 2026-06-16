@@ -1,6 +1,6 @@
 # Learnings — Bài học từ sai lầm
-> Last updated: 2026-06-03
-> Tổng entries: 26
+> Last updated: 2026-06-15
+> Tổng entries: 29
 > Entries sẵn sàng promote (Lần >= 3): 5
 
 <!-- File này là nơi agent ghi nhận PATTERN sai lầm đã mắc -->
@@ -14,7 +14,7 @@
 | 2026-05-19 | ARCHITECTURE | Sai: vá dần một artifact đã sai nền tảng thay vì dừng và thiết kế lại từ ràng buộc nghiệp vụ. Đúng: khi user xác nhận sai toàn bộ, PHẢI rollback artifact sai trước, rồi tái thiết kế chiến lược trước khi viết tiếp. | 1 |
 | 2026-05-20 | CONVENTION | Sai: audit dữ liệu lớn nhưng báo cáo cuối quá ngắn, không đưa đủ bảng bằng chứng/định lượng theo yêu cầu user. Đúng: LUÔN trả hoặc tạo báo cáo chi tiết có severity, bằng chứng, số liệu, trạng thái đã sửa/chưa sửa khi user yêu cầu kiểm tra toàn diện. | 1 |
 | 2026-05-21 | CONVENTION | Sai: khi user yêu cầu sửa lỗi artifact, chỉ sửa báo cáo/mapping rồi bàn giao như đã xử lý. Đúng: LUÔN sửa trực tiếp artifact chính trước, báo cáo chỉ là phụ trợ và phải nói rõ phần nào chưa sửa. | 1 |
-| 2026-05-22 | LOGIC | Sai: validator dữ liệu mẫu kết luận PASS khi chỉ bắt duplicate exact/đủ số lượng, bỏ qua similarity nội dung, URL runtime truy xuất được, phân phối bảng cha-con và mốc thời gian nghiệp vụ. Đúng: LUÔN kiểm tra cả chất lượng ngữ nghĩa, khả năng render runtime và quan hệ nghiệp vụ trước khi kết luận dataset đạt. | 1 |
+| 2026-05-22 | LOGIC | Sai: validator dữ liệu mẫu kết luận PASS khi chỉ bắt duplicate exact/đủ số lượng, bỏ qua similarity nội dung, URL runtime truy xuất được, phân phối bảng cha-con và mốc thời gian nghiệp vụ. Đúng: LUÔN kiểm tra cả chất lượng ngữ nghĩa, khả năng render runtime và quan hệ nghiệp vụ trước khi kết luận dataset đạt. | 2 |
 | 2026-05-22 | CONVENTION | Sai: sửa dataset bằng cách tối ưu validator và sinh text qua pipeline chưa kiểm tra encoding/readability, chèn cả câu meta nội bộ như nguồn internet/giữ cấu trúc vào nội dung người đọc thấy. Đúng: LUÔN kiểm tra UTF-8, preview mẫu người đọc được và dùng văn phong nghiệp vụ chuyên nghiệp, không nhồi phụ lục nhân tạo chỉ để qua validator. | 4 |
 | 2026-05-22 | LOGIC | Sai: validator SQL seed báo PASS nhưng không kiểm tra đủ constraint schema thật như độ dài cột, `NOT NULL` và nullable, dẫn đến lỗi runtime khi insert. Đúng: LUÔN validate literal theo `CREATE TABLE`/DB schema trước khi bàn giao file seed. | 2 |
 | 2026-05-23 | LOGIC | Sai: biến cơ chế tag/mention người được trả lời thành nhãn hiển thị bị backend/frontend ép gắn ngoài nội dung. Đúng: LUÔN phân biệt mention do người dùng chỉnh được trong ô nhập với metadata hỗ trợ hiển thị; chỉ ép nhãn khi nghiệp vụ có bảng mention riêng và user không yêu cầu quyền xóa tag. | 1 |
@@ -36,7 +36,10 @@
 | 2026-06-03 | SECURITY | Sai: tách nhiều lệnh cấm bảo mật cụ thể khi một rule tổng quát theo cấp bậc đã bao phủ, làm kế hoạch dư và dễ gây hiểu nhầm. Đúng: LUÔN mô hình hóa authorization bằng invariant tổng quát trước (không tạo/sửa/gán role mạnh hơn hoặc ngang mình, trừ level 0), rồi để rule cụ thể chỉ là hệ quả. | 1 |
 | 2026-06-03 | SECURITY | Sai: đề xuất phân loại độ nhạy permission khi có thể enforce bằng tập quyền actor đang sở hữu. Đúng: LUÔN ưu tiên capability subset rule — actor non-level-0 chỉ được tạo/sửa/clone/gán role chứa các permission nằm trong tập quyền hiệu lực của chính actor, trừ level 0. | 1 |
 | 2026-06-03 | SECURITY | Sai: dùng một permission tổng như `ROLE_MANAGE` để che nhiều thao tác RBAC nhỏ, làm mất ý nghĩa phân quyền động. Đúng: LUÔN tách quyền hạt lựu theo action thật như view/create/update/delete/clone/assign cho role, permission, module, blacklist. | 1 |
-| 2026-06-03 | CONVENTION | Sai: kết luận phạm vi audit theo `HEAD` khi user nói "hiện tại" nhưng working tree còn thay đổi chưa commit. Đúng: LUÔN xác định rõ "hiện tại" là working tree hay commit `HEAD`, rồi đối chiếu git status trước khi chê/bảo audit trộn phạm vi. | 1 |
+| 2026-06-03 | CONVENTION | Sai: kết luận phạm vi audit theo `HEAD`/mốc trung gian ngoài yêu cầu khi user đã nêu mốc so sánh cụ thể hoặc nói "hiện tại". Đúng: LUÔN khóa đúng 2 phía so sánh user chỉ định, rồi đối chiếu git status trước khi kết luận; KHÔNG kéo baseline khác vào báo cáo. | 2 |
+| 2026-06-04 | SECURITY | Sai: dùng lệnh tìm kiếm in nguyên dòng config có giá trị secret trong output tool. Đúng: LUÔN kiểm tra config bằng key-only extraction hoặc mask value trước khi in, đặc biệt với `application.properties` và file credential. | 1 |
+| 2026-06-04 | ARCHITECTURE | Sai: đề xuất public security contract dùng `Map<String,Object>`/claim mù làm mất kiểm soát schema. Đúng: LUÔN dùng DTO/contract typed cho boundary bảo mật; nếu thư viện cần map claim thì chỉ convert nội bộ từ dữ liệu đã typed và validate rõ. | 1 |
+| 2026-06-15 | CONVENTION | Sai: bàn giao script SQL tự chạy dùng `TRY/CATCH/THROW` khi không thật cần, dễ lỗi theo phiên bản SQL Server hoặc cách copy batch. Đúng: LUÔN ưu tiên T-SQL tối giản, tương thích rộng và có kiểm tra sau khi chạy khi user chỉ cần script cập nhật dữ liệu. | 1 |
 <!-- Loại: LOGIC | CONVENTION | ARCHITECTURE | PERFORMANCE | SECURITY -->
 <!-- Pattern: "Sai: [pattern sai]. Đúng: LUÔN/KHÔNG BAO GIỜ [rule]" -->
 <!-- Lần >= 3 → ⚠️ candidate promote -->

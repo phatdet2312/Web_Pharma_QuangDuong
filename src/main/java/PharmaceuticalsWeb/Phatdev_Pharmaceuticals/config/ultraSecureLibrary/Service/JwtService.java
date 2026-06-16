@@ -9,10 +9,14 @@ import org.springframework.stereotype.Service;
 
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.SecurityLibraryProperties;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Adapter.ISecurityUserAdapter;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityClaimType;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityAuthoritySnapshot;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityTokenClaim;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityTokenConstants;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityTokenVersion;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -54,16 +58,9 @@ public class JwtService {
         }
         claims.put("fullName", fullName);
         
-        // Xử lý danh sách quyền bằng for cơ bản thay vì stream
-        List<String> roles = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(userAdapter.layDanhSachChucVu());
-        List<String> permissions = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(userAdapter.layDanhSachQuyenThaoTac());
-        List<String> blacklist = PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(userAdapter.layDanhSachQuyenBiChan());
-        Integer roleLevel = PhienBanPhanQuyenBaoMat.chuanHoaCapBac(userAdapter.layCapBacQuyenLuc());
-
-        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_ROLES, roles);
-        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS, permissions);
-        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_ROLE_LEVEL, roleLevel);
-        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_BLACKLIST, blacklist);
+        // App chu dong dong goi authorities, claims bo sung va fingerprint typed.
+        SecurityAuthoritySnapshot snapshot = userAdapter.layAnhChupBaoMat();
+        ghiSnapshotVaoClaims(claims, snapshot);
         
         // =========================================================================
         // [THUẬT TOÁN DÒ MÌN TỊNH TIẾN] - VƯỢT LỖ HỔNG PHANTOM CLONE VÀ LOGOUT/LOGIN
@@ -76,8 +73,8 @@ public class JwtService {
         while (maxLoopSafety > 0) {
             maxLoopSafety--;
             // Ghép chuỗi thử nghiệm
-            String adnThuNghiem = PhienBanPhanQuyenBaoMat.taoDna(
-                    userId, roles, permissions, roleLevel, blacklist, v_adn);
+            String adnThuNghiem = SecurityTokenVersion.taoDna(
+                    userId, snapshot.laySecurityFingerprint(), v_adn);
             // Rọi xuống Nghĩa Trang xem cái DNA này có phải đồ cũ không?
             if (nghiaTrangQuyenHan.kiemTraDaChet(adnThuNghiem) == false) {
                 // TÌM THẤY CHÂN LÝ! DNA này sạch sẽ, chưa từng bị chôn!
@@ -132,15 +129,11 @@ public class JwtService {
         claims.put("c_secret", this.thuVienProps.getJwtSecret()); // Khóa mẹ, để Filter 2 xác thực HMAC
         claims.put("clusterId", this.dauAnLanhDia);
         
-        List<String> roles = new ArrayList<>();
-        roles.add("SYNC_SYSTEM");
-        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_ROLES,
-                PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(roles));
-        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_PERMISSIONS,
-                PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(Collections.emptyList()));
-        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_ROLE_LEVEL, 999);
-        claims.put(PhienBanPhanQuyenBaoMat.CLAIM_BLACKLIST,
-                PhienBanPhanQuyenBaoMat.chuanHoaDanhSach(Collections.emptyList()));
+        List<String> authorities = new ArrayList<>();
+        authorities.add("ROLE_SYNC_SYSTEM");
+        SecurityAuthoritySnapshot snapshot = new SecurityAuthoritySnapshot(authorities, new ArrayList<>(),
+                "sync=SYSTEM_SYNC_AGENT");
+        ghiSnapshotVaoClaims(claims, snapshot);
         claims.put("v_adn", 0);
 
         long thoiGianHienTai = System.currentTimeMillis();
@@ -200,5 +193,38 @@ public class JwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    private void ghiSnapshotVaoClaims(Map<String, Object> claims, SecurityAuthoritySnapshot snapshot) {
+        List<String> authorities = snapshot.layAuthoritiesChuanHoa();
+        List<SecurityTokenClaim> claimsBoSung = snapshot.layClaimsBoSung();
+        List<String> exposedAttributes = new ArrayList<>();
+
+        claims.put(SecurityTokenConstants.CLAIM_AUTHORITIES, authorities);
+        claims.put(SecurityTokenConstants.CLAIM_SECURITY_FINGERPRINT, snapshot.laySecurityFingerprint());
+
+        Object[] mangClaim = claimsBoSung.toArray();
+        for (int i = 0; i < mangClaim.length; i = i + 1) {
+            SecurityTokenClaim claim = (SecurityTokenClaim) mangClaim[i];
+            claims.put(claim.getClaimName(), chuyenClaimThanhGiaTriJwt(claim));
+            if (claim.isExposeAsRequestAttribute() == true) {
+                exposedAttributes.add(claim.getClaimName());
+            }
+        }
+
+        claims.put(SecurityTokenConstants.CLAIM_EXPOSED_ATTRIBUTES, exposedAttributes);
+    }
+
+    private Object chuyenClaimThanhGiaTriJwt(SecurityTokenClaim claim) {
+        if (SecurityClaimType.STRING.equals(claim.getClaimType())) {
+            return claim.layGiaTriChuoi();
+        }
+        if (SecurityClaimType.LONG.equals(claim.getClaimType())) {
+            return claim.layGiaTriSo();
+        }
+        if (SecurityClaimType.BOOLEAN.equals(claim.getClaimType())) {
+            return claim.layGiaTriBoolean();
+        }
+        return claim.layGiaTriDanhSachChuoi();
     }
 }

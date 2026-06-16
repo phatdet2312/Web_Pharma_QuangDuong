@@ -1,5 +1,5 @@
 # Comments & Moderation
-> Last updated: 2026-06-03
+> Last updated: 2026-06-04
 > Source files: `controller/api/ApiCommentController.java`, `controller/api/ApiAdminCommentController.java`, `controller/api/ApiReportController.java`, `controller/api/ApiAdminReportController.java`, `service/itf/ICommentService.java`, `service/impl/CommentServiceImpl.java`, `service/impl/PublicReportServiceImpl.java`, comment/report/moderation entities and repositories, `templates/posts/detail.html`, `templates/events/detail.html`, `templates/admin/comments.html`
 > Confidence: HIGH
 

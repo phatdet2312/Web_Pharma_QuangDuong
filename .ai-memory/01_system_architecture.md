@@ -1,5 +1,5 @@
 # System Architecture
-> Last updated: 2026-06-03
+> Last updated: 2026-06-04
 > Status: BOOTSTRAPPED
 > Sync basis: Current code snapshot under `src/` and `pom.xml`; git history was not used.
 
@@ -10,7 +10,7 @@
 | Language | Java | 21 |
 | Framework | Spring Boot, Spring MVC, Spring Data JPA, Spring Security, Thymeleaf | Spring Boot `4.0.2` from `pom.xml` |
 | Database | Microsoft SQL Server via `mssql-jdbc`, Hibernate SQL Server dialect | Schema managed outside Hibernate |
-| Auth | Spring Security, JWT cookie, Google OAuth2 Client, dynamic DB-driven roles/permissions | `jjwt` 0.12.6 |
+| Auth | Spring Security, JWT cookie, Google OAuth2 Client, dynamic DB-driven roles/permissions with JWT RBAC snapshot | `jjwt` 0.12.6 |
 | Frontend | Thymeleaf templates, Bootstrap, jQuery, custom JS/CSS | Server-rendered pages plus JSON APIs |
 | Build Tool | Maven wrapper | Use `bash mvnw` when wrapper/network behavior is unreliable |
 | Mail | Spring Mail + Gmail SMTP settings | Values in config may be sensitive |
@@ -37,18 +37,24 @@
 
 - `SecurityConfig` configures stateless sessions, JWT cookie, OAuth2 Google login, public routes and authenticated routes.
 - SecurityConfig distinguishes public vs authenticated routes; fine-grained authorization is handled by `PermissionInterceptor` + `@RequirePermission`.
+- JWT stores a canonical RBAC snapshot with four parts: `roles`, `permissions`, `roleLevel`, `blacklist`.
+- `JwtAuthenticationFilter` restores role authorities with `ROLE_` prefix and raw permission authorities from that snapshot.
+- `DynamicRoleFilter` rechecks DB only when token snapshot is old/missing, user flag/cluster state requires it, or RBAC snapshot drift is detected.
 - `PermissionInterceptor` is registered for `/admin/**`, `/api/admin/**`, `/api/comments/**`, `/api/reports/**`, `/api/events/**`, `/api/posts/**`.
 - Methods without `@RequirePermission` pass through for backward compatibility.
-- SUPERADMIN bypass is determined by backend role level: `userService.layCapBacQuyenLucCaoNhat(currentUser) == 0`.
+- SUPERADMIN bypass is determined by backend role level `roleLevel == 0`, normally from `JWT_ROLE_LEVEL` request attr with DB fallback only when missing.
 - `User.getAuthorities()` emits roles with `ROLE_` prefix and permission codes as raw authorities.
 - RBAC admin permissions use `RBAC_*` to avoid collision with Spring Security role authority naming.
 
 ## Dynamic RBAC Layers
 
 1. Database: `USER_ROLES`, `PERMISSIONS`, `PERMISSION_MODULES`, `CT_USER_ROLES`, `CT_ROLE_PERMISSIONS`, `CT_USER_PERMISSION_BLACKLIST`.
-2. Permission loading: `UserServiceImpl.napQuyenChoNguoiDung()` loads roles/permissions and removes blacklisted permissions in batch.
-3. Enforcement: `PermissionInterceptor` reads `@RequirePermission` from controller/view methods.
-4. UX: `permission-manager.js` and `data-permission` hide/show UI only; backend remains the source of truth.
+2. Permission loading: `UserServiceImpl.napQuyenChoNguoiDung()` loads roles, effective permissions, blacklist and strongest role level.
+3. Snapshot: `UserSecurityAdapter` and `JwtService` write `roles`, `permissions`, `roleLevel`, `blacklist` into JWT.
+4. Restore: `JwtAuthenticationFilter` creates Spring authorities and request attributes from JWT without DB per request.
+5. Refresh: `DynamicRoleFilter` compares token snapshot against DB when invalidation/drift requires refresh.
+6. Enforcement: `PermissionInterceptor` reads `@RequirePermission` from controller/view methods.
+7. UX: `permission-manager.js` and `data-permission` hide/show UI only; backend remains the source of truth.
 
 ## Core Modules
 
@@ -103,7 +109,7 @@
 ## External Dependencies And Sensitive Config
 
 - `application.properties` contains datasource, mail, OAuth2, JWT and VNPay settings. Never paste raw sensitive values.
-- During the 2026-06-03 sync, config was inspected by property names only.
+- During memory syncs, config must be inspected by property names or masked values only.
 - `SecurityConfig` still contains a hardcoded remember-me secret literal; do not copy this pattern.
 
 ## Architecture Decisions
@@ -113,6 +119,8 @@
 | Fine-grained authorization via `@RequirePermission` | Spring Security authenticates broad route groups; `PermissionInterceptor` enforces DB permission codes | Keeps authorization database-driven and editable through admin RBAC | 2026-06-03 | 2026-09-03 |
 | SUPERADMIN source of truth is `roleLevel == 0` | Do not rely on role name, authority string or frontend state | Prevents bypass drift when role names/authorities change | 2026-06-03 | 2026-09-03 |
 | RBAC admin permissions use `RBAC_*` | Do not use `ROLE_MANAGE` or `ROLE_*` permission codes for RBAC management | Avoids collision with Spring Security `ROLE_` authority prefix and supports granular actions | 2026-06-03 | 2026-09-03 |
+| JWT security state uses neutral typed snapshot | Library stores `securityAuthorities`, `securityFingerprint`, `securityExposedAttributes`; app may add typed claims | Keeps the shared security library reusable while preserving no-DB permission checks and dynamic token refresh | 2026-06-04 | 2026-12-04 |
+| Sync token is not an RBAC actor | Use neutral sync authority/fingerprint without app `roleLevel` claims | Prevents sync tokens from being treated as user-level superadmin sessions | 2026-06-04 | 2026-12-04 |
 
 ## Important Notes
 

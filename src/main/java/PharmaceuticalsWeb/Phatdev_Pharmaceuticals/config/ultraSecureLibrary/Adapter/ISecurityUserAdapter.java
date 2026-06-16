@@ -1,11 +1,13 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/ultraSecureLibrary/Adapter/ISecurityUserAdapter.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Adapter;
 
-import java.util.Collections;
 import java.util.List;
 
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Model.SecurityAuthoritySnapshot;
+
 /**
- * Mặt nạ giao tiếp giữa thư viện bảo mật và ứng dụng chủ.
+ * Mat na giao tiep voi moi ung dung chu.
+ * Thu vien chi nhan anh chup bao mat typed, khong hieu nghiep vu phan quyen.
  */
 public interface ISecurityUserAdapter {
 
@@ -18,37 +20,17 @@ public interface ISecurityUserAdapter {
     String layTenDayDu();
 
     /**
-     * Hợp đồng cũ: danh sách quyền tổng hợp.
+     * Hop dong cu cua phien ban chuan: danh sach quyen goc se duoc quy doi thanh ROLE_*.
      */
     List<String> layDanhSachQuyen();
 
     boolean kiemTraTaiKhoanBiKhoa();
 
     /**
-     * Danh sách chức vụ của người dùng. Mặc định giữ tương thích với contract cũ.
+     * Hop dong moi: app chu dong goi thong tin bao mat thanh snapshot typed.
+     * Mac dinh giu nguyen luong cu bang layDanhSachQuyen().
      */
-    default List<String> layDanhSachChucVu() {
-        return layDanhSachQuyen();
-    }
-
-    /**
-     * Danh sách quyền thao tác hiệu lực, không có tiền tố ROLE_.
-     */
-    default List<String> layDanhSachQuyenThaoTac() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * Cấp bậc mạnh nhất của người dùng. Số càng nhỏ quyền càng mạnh.
-     */
-    default Integer layCapBacQuyenLuc() {
-        return 999;
-    }
-
-    /**
-     * Danh sách quyền thao tác đang bị blacklist riêng cho người dùng.
-     */
-    default List<String> layDanhSachQuyenBiChan() {
-        return Collections.emptyList();
+    default SecurityAuthoritySnapshot layAnhChupBaoMat() {
+        return SecurityAuthoritySnapshot.tuDanhSachQuyenKieuCu(layDanhSachQuyen());
     }
 }

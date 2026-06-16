@@ -1,7 +1,7 @@
 //src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/config/interceptor/PermissionInterceptor.java
 package PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.interceptor;
 
-import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.ultraSecureLibrary.Service.PhienBanPhanQuyenBaoMat;
+import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.config.rbac.RbacSecuritySnapshot;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.exception.AppException;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.entities.User;
 import PharmaceuticalsWeb.Phatdev_Pharmaceuticals.service.itf.IUserService;
@@ -102,8 +102,12 @@ public class PermissionInterceptor implements HandlerInterceptor {
     }
 
     private int layRoleLevelTuRequest(HttpServletRequest request) {
-        Object rawRoleLevel = request.getAttribute(PhienBanPhanQuyenBaoMat.ATTR_ROLE_LEVEL);
-        Integer roleLevel = PhienBanPhanQuyenBaoMat.docSoNguyen(rawRoleLevel, null);
+        Object rawRoleLevel = request.getAttribute(RbacSecuritySnapshot.ATTR_ROLE_LEVEL_LEGACY);
+        Integer roleLevel = RbacSecuritySnapshot.docSoNguyen(rawRoleLevel, null);
+        if (roleLevel == null) {
+            rawRoleLevel = request.getAttribute(RbacSecuritySnapshot.CLAIM_ROLE_LEVEL);
+            roleLevel = RbacSecuritySnapshot.docSoNguyen(rawRoleLevel, null);
+        }
         if (roleLevel == null) {
             return -1;
         }

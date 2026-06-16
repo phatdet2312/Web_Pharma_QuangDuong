@@ -1,5 +1,5 @@
 # Data Model
-> Last updated: 2026-06-03
+> Last updated: 2026-06-04
 > Source files: `src/main/java/PharmaceuticalsWeb/Phatdev_Pharmaceuticals/entities/*`, `repositories/IRepository/*`, `src/main/resources/application.properties` (property names only), SQL schema files when explicitly needed
 > Confidence: HIGH
 

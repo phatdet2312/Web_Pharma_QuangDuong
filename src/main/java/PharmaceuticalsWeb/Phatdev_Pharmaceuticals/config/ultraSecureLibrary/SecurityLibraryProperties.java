@@ -34,7 +34,7 @@ public class SecurityLibraryProperties {
     // này
     // Dev có thể cấu hình trong application.properties:
     // htphat.security.trusted-domains=phatdet2312.id.vn, localhost:3000
-    private List<String> trustedDomains = Arrays.asList("localhost:3000", "localhost:11434", "phatdet2312.id.vn","localhost:8080"); 
+    private List<String> trustedDomains = Arrays.asList("localhost:3000", "localhost:11434", "phatdet2312.id.vn","localhost:8080", "quangduong.olutech.net"); 
 
     // Đường dẫn báo lỗi ra trang login
     private String loginUrl = "/login?locked"; // Mặc định
